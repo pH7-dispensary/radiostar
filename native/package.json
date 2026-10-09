@@ -1,0 +1,1 @@
+{"name":"star-cast-ios","private":true,"scripts":{"start":"expo start","ios":"expo run:ios","typecheck":"tsc --noEmit"},"dependencies":{"expo":"^54.0.0","expo-audio":"^1.0.0","expo-crypto":"^14.0.0","expo-secure-store":"^14.0.0","react":"^19.0.0","react-native":"^0.81.0"},"devDependencies":{"typescript":"^5.8.0","@types/react":"^19.0.0"}}
