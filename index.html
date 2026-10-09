@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17181c"><title>Star Cast</title><link rel="stylesheet" href="styles.css"><style>.header-actions{display:flex;gap:7px}.avatar{width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:linear-gradient(145deg,#f0b6cc,#a692ed);color:#362b43;font-size:14px;font-weight:700}</style>
+</head>
+<body>
+  <main id="app" data-theme="dark">
+    <div class="ambient"></div>
+    <header><button class="wordmark" data-page="listen" aria-label="Star Cast home">STAR<span>✦</span>CAST</button><span class="header-actions"><button id="theme" class="icon" aria-label="Switch appearance">☼</button><button class="avatar" data-page="profile" aria-label="Open settings">O</button></span></header>
+    <section id="view" aria-live="polite"></section>
+    <section id="mini" class="mini glass" hidden></section>
+    <nav class="glass" aria-label="Primary"><button data-page="listen">◉<small>Listen</small></button><button data-page="following">◌<small>Following</small></button><button data-page="search">⌕<small>Search</small></button><button data-page="library">▱<small>Library</small></button></nav>
+    <div id="sheet" class="sheet" aria-modal="true" role="dialog" hidden></div>
+    <div id="toast" role="status"></div>
+  </main><script src="app.js"></script>
+</body></html>

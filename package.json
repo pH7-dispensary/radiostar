@@ -1,0 +1,9 @@
+{
+  "name": "star-cast",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --check app.js && node --check server.mjs"
+  }
+}
