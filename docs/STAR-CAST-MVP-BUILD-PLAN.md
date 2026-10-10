@@ -23,3 +23,5 @@
 ## Contracts
 
 `catalogue` exposes canonical Podcast, Feed, Episode and AudioSource-shaped records. `listenerStore` owns local anonymous listener state; server APIs may replace it without changing UI. `featureControls` declares intelligence features but defaults them off so no unsupported capability is presented as real.
+
+See [production contracts](PRODUCTION-CONTRACTS.md) for server-owned feature controls, event vocabulary, referral/allowance rules, playback conflict resolution, and the separate deterministic/AI sleep boundaries.
