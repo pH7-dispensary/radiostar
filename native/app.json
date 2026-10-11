@@ -1,1 +1,1 @@
-{"expo":{"name":"Star Cast","slug":"star-cast","scheme":"starcast","ios":{"bundleIdentifier":"com.starcast.app","infoPlist":{"UIBackgroundModes":["audio"]}},"plugins":["expo-audio","expo-secure-store"]}}
+{"expo":{"name":"Star Cast","slug":"star-cast","scheme":"starcast","ios":{"bundleIdentifier":"com.starcast.app","infoPlist":{"UIBackgroundModes":["audio"]}},"plugins":[["expo-audio",{"enableBackgroundPlayback":true}],"expo-secure-store"]}}
