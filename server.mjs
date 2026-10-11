@@ -4,7 +4,7 @@ import {extname, join, normalize} from 'node:path';
 import {createHash} from 'node:crypto';
 
 const port=Number(process.env.PORT||4173),root=process.cwd(),cache=new Map(),windows=new Map();
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png'};
 const clean=s=>String(s||'').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();
 const tag=(xml,name)=>clean((xml.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`,'i'))||[])[1]);
 function allowedFeed(value){try{let u=new URL(value);return u.protocol==='https:'&&!(/(^|\.)(localhost|local|internal)$/i.test(u.hostname)||/^(127|10|0)\./.test(u.hostname)||u.hostname.startsWith('192.168.')||u.hostname.startsWith('169.254.'))}catch{return false}}

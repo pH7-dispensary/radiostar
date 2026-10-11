@@ -1,3 +1,4 @@
+import('./sleep-ui.mjs');
 const catalogue=[
  {id:'hard',name:'Hard Fork',publisher:'The New York Times',topic:'Technology',art:'https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/11/2f/ef/112fefc1-6457-1679-e178-78ea31bd78c5/mza_11180871999342900222.jpg/600x600bb.jpg',episodes:[['A.I. Agents: Cute, Cuddly and Maybe Catastrophically Dangerous?','Oct 2 · 53 min',37],['The Strange New World of Silicon Valley','Sep 25 · 48 min',0]]},
  {id:'acquired',name:'Acquired',publisher:'Ben Gilbert and David Rosenthal',topic:'Business',art:'https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/68/50/22/68502259-163d-a0d9-ec23-0b83132f178e/mza_12906270759806472312.jpg/600x600bb.jpg',episodes:[['Nvidia: The AI Factory','Sep 18 · 3 hr 12 min',0],['Costco','Sep 4 · 2 hr 41 min',0]]},
