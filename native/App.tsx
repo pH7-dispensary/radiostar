@@ -4,6 +4,7 @@ import {
   Easing,
   Image,
   Modal,
+  PanResponder,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -106,6 +107,208 @@ function Art({
     />
   );
 }
+function Onboarding({ p, onDone }: { p: Theme; onDone: () => void }) {
+  let cards = [
+    [
+      "◌",
+      "Ad Skip",
+      "Only activates after real-world audio validation. It stays off until then.",
+    ],
+    [
+      "⌕",
+      "Podcast Search",
+      "Find live shows and publisher episodes without an account.",
+    ],
+    [
+      "☾",
+      "AI Sleep",
+      "A private, on-device listening companion. Not physiological sleep detection.",
+    ],
+  ];
+  return (
+    <Modal visible transparent animationType="fade">
+      <SafeAreaView style={styles.onboardingShade}>
+        <View
+          style={[
+            styles.onboarding,
+            { backgroundColor: p.bg, borderColor: p.line },
+          ]}
+        >
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDone}
+            style={styles.onboardingSkip}
+          >
+            <Text style={[styles.link, { color: p.muted }]}>Skip</Text>
+          </Pressable>
+          <Text style={[styles.eyebrow, { color: p.accent }]}>
+            WELCOME TO STAR CAST
+          </Text>
+          <Text style={[styles.onboardingTitle, { color: p.text }]}>
+            Listen{`\n`}beautifully.
+          </Text>
+          <Text style={[styles.onboardingCopy, { color: p.muted }]}>
+            A private, considered home for podcasts worth your time.
+          </Text>
+          <View style={styles.onboardingCards}>
+            {cards.map(([icon, title, copy]) => (
+              <Glass key={title} p={p} style={styles.onboardingCard}>
+                <Text style={[styles.onboardingIcon, { color: p.accent2 }]}>
+                  {icon}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.onboardingCardTitle, { color: p.text }]}>
+                    {title}
+                  </Text>
+                  <Text style={[styles.onboardingCardCopy, { color: p.muted }]}>
+                    {copy}
+                  </Text>
+                </View>
+              </Glass>
+            ))}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDone}
+            style={[styles.primary, { backgroundColor: p.accent2 }]}
+          >
+            <Text style={styles.primaryText}>Start listening</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+function Discovery({
+  state,
+  setState,
+  onOpen,
+  p,
+}: {
+  state: ListenerState;
+  setState: (next: ListenerState) => void;
+  onOpen: (show: CatalogueShow) => void;
+  p: Theme;
+}) {
+  let categories = [
+      "Technology",
+      "Science",
+      "Business",
+      "Comedy",
+      "News",
+      "Health",
+      "History",
+    ],
+    [category, setCategory] = useState(categories[0]),
+    [shows, setShows] = useState<CatalogueShow[]>([]),
+    [busy, setBusy] = useState(true),
+    [error, setError] = useState("");
+  useEffect(() => {
+    let live = true;
+    setBusy(true);
+    setError("");
+    void searchCatalogue(category)
+      .then((data) => {
+        if (live) setShows(data.results.slice(0, 4));
+      })
+      .catch(() => {
+        if (live)
+          setError("Discovery is temporarily unavailable. Try Search instead.");
+      })
+      .finally(() => {
+        if (live) setBusy(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [category]);
+  return (
+    <View style={styles.discovery}>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>
+        EXPLORE BY INTEREST
+      </Text>
+      <Text style={[styles.discoveryTitle, { color: p.text }]}>
+        Find your next obsession.
+      </Text>
+      <Text style={[styles.emptyCopy, { color: p.muted }]}>
+        Fresh catalogue results from public podcast providers.
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipScroll}
+      >
+        {categories.map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            active={category === item}
+            onPress={() => setCategory(item)}
+            p={p}
+          />
+        ))}
+      </ScrollView>
+      {busy ? (
+        <Text style={[styles.emptyInline, { color: p.muted }]}>
+          Finding real {category.toLowerCase()} shows…
+        </Text>
+      ) : null}
+      {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
+      <View style={styles.discoveryGrid}>
+        {shows.map((show) => {
+          let following = state.following.some((item) => item.id === show.id);
+          return (
+            <Glass key={show.id} p={p} style={styles.discoveryCard}>
+              <Pressable onPress={() => onOpen(show)}>
+                <Art url={show.art} size={112} radius={22} />
+                <Text
+                  numberOfLines={2}
+                  style={[styles.showTitle, { color: p.text }]}
+                >
+                  {show.name}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.small, { color: p.muted }]}
+                >
+                  {show.publisher}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  setState({
+                    ...state,
+                    following: toggleById(state.following, show),
+                  })
+                }
+                style={[
+                  styles.followPill,
+                  {
+                    borderColor: p.line,
+                    backgroundColor: following ? p.wash : "transparent",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.followPillText,
+                    { color: following ? p.text : p.accent2 },
+                  ]}
+                >
+                  {following ? "Following" : "Follow"}
+                </Text>
+              </Pressable>
+            </Glass>
+          );
+        })}
+      </View>
+      <Text style={[styles.tiny, { color: p.muted }]}>
+        Browse a show to load its real publisher episodes before playing.
+      </Text>
+    </View>
+  );
+}
 function Chip({
   label,
   active,
@@ -160,6 +363,24 @@ function Glass({
       {children}
     </View>
   );
+}
+function SwipeBack({
+  onBack,
+  children,
+}: {
+  onBack: () => void;
+  children: React.ReactNode;
+}) {
+  let responder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        gesture.dx > 26 && Math.abs(gesture.dy) < 22,
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > 88) onBack();
+      },
+    }),
+  ).current;
+  return <View {...responder.panHandlers}>{children}</View>;
 }
 function Section({
   title,
@@ -614,18 +835,23 @@ function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
 
 function Listen({
   state,
+  setState,
   onPlay,
+  onOpen,
   p,
 }: {
   state: ListenerState;
+  setState: (next: ListenerState) => void;
   onPlay: (e: StoredEpisode) => void;
+  onOpen: (show: CatalogueShow) => void;
   p: Theme;
 }) {
   let [filter, setFilter] = useState("Recent"),
     [popular, setPopular] = useState("Week"),
     publisherEpisodes = Object.values(state.feedEpisodes).flat(),
     uniqueEpisodes = publisherEpisodes.filter(
-      (episode, index, list) => list.findIndex((item) => item.id === episode.id) === index,
+      (episode, index, list) =>
+        list.findIndex((item) => item.id === episode.id) === index,
     ),
     episodes = uniqueEpisodes;
   if (filter === "Popular")
@@ -651,7 +877,9 @@ function Listen({
         </View>
         <View style={[styles.lighting, { backgroundColor: p.wash }]} />
       </View>
-      {state.history[0] ? (
+      {!state.following.length ? (
+        <Discovery state={state} setState={setState} onOpen={onOpen} p={p} />
+      ) : state.history[0] ? (
         <Pressable
           onPress={() => onPlay(state.history[0])}
           style={[
@@ -723,14 +951,16 @@ function Listen({
           </View>
         ) : null}
         {episodes.length ? (
-          episodes.slice(0, 5).map((episode) => (
-            <EpisodeRow
-              key={episode.id}
-              episode={episode}
-              onPress={() => onPlay(episode)}
-              p={p}
-            />
-          ))
+          episodes
+            .slice(0, 5)
+            .map((episode) => (
+              <EpisodeRow
+                key={episode.id}
+                episode={episode}
+                onPress={() => onPlay(episode)}
+                p={p}
+              />
+            ))
         ) : (
           <Text style={[styles.emptyInline, { color: p.muted }]}>
             {filter === "Best Rated"
@@ -742,8 +972,17 @@ function Listen({
       <Section title="For You" action="From your library" p={p}>
         {forYou.length ? (
           <>
-            <Text style={[styles.feedCaption, { color: p.muted }]}>Latest from followed publishers</Text>
-            {forYou.map((episode) => <EpisodeRow key={episode.id} episode={episode} onPress={() => onPlay(episode)} p={p} />)}
+            <Text style={[styles.feedCaption, { color: p.muted }]}>
+              Latest from followed publishers
+            </Text>
+            {forYou.map((episode) => (
+              <EpisodeRow
+                key={episode.id}
+                episode={episode}
+                onPress={() => onPlay(episode)}
+                p={p}
+              />
+            ))}
           </>
         ) : (
           <Text style={[styles.emptyInline, { color: p.muted }]}>
@@ -759,10 +998,12 @@ function Listen({
 function Following({
   state,
   onOpen,
+  onDiscover,
   p,
 }: {
   state: ListenerState;
   onOpen: (show: CatalogueShow) => void;
+  onDiscover: () => void;
   p: Theme;
 }) {
   let [order, setOrder] = useState("Latest"),
@@ -855,6 +1096,17 @@ function Following({
           <Text style={[styles.emptyCopy, { color: p.muted }]}>
             Shows you follow in Search will live here.
           </Text>
+          <Pressable
+            onPress={onDiscover}
+            style={[
+              styles.followDiscovery,
+              { borderColor: p.line, backgroundColor: p.wash },
+            ]}
+          >
+            <Text style={[styles.followPillText, { color: p.text }]}>
+              Explore podcasts
+            </Text>
+          </Pressable>
         </Glass>
       )}
     </>
@@ -876,25 +1128,35 @@ function Search({
     [results, setResults] = useState<CatalogueShow[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  let suggestions = Array.from(new Set([...state.following.map((show) => show.topic), "Hard Fork", "Technology", "Science"])).filter(Boolean).slice(0, 3), submit = async () => {
-    if (!query.trim() || mode !== "Podcasts") return;
-    setBusy(true);
-    setError("");
-    try {
-      let data = await searchCatalogue(query);
-      setResults(
-        scope === "My Podcasts"
-          ? data.results.filter((x) =>
-              state.following.some((s) => s.id === x.id),
-            )
-          : data.results,
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Search is unavailable.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  let suggestions = Array.from(
+      new Set([
+        ...state.following.map((show) => show.topic),
+        "Hard Fork",
+        "Technology",
+        "Science",
+      ]),
+    )
+      .filter(Boolean)
+      .slice(0, 3),
+    submit = async () => {
+      if (!query.trim() || mode !== "Podcasts") return;
+      setBusy(true);
+      setError("");
+      try {
+        let data = await searchCatalogue(query);
+        setResults(
+          scope === "My Podcasts"
+            ? data.results.filter((x) =>
+                state.following.some((s) => s.id === x.id),
+              )
+            : data.results,
+        );
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Search is unavailable.");
+      } finally {
+        setBusy(false);
+      }
+    };
   return (
     <>
       <Text style={[styles.eyebrow, { color: p.accent }]}>
@@ -966,9 +1228,7 @@ function Search({
           </Text>
         </Glass>
       ) : null}
-      {error ? (
-        <Text style={{ color: "#E78FA9" }}>{error}</Text>
-      ) : null}
+      {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
       {busy ? (
         <Text style={[styles.emptyInline, { color: p.muted }]}>
           Searching the live podcast catalogue…
@@ -1114,15 +1374,24 @@ function Profile({
   state,
   setState,
   installation,
+  onBack,
   p,
 }: {
   state: ListenerState;
   setState: (state: ListenerState) => void;
   installation?: string;
+  onBack: () => void;
   p: Theme;
 }) {
   return (
     <>
+      <Pressable
+        onPress={onBack}
+        style={styles.back}
+        accessibilityRole="button"
+      >
+        <Text style={[styles.link, { color: p.accent2 }]}>‹ Back</Text>
+      </Pressable>
       <Text style={[styles.eyebrow, { color: p.accent }]}>
         YOUR LISTENING SPACE
       </Text>
@@ -1218,12 +1487,16 @@ function ShowDetail({
         return;
       }
       try {
-        let feed = await loadFeed(show.feedUrl), streamable = feed.episodes.filter((x) => x.audioUrl);
+        let feed = await loadFeed(show.feedUrl),
+          streamable = feed.episodes.filter((x) => x.audioUrl);
         if (open) {
           setEpisodes(streamable);
           setState({
             ...state,
-            feedEpisodes: { ...state.feedEpisodes, [show.id]: streamable.map((episode) => asStored(episode, show)) },
+            feedEpisodes: {
+              ...state.feedEpisodes,
+              [show.id]: streamable.map((episode) => asStored(episode, show)),
+            },
           });
         }
       } catch (e) {
@@ -1292,9 +1565,7 @@ function ShowDetail({
             Loading publisher episodes…
           </Text>
         ) : null}
-        {error ? (
-          <Text style={{ color: "#E78FA9" }}>{error}</Text>
-        ) : null}
+        {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
         {episodes.map((episode) => {
           let stored = asStored(episode, show),
             saved = state.saved.some((x) => x.id === stored.id);
@@ -1318,6 +1589,8 @@ function ShowDetail({
 
 function AppShell() {
   let [page, setPage] = useState<Page>("Listen"),
+    [backPage, setBackPage] =
+      useState<Exclude<Page, "Show" | "Profile">>("Listen"),
     [selectedShow, setSelectedShow] = useState<CatalogueShow | null>(null),
     [installation, setInstallation] = useState<string>(),
     [state, setState] = useState<ListenerState>(emptyListenerState()),
@@ -1363,10 +1636,13 @@ function AppShell() {
     <AppContent
       page={page}
       setPage={setPage}
+      backPage={backPage}
+      setBackPage={setBackPage}
       selectedShow={selectedShow}
       setSelectedShow={setSelectedShow}
       state={state}
       setState={setState}
+      hydrated={hydrated}
       installation={installation}
       p={p}
       playerOpen={playerOpen}
@@ -1379,10 +1655,13 @@ function AppShell() {
 function AppContent({
   page,
   setPage,
+  backPage,
+  setBackPage,
   selectedShow,
   setSelectedShow,
   state,
   setState,
+  hydrated,
   installation,
   p,
   playerOpen,
@@ -1391,10 +1670,13 @@ function AppContent({
 }: {
   page: Page;
   setPage: (p: Page) => void;
+  backPage: Exclude<Page, "Show" | "Profile">;
+  setBackPage: (p: Exclude<Page, "Show" | "Profile">) => void;
   selectedShow: CatalogueShow | null;
   setSelectedShow: (s: CatalogueShow | null) => void;
   state: ListenerState;
   setState: (s: ListenerState | ((v: ListenerState) => ListenerState)) => void;
+  hydrated: boolean;
   installation?: string;
   p: Theme;
   playerOpen: boolean;
@@ -1405,21 +1687,35 @@ function AppContent({
   let run = (episode: StoredEpisode) => {
     void play(playStored(episode));
   };
+  let currentTab: Exclude<Page, "Show" | "Profile"> =
+    page === "Show" || page === "Profile" ? backPage : page;
+  let selectTab = (tab: Exclude<Page, "Show" | "Profile">) => {
+    setSelectedShow(null);
+    setPage(tab);
+  };
   let openShow = (show: CatalogueShow) => {
     setSelectedShow(show);
+    setBackPage(currentTab);
     setPage("Show");
   };
   let content =
     page === "Listen" ? (
-      <Listen state={state} onPlay={run} p={p} />
-    ) : page === "Following" ? (
-      <Following state={state} onOpen={openShow} p={p} />
-    ) : page === "Search" ? (
-      <Search
+      <Listen
         state={state}
+        setState={setState}
+        onPlay={run}
         onOpen={openShow}
         p={p}
       />
+    ) : page === "Following" ? (
+      <Following
+        state={state}
+        onOpen={openShow}
+        onDiscover={() => selectTab("Listen")}
+        p={p}
+      />
+    ) : page === "Search" ? (
+      <Search state={state} onOpen={openShow} p={p} />
     ) : page === "Library" ? (
       <Library state={state} onPlay={run} p={p} />
     ) : page === "Profile" ? (
@@ -1427,6 +1723,7 @@ function AppContent({
         state={state}
         setState={setState}
         installation={installation}
+        onBack={() => selectTab(backPage)}
         p={p}
       />
     ) : selectedShow ? (
@@ -1435,7 +1732,7 @@ function AppContent({
         state={state}
         setState={setState}
         onPlay={run}
-        onBack={() => setPage("Search")}
+        onBack={() => selectTab(backPage)}
         p={p}
       />
     ) : null;
@@ -1452,7 +1749,7 @@ function AppContent({
       <View style={styles.root}>
         <View style={styles.topbar}>
           <Pressable
-            onPress={() => setPage("Listen")}
+            onPress={() => selectTab("Listen")}
             accessibilityRole="button"
           >
             <Text style={[styles.wordmark, { color: p.text }]}>
@@ -1462,7 +1759,10 @@ function AppContent({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open profile"
-            onPress={() => setPage("Profile")}
+            onPress={() => {
+              setBackPage(currentTab);
+              setPage("Profile");
+            }}
             style={[
               styles.avatar,
               { backgroundColor: p.wash, borderColor: p.line },
@@ -1475,62 +1775,68 @@ function AppContent({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          {content}
+          {page === "Show" || page === "Profile" ? (
+            <SwipeBack onBack={() => selectTab(backPage)}>{content}</SwipeBack>
+          ) : (
+            content
+          )}
         </ScrollView>
         <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} />
-        {page !== "Show" && page !== "Profile" ? (
-          <View
-            style={[
-              styles.tabBar,
-              { backgroundColor: p.surfaceStrong, borderColor: p.line },
-            ]}
-          >
-            {(
-              [
-                { key: "Listen", icon: "◉" },
-                { key: "Following", icon: "◌" },
-                { key: "Search", icon: "⌕" },
-                { key: "Library", icon: "▱" },
-              ] as const
-            ).map((tab) => (
-              <Pressable
-                key={tab.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: page === tab.key }}
-                onPress={() => setPage(tab.key)}
+        <View
+          style={[
+            styles.tabBar,
+            { backgroundColor: p.surfaceStrong, borderColor: p.line },
+          ]}
+        >
+          {(
+            [
+              { key: "Listen", icon: "◉" },
+              { key: "Following", icon: "◌" },
+              { key: "Search", icon: "⌕" },
+              { key: "Library", icon: "▱" },
+            ] as const
+          ).map((tab) => (
+            <Pressable
+              key={tab.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: currentTab === tab.key }}
+              onPress={() => selectTab(tab.key)}
+              style={[
+                styles.tab,
+                currentTab === tab.key && { backgroundColor: p.wash },
+              ]}
+            >
+              <Text
                 style={[
-                  styles.tab,
-                  page === tab.key && { backgroundColor: p.wash },
+                  styles.tabIcon,
+                  { color: currentTab === tab.key ? p.text : p.muted },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.tabIcon,
-                    { color: page === tab.key ? p.text : p.muted },
-                  ]}
-                >
-                  {tab.icon}
-                </Text>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: page === tab.key ? p.text : p.muted },
-                  ]}
-                >
-                  {tab.key}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : (
-          <View style={{ height: 18 }} />
-        )}
+                {tab.icon}
+              </Text>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  { color: currentTab === tab.key ? p.text : p.muted },
+                ]}
+              >
+                {tab.key}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
       <PlayerSheet
         visible={playerOpen}
         onClose={() => setPlayerOpen(false)}
         p={p}
       />
+      {hydrated && !state.onboardingComplete ? (
+        <Onboarding
+          p={p}
+          onDone={() => setState({ ...state, onboardingComplete: true })}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -1949,4 +2255,75 @@ const styles = StyleSheet.create({
   aiCopy: { fontSize: 14, marginTop: 4, textAlign: "center" },
   extensionRow: { flexDirection: "row", gap: 8, marginTop: 12 },
   notice: { fontSize: 13, textAlign: "center", marginTop: 13 },
+  onboardingShade: {
+    flex: 1,
+    backgroundColor: "rgba(10,10,14,.48)",
+    justifyContent: "flex-end",
+  },
+  onboarding: {
+    borderTopWidth: 1,
+    borderRadius: 31,
+    padding: 23,
+    paddingBottom: 31,
+    maxWidth: 760,
+    width: "100%",
+    alignSelf: "center",
+  },
+  onboardingSkip: {
+    alignSelf: "flex-end",
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  onboardingTitle: {
+    fontSize: 36,
+    lineHeight: 38,
+    fontWeight: "800",
+    letterSpacing: -1.8,
+    marginTop: 8,
+  },
+  onboardingCopy: { fontSize: 15, lineHeight: 21, marginTop: 9, maxWidth: 300 },
+  onboardingCards: { gap: 9, marginTop: 22 },
+  onboardingCard: {
+    padding: 13,
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+  onboardingIcon: { fontSize: 21, width: 29, textAlign: "center" },
+  onboardingCardTitle: { fontSize: 15, fontWeight: "800" },
+  onboardingCardCopy: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  discovery: { marginTop: 23 },
+  discoveryTitle: {
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: "800",
+    letterSpacing: -0.8,
+    marginTop: 6,
+  },
+  discoveryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 14,
+  },
+  discoveryCard: { width: "47%", padding: 10 },
+  followPill: {
+    borderWidth: 1,
+    minHeight: 35,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  followPillText: { fontSize: 12, fontWeight: "800" },
+  followDiscovery: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginTop: 15,
+  },
 });
