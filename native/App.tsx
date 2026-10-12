@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   Animated,
   Easing,
   Image,
@@ -13,8 +14,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import * as SecureStore from "expo-secure-store";
 import * as Crypto from "expo-crypto";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   PlaybackProvider,
   usePlayback,
@@ -36,41 +40,13 @@ import {
   type StoredEpisode,
 } from "./src/listenerState";
 import { NativeAiSleepBridge, NativeSleepTimer } from "./src/sleepBridge";
+import { feedback } from "./src/feedback";
+import { motion, themes, type StarTheme } from "./src/design";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
-type Theme = {
-  bg: string;
-  surface: string;
-  surfaceStrong: string;
-  text: string;
-  muted: string;
-  line: string;
-  accent: string;
-  accent2: string;
-  wash: string;
-};
-const dark: Theme = {
-  bg: "#17181d",
-  surface: "rgba(43,44,53,.84)",
-  surfaceStrong: "#282930",
-  text: "#F8F6F2",
-  muted: "#AAA7B0",
-  line: "rgba(255,255,255,.12)",
-  accent: "#E08AAE",
-  accent2: "#A99AFF",
-  wash: "#342d47",
-};
-const light: Theme = {
-  bg: "#F5F4F1",
-  surface: "rgba(255,255,255,.88)",
-  surfaceStrong: "#FFFFFF",
-  text: "#26242B",
-  muted: "#77747E",
-  line: "rgba(50,45,62,.12)",
-  accent: "#C76391",
-  accent2: "#7669CB",
-  wash: "#EAE5FF",
-};
+type Theme = StarTheme;
+const dark = themes.night;
+const light = themes.day;
 const format = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
 const asStored = (
@@ -276,12 +252,13 @@ function Discovery({
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                onPress={() =>
+                onPress={() => {
+                  feedback.success();
                   setState({
                     ...state,
                     following: toggleById(state.following, show),
-                  })
-                }
+                  });
+                }}
                 style={[
                   styles.followPill,
                   {
@@ -327,7 +304,10 @@ function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        feedback.selection();
+        onPress();
+      }}
       style={[
         styles.chip,
         {
@@ -353,16 +333,32 @@ function Glass({
   style?: object;
 }) {
   return (
-    <View
+    <LinearGradient
+      colors={[p.surfaceStrong, p.surface]}
+      start={{ x: 0.05, y: 0 }}
+      end={{ x: 0.95, y: 1 }}
       style={[
         styles.glass,
-        { backgroundColor: p.surface, borderColor: p.line },
+        { borderColor: p.line, shadowColor: p.shadow },
         style,
       ]}
     >
       {children}
-    </View>
+    </LinearGradient>
   );
+}
+
+function useReducedMotion() {
+  let [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
+    let subscription = AccessibilityInfo.addEventListener?.(
+      "reduceMotionChanged",
+      setReduced,
+    );
+    return () => subscription?.remove();
+  }, []);
+  return reduced;
 }
 function SwipeBack({
   onBack,
@@ -461,8 +457,9 @@ function EpisodeRow({
 
 function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
   let phase = useRef(new Animated.Value(0)).current;
+  let reducedMotion = useReducedMotion();
   useEffect(() => {
-    if (!active) {
+    if (!active || reducedMotion) {
       phase.stopAnimation();
       return;
     }
@@ -470,13 +467,13 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
       Animated.sequence([
         Animated.timing(phase, {
           toValue: 1,
-          duration: 2800,
+          duration: motion.major * 6,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(phase, {
           toValue: 0,
-          duration: 2800,
+          duration: motion.major * 6,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -484,7 +481,7 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
     );
     loop.start();
     return () => loop.stop();
-  }, [active, phase]);
+  }, [active, phase, reducedMotion]);
   let points = Array.from({ length: 28 }, (_, i) => {
     let a = (i / 28) * Math.PI * 2,
       r = 42 + (i % 5) * 9;
@@ -529,6 +526,49 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
       >
         <Text style={{ color: p.accent2, fontSize: 25 }}>✦</Text>
       </View>
+    </View>
+  );
+}
+
+function AmbientBackdrop({ p }: { p: Theme }) {
+  let drift = useRef(new Animated.Value(0)).current;
+  let reducedMotion = useReducedMotion();
+  useEffect(() => {
+    if (reducedMotion) return;
+    let animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(drift, {
+          toValue: 1,
+          duration: 18000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(drift, {
+          toValue: 0,
+          duration: 18000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [drift, reducedMotion]);
+  let x = drift.interpolate({ inputRange: [0, 1], outputRange: [-10, 12] });
+  return (
+    <View pointerEvents="none" style={styles.ambientLayer}>
+      <Animated.View
+        style={[
+          styles.ambientOne,
+          { backgroundColor: p.wash, transform: [{ translateX: x }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.ambientTwo,
+          { backgroundColor: p.accent2, transform: [{ translateX: x }] },
+        ]}
+      />
     </View>
   );
 }
@@ -775,6 +815,7 @@ function PlayerSheet({
       let session = ai.current?.extend(minutes);
       setEarliestPauseAt(session?.earliestPauseAt || null);
       setNotice(`AI Sleep will not pause for another ${minutes} minutes.`);
+      feedback.success();
     } catch {
       setNotice("Start AI Sleep first.");
     }
@@ -784,12 +825,14 @@ function PlayerSheet({
     setAiActive(true);
     setEarliestPauseAt(session?.earliestPauseAt || null);
     setNotice("AI Sleep active. Listening continues.");
+    feedback.success();
   };
   let stopAi = () => {
     ai.current?.stop();
     setAiActive(false);
     setEarliestPauseAt(null);
     setNotice("AI Sleep stopped. Playback continues.");
+    feedback.light();
   };
   return (
     <Modal
@@ -806,7 +849,7 @@ function PlayerSheet({
               onPress={onClose}
               style={[styles.roundButton, { borderColor: p.line }]}
             >
-              <Text style={{ color: p.text, fontSize: 19 }}>⌄</Text>
+              <Ionicons name="chevron-down" size={22} color={p.text} />
             </Pressable>
             <Text style={[styles.eyebrow, { color: p.accent }]}>
               NOW PLAYING
@@ -868,12 +911,17 @@ function PlayerSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
-              onPress={() => (snapshot.playing ? pause() : play(source))}
+              onPress={() => {
+                feedback.light();
+                snapshot.playing ? pause() : play(source);
+              }}
               style={[styles.playButton, { backgroundColor: p.text }]}
             >
-              <Text style={{ color: p.bg, fontSize: 23 }}>
-                {snapshot.playing ? "Ⅱ" : "▶"}
-              </Text>
+              <Ionicons
+                name={snapshot.playing ? "pause" : "play"}
+                size={22}
+                color={p.bg}
+              />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -906,9 +954,17 @@ function PlayerSheet({
                 }
                 style={[styles.tool, { borderColor: p.line }]}
               >
-                <Text style={[styles.toolIcon, { color: p.accent2 }]}>
-                  {label === "Ad Skip" ? "◌" : "✦"}
-                </Text>
+                <Ionicons
+                  name={
+                    label === "Ad Skip"
+                      ? "shield-checkmark-outline"
+                      : label === "Explore Episode"
+                        ? "compass-outline"
+                        : "sparkles"
+                  }
+                  size={18}
+                  color={p.accent2}
+                />
                 <Text style={[styles.toolText, { color: p.text }]}>
                   {label}
                 </Text>
@@ -927,7 +983,8 @@ function PlayerSheet({
             ]}
           >
             <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
-              ☾ Sleep Timer
+              <Ionicons name="moon-outline" size={18} color={p.text} /> Sleep
+              Timer
             </Text>
             <Text style={[styles.small, { color: p.muted }]}>Set a pause</Text>
           </Pressable>
@@ -937,7 +994,8 @@ function PlayerSheet({
             style={[styles.aiSleepEntry, { backgroundColor: p.accent2 }]}
           >
             <Text style={styles.aiSleepEntryTitle}>
-              ✦ {aiActive ? "AI Sleep active" : "AI Sleep"}
+              <Ionicons name="sparkles" size={17} color="#fff" />{" "}
+              {aiActive ? "AI Sleep active" : "AI Sleep"}
             </Text>
             <Text style={styles.aiSleepEntryCopy}>
               {aiActive
@@ -979,36 +1037,44 @@ function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
   let { source, snapshot, play, pause } = usePlayback();
   if (!source) return null;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Open now playing"
-      onPress={onOpen}
-      style={[
-        styles.mini,
-        { backgroundColor: p.surfaceStrong, borderColor: p.line },
-      ]}
+    <BlurView
+      intensity={42}
+      tint={p.blurTint}
+      style={[styles.mini, { borderColor: p.line, shadowColor: p.shadow }]}
     >
-      <Art url={source.artworkUrl} size={42} radius={12} />
-      <View style={styles.miniCopy}>
-        <Text numberOfLines={1} style={[styles.miniTitle, { color: p.text }]}>
-          {source.title}
-        </Text>
-        <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-          {source.show}
-        </Text>
-      </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
-        onPress={(event) => {
-          event.stopPropagation();
-          snapshot.playing ? pause() : play(source);
-        }}
-        style={[styles.miniPlay, { backgroundColor: p.text }]}
+        accessibilityLabel="Open now playing"
+        onPress={onOpen}
+        style={styles.miniInner}
       >
-        <Text style={{ color: p.bg }}>{snapshot.playing ? "Ⅱ" : "▶"}</Text>
+        <Art url={source.artworkUrl} size={42} radius={12} />
+        <View style={styles.miniCopy}>
+          <Text numberOfLines={1} style={[styles.miniTitle, { color: p.text }]}>
+            {source.title}
+          </Text>
+          <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+            {source.show}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+          onPress={(event) => {
+            event.stopPropagation();
+            feedback.light();
+            snapshot.playing ? pause() : play(source);
+          }}
+          style={[styles.miniPlay, { backgroundColor: p.text }]}
+        >
+          <Ionicons
+            name={snapshot.playing ? "pause" : "play"}
+            size={16}
+            color={p.bg}
+          />
+        </Pressable>
       </Pressable>
-    </Pressable>
+    </BlurView>
   );
 }
 
@@ -1061,27 +1127,31 @@ function Listen({
       ) : state.history[0] ? (
         <Pressable
           onPress={() => onPlay(state.history[0])}
-          style={[
-            styles.continueCard,
-            { backgroundColor: p.wash, borderColor: p.line },
-          ]}
+          style={[styles.continueCard, { borderColor: p.line }]}
         >
-          <Art url={state.history[0].artworkUrl} size={88} radius={21} />
-          <View style={styles.continueBody}>
-            <Text style={[styles.eyebrow, { color: p.accent }]}>
-              CONTINUE LISTENING
-            </Text>
-            <Text
-              numberOfLines={2}
-              style={[styles.continueTitle, { color: p.text }]}
-            >
-              {state.history[0].title}
-            </Text>
-            <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-              {state.history[0].showName}
-            </Text>
-          </View>
-          <Text style={[styles.playGlyph, { color: p.text }]}>▶</Text>
+          <LinearGradient
+            colors={[p.wash, p.surfaceStrong]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.continueCardInner}
+          >
+            <Art url={state.history[0].artworkUrl} size={88} radius={21} />
+            <View style={styles.continueBody}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                CONTINUE LISTENING
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[styles.continueTitle, { color: p.text }]}
+              >
+                {state.history[0].title}
+              </Text>
+              <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+                {state.history[0].showName}
+              </Text>
+            </View>
+            <Ionicons name="play" size={19} color={p.text} />
+          </LinearGradient>
         </Pressable>
       ) : (
         <Glass p={p} style={styles.emptyHero}>
@@ -1590,7 +1660,10 @@ function Profile({
       </Glass>
       <Section title="Appearance" p={p}>
         <Pressable
-          onPress={() => setState({ ...state, nightMode: !state.nightMode })}
+          onPress={() => {
+            feedback.selection();
+            setState({ ...state, nightMode: !state.nightMode });
+          }}
           style={[styles.setting, { borderBottomColor: p.line }]}
         >
           <Text style={[styles.settingTitle, { color: p.text }]}>
@@ -1717,9 +1790,13 @@ function ShowDetail({
         </View>
       </View>
       <Pressable
-        onPress={() =>
-          setState({ ...state, following: toggleById(state.following, show) })
-        }
+        onPress={() => {
+          feedback.success();
+          setState({
+            ...state,
+            following: toggleById(state.following, show),
+          });
+        }}
         style={[
           styles.primary,
           {
@@ -1755,9 +1832,13 @@ function ShowDetail({
               p={p}
               saved={saved}
               onPress={() => onPlay(stored)}
-              onSave={() =>
-                setState({ ...state, saved: toggleById(state.saved, stored) })
-              }
+              onSave={() => {
+                feedback.success();
+                setState({
+                  ...state,
+                  saved: toggleById(state.saved, stored),
+                });
+              }}
             />
           );
         })}
@@ -1917,14 +1998,7 @@ function AppContent({
     ) : null;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
-      <View
-        pointerEvents="none"
-        style={[styles.ambientOne, { backgroundColor: p.wash }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.ambientTwo, { backgroundColor: p.accent2 }]}
-      />
+      <AmbientBackdrop p={p} />
       <View style={styles.root}>
         <View style={styles.topbar}>
           <Pressable
@@ -1961,49 +2035,58 @@ function AppContent({
           )}
         </ScrollView>
         <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} />
-        <View
+        <BlurView
+          intensity={42}
+          tint={p.blurTint}
           style={[
             styles.tabBar,
-            { backgroundColor: p.surfaceStrong, borderColor: p.line },
+            { borderColor: p.line, shadowColor: p.shadow },
           ]}
         >
-          {(
-            [
-              { key: "Listen", icon: "◉" },
-              { key: "Following", icon: "◌" },
-              { key: "Search", icon: "⌕" },
-              { key: "Library", icon: "▱" },
-            ] as const
-          ).map((tab) => (
-            <Pressable
-              key={tab.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: currentTab === tab.key }}
-              onPress={() => selectTab(tab.key)}
-              style={[
-                styles.tab,
-                currentTab === tab.key && { backgroundColor: p.wash },
-              ]}
-            >
-              <Text
+          <LinearGradient
+            colors={[p.surfaceStrong, p.surface]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.tabBarInner}
+          >
+            {(
+              [
+                { key: "Listen", icon: "headset-outline" },
+                { key: "Following", icon: "heart-outline" },
+                { key: "Search", icon: "search-outline" },
+                { key: "Library", icon: "bookmark-outline" },
+              ] as const
+            ).map((tab) => (
+              <Pressable
+                key={tab.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: currentTab === tab.key }}
+                onPress={() => {
+                  feedback.selection();
+                  selectTab(tab.key);
+                }}
                 style={[
-                  styles.tabIcon,
-                  { color: currentTab === tab.key ? p.text : p.muted },
+                  styles.tab,
+                  currentTab === tab.key && { backgroundColor: p.wash },
                 ]}
               >
-                {tab.icon}
-              </Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  { color: currentTab === tab.key ? p.text : p.muted },
-                ]}
-              >
-                {tab.key}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+                <Ionicons
+                  name={tab.icon}
+                  size={18}
+                  color={currentTab === tab.key ? p.text : p.muted}
+                />
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: currentTab === tab.key ? p.text : p.muted },
+                  ]}
+                >
+                  {tab.key}
+                </Text>
+              </Pressable>
+            ))}
+          </LinearGradient>
+        </BlurView>
       </View>
       <PlayerSheet
         visible={playerOpen}
@@ -2030,6 +2113,10 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   root: { flex: 1, maxWidth: 760, width: "100%", alignSelf: "center" },
+  ambientLayer: {
+    ...StyleSheet.absoluteFill,
+    overflow: "hidden",
+  },
   ambientOne: {
     position: "absolute",
     width: 330,
@@ -2095,6 +2182,9 @@ const styles = StyleSheet.create({
     marginTop: 23,
     borderWidth: 1,
     borderRadius: 27,
+    overflow: "hidden",
+  },
+  continueCardInner: {
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -2266,6 +2356,14 @@ const styles = StyleSheet.create({
     minHeight: 53,
     borderRadius: 16,
     borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  miniInner: {
+    minHeight: 53,
     padding: 6,
     flexDirection: "row",
     alignItems: "center",
@@ -2288,6 +2386,14 @@ const styles = StyleSheet.create({
     height: 62,
     borderRadius: 23,
     borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  tabBarInner: {
+    flex: 1,
     padding: 5,
     flexDirection: "row",
     justifyContent: "space-between",
