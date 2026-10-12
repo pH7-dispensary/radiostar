@@ -1,41 +1,1946 @@
-import {useEffect,useRef,useState} from 'react';
-import {Button,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import * as Crypto from 'expo-crypto';
-import {PlaybackProvider,usePlayback} from './src/PlaybackProvider';
-import {loadFeed,searchCatalogue,type CatalogueEpisode,type CatalogueShow} from './src/api';
-import {emptyListenerState,loadListenerState,recordHistory,saveListenerState,toggleById,type ListenerState,type StoredEpisode} from './src/listenerState';
-import {NativeAiSleepBridge,NativeSleepTimer} from './src/sleepBridge';
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import * as SecureStore from "expo-secure-store";
+import * as Crypto from "expo-crypto";
+import {
+  PlaybackProvider,
+  usePlayback,
+  type Source,
+} from "./src/PlaybackProvider";
+import {
+  loadFeed,
+  searchCatalogue,
+  type CatalogueEpisode,
+  type CatalogueShow,
+} from "./src/api";
+import {
+  emptyListenerState,
+  loadListenerState,
+  recordHistory,
+  saveListenerState,
+  toggleById,
+  type ListenerState,
+  type StoredEpisode,
+} from "./src/listenerState";
+import { NativeAiSleepBridge, NativeSleepTimer } from "./src/sleepBridge";
 
-type Page='Listen'|'Following'|'Search'|'Library'|'Profile';
-const tint='#b8a6ff',format=(ms:number)=>`${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}`;
-const asStored=(episode:CatalogueEpisode,show:CatalogueShow):StoredEpisode=>({...episode,showId:show.id,showName:show.name,artworkUrl:show.art});
+type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
+type Theme = {
+  bg: string;
+  surface: string;
+  surfaceStrong: string;
+  text: string;
+  muted: string;
+  line: string;
+  accent: string;
+  accent2: string;
+  wash: string;
+};
+const dark: Theme = {
+  bg: "#17181d",
+  surface: "rgba(43,44,53,.84)",
+  surfaceStrong: "#282930",
+  text: "#F8F6F2",
+  muted: "#AAA7B0",
+  line: "rgba(255,255,255,.12)",
+  accent: "#E08AAE",
+  accent2: "#A99AFF",
+  wash: "#342d47",
+};
+const light: Theme = {
+  bg: "#F5F4F1",
+  surface: "rgba(255,255,255,.88)",
+  surfaceStrong: "#FFFFFF",
+  text: "#26242B",
+  muted: "#77747E",
+  line: "rgba(50,45,62,.12)",
+  accent: "#C76391",
+  accent2: "#7669CB",
+  wash: "#EAE5FF",
+};
+const format = (ms: number) =>
+  `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+const asStored = (
+  episode: CatalogueEpisode,
+  show: CatalogueShow,
+): StoredEpisode => ({
+  ...episode,
+  showId: show.id,
+  showName: show.name,
+  artworkUrl: show.art,
+});
+const artworkFallback =
+  "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=400&q=80";
 
-function Player(){
-  let {source,snapshot,play,pause,seek,setSpeed,fadeAndPause}=usePlayback(),timer=useRef<NativeSleepTimer|null>(null),ai=useRef<NativeAiSleepBridge|null>(null),[notice,setNotice]=useState(''),[aiActive,setAiActive]=useState(false),[customMinutes,setCustomMinutes]=useState('');
-  useEffect(()=>{timer.current=new NativeSleepTimer(pause);ai.current=new NativeAiSleepBridge(fadeAndPause);return()=>timer.current?.cancel()},[pause,fadeAndPause]);
-  useEffect(()=>{if(snapshot.durationMs&&snapshot.positionMs>=snapshot.durationMs-1_000&&!snapshot.playing)timer.current?.onEpisodeEnd()},[snapshot.durationMs,snapshot.positionMs,snapshot.playing]);
-  if(!source)return null;let percent=snapshot.durationMs?Math.min(100,snapshot.positionMs/snapshot.durationMs*100):0;
-  let extend=(minutes:number)=>{try{ai.current?.extend(minutes);setNotice(`AI Sleep will not pause for another ${minutes} minutes.`)}catch{setNotice('Start AI Sleep first.')}};
-  let setTimer=(minutes:number)=>{timer.current?.start({kind:'minutes',minutes});setNotice(`Sleep Timer set for ${minutes} minutes.`)};
-  return <View style={styles.player}><Text style={styles.eyebrow}>NOW PLAYING</Text><Text style={styles.cardTitle} numberOfLines={2}>{source.title}</Text><Text style={styles.muted}>{source.show}{snapshot.buffered?' · Buffering…':''}</Text><View style={styles.track}><View style={[styles.fill,{width:`${percent}%`}]} /></View><Text style={styles.muted}>{format(snapshot.positionMs)} · {snapshot.durationMs?format(snapshot.durationMs):'--:--'}</Text><View style={styles.row}><Button title="↶ 15" onPress={()=>seek(snapshot.positionMs-15_000)}/><Button title={snapshot.playing?'Pause':'Play'} onPress={()=>snapshot.playing?pause():play(source)}/><Button title="30 ↷" onPress={()=>seek(snapshot.positionMs+30_000)}/></View><View style={styles.row}>{[.75,1,1.25,1.5,2].map(speed=><Pressable key={speed} onPress={()=>setSpeed(speed)}><Text style={snapshot.speed===speed?styles.selected:styles.muted}>{speed}×</Text></Pressable>)}</View><View style={styles.divider}/><Text style={styles.eyebrow}>SLEEP TIMER</Text><View style={styles.timerOptions}>{[10,15,20,30,45,60].map(minutes=><Pressable key={minutes} style={styles.extension} onPress={()=>setTimer(minutes)}><Text style={styles.selected}>{minutes}m</Text></Pressable>)}<Pressable style={styles.extension} onPress={()=>{timer.current?.start({kind:'end_of_episode'});setNotice('Sleep Timer will stop at the end of this episode.')}}><Text style={styles.selected}>End</Text></Pressable></View><View style={styles.row}><TextInput value={customMinutes} onChangeText={setCustomMinutes} keyboardType="number-pad" placeholder="Custom min" placeholderTextColor="#999" style={styles.customInput}/><Button title="Set" onPress={()=>{let minutes=Math.round(Number(customMinutes));if(minutes>0)setTimer(minutes);else setNotice('Enter a number of minutes.')}}/></View><Pressable style={styles.aiButton} onPress={()=>{ai.current?.start();setAiActive(true);setNotice('AI Sleep active. Listening continues.')}}><Text style={styles.aiText}>{aiActive?'✦ AI Sleep active':'☾ Start AI Sleep'}</Text></Pressable>{aiActive?<View style={styles.row}>{[5,15,30].map(minutes=><Pressable key={minutes} style={styles.extension} onPress={()=>extend(minutes)}><Text style={styles.selected}>+{minutes}m</Text></Pressable>)}</View>:null}{notice?<Text style={styles.muted}>{notice}</Text>:null}</View>
+function Art({
+  url,
+  size = 56,
+  radius = 15,
+}: {
+  url?: string;
+  size?: number;
+  radius?: number;
+}) {
+  return (
+    <Image
+      accessibilityLabel="Podcast artwork"
+      source={{ uri: url || artworkFallback }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: "#4B4655",
+      }}
+    />
+  );
+}
+function Chip({
+  label,
+  active,
+  onPress,
+  disabled = false,
+  p,
+}: {
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+  p: Theme;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.chip,
+        {
+          borderColor: p.line,
+          backgroundColor: active ? p.accent2 : "transparent",
+          opacity: disabled ? 0.45 : 1,
+        },
+      ]}
+    >
+      <Text style={[styles.chipText, { color: active ? "#fff" : p.muted }]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+function Glass({
+  children,
+  p,
+  style,
+}: {
+  children: React.ReactNode;
+  p: Theme;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        styles.glass,
+        { backgroundColor: p.surface, borderColor: p.line },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+function Section({
+  title,
+  action,
+  children,
+  p,
+}: {
+  title: string;
+  action?: string;
+  children: React.ReactNode;
+  p: Theme;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: p.text }]}>{title}</Text>
+        {action ? (
+          <Text style={[styles.small, { color: p.muted }]}>{action}</Text>
+        ) : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+function EpisodeRow({
+  episode,
+  onPress,
+  p,
+  saved,
+  onSave,
+}: {
+  episode: StoredEpisode;
+  onPress: () => void;
+  p: Theme;
+  saved?: boolean;
+  onSave?: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Play ${episode.title}`}
+      onPress={onPress}
+      style={[styles.episode, { borderBottomColor: p.line }]}
+    >
+      <Art url={episode.artworkUrl} size={55} radius={14} />
+      <View style={styles.episodeBody}>
+        <Text
+          numberOfLines={2}
+          style={[styles.episodeTitle, { color: p.text }]}
+        >
+          {episode.title}
+        </Text>
+        <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+          {episode.showName} ·{" "}
+          {episode.duration || episode.publishedAt || "Publisher episode"}
+        </Text>
+      </View>
+      {onSave ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? "Remove saved episode" : "Save episode"}
+          hitSlop={8}
+          onPress={onSave}
+          style={styles.saveButton}
+        >
+          <Text
+            style={[styles.saveIcon, { color: saved ? p.accent : p.muted }]}
+          >
+            {saved ? "♥" : "♡"}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text style={[styles.playGlyph, { color: p.text }]}>▶</Text>
+      )}
+    </Pressable>
+  );
 }
 
-function Search({state,setState}:{state:ListenerState;setState:(next:ListenerState)=>void}){
-  let [query,setQuery]=useState(''),[shows,setShows]=useState<CatalogueShow[]>([]),[episodes,setEpisodes]=useState<CatalogueEpisode[]>([]),[show,setShow]=useState<CatalogueShow|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string>();let {play}=usePlayback();
-  let submit=async()=>{if(!query.trim())return;setBusy(true);setError(undefined);try{let data=await searchCatalogue(query);setShows(data.results);setShow(null);setEpisodes([])}catch(e){setError(e instanceof Error?e.message:'Search is unavailable.')}finally{setBusy(false)}};
-  let open=async(item:CatalogueShow)=>{if(!item.feedUrl){setError('This catalogue record has no public publisher feed.');return}setBusy(true);setError(undefined);try{let feed=await loadFeed(item.feedUrl);let full={...item,art:feed.art||item.art};setShow(full);setEpisodes(feed.episodes.filter(x=>x.audioUrl))}catch(e){setError(e instanceof Error?e.message:'This publisher feed is unavailable.')}finally{setBusy(false)}};
-  let playEpisode=(episode:CatalogueEpisode,index:number)=>{if(!show)return;let stored=asStored(episode,show);setState({...state,history:recordHistory(state.history,stored)});void play({episodeId:episode.id||`${show.id}:${index}`,url:episode.audioUrl,title:episode.title,show:show.name,artworkUrl:show.art})};
-  return <View style={{gap:12}}><TextInput style={styles.input} value={query} onChangeText={setQuery} placeholder="Podcasts, hosts, topics" placeholderTextColor="#999" onSubmitEditing={submit}/><Button title={busy?'Searching…':'Search podcasts'} disabled={busy} onPress={submit}/>{error?<Text style={styles.error}>{error}</Text>:null}{show?<><View style={styles.row}><Text style={styles.title}>{show.name}</Text><Button title={state.following.some(x=>x.id===show.id)?'Following':'Follow'} onPress={()=>setState({...state,following:toggleById(state.following,show)})}/></View><Text style={styles.muted}>{episodes.length} streamable publisher episodes</Text>{episodes.map((episode,index)=>{let stored=asStored(episode,show),saved=state.saved.some(x=>x.id===stored.id);return <View key={episode.id||index} style={styles.card}><Pressable onPress={()=>playEpisode(episode,index)}><Text style={styles.cardTitle}>{episode.title}</Text><Text style={styles.muted}>{episode.duration||episode.publishedAt||'Publisher metadata'}</Text></Pressable><Pressable onPress={()=>setState({...state,saved:toggleById(state.saved,stored)})}><Text style={styles.selected}>{saved?'Saved':'Save'}</Text></Pressable></View>})}</>:shows.map(item=><Pressable key={item.id} style={styles.card} onPress={()=>open(item)}><Text style={styles.cardTitle}>{item.name}</Text><Text style={styles.muted}>{item.publisher} · {item.topic}</Text></Pressable>)}</View>
+function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
+  let phase = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!active) {
+      phase.stopAnimation();
+      return;
+    }
+    let loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(phase, {
+          toValue: 1,
+          duration: 2800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(phase, {
+          toValue: 0,
+          duration: 2800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [active, phase]);
+  let points = Array.from({ length: 28 }, (_, i) => {
+    let a = (i / 28) * Math.PI * 2,
+      r = 42 + (i % 5) * 9;
+    let drift = phase.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-5 + (i % 3) * 2, 5 - (i % 4)],
+    });
+    return (
+      <Animated.View
+        key={i}
+        style={[
+          styles.sleepPoint,
+          {
+            backgroundColor: i % 4 === 0 ? p.accent2 : p.text,
+            opacity: i % 4 === 0 ? 0.85 : 0.5,
+            transform: [
+              {
+                translateX: Animated.add(
+                  new Animated.Value(Math.cos(a) * r),
+                  drift,
+                ),
+              },
+              { translateY: new Animated.Value(Math.sin(a) * r) },
+            ],
+          },
+        ]}
+      />
+    );
+  });
+  return (
+    <View
+      accessibilityLabel="AI Sleep animation"
+      style={[styles.organism, { backgroundColor: p.wash }]}
+    >
+      <View style={[styles.orbit, { borderColor: p.accent2 }]} />
+      {points}
+      <View
+        style={[
+          styles.core,
+          { backgroundColor: p.surfaceStrong, borderColor: p.line },
+        ]}
+      >
+        <Text style={{ color: p.accent2, fontSize: 25 }}>✦</Text>
+      </View>
+    </View>
+  );
 }
 
-function Collection({title,items,empty}:{title:string;items:StoredEpisode[]|CatalogueShow[];empty:string}){return <View style={{gap:12}}><Text style={styles.title}>{title}</Text>{items.length?items.map(item=><View key={item.id} style={styles.card}><Text style={styles.cardTitle}>{'showName' in item?item.title:item.name}</Text><Text style={styles.muted}>{'showName' in item?item.showName:item.publisher}</Text></View>):<Text style={styles.muted}>{empty}</Text>}</View>}
-function AppShell(){
-  let [page,setPage]=useState<Page>('Listen'),[installation,setInstallation]=useState<string>(),[state,setState]=useState<ListenerState>(emptyListenerState());
-  useEffect(()=>{void (async()=>{let value=await SecureStore.getItemAsync('star-cast-installation-credential');if(!value){value=Crypto.randomUUID();await SecureStore.setItemAsync('star-cast-installation-credential',value)}setInstallation(value);setState(await loadListenerState())})()},[]);
-  useEffect(()=>{void saveListenerState(state)},[state]);
-  let content=page==='Search'?<Search state={state} setState={setState}/>:page==='Following'?<Collection title="Following" items={state.following} empty="Shows you follow will appear here."/>:page==='Library'?<Collection title="Library" items={state.saved.length?state.saved:state.history} empty="Saved episodes and listening history will appear here."/>:page==='Profile'?<View><Text style={styles.title}>Profile</Text><Text style={styles.muted}>{installation?'Private anonymous listener ready on this device.':'Preparing private listener…'}</Text><Button title={state.nightMode?'Use day mode':'Use night mode'} onPress={()=>setState({...state,nightMode:!state.nightMode})}/><Text style={styles.muted}>Referral qualification is server-authoritative and unavailable until a backend is connected.</Text></View>:<View><Text style={styles.title}>Listen</Text><Text style={styles.muted}>Search a real publisher podcast, choose an episode, and Star Cast streams its enclosure URL through the native player.</Text></View>;
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.screen}><Text style={styles.logo}>STAR <Text style={{color:tint}}>✦</Text> CAST</Text>{content}<Player/><View style={styles.nav}>{(['Listen','Following','Search','Library','Profile'] as Page[]).map(item=><Pressable key={item} onPress={()=>setPage(item)}><Text style={page===item?styles.selected:styles.muted}>{item}</Text></Pressable>)}</View></ScrollView></SafeAreaView>
+function PlayerSheet({
+  visible,
+  onClose,
+  p,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  p: Theme;
+}) {
+  let { source, snapshot, play, pause, seek, setSpeed, fadeAndPause } =
+      usePlayback(),
+    timer = useRef<NativeSleepTimer | null>(null),
+    ai = useRef<NativeAiSleepBridge | null>(null),
+    [sleepOpen, setSleepOpen] = useState(false),
+    [aiActive, setAiActive] = useState(false),
+    [notice, setNotice] = useState("");
+  useEffect(() => {
+    timer.current = new NativeSleepTimer(pause);
+    ai.current = new NativeAiSleepBridge(fadeAndPause);
+    return () => timer.current?.cancel();
+  }, [pause, fadeAndPause]);
+  useEffect(() => {
+    if (
+      snapshot.durationMs &&
+      snapshot.positionMs >= snapshot.durationMs - 1000 &&
+      !snapshot.playing
+    )
+      timer.current?.onEpisodeEnd();
+  }, [snapshot.durationMs, snapshot.positionMs, snapshot.playing]);
+  if (!source) return null;
+  let percent = snapshot.durationMs
+    ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
+    : 0;
+  let setTimer = (minutes: number) => {
+    timer.current?.start({ kind: "minutes", minutes });
+    setNotice(`Sleep Timer set for ${minutes} minutes.`);
+  };
+  let extend = (minutes: number) => {
+    try {
+      ai.current?.extend(minutes);
+      setNotice(`AI Sleep will not pause for another ${minutes} minutes.`);
+    } catch {
+      setNotice("Start AI Sleep first.");
+    }
+  };
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={[styles.modalSafe, { backgroundColor: p.bg }]}>
+        <ScrollView contentContainerStyle={styles.playerSheet}>
+          <View style={styles.sheetHeader}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClose}
+              style={[styles.roundButton, { borderColor: p.line }]}
+            >
+              <Text style={{ color: p.text, fontSize: 19 }}>⌄</Text>
+            </Pressable>
+            <Text style={[styles.eyebrow, { color: p.accent }]}>
+              NOW PLAYING
+            </Text>
+            <View style={styles.roundButton} />
+          </View>
+          <View style={[styles.playerArtwork, { backgroundColor: p.wash }]}>
+            <Art url={source.artworkUrl} size={240} radius={28} />
+          </View>
+          <Text
+            numberOfLines={2}
+            style={[styles.playerTitle, { color: p.text }]}
+          >
+            {source.title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={[styles.playerShow, { color: p.muted }]}
+          >
+            {source.show}
+            {snapshot.buffered ? " · Buffering…" : ""}
+          </Text>
+          <Pressable
+            accessibilityRole="adjustable"
+            accessibilityLabel="Playback position"
+            onPress={() =>
+              seek(
+                snapshot.durationMs
+                  ? Math.min(snapshot.durationMs, snapshot.positionMs + 15_000)
+                  : snapshot.positionMs,
+              )
+            }
+            style={[styles.progressTouch, { backgroundColor: p.line }]}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                { backgroundColor: p.accent2, width: `${percent}%` },
+              ]}
+            />
+          </Pressable>
+          <View style={styles.timeRow}>
+            <Text style={[styles.small, { color: p.muted }]}>
+              {format(snapshot.positionMs)}
+            </Text>
+            <Text style={[styles.small, { color: p.muted }]}>
+              {snapshot.durationMs ? format(snapshot.durationMs) : "--:--"}
+            </Text>
+          </View>
+          <View style={styles.transport}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back 15 seconds"
+              onPress={() => seek(snapshot.positionMs - 15_000)}
+              style={styles.transportSide}
+            >
+              <Text style={{ color: p.text, fontSize: 19 }}>↶ 15</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+              onPress={() => (snapshot.playing ? pause() : play(source))}
+              style={[styles.playButton, { backgroundColor: p.text }]}
+            >
+              <Text style={{ color: p.bg, fontSize: 23 }}>
+                {snapshot.playing ? "Ⅱ" : "▶"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Forward 30 seconds"
+              onPress={() => seek(snapshot.positionMs + 30_000)}
+              style={styles.transportSide}
+            >
+              <Text style={{ color: p.text, fontSize: 19 }}>30 ↷</Text>
+            </Pressable>
+          </View>
+          <View style={styles.speedRow}>
+            {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
+              <Chip
+                key={speed}
+                label={`${speed}×`}
+                active={snapshot.speed === speed}
+                p={p}
+                onPress={() => setSpeed(speed)}
+              />
+            ))}
+          </View>
+          <View style={styles.playerTools}>
+            {["AI Episode Brief", "Explore Episode", "Ad Skip"].map((label) => (
+              <Pressable
+                key={label}
+                onPress={() =>
+                  setNotice(
+                    `${label} is available only when this episode has verified processing.`,
+                  )
+                }
+                style={[styles.tool, { borderColor: p.line }]}
+              >
+                <Text style={[styles.toolIcon, { color: p.accent2 }]}>
+                  {label === "Ad Skip" ? "◌" : "✦"}
+                </Text>
+                <Text style={[styles.toolText, { color: p.text }]}>
+                  {label}
+                </Text>
+                <Text style={[styles.small, { color: p.muted }]}>
+                  Unavailable
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setSleepOpen(!sleepOpen)}
+            style={[
+              styles.sleepEntry,
+              { backgroundColor: p.wash, borderColor: p.line },
+            ]}
+          >
+            <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
+              ☾ Sleep
+            </Text>
+            <Text style={[styles.small, { color: p.muted }]}>
+              Timer or AI Sleep
+            </Text>
+          </Pressable>
+          {sleepOpen ? (
+            <View style={styles.sleepPanel}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                SLEEP TIMER
+              </Text>
+              <View style={styles.timerGrid}>
+                {[10, 15, 20, 30, 45, 60].map((minutes) => (
+                  <Chip
+                    key={minutes}
+                    label={`${minutes} min`}
+                    p={p}
+                    onPress={() => setTimer(minutes)}
+                  />
+                ))}
+              </View>
+              <Pressable
+                onPress={() => {
+                  timer.current?.start({ kind: "end_of_episode" });
+                  setNotice(
+                    "Sleep Timer will pause at the end of this episode.",
+                  );
+                }}
+              >
+                <Text style={[styles.link, { color: p.accent2 }]}>
+                  End of episode
+                </Text>
+              </Pressable>
+              <Glass p={p} style={styles.aiPanel}>
+                <LivingSleep p={p} active={aiActive} />
+                <Text style={[styles.aiHeadline, { color: p.text }]}>
+                  ✦ AI Sleep
+                </Text>
+                <Text style={[styles.aiCopy, { color: p.muted }]}>
+                  Fall asleep. We’ll take care of the rest.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    ai.current?.start();
+                    setAiActive(true);
+                    setNotice("AI Sleep active. Listening continues.");
+                  }}
+                  style={[styles.primary, { backgroundColor: p.accent2 }]}
+                >
+                  <Text style={styles.primaryText}>
+                    {aiActive ? "AI Sleep active" : "Start AI Sleep"}
+                  </Text>
+                </Pressable>
+                {aiActive ? (
+                  <View style={styles.extensionRow}>
+                    {[5, 15, 30].map((minutes) => (
+                      <Chip
+                        key={minutes}
+                        label={`+${minutes} min`}
+                        p={p}
+                        onPress={() => extend(minutes)}
+                      />
+                    ))}
+                  </View>
+                ) : null}
+                <Text style={[styles.tiny, { color: p.muted }]}>
+                  On-device signals only. Star Cast does not claim physiological
+                  sleep detection.
+                </Text>
+              </Glass>
+            </View>
+          ) : null}
+          {notice ? (
+            <Text style={[styles.notice, { color: p.muted }]}>{notice}</Text>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
 }
-export default function App(){return <PlaybackProvider><AppShell/></PlaybackProvider>}
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#16171b'},screen:{padding:20,gap:14},logo:{color:'#fff',fontWeight:'800',letterSpacing:-1,fontSize:19},title:{color:'#fff',fontSize:27,fontWeight:'700',marginTop:12,flexShrink:1},eyebrow:{color:'#d791b5',fontSize:11,fontWeight:'700'},muted:{color:'#aaa6b1',fontSize:14},selected:{color:tint,fontSize:14,fontWeight:'700'},error:{color:'#ffb4c9',paddingVertical:10},input:{backgroundColor:'#292a30',borderRadius:16,color:'#fff',padding:14,fontSize:16},card:{backgroundColor:'#292a30',borderRadius:18,padding:15,gap:8},cardTitle:{color:'#fff',fontSize:16,fontWeight:'600'},player:{backgroundColor:'#22232a',borderRadius:23,padding:18,gap:10,marginTop:8},track:{height:5,backgroundColor:'#44444c',borderRadius:4,overflow:'hidden'},fill:{height:'100%',backgroundColor:tint},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},nav:{flexDirection:'row',justifyContent:'space-between',paddingTop:12},divider:{height:1,backgroundColor:'#414149',marginVertical:4},aiButton:{backgroundColor:'#312d42',padding:13,borderRadius:16,alignItems:'center'},aiText:{color:'#ede9ff',fontWeight:'700'},extension:{backgroundColor:'#2c2d35',paddingHorizontal:12,paddingVertical:8,borderRadius:14},timerOptions:{flexDirection:'row',flexWrap:'wrap',gap:7},customInput:{flex:1,backgroundColor:'#292a30',borderRadius:12,color:'#fff',paddingHorizontal:12,paddingVertical:9}});
+
+function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
+  let { source, snapshot, play, pause } = usePlayback();
+  if (!source) return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Open now playing"
+      onPress={onOpen}
+      style={[
+        styles.mini,
+        { backgroundColor: p.surfaceStrong, borderColor: p.line },
+      ]}
+    >
+      <Art url={source.artworkUrl} size={42} radius={12} />
+      <View style={styles.miniCopy}>
+        <Text numberOfLines={1} style={[styles.miniTitle, { color: p.text }]}>
+          {source.title}
+        </Text>
+        <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+          {source.show}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+        onPress={(event) => {
+          event.stopPropagation();
+          snapshot.playing ? pause() : play(source);
+        }}
+        style={[styles.miniPlay, { backgroundColor: p.text }]}
+      >
+        <Text style={{ color: p.bg }}>{snapshot.playing ? "Ⅱ" : "▶"}</Text>
+      </Pressable>
+    </Pressable>
+  );
+}
+
+function Listen({
+  state,
+  onPlay,
+  p,
+}: {
+  state: ListenerState;
+  onPlay: (e: StoredEpisode) => void;
+  p: Theme;
+}) {
+  let [filter, setFilter] = useState("Recent"),
+    [popular, setPopular] = useState("Week"),
+    items = [...state.history];
+  let followedEpisodes = state.saved.filter(
+    (x) => !items.some((y) => y.id === x.id),
+  );
+  let episodes = (items.length ? items : followedEpisodes).slice(0, 5);
+  if (filter === "Popular")
+    episodes = [...episodes].sort(
+      (a, b) => (b.playedAt || 0) - (a.playedAt || 0),
+    );
+  return (
+    <>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>
+        YOUR LISTENING SPACE
+      </Text>
+      <View style={styles.listenHeading}>
+        <View>
+          <Text style={[styles.display, { color: p.text }]}>
+            Listen{`\n`}beautifully.
+          </Text>
+        </View>
+        <View style={[styles.lighting, { backgroundColor: p.wash }]} />
+      </View>
+      {state.history[0] ? (
+        <Pressable
+          onPress={() => onPlay(state.history[0])}
+          style={[
+            styles.continueCard,
+            { backgroundColor: p.wash, borderColor: p.line },
+          ]}
+        >
+          <Art url={state.history[0].artworkUrl} size={88} radius={21} />
+          <View style={styles.continueBody}>
+            <Text style={[styles.eyebrow, { color: p.accent }]}>
+              CONTINUE LISTENING
+            </Text>
+            <Text
+              numberOfLines={2}
+              style={[styles.continueTitle, { color: p.text }]}
+            >
+              {state.history[0].title}
+            </Text>
+            <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+              {state.history[0].showName}
+            </Text>
+          </View>
+          <Text style={[styles.playGlyph, { color: p.text }]}>▶</Text>
+        </Pressable>
+      ) : (
+        <Glass p={p} style={styles.emptyHero}>
+          <Text style={[styles.emptyIcon, { color: p.accent2 }]}>◌</Text>
+          <Text style={[styles.emptyTitle, { color: p.text }]}>
+            Your next great listen is waiting.
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Search the live podcast catalogue to begin.
+          </Text>
+        </Glass>
+      )}
+      <Section
+        title="Your Episodes"
+        action={
+          state.following.length ? `${state.following.length} shows` : undefined
+        }
+        p={p}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipScroll}
+        >
+          {["Recent", "Best Rated", "Popular"].map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              active={filter === item}
+              onPress={() => setFilter(item)}
+              p={p}
+            />
+          ))}
+        </ScrollView>
+        {filter === "Popular" ? (
+          <View style={styles.subFilters}>
+            {["Week", "Month"].map((item) => (
+              <Chip
+                key={item}
+                label={item}
+                active={popular === item}
+                onPress={() => setPopular(item)}
+                p={p}
+              />
+            ))}
+          </View>
+        ) : null}
+        {episodes.length ? (
+          episodes.map((episode) => (
+            <EpisodeRow
+              key={episode.id}
+              episode={episode}
+              onPress={() => onPlay(episode)}
+              p={p}
+            />
+          ))
+        ) : (
+          <Text style={[styles.emptyInline, { color: p.muted }]}>
+            Episodes from your real follows and listening history appear here.
+          </Text>
+        )}
+      </Section>
+      <Section title="For You" action="From your library" p={p}>
+        {state.following.length ? (
+          <Text style={[styles.emptyInline, { color: p.muted }]}>
+            New publisher episodes will appear after you open a followed show.
+            Recommendations remain off until the server feature control enables
+            them.
+          </Text>
+        ) : (
+          <Text style={[styles.emptyInline, { color: p.muted }]}>
+            Follow shows in Search to make this personal. Star Cast does not
+            invent recommendations.
+          </Text>
+        )}
+      </Section>
+    </>
+  );
+}
+
+function Following({
+  state,
+  onOpen,
+  p,
+}: {
+  state: ListenerState;
+  onOpen: (show: CatalogueShow) => void;
+  p: Theme;
+}) {
+  let [order, setOrder] = useState("Latest"),
+    [query, setQuery] = useState("");
+  let shows = state.following.filter((s) =>
+    `${s.name} ${s.publisher}`.toLowerCase().includes(query.toLowerCase()),
+  );
+  if (order === "A–Z") shows.sort((a, b) => a.name.localeCompare(b.name));
+  if (order === "Most listened")
+    shows.sort(
+      (a, b) =>
+        state.history.filter((x) => x.showId === b.id).length -
+        state.history.filter((x) => x.showId === a.id).length,
+    );
+  return (
+    <>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>YOUR COLLECTION</Text>
+      <Text style={[styles.display, { color: p.text }]}>Following</Text>
+      <View
+        style={[
+          styles.searchBox,
+          { backgroundColor: p.surface, borderColor: p.line },
+        ]}
+      >
+        <Text style={{ color: p.muted, fontSize: 18 }}>⌕</Text>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search your shows"
+          placeholderTextColor={p.muted}
+          style={[styles.searchInput, { color: p.text }]}
+        />
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipScroll}
+      >
+        {["Latest", "A–Z", "Most listened"].map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            active={order === item}
+            onPress={() => setOrder(item)}
+            p={p}
+          />
+        ))}
+      </ScrollView>
+      {shows.length ? (
+        <View style={styles.showList}>
+          {shows.map((show) => (
+            <Pressable
+              key={show.id}
+              onPress={() => onOpen(show)}
+              style={[
+                styles.followCard,
+                { backgroundColor: p.surface, borderColor: p.line },
+              ]}
+            >
+              <Art url={show.art} size={74} radius={19} />
+              <View style={styles.followBody}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.followTitle, { color: p.text }]}
+                >
+                  {show.name}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.small, { color: p.muted }]}
+                >
+                  {show.publisher}
+                </Text>
+                <Text style={[styles.newEpisodes, { color: p.accent2 }]}>
+                  Publisher episodes · tap to open
+                </Text>
+              </View>
+              <Text style={[styles.chevron, { color: p.muted }]}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <Glass p={p} style={styles.emptyCard}>
+          <Text style={[styles.emptyIcon, { color: p.accent2 }]}>◌</Text>
+          <Text style={[styles.emptyTitle, { color: p.text }]}>
+            Follow the voices you return to.
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Shows you follow in Search will live here.
+          </Text>
+        </Glass>
+      )}
+    </>
+  );
+}
+
+function Search({
+  state,
+  setState,
+  onPlay,
+  onOpen,
+  p,
+}: {
+  state: ListenerState;
+  setState: (next: ListenerState) => void;
+  onPlay: (e: StoredEpisode) => void;
+  onOpen: (show: CatalogueShow) => void;
+  p: Theme;
+}) {
+  let [query, setQuery] = useState(""),
+    [mode, setMode] = useState("Podcasts"),
+    [scope, setScope] = useState("All Podcasts"),
+    [results, setResults] = useState<CatalogueShow[]>([]),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  let submit = async () => {
+    if (!query.trim() || mode !== "Podcasts") return;
+    setBusy(true);
+    setError("");
+    try {
+      let data = await searchCatalogue(query);
+      setResults(
+        scope === "My Podcasts"
+          ? data.results.filter((x) =>
+              state.following.some((s) => s.id === x.id),
+            )
+          : data.results,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Search is unavailable.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>
+        FIND SOMETHING WORTH HEARING
+      </Text>
+      <Text style={[styles.display, { color: p.text }]}>Search.</Text>
+      <View
+        style={[
+          styles.searchBox,
+          { backgroundColor: p.surface, borderColor: p.line },
+        ]}
+      >
+        <Text style={{ color: p.muted, fontSize: 18 }}>⌕</Text>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          onSubmitEditing={submit}
+          placeholder="Podcasts, hosts, topics"
+          placeholderTextColor={p.muted}
+          style={[styles.searchInput, { color: p.text }]}
+        />
+        {query ? (
+          <Pressable onPress={submit}>
+            <Text style={[styles.searchAction, { color: p.accent2 }]}>Go</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipScroll}
+      >
+        {["Podcasts", "Conversations", "Moments"].map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            active={mode === item}
+            disabled={item !== "Podcasts"}
+            onPress={() => setMode(item)}
+            p={p}
+          />
+        ))}
+      </ScrollView>
+      <View style={styles.scopeRow}>
+        {["My Podcasts", "All Podcasts"].map((item) => (
+          <Pressable key={item} onPress={() => setScope(item)}>
+            <Text
+              style={[
+                styles.scopeText,
+                {
+                  color: scope === item ? p.text : p.muted,
+                  textDecorationLine: scope === item ? "underline" : "none",
+                },
+              ]}
+            >
+              {item}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {mode !== "Podcasts" ? (
+        <Glass p={p} style={styles.emptyCard}>
+          <Text style={[styles.emptyTitle, { color: p.text }]}>
+            Transcript search is not ready yet.
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Conversation and moment search will appear only for genuinely
+            processed episode transcripts.
+          </Text>
+        </Glass>
+      ) : null}
+      {error ? (
+        <Text style={{ color: "#E78FA9" }}>{error}</Text>
+      ) : null}
+      {busy ? (
+        <Text style={[styles.emptyInline, { color: p.muted }]}>
+          Searching the live podcast catalogue…
+        </Text>
+      ) : null}
+      {!results.length && !busy && mode === "Podcasts" ? (
+        <View style={styles.suggestions}>
+          <Text style={[styles.sectionTitle, { color: p.text }]}>
+            Try a prompt
+          </Text>
+          {[
+            "A thoughtful technology interview",
+            "A calm science podcast",
+            "Smart business stories",
+          ].map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => {
+                setQuery(item);
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    let data = await searchCatalogue(item);
+                    setResults(data.results);
+                  } catch {
+                    setError("Search is temporarily unavailable.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              style={[
+                styles.prompt,
+                { backgroundColor: p.surface, borderColor: p.line },
+              ]}
+            >
+              <Text style={[styles.promptStar, { color: p.accent2 }]}>✦</Text>
+              <Text style={[styles.promptText, { color: p.text }]}>{item}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      <View style={styles.resultGrid}>
+        {results.map((show) => (
+          <Pressable
+            key={show.id}
+            onPress={() => onOpen(show)}
+            style={styles.showTile}
+          >
+            <Art url={show.art} size={150} radius={22} />
+            <Text
+              numberOfLines={2}
+              style={[styles.showTitle, { color: p.text }]}
+            >
+              {show.name}
+            </Text>
+            <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+              {show.publisher}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </>
+  );
+}
+
+function Library({
+  state,
+  onPlay,
+  p,
+}: {
+  state: ListenerState;
+  onPlay: (e: StoredEpisode) => void;
+  p: Theme;
+}) {
+  let [section, setSection] = useState("Saved Episodes"),
+    maps: { [key: string]: StoredEpisode[] } = {
+      "Saved Episodes": state.saved,
+      "Saved Moments": [],
+      Downloads: [],
+      History: state.history,
+    };
+  let items = maps[section];
+  let copy =
+    section === "Saved Moments"
+      ? "Save a verified moment when transcript intelligence is available."
+      : section === "Downloads"
+        ? "Offline downloads are not enabled in this Expo Go build."
+        : section === "History"
+          ? "Your played episodes will appear here."
+          : "Save an episode to keep it close.";
+  return (
+    <>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>
+        KEEP WHAT MATTERS
+      </Text>
+      <Text style={[styles.display, { color: p.text }]}>Library</Text>
+      <View style={styles.libraryTabs}>
+        {["Saved Episodes", "Saved Moments", "Downloads", "History"].map(
+          (item) => (
+            <Pressable
+              key={item}
+              onPress={() => setSection(item)}
+              style={[
+                styles.libraryTab,
+                {
+                  borderBottomColor:
+                    section === item ? p.accent2 : "transparent",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: section === item ? p.text : p.muted },
+                ]}
+              >
+                {item}
+              </Text>
+            </Pressable>
+          ),
+        )}
+      </View>
+      {items.length ? (
+        items.map((episode) => (
+          <EpisodeRow
+            key={episode.id}
+            episode={episode}
+            onPress={() => onPlay(episode)}
+            p={p}
+          />
+        ))
+      ) : (
+        <Glass p={p} style={styles.emptyCard}>
+          <Text style={[styles.emptyIcon, { color: p.accent2 }]}>
+            {section === "Downloads" ? "↓" : "♡"}
+          </Text>
+          <Text style={[styles.emptyTitle, { color: p.text }]}>{section}</Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>{copy}</Text>
+        </Glass>
+      )}
+    </>
+  );
+}
+
+function Profile({
+  state,
+  setState,
+  installation,
+  p,
+}: {
+  state: ListenerState;
+  setState: (state: ListenerState) => void;
+  installation?: string;
+  p: Theme;
+}) {
+  return (
+    <>
+      <Text style={[styles.eyebrow, { color: p.accent }]}>
+        YOUR LISTENING SPACE
+      </Text>
+      <Text style={[styles.display, { color: p.text }]}>Profile</Text>
+      <Glass p={p} style={styles.profileHero}>
+        <View style={[styles.avatarLarge, { backgroundColor: p.wash }]}>
+          <Text style={{ color: p.accent2, fontSize: 27 }}>✦</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.followTitle, { color: p.text }]}>
+            Private by default
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Anonymous listener · {installation ? "on this device" : "preparing"}
+          </Text>
+        </View>
+      </Glass>
+      <Section title="Appearance" p={p}>
+        <Pressable
+          onPress={() => setState({ ...state, nightMode: !state.nightMode })}
+          style={[styles.setting, { borderBottomColor: p.line }]}
+        >
+          <Text style={[styles.settingTitle, { color: p.text }]}>
+            {state.nightMode ? "Night mode" : "Day mode"}
+          </Text>
+          <Text style={[styles.small, { color: p.muted }]}>Tap to switch</Text>
+        </Pressable>
+      </Section>
+      <Section title="Listening allowance" p={p}>
+        <Glass p={p} style={styles.allowance}>
+          <Text style={[styles.allowanceNumber, { color: p.text }]}>
+            10 hours
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            free each month
+          </Text>
+          <Text style={[styles.tiny, { color: p.muted }]}>
+            Referral credits are verified by the server before they are
+            displayed or awarded.
+          </Text>
+        </Glass>
+      </Section>
+      <Section title="Referrals" p={p}>
+        <Glass p={p} style={styles.referral}>
+          <Text style={[styles.followTitle, { color: p.text }]}>
+            Give listening time.
+          </Text>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Each qualified referral permanently adds 5 hours every month.
+          </Text>
+          <Text style={[styles.tiny, { color: p.muted }]}>
+            Pending and earned referral entitlements appear here only after
+            server verification.
+          </Text>
+        </Glass>
+      </Section>
+      <Section title="AI Sleep" p={p}>
+        <Text style={[styles.emptyCopy, { color: p.muted }]}>
+          AI Sleep learns from extensions and morning feedback on this device.
+          It uses no physiological detection and does not upload motion streams.
+        </Text>
+      </Section>
+    </>
+  );
+}
+
+function ShowDetail({
+  show,
+  state,
+  setState,
+  onPlay,
+  onBack,
+  p,
+}: {
+  show: CatalogueShow;
+  state: ListenerState;
+  setState: (next: ListenerState) => void;
+  onPlay: (e: StoredEpisode) => void;
+  onBack: () => void;
+  p: Theme;
+}) {
+  let [episodes, setEpisodes] = useState<CatalogueEpisode[]>([]),
+    [busy, setBusy] = useState(true),
+    [error, setError] = useState("");
+  useEffect(() => {
+    let open = true;
+    void (async () => {
+      if (!show.feedUrl) {
+        setBusy(false);
+        setError(
+          "This catalogue record does not provide a public publisher feed.",
+        );
+        return;
+      }
+      try {
+        let feed = await loadFeed(show.feedUrl);
+        if (open) setEpisodes(feed.episodes.filter((x) => x.audioUrl));
+      } catch (e) {
+        if (open)
+          setError(
+            e instanceof Error
+              ? e.message
+              : "Publisher episodes are unavailable.",
+          );
+      } finally {
+        if (open) setBusy(false);
+      }
+    })();
+    return () => {
+      open = false;
+    };
+  }, [show]);
+  let following = state.following.some((x) => x.id === show.id);
+  return (
+    <>
+      <Pressable onPress={onBack} style={styles.back}>
+        <Text style={[styles.link, { color: p.accent2 }]}>‹ Back</Text>
+      </Pressable>
+      <View style={styles.showHeader}>
+        <Art url={show.art} size={112} radius={27} />
+        <View style={styles.showHeaderCopy}>
+          <Text
+            numberOfLines={3}
+            style={[styles.showDetailTitle, { color: p.text }]}
+          >
+            {show.name}
+          </Text>
+          <Text
+            numberOfLines={2}
+            style={[styles.emptyCopy, { color: p.muted }]}
+          >
+            {show.publisher}
+          </Text>
+        </View>
+      </View>
+      <Pressable
+        onPress={() =>
+          setState({ ...state, following: toggleById(state.following, show) })
+        }
+        style={[
+          styles.primary,
+          {
+            backgroundColor: following ? p.surfaceStrong : p.accent2,
+            borderColor: p.line,
+            borderWidth: following ? 1 : 0,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.primaryText, { color: following ? p.text : "#fff" }]}
+        >
+          {following ? "✓ Following" : "＋ Follow show"}
+        </Text>
+      </Pressable>
+      <Text style={[styles.emptyCopy, { color: p.muted, marginTop: 12 }]}>
+        Live publisher feed · real streamable episodes
+      </Text>
+      <Section title="Episodes" p={p}>
+        {busy ? (
+          <Text style={[styles.emptyInline, { color: p.muted }]}>
+            Loading publisher episodes…
+          </Text>
+        ) : null}
+        {error ? (
+          <Text style={{ color: "#E78FA9" }}>{error}</Text>
+        ) : null}
+        {episodes.map((episode) => {
+          let stored = asStored(episode, show),
+            saved = state.saved.some((x) => x.id === stored.id);
+          return (
+            <EpisodeRow
+              key={episode.id}
+              episode={stored}
+              p={p}
+              saved={saved}
+              onPress={() => onPlay(stored)}
+              onSave={() =>
+                setState({ ...state, saved: toggleById(state.saved, stored) })
+              }
+            />
+          );
+        })}
+      </Section>
+    </>
+  );
+}
+
+function AppShell() {
+  let [page, setPage] = useState<Page>("Listen"),
+    [selectedShow, setSelectedShow] = useState<CatalogueShow | null>(null),
+    [installation, setInstallation] = useState<string>(),
+    [state, setState] = useState<ListenerState>(emptyListenerState()),
+    [hydrated, setHydrated] = useState(false),
+    [playerOpen, setPlayerOpen] = useState(false);
+  let p = state.nightMode ? dark : light;
+  useEffect(() => {
+    void (async () => {
+      let value = await SecureStore.getItemAsync(
+        "star-cast-installation-credential",
+      );
+      if (!value) {
+        value = Crypto.randomUUID();
+        await SecureStore.setItemAsync(
+          "star-cast-installation-credential",
+          value,
+        );
+      }
+      setInstallation(value);
+      setState(await loadListenerState());
+      setHydrated(true);
+    })();
+  }, []);
+  useEffect(() => {
+    if (hydrated) void saveListenerState(state);
+  }, [hydrated, state]);
+  let playStored = (episode: StoredEpisode) => {
+    let source: Source = {
+      episodeId: episode.id,
+      url: episode.audioUrl,
+      title: episode.title,
+      show: episode.showName,
+      artworkUrl: episode.artworkUrl,
+    };
+    setState((current) => ({
+      ...current,
+      history: recordHistory(current.history, episode),
+    }));
+    setPlayerOpen(true);
+    return source;
+  };
+  return (
+    <AppContent
+      page={page}
+      setPage={setPage}
+      selectedShow={selectedShow}
+      setSelectedShow={setSelectedShow}
+      state={state}
+      setState={setState}
+      installation={installation}
+      p={p}
+      playerOpen={playerOpen}
+      setPlayerOpen={setPlayerOpen}
+      playStored={playStored}
+    />
+  );
+}
+
+function AppContent({
+  page,
+  setPage,
+  selectedShow,
+  setSelectedShow,
+  state,
+  setState,
+  installation,
+  p,
+  playerOpen,
+  setPlayerOpen,
+  playStored,
+}: {
+  page: Page;
+  setPage: (p: Page) => void;
+  selectedShow: CatalogueShow | null;
+  setSelectedShow: (s: CatalogueShow | null) => void;
+  state: ListenerState;
+  setState: (s: ListenerState | ((v: ListenerState) => ListenerState)) => void;
+  installation?: string;
+  p: Theme;
+  playerOpen: boolean;
+  setPlayerOpen: (v: boolean) => void;
+  playStored: (e: StoredEpisode) => Source;
+}) {
+  let { play } = usePlayback();
+  let run = (episode: StoredEpisode) => {
+    void play(playStored(episode));
+  };
+  let openShow = (show: CatalogueShow) => {
+    setSelectedShow(show);
+    setPage("Show");
+  };
+  let content =
+    page === "Listen" ? (
+      <Listen state={state} onPlay={run} p={p} />
+    ) : page === "Following" ? (
+      <Following state={state} onOpen={openShow} p={p} />
+    ) : page === "Search" ? (
+      <Search
+        state={state}
+        setState={setState}
+        onPlay={run}
+        onOpen={openShow}
+        p={p}
+      />
+    ) : page === "Library" ? (
+      <Library state={state} onPlay={run} p={p} />
+    ) : page === "Profile" ? (
+      <Profile
+        state={state}
+        setState={setState}
+        installation={installation}
+        p={p}
+      />
+    ) : selectedShow ? (
+      <ShowDetail
+        show={selectedShow}
+        state={state}
+        setState={setState}
+        onPlay={run}
+        onBack={() => setPage("Search")}
+        p={p}
+      />
+    ) : null;
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
+      <View
+        pointerEvents="none"
+        style={[styles.ambientOne, { backgroundColor: p.wash }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.ambientTwo, { backgroundColor: p.accent2 }]}
+      />
+      <View style={styles.root}>
+        <View style={styles.topbar}>
+          <Pressable
+            onPress={() => setPage("Listen")}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.wordmark, { color: p.text }]}>
+              STAR <Text style={{ color: p.accent }}>✦</Text> CAST
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            onPress={() => setPage("Profile")}
+            style={[
+              styles.avatar,
+              { backgroundColor: p.wash, borderColor: p.line },
+            ]}
+          >
+            <Text style={{ color: p.accent2, fontWeight: "800" }}>O</Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          {content}
+        </ScrollView>
+        <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} />
+        {page !== "Show" && page !== "Profile" ? (
+          <View
+            style={[
+              styles.tabBar,
+              { backgroundColor: p.surfaceStrong, borderColor: p.line },
+            ]}
+          >
+            {(
+              [
+                { key: "Listen", icon: "◉" },
+                { key: "Following", icon: "◌" },
+                { key: "Search", icon: "⌕" },
+                { key: "Library", icon: "▱" },
+              ] as const
+            ).map((tab) => (
+              <Pressable
+                key={tab.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: page === tab.key }}
+                onPress={() => setPage(tab.key)}
+                style={[
+                  styles.tab,
+                  page === tab.key && { backgroundColor: p.wash },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tabIcon,
+                    { color: page === tab.key ? p.text : p.muted },
+                  ]}
+                >
+                  {tab.icon}
+                </Text>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: page === tab.key ? p.text : p.muted },
+                  ]}
+                >
+                  {tab.key}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={{ height: 18 }} />
+        )}
+      </View>
+      <PlayerSheet
+        visible={playerOpen}
+        onClose={() => setPlayerOpen(false)}
+        p={p}
+      />
+    </SafeAreaView>
+  );
+}
+export default function App() {
+  return (
+    <PlaybackProvider>
+      <AppShell />
+    </PlaybackProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  root: { flex: 1, maxWidth: 760, width: "100%", alignSelf: "center" },
+  ambientOne: {
+    position: "absolute",
+    width: 330,
+    height: 330,
+    borderRadius: 180,
+    top: -150,
+    right: -100,
+    opacity: 0.48,
+  },
+  ambientTwo: {
+    position: "absolute",
+    width: 190,
+    height: 190,
+    borderRadius: 130,
+    top: 260,
+    left: -125,
+    opacity: 0.12,
+  },
+  topbar: {
+    height: 62,
+    paddingHorizontal: 21,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  wordmark: { fontSize: 18, fontWeight: "800", letterSpacing: -0.8 },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: { paddingHorizontal: 20, paddingBottom: 146 },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.45,
+    marginTop: 11,
+  },
+  display: {
+    fontSize: 38,
+    lineHeight: 40,
+    fontWeight: "800",
+    letterSpacing: -1.8,
+    marginTop: 8,
+  },
+  listenHeading: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  lighting: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    marginTop: 13,
+    opacity: 0.8,
+  },
+  glass: { borderWidth: 1, borderRadius: 22, padding: 17 },
+  continueCard: {
+    marginTop: 23,
+    borderWidth: 1,
+    borderRadius: 27,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    minHeight: 121,
+  },
+  continueBody: { flex: 1, minWidth: 0 },
+  continueTitle: {
+    fontSize: 17,
+    lineHeight: 21,
+    fontWeight: "700",
+    marginTop: 6,
+  },
+  playGlyph: { fontSize: 19 },
+  emptyHero: { marginTop: 23, alignItems: "center", paddingVertical: 28 },
+  emptyCard: { alignItems: "center", paddingVertical: 29, marginTop: 22 },
+  emptyIcon: { fontSize: 28, marginBottom: 8 },
+  emptyTitle: { fontSize: 17, fontWeight: "700", textAlign: "center" },
+  emptyCopy: { fontSize: 14, lineHeight: 20, marginTop: 4 },
+  section: { marginTop: 29 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginBottom: 9,
+  },
+  sectionTitle: { fontSize: 25, fontWeight: "700", letterSpacing: -0.65 },
+  small: { fontSize: 13, lineHeight: 18 },
+  tiny: { fontSize: 11, lineHeight: 16, marginTop: 10, textAlign: "center" },
+  chipScroll: { gap: 8, paddingVertical: 4 },
+  chip: {
+    minHeight: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    paddingHorizontal: 13,
+    justifyContent: "center",
+  },
+  chipText: { fontSize: 13, fontWeight: "700" },
+  subFilters: { flexDirection: "row", gap: 7, marginTop: 3 },
+  episode: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  episodeBody: { flex: 1, minWidth: 0 },
+  episodeTitle: { fontSize: 15, lineHeight: 19, fontWeight: "700" },
+  saveButton: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveIcon: { fontSize: 22 },
+  emptyInline: { fontSize: 14, lineHeight: 20, paddingVertical: 15 },
+  searchBox: {
+    height: 52,
+    borderRadius: 17,
+    borderWidth: 1,
+    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    gap: 9,
+  },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 10 },
+  searchAction: { fontSize: 14, fontWeight: "800" },
+  scopeRow: { flexDirection: "row", gap: 19, marginTop: 15 },
+  scopeText: { fontSize: 14, fontWeight: "700" },
+  suggestions: { marginTop: 29, gap: 9 },
+  prompt: {
+    borderRadius: 17,
+    borderWidth: 1,
+    minHeight: 54,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  promptStar: { fontSize: 18 },
+  promptText: { fontSize: 14, fontWeight: "600" },
+  resultGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 17,
+    marginTop: 23,
+  },
+  showTile: { width: "46%" },
+  showTitle: { fontSize: 15, fontWeight: "700", lineHeight: 19, marginTop: 8 },
+  showList: { gap: 11, marginTop: 20 },
+  followCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+  },
+  followBody: { flex: 1, minWidth: 0 },
+  followTitle: { fontSize: 16, fontWeight: "700" },
+  newEpisodes: { fontSize: 12, fontWeight: "700", marginTop: 7 },
+  chevron: { fontSize: 28, paddingHorizontal: 5 },
+  libraryTabs: { flexDirection: "row", marginTop: 22, marginHorizontal: -4 },
+  libraryTab: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 2,
+    paddingHorizontal: 4,
+  },
+  tabText: { fontSize: 11, fontWeight: "700", textAlign: "center" },
+  profileHero: {
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  avatarLarge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  setting: {
+    minHeight: 58,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  settingTitle: { fontSize: 16, fontWeight: "700" },
+  allowance: { alignItems: "flex-start" },
+  allowanceNumber: { fontSize: 29, fontWeight: "800", letterSpacing: -1 },
+  referral: { alignItems: "flex-start" },
+  back: { minHeight: 40, justifyContent: "center" },
+  link: { fontSize: 15, fontWeight: "700" },
+  showHeader: {
+    flexDirection: "row",
+    gap: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  showHeaderCopy: { flex: 1, minWidth: 0 },
+  showDetailTitle: {
+    fontSize: 27,
+    lineHeight: 30,
+    fontWeight: "800",
+    letterSpacing: -1,
+  },
+  primary: {
+    minHeight: 50,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 22,
+  },
+  primaryText: { fontSize: 15, fontWeight: "800" },
+  mini: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 78,
+    minHeight: 61,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  miniCopy: { flex: 1, minWidth: 0 },
+  miniTitle: { fontSize: 14, fontWeight: "700" },
+  miniPlay: {
+    width: 37,
+    height: 37,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabBar: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 11,
+    height: 62,
+    borderRadius: 23,
+    borderWidth: 1,
+    padding: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  tab: {
+    flex: 1,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabIcon: { fontSize: 17, lineHeight: 19 },
+  tabLabel: { fontSize: 10, fontWeight: "700" },
+  modalSafe: { flex: 1 },
+  playerSheet: { padding: 21, paddingBottom: 50 },
+  sheetHeader: {
+    height: 42,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  roundButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playerArtwork: {
+    alignSelf: "center",
+    width: 266,
+    height: 266,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 13,
+  },
+  playerTitle: {
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: "800",
+    letterSpacing: -0.7,
+    marginTop: 25,
+    textAlign: "center",
+  },
+  playerShow: { fontSize: 15, marginTop: 5, textAlign: "center" },
+  progressTouch: {
+    height: 5,
+    borderRadius: 3,
+    overflow: "hidden",
+    marginTop: 28,
+  },
+  progressFill: { height: "100%", borderRadius: 3 },
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+  transport: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 19,
+  },
+  transportSide: {
+    minWidth: 72,
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playButton: {
+    width: 63,
+    height: 63,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  speedRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 7,
+    marginTop: 18,
+  },
+  playerTools: {
+    marginTop: 24,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(128,128,128,.25)",
+  },
+  tool: {
+    minHeight: 59,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  toolIcon: { fontSize: 18 },
+  toolText: { fontSize: 15, fontWeight: "700", flex: 1 },
+  sleepEntry: {
+    marginTop: 18,
+    minHeight: 62,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sleepEntryTitle: { fontSize: 16, fontWeight: "800" },
+  sleepPanel: { marginTop: 17 },
+  timerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginVertical: 12,
+  },
+  aiPanel: { alignItems: "center", marginTop: 18, padding: 18 },
+  organism: {
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 3,
+  },
+  orbit: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 1,
+    opacity: 0.32,
+  },
+  sleepPoint: { position: "absolute", width: 4, height: 4, borderRadius: 2 },
+  core: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiHeadline: { fontSize: 20, fontWeight: "800", marginTop: 14 },
+  aiCopy: { fontSize: 14, marginTop: 4, textAlign: "center" },
+  extensionRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  notice: { fontSize: 13, textAlign: "center", marginTop: 13 },
+});
