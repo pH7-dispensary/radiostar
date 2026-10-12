@@ -25,11 +25,14 @@ import {
   type Source,
 } from "./src/PlaybackProvider";
 import {
+  findEpisodeMoment,
   loadFeed,
   loadIntelligenceStatus,
+  requestEpisodeIntelligence,
   searchCatalogue,
   type CatalogueEpisode,
   type CatalogueShow,
+  type EpisodeMoment,
   type IntelligenceStatus,
 } from "./src/api";
 import {
@@ -792,6 +795,8 @@ function PlayerSheet({
     [aiActive, setAiActive] = useState(false),
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [intelligence, setIntelligence] = useState<IntelligenceStatus | null>(null),
+    [momentQuery, setMomentQuery] = useState(""),
+    [moments, setMoments] = useState<EpisodeMoment[]>([]),
     [notice, setNotice] = useState("");
   useEffect(() => {
     timer.current = new NativeSleepTimer(pause);
@@ -858,6 +863,49 @@ function PlayerSheet({
     setEarliestPauseAt(null);
     setNotice("AI Sleep stopped. Playback continues.");
     feedback.light();
+  };
+  let analyseEpisode = async (capability: "brief" | "chapters") => {
+    if (!source.feedUrl) return;
+    setNotice("Analysing this publisher transcript…");
+    try {
+      let status = await requestEpisodeIntelligence(
+        source.feedUrl,
+        source.episodeId,
+        capability,
+      );
+      setIntelligence(status);
+      setNotice(
+        status.state === "READY"
+          ? "Episode intelligence is ready."
+          : status.reason || "Episode analysis is not available for this episode.",
+      );
+      if (status.state === "READY") feedback.success();
+    } catch {
+      setNotice("Analysis could not start on this development device.");
+    }
+  };
+  let findMoment = async () => {
+    if (!source.feedUrl || momentQuery.trim().length < 2) {
+      setNotice("Ask about a topic from this episode.");
+      return;
+    }
+    setNotice("Finding a grounded moment…");
+    try {
+      let result = await findEpisodeMoment(
+        source.feedUrl,
+        source.episodeId,
+        momentQuery.trim(),
+      );
+      setIntelligence(result.status);
+      setMoments(result.moments);
+      setNotice(
+        result.moments.length
+          ? "Moments are grounded in the publisher transcript."
+          : "No timestamped moment matched that question.",
+      );
+    } catch {
+      setNotice("Moment search is not available for this episode.");
+    }
   };
   return (
     <Modal
@@ -969,13 +1017,19 @@ function PlayerSheet({
             ))}
           </View>
           <View style={styles.playerTools}>
-            {["AI Episode Brief", "Explore Episode", "Ad Skip"].map((label) => (
+            {[
+              { label: "AI Episode Brief", capability: "brief" as const },
+              { label: "Explore Episode", capability: "chapters" as const },
+              { label: "Ad Skip", capability: null },
+            ].map(({ label, capability }) => (
               <Pressable
                 key={label}
+                accessibilityRole="button"
+                accessibilityLabel={label}
                 onPress={() =>
-                  setNotice(
-                    `${label} is available only when this episode has verified processing.`,
-                  )
+                  capability
+                    ? void analyseEpisode(capability)
+                    : setNotice("Automatic Ad Skip remains off while it is evaluated.")
                 }
                 style={[styles.tool, { borderColor: p.line }]}
               >
@@ -994,15 +1048,15 @@ function PlayerSheet({
                   {label}
                 </Text>
                 <Text style={[styles.small, { color: p.muted }]}>
-                  {label === "AI Episode Brief"
-                    ? intelligence?.state === "READY"
+                  {label === "Ad Skip"
+                    ? "Safety off"
+                    : intelligence?.state === "READY"
                       ? "Ready"
                       : intelligence?.readiness
-                        ? "Transcript found"
+                        ? "Analyse"
                         : intelligence?.state === "FAILED"
                           ? "Unavailable"
-                          : "Not analysed"
-                    : "Unavailable"}
+                          : "Analyse"}
                 </Text>
               </Pressable>
             ))}
@@ -1021,8 +1075,8 @@ function PlayerSheet({
             </Glass>
           ) : intelligence?.readiness || source.hasPublisherTranscript ? (
             <Text style={[styles.notice, { color: p.muted }]}>
-              Publisher transcript available. Analysis remains off until
-              authorised on this server.
+              Publisher transcript available. Analyse it to unlock grounded
+              episode intelligence.
             </Text>
           ) : null}
           {intelligence?.chapters?.length ? (
@@ -1041,6 +1095,42 @@ function PlayerSheet({
                     <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>{chapter.description}</Text>
                   </View>
                   <Text style={[styles.small, { color: p.accent2 }]}>{format(chapter.startMs)}</Text>
+                </Pressable>
+              ))}
+            </Glass>
+          ) : null}
+          {intelligence?.state === "READY" ? (
+            <Glass p={p} style={styles.briefCard}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>FIND A MOMENT</Text>
+              <View style={styles.momentSearchRow}>
+                <TextInput
+                  accessibilityLabel="Find a moment in this episode"
+                  value={momentQuery}
+                  onChangeText={setMomentQuery}
+                  onSubmitEditing={() => void findMoment()}
+                  placeholder="Ask about a topic"
+                  placeholderTextColor={p.muted}
+                  style={[styles.momentInput, { color: p.text, borderColor: p.line }]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Find moment"
+                  onPress={() => void findMoment()}
+                  style={[styles.momentButton, { backgroundColor: p.accent2 }]}
+                >
+                  <Ionicons name="search" size={17} color={p.bg} />
+                </Pressable>
+              </View>
+              {moments.map((moment) => (
+                <Pressable
+                  key={`${moment.segmentId}-${moment.startMs}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play ${moment.label.toLowerCase()} at ${format(moment.startMs)}`}
+                  onPress={() => seek(moment.startMs)}
+                  style={[styles.chapterRow, { borderTopColor: p.line }]}
+                >
+                  <Text numberOfLines={2} style={[styles.small, { color: p.text, flex: 1 }]}>{moment.context}</Text>
+                  <Text style={[styles.small, { color: p.accent2 }]}>{format(moment.startMs)}</Text>
                 </Pressable>
               ))}
             </Glass>
@@ -2561,6 +2651,9 @@ const styles = StyleSheet.create({
   briefCard: { marginTop: 14, gap: 8 },
   briefOverview: { fontSize: 16, lineHeight: 22, fontWeight: "700" },
   chapterRow: { minHeight: 48, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: 12 },
+  momentSearchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  momentInput: { flex: 1, minHeight: 42, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, paddingHorizontal: 12, fontSize: 14 },
+  momentButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   tool: {
     minHeight: 59,
     borderBottomWidth: StyleSheet.hairlineWidth,

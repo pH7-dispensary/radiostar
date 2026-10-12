@@ -35,15 +35,25 @@ export type IntelligenceStatus = {
   provenance?: { sourceType: string; originalFormat: string; language: string };
   paid?: { configured: boolean; enabled: boolean };
 };
+export type EpisodeMoment = {
+  rank: number;
+  label: string;
+  segmentId: string;
+  startMs: number;
+  endMs: number;
+  context: string;
+};
 const base = () =>
   process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
-async function request(path: string) {
+const developmentIntelligenceToken =
+  process.env.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN || "";
+async function request(path: string, init?: RequestInit) {
   let origin = base();
   if (!origin)
     throw Error(
       "Set EXPO_PUBLIC_API_BASE_URL to your Star Cast server LAN address (not localhost).",
     );
-  let response = await fetch(`${origin}${path}`),
+  let response = await fetch(`${origin}${path}`, init),
     body = await response.json();
   if (!response.ok)
     throw Error(body.error || "Star Cast is temporarily unavailable.");
@@ -73,4 +83,36 @@ export async function loadIntelligenceStatus(
   return request(
     `/api/intelligence/status?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=${encodeURIComponent(episodeId)}`,
   ).then((x) => x.status);
+}
+function developmentHeaders() {
+  if (!developmentIntelligenceToken)
+    throw Error(
+      "Episode analysis is available only in this configured local development build.",
+    );
+  return {
+    "content-type": "application/json",
+    "x-star-cast-dev-token": developmentIntelligenceToken,
+  };
+}
+export async function requestEpisodeIntelligence(
+  feedUrl: string,
+  episodeId: string,
+  capability: "brief" | "chapters" | "moment" = "brief",
+): Promise<IntelligenceStatus> {
+  return request("/api/intelligence/request", {
+    method: "POST",
+    headers: developmentHeaders(),
+    body: JSON.stringify({ feedUrl, episodeId, capability }),
+  }).then((x) => x.status);
+}
+export async function findEpisodeMoment(
+  feedUrl: string,
+  episodeId: string,
+  query: string,
+): Promise<{ status: IntelligenceStatus; moments: EpisodeMoment[] }> {
+  return request("/api/intelligence/moment", {
+    method: "POST",
+    headers: developmentHeaders(),
+    body: JSON.stringify({ feedUrl, episodeId, query }),
+  });
 }
