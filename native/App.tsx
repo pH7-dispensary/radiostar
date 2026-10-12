@@ -623,15 +623,21 @@ function Listen({
 }) {
   let [filter, setFilter] = useState("Recent"),
     [popular, setPopular] = useState("Week"),
-    items = [...state.history];
-  let followedEpisodes = state.saved.filter(
-    (x) => !items.some((y) => y.id === x.id),
-  );
-  let episodes = (items.length ? items : followedEpisodes).slice(0, 5);
+    publisherEpisodes = Object.values(state.feedEpisodes).flat(),
+    uniqueEpisodes = publisherEpisodes.filter(
+      (episode, index, list) => list.findIndex((item) => item.id === episode.id) === index,
+    ),
+    episodes = uniqueEpisodes;
   if (filter === "Popular")
-    episodes = [...episodes].sort(
-      (a, b) => (b.playedAt || 0) - (a.playedAt || 0),
+    episodes = [...uniqueEpisodes].sort(
+      (a, b) =>
+        state.history.filter((item) => item.id === b.id).length -
+        state.history.filter((item) => item.id === a.id).length,
     );
+  if (filter === "Best Rated") episodes = [];
+  let forYou = uniqueEpisodes
+    .filter((episode) => !state.history.some((item) => item.id === episode.id))
+    .slice(0, 3);
   return (
     <>
       <Text style={[styles.eyebrow, { color: p.accent }]}>
@@ -717,7 +723,7 @@ function Listen({
           </View>
         ) : null}
         {episodes.length ? (
-          episodes.map((episode) => (
+          episodes.slice(0, 5).map((episode) => (
             <EpisodeRow
               key={episode.id}
               episode={episode}
@@ -727,17 +733,18 @@ function Listen({
           ))
         ) : (
           <Text style={[styles.emptyInline, { color: p.muted }]}>
-            Episodes from your real follows and listening history appear here.
+            {filter === "Best Rated"
+              ? "Verified ratings are not available from your connected publisher feeds."
+              : "Open a followed show once to cache its real publisher episodes here."}
           </Text>
         )}
       </Section>
       <Section title="For You" action="From your library" p={p}>
-        {state.following.length ? (
-          <Text style={[styles.emptyInline, { color: p.muted }]}>
-            New publisher episodes will appear after you open a followed show.
-            Recommendations remain off until the server feature control enables
-            them.
-          </Text>
+        {forYou.length ? (
+          <>
+            <Text style={[styles.feedCaption, { color: p.muted }]}>Latest from followed publishers</Text>
+            {forYou.map((episode) => <EpisodeRow key={episode.id} episode={episode} onPress={() => onPlay(episode)} p={p} />)}
+          </>
         ) : (
           <Text style={[styles.emptyInline, { color: p.muted }]}>
             Follow shows in Search to make this personal. Star Cast does not
@@ -830,7 +837,9 @@ function Following({
                   {show.publisher}
                 </Text>
                 <Text style={[styles.newEpisodes, { color: p.accent2 }]}>
-                  Publisher episodes · tap to open
+                  {state.feedEpisodes[show.id]?.length
+                    ? `${state.feedEpisodes[show.id].length} publisher episodes cached`
+                    : "Open to load publisher episodes"}
                 </Text>
               </View>
               <Text style={[styles.chevron, { color: p.muted }]}>›</Text>
@@ -854,14 +863,10 @@ function Following({
 
 function Search({
   state,
-  setState,
-  onPlay,
   onOpen,
   p,
 }: {
   state: ListenerState;
-  setState: (next: ListenerState) => void;
-  onPlay: (e: StoredEpisode) => void;
   onOpen: (show: CatalogueShow) => void;
   p: Theme;
 }) {
@@ -871,7 +876,7 @@ function Search({
     [results, setResults] = useState<CatalogueShow[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  let submit = async () => {
+  let suggestions = Array.from(new Set([...state.following.map((show) => show.topic), "Hard Fork", "Technology", "Science"])).filter(Boolean).slice(0, 3), submit = async () => {
     if (!query.trim() || mode !== "Podcasts") return;
     setBusy(true);
     setError("");
@@ -974,11 +979,7 @@ function Search({
           <Text style={[styles.sectionTitle, { color: p.text }]}>
             Try a prompt
           </Text>
-          {[
-            "A thoughtful technology interview",
-            "A calm science podcast",
-            "Smart business stories",
-          ].map((item) => (
+          {suggestions.map((item) => (
             <Pressable
               key={item}
               onPress={() => {
@@ -1217,8 +1218,14 @@ function ShowDetail({
         return;
       }
       try {
-        let feed = await loadFeed(show.feedUrl);
-        if (open) setEpisodes(feed.episodes.filter((x) => x.audioUrl));
+        let feed = await loadFeed(show.feedUrl), streamable = feed.episodes.filter((x) => x.audioUrl);
+        if (open) {
+          setEpisodes(streamable);
+          setState({
+            ...state,
+            feedEpisodes: { ...state.feedEpisodes, [show.id]: streamable.map((episode) => asStored(episode, show)) },
+          });
+        }
       } catch (e) {
         if (open)
           setError(
@@ -1410,8 +1417,6 @@ function AppContent({
     ) : page === "Search" ? (
       <Search
         state={state}
-        setState={setState}
-        onPlay={run}
         onOpen={openShow}
         p={p}
       />
@@ -1662,6 +1667,7 @@ const styles = StyleSheet.create({
   },
   saveIcon: { fontSize: 22 },
   emptyInline: { fontSize: 14, lineHeight: 20, paddingVertical: 15 },
+  feedCaption: { fontSize: 13, marginBottom: 4 },
   searchBox: {
     height: 52,
     borderRadius: 17,
