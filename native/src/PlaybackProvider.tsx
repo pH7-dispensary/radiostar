@@ -1,6 +1,6 @@
 import {createContext,useContext,useEffect,useMemo,useRef,useState} from 'react';
 import * as SecureStore from 'expo-secure-store';
-import {createAudioPlayer,setAudioModeAsync} from 'expo-audio';
+import {createAudioPlayer,setAudioModeAsync,useAudioPlayerStatus} from 'expo-audio';
 import type {PlaybackSnapshot} from './contracts';
 
 export type Source={episodeId:string;url:string;title:string;show:string;artworkUrl?:string};
@@ -11,14 +11,14 @@ const PlaybackContext=createContext<PlaybackContextValue|null>(null);
 
 export function usePlayback(){let value=useContext(PlaybackContext);if(!value)throw Error('PlaybackProvider is required');return value}
 export function PlaybackProvider({children}:{children:React.ReactNode}){
-  let [snapshot,setSnapshot]=useState<PlaybackSnapshot>({episodeId:'',positionMs:0,durationMs:null,speed:1,playing:false,buffered:false,updatedAt:Date.now()}),[source,setSource]=useState<Source|null>(null),player=useMemo(()=>createAudioPlayer(null),[]),lastWrite=useRef(0);
+  let [snapshot,setSnapshot]=useState<PlaybackSnapshot>({episodeId:'',positionMs:0,durationMs:null,speed:1,playing:false,buffered:false,updatedAt:Date.now()}),[source,setSource]=useState<Source|null>(null),player=useMemo(()=>createAudioPlayer(null),[]),status=useAudioPlayerStatus(player),lastWrite=useRef(0);
   useEffect(()=>{
     void setAudioModeAsync({playsInSilentMode:true,shouldPlayInBackground:true,interruptionMode:'doNotMix'});
     let cancelled=false;
     void (async()=>{try{let raw=await SecureStore.getItemAsync(KEY);if(!raw||cancelled)return;let stored=JSON.parse(raw) as Persisted;if(!stored.source?.url)return;player.replace(stored.source.url);player.setPlaybackRate(stored.snapshot.speed||1);await player.seekTo((stored.snapshot.positionMs||0)/1000);if(!cancelled){setSource(stored.source);setSnapshot(s=>({...s,episodeId:stored.source.episodeId,positionMs:stored.snapshot.positionMs||0,speed:stored.snapshot.speed||1}))}}catch{/* Missing or stale state must not block playback. */}})();
-    let subscription=player.addListener('playbackStatusUpdate',(status:any)=>setSnapshot(previous=>({...previous,positionMs:Math.round((status.currentTime||0)*1000),durationMs:Number.isFinite(status.duration)?Math.round(status.duration*1000):previous.durationMs,playing:!!status.playing,buffered:!!status.isBuffering,updatedAt:Date.now()})));
-    return()=>{cancelled=true;subscription.remove();player.remove()}
+    return()=>{cancelled=true;player.remove()}
   },[player]);
+  useEffect(()=>{setSnapshot(previous=>({...previous,positionMs:Math.round((status.currentTime||0)*1000),durationMs:Number.isFinite(status.duration)?Math.round(status.duration*1000):previous.durationMs,playing:!!status.playing,buffered:!!status.isBuffering,updatedAt:Date.now()}))},[status.currentTime,status.duration,status.playing,status.isBuffering]);
   useEffect(()=>{if(!source||Date.now()-lastWrite.current<5_000)return;lastWrite.current=Date.now();void SecureStore.setItemAsync(KEY,JSON.stringify({source,snapshot:{positionMs:snapshot.positionMs,speed:snapshot.speed}} satisfies Persisted))},[source,snapshot.positionMs,snapshot.speed]);
   let value:PlaybackContextValue={
     snapshot,source,

@@ -1,1 +1,21 @@
-{"compilerOptions":{"strict":true,"jsx":"react-jsx","moduleResolution":"bundler","module":"esnext","target":"esnext","skipLibCheck":true,"noEmit":true,"types":["react","react-native"]},"include":["App.tsx","src/**/*.ts","src/**/*.tsx"]}
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "esnext",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": [
+      "react",
+      "react-native"
+    ]
+  },
+  "include": [
+    "App.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "extends": "expo/tsconfig.base"
+}
