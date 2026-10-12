@@ -795,6 +795,7 @@ function PlayerSheet({
     [aiActive, setAiActive] = useState(false),
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [intelligence, setIntelligence] = useState<IntelligenceStatus | null>(null),
+    [intelligenceRequesting, setIntelligenceRequesting] = useState(false),
     [momentQuery, setMomentQuery] = useState(""),
     [moments, setMoments] = useState<EpisodeMoment[]>([]),
     [notice, setNotice] = useState("");
@@ -866,6 +867,8 @@ function PlayerSheet({
   };
   let analyseEpisode = async (capability: "brief" | "chapters") => {
     if (!source.feedUrl) return;
+    if (intelligenceRequesting) return;
+    setIntelligenceRequesting(true);
     setNotice("Analysing this publisher transcript…");
     try {
       let status = await requestEpisodeIntelligence(
@@ -880,8 +883,10 @@ function PlayerSheet({
           : status.reason || "Episode analysis is not available for this episode.",
       );
       if (status.state === "READY") feedback.success();
-    } catch {
-      setNotice("Analysis could not start on this development device.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Analysis could not start on this development device.");
+    } finally {
+      setIntelligenceRequesting(false);
     }
   };
   let findMoment = async () => {
@@ -903,8 +908,8 @@ function PlayerSheet({
           ? "Moments are grounded in the publisher transcript."
           : "No timestamped moment matched that question.",
       );
-    } catch {
-      setNotice("Moment search is not available for this episode.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Moment search is not available for this episode.");
     }
   };
   return (
@@ -1026,6 +1031,7 @@ function PlayerSheet({
                 key={label}
                 accessibilityRole="button"
                 accessibilityLabel={label}
+                disabled={Boolean(capability) && intelligenceRequesting}
                 onPress={() =>
                   capability
                     ? void analyseEpisode(capability)
@@ -1050,6 +1056,8 @@ function PlayerSheet({
                 <Text style={[styles.small, { color: p.muted }]}>
                   {label === "Ad Skip"
                     ? "Safety off"
+                    : intelligenceRequesting
+                      ? "Analysing…"
                     : intelligence?.state === "READY"
                       ? "Ready"
                       : intelligence?.readiness
