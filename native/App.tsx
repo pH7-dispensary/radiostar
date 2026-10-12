@@ -821,13 +821,15 @@ function PlayerSheet({
     setIntelligence(null);
     void loadIntelligenceStatus(source.feedUrl, source.episodeId)
       .then((status) => live && setIntelligence(status))
-      .catch(
-        () =>
-          live &&
-          setIntelligence({
-            state: "FAILED",
-            reason: "Episode intelligence is temporarily unavailable.",
-          }),
+      .catch((error) =>
+        live &&
+        setIntelligence({
+          state: "FAILED",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Episode intelligence is temporarily unavailable.",
+        }),
       );
     return () => {
       live = false;
@@ -1081,6 +1083,10 @@ function PlayerSheet({
                 {intelligence.brief.themes.join(" · ")}
               </Text>
             </Glass>
+          ) : intelligence?.state === "FAILED" && intelligence.reason ? (
+            <Text style={[styles.notice, { color: p.muted }]}>
+              {intelligence.reason}
+            </Text>
           ) : intelligence?.readiness || source.hasPublisherTranscript ? (
             <Text style={[styles.notice, { color: p.muted }]}>
               Publisher transcript available. Analyse it to unlock grounded
