@@ -5,6 +5,7 @@ const KEY = "star-cast-listener-state-v1";
 export type StoredEpisode = CatalogueEpisode & {
   showId: string;
   showName: string;
+  feedUrl?: string;
   artworkUrl?: string;
   playedAt?: number;
   positionMs?: number;

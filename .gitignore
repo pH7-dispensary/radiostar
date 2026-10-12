@@ -1,3 +1,7 @@
+node_modules/
 native/node_modules/
 native/.expo/
 native/.env
+.env
+.env.local
+continue

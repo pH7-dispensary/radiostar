@@ -26,9 +26,11 @@ import {
 } from "./src/PlaybackProvider";
 import {
   loadFeed,
+  loadIntelligenceStatus,
   searchCatalogue,
   type CatalogueEpisode,
   type CatalogueShow,
+  type IntelligenceStatus,
 } from "./src/api";
 import {
   emptyListenerState,
@@ -57,6 +59,7 @@ const asStored = (
   showId: show.id,
   showName: show.name,
   artworkUrl: show.art,
+  feedUrl: show.feedUrl,
 });
 const artworkFallback =
   "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=400&q=80";
@@ -788,6 +791,7 @@ function PlayerSheet({
     [aiScreenOpen, setAiScreenOpen] = useState(false),
     [aiActive, setAiActive] = useState(false),
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
+    [intelligence, setIntelligence] = useState<IntelligenceStatus | null>(null),
     [notice, setNotice] = useState("");
   useEffect(() => {
     timer.current = new NativeSleepTimer(pause);
@@ -802,6 +806,27 @@ function PlayerSheet({
     )
       timer.current?.onEpisodeEnd();
   }, [snapshot.durationMs, snapshot.positionMs, snapshot.playing]);
+  useEffect(() => {
+    let live = true;
+    if (!source?.feedUrl) {
+      setIntelligence(null);
+      return;
+    }
+    setIntelligence(null);
+    void loadIntelligenceStatus(source.feedUrl, source.episodeId)
+      .then((status) => live && setIntelligence(status))
+      .catch(
+        () =>
+          live &&
+          setIntelligence({
+            state: "FAILED",
+            reason: "Episode intelligence is temporarily unavailable.",
+          }),
+      );
+    return () => {
+      live = false;
+    };
+  }, [source?.episodeId, source?.feedUrl]);
   if (!source) return null;
   let percent = snapshot.durationMs
     ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
@@ -969,11 +994,37 @@ function PlayerSheet({
                   {label}
                 </Text>
                 <Text style={[styles.small, { color: p.muted }]}>
-                  Unavailable
+                  {label === "AI Episode Brief"
+                    ? intelligence?.state === "READY"
+                      ? "Ready"
+                      : intelligence?.readiness
+                        ? "Transcript found"
+                        : intelligence?.state === "FAILED"
+                          ? "Unavailable"
+                          : "Not analysed"
+                    : "Unavailable"}
                 </Text>
               </Pressable>
             ))}
           </View>
+          {intelligence?.brief ? (
+            <Glass p={p} style={styles.briefCard}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                AI EPISODE BRIEF
+              </Text>
+              <Text style={[styles.briefOverview, { color: p.text }]}>
+                {intelligence.brief.overview}
+              </Text>
+              <Text style={[styles.small, { color: p.muted }]}>
+                {intelligence.brief.themes.join(" · ")}
+              </Text>
+            </Glass>
+          ) : intelligence?.readiness || source.hasPublisherTranscript ? (
+            <Text style={[styles.notice, { color: p.muted }]}>
+              Publisher transcript available. Analysis remains off until
+              authorised on this server.
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             onPress={() => setTimerOpen(true)}
@@ -1146,7 +1197,10 @@ function Listen({
               >
                 {state.history[0].title}
               </Text>
-              <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+              <Text
+                numberOfLines={1}
+                style={[styles.small, { color: p.muted }]}
+              >
                 {state.history[0].showName}
               </Text>
             </View>
@@ -1884,6 +1938,8 @@ function AppShell() {
       title: episode.title,
       show: episode.showName,
       artworkUrl: episode.artworkUrl,
+      feedUrl: episode.feedUrl,
+      hasPublisherTranscript: episode.hasPublisherTranscript,
     };
     setState((current) => ({
       ...current,
@@ -2151,7 +2207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  content: { paddingHorizontal: 20, paddingBottom: 132 },
+  content: { paddingHorizontal: 20, paddingBottom: 142 },
   eyebrow: {
     fontSize: 10,
     fontWeight: "800",
@@ -2352,7 +2408,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 73,
+    bottom: 81,
     minHeight: 53,
     borderRadius: 16,
     borderWidth: 1,
@@ -2482,6 +2538,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(128,128,128,.25)",
   },
+  briefCard: { marginTop: 14, gap: 8 },
+  briefOverview: { fontSize: 16, lineHeight: 22, fontWeight: "700" },
   tool: {
     minHeight: 59,
     borderBottomWidth: StyleSheet.hairlineWidth,
