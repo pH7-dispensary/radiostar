@@ -533,6 +533,204 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
   );
 }
 
+function TimerSheet({
+  visible,
+  onClose,
+  onSet,
+  p,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSet: (minutes: number | "end") => void;
+  p: Theme;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.timerShade}>
+        <SafeAreaView
+          style={[
+            styles.timerSheet,
+            { backgroundColor: p.bg, borderColor: p.line },
+          ]}
+        >
+          <View style={styles.timerSheetHeader}>
+            <Text style={[styles.sectionTitle, { color: p.text }]}>
+              Sleep Timer
+            </Text>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              style={[styles.roundButton, { borderColor: p.line }]}
+            >
+              <Text style={{ color: p.text, fontSize: 18 }}>×</Text>
+            </Pressable>
+          </View>
+          <Text style={[styles.emptyCopy, { color: p.muted }]}>
+            Pause playback when you’re ready.
+          </Text>
+          <View style={styles.timerOptionGrid}>
+            {[10, 15, 20, 30, 45, 60].map((minutes) => (
+              <Pressable
+                key={minutes}
+                onPress={() => {
+                  onSet(minutes);
+                  onClose();
+                }}
+                style={[
+                  styles.timerOption,
+                  { backgroundColor: p.surface, borderColor: p.line },
+                ]}
+              >
+                <Text style={[styles.timerOptionText, { color: p.text }]}>
+                  {minutes} min
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            onPress={() => {
+              onSet("end");
+              onClose();
+            }}
+            style={styles.endEpisode}
+          >
+            <Text style={[styles.link, { color: p.accent2 }]}>
+              End of episode
+            </Text>
+          </Pressable>
+        </SafeAreaView>
+      </View>
+    </Modal>
+  );
+}
+function AiSleepScreen({
+  visible,
+  onClose,
+  active,
+  earliestPauseAt,
+  onStart,
+  onStop,
+  onExtend,
+  p,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  active: boolean;
+  earliestPauseAt: number | null;
+  onStart: () => void;
+  onStop: () => void;
+  onExtend: (minutes: number) => void;
+  p: Theme;
+}) {
+  let earliest = earliestPauseAt
+    ? new Date(earliestPauseAt).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={[styles.aiSafe, { backgroundColor: p.bg }]}>
+        <View
+          pointerEvents="none"
+          style={[styles.aiAmbient, { backgroundColor: p.wash }]}
+        />
+        <View style={styles.aiHeader}>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            style={[styles.aiBack, { borderColor: p.line }]}
+          >
+            <Text style={[styles.link, { color: p.text }]}>‹ Back</Text>
+          </Pressable>
+          {active ? (
+            <Pressable
+              onPress={onStop}
+              accessibilityRole="button"
+              style={[styles.stopButton, { borderColor: p.line }]}
+            >
+              <Text style={[styles.stopText, { color: p.text }]}>
+                Stop AI Sleep
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.stopButton} />
+          )}
+        </View>
+        <View style={styles.aiScreenContent}>
+          <Text style={[styles.eyebrow, { color: p.accent }]}>AI SLEEP</Text>
+          <Text style={[styles.aiScreenTitle, { color: p.text }]}>
+            {active ? "AI Sleep active" : "Sleep, beautifully."}
+          </Text>
+          <Text style={[styles.aiScreenCopy, { color: p.muted }]}>
+            {active
+              ? "Listening quietly. You can keep adding time whenever you need it."
+              : "One tap starts your private listening companion."}
+          </Text>
+          <LivingSleep p={p} active={active} />
+          {active && earliest ? (
+            <Glass p={p} style={styles.earliestCard}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                EARLIEST PAUSE
+              </Text>
+              <Text style={[styles.earliestTime, { color: p.text }]}>
+                {earliest}
+              </Text>
+              <Text style={[styles.small, { color: p.muted }]}>
+                AI Sleep will never pause before this time.
+              </Text>
+            </Glass>
+          ) : null}
+          {active ? (
+            <View style={styles.aiExtensions}>
+              {[5, 15, 30].map((minutes) => (
+                <Pressable
+                  key={minutes}
+                  accessibilityRole="button"
+                  onPress={() => onExtend(minutes)}
+                  style={[
+                    styles.aiExtension,
+                    { backgroundColor: p.surface, borderColor: p.line },
+                  ]}
+                >
+                  <Text style={[styles.aiExtensionText, { color: p.text }]}>
+                    +{minutes}
+                  </Text>
+                  <Text style={[styles.small, { color: p.muted }]}>
+                    minutes
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Pressable
+              onPress={onStart}
+              accessibilityRole="button"
+              style={[styles.aiStart, { backgroundColor: p.accent2 }]}
+            >
+              <Text style={styles.primaryText}>Start AI Sleep</Text>
+            </Pressable>
+          )}
+          <Text style={[styles.aiPrivacy, { color: p.muted }]}>
+            Personalised on this device. No physiological sleep detection or
+            continuous motion recording.
+          </Text>
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 function PlayerSheet({
   visible,
   onClose,
@@ -546,8 +744,10 @@ function PlayerSheet({
       usePlayback(),
     timer = useRef<NativeSleepTimer | null>(null),
     ai = useRef<NativeAiSleepBridge | null>(null),
-    [sleepOpen, setSleepOpen] = useState(false),
+    [timerOpen, setTimerOpen] = useState(false),
+    [aiScreenOpen, setAiScreenOpen] = useState(false),
     [aiActive, setAiActive] = useState(false),
+    [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [notice, setNotice] = useState("");
   useEffect(() => {
     timer.current = new NativeSleepTimer(pause);
@@ -572,11 +772,24 @@ function PlayerSheet({
   };
   let extend = (minutes: number) => {
     try {
-      ai.current?.extend(minutes);
+      let session = ai.current?.extend(minutes);
+      setEarliestPauseAt(session?.earliestPauseAt || null);
       setNotice(`AI Sleep will not pause for another ${minutes} minutes.`);
     } catch {
       setNotice("Start AI Sleep first.");
     }
+  };
+  let startAi = () => {
+    let session = ai.current?.start();
+    setAiActive(true);
+    setEarliestPauseAt(session?.earliestPauseAt || null);
+    setNotice("AI Sleep active. Listening continues.");
+  };
+  let stopAi = () => {
+    ai.current?.stop();
+    setAiActive(false);
+    setEarliestPauseAt(null);
+    setNotice("AI Sleep stopped. Playback continues.");
   };
   return (
     <Modal
@@ -707,90 +920,56 @@ function PlayerSheet({
           </View>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setSleepOpen(!sleepOpen)}
+            onPress={() => setTimerOpen(true)}
             style={[
               styles.sleepEntry,
               { backgroundColor: p.wash, borderColor: p.line },
             ]}
           >
             <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
-              ☾ Sleep
+              ☾ Sleep Timer
             </Text>
-            <Text style={[styles.small, { color: p.muted }]}>
-              Timer or AI Sleep
+            <Text style={[styles.small, { color: p.muted }]}>Set a pause</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setAiScreenOpen(true)}
+            style={[styles.aiSleepEntry, { backgroundColor: p.accent2 }]}
+          >
+            <Text style={styles.aiSleepEntryTitle}>
+              ✦ {aiActive ? "AI Sleep active" : "AI Sleep"}
+            </Text>
+            <Text style={styles.aiSleepEntryCopy}>
+              {aiActive
+                ? "Keep listening"
+                : "Fall asleep. We’ll take care of the rest."}
             </Text>
           </Pressable>
-          {sleepOpen ? (
-            <View style={styles.sleepPanel}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>
-                SLEEP TIMER
-              </Text>
-              <View style={styles.timerGrid}>
-                {[10, 15, 20, 30, 45, 60].map((minutes) => (
-                  <Chip
-                    key={minutes}
-                    label={`${minutes} min`}
-                    p={p}
-                    onPress={() => setTimer(minutes)}
-                  />
-                ))}
-              </View>
-              <Pressable
-                onPress={() => {
-                  timer.current?.start({ kind: "end_of_episode" });
-                  setNotice(
-                    "Sleep Timer will pause at the end of this episode.",
-                  );
-                }}
-              >
-                <Text style={[styles.link, { color: p.accent2 }]}>
-                  End of episode
-                </Text>
-              </Pressable>
-              <Glass p={p} style={styles.aiPanel}>
-                <LivingSleep p={p} active={aiActive} />
-                <Text style={[styles.aiHeadline, { color: p.text }]}>
-                  ✦ AI Sleep
-                </Text>
-                <Text style={[styles.aiCopy, { color: p.muted }]}>
-                  Fall asleep. We’ll take care of the rest.
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    ai.current?.start();
-                    setAiActive(true);
-                    setNotice("AI Sleep active. Listening continues.");
-                  }}
-                  style={[styles.primary, { backgroundColor: p.accent2 }]}
-                >
-                  <Text style={styles.primaryText}>
-                    {aiActive ? "AI Sleep active" : "Start AI Sleep"}
-                  </Text>
-                </Pressable>
-                {aiActive ? (
-                  <View style={styles.extensionRow}>
-                    {[5, 15, 30].map((minutes) => (
-                      <Chip
-                        key={minutes}
-                        label={`+${minutes} min`}
-                        p={p}
-                        onPress={() => extend(minutes)}
-                      />
-                    ))}
-                  </View>
-                ) : null}
-                <Text style={[styles.tiny, { color: p.muted }]}>
-                  On-device signals only. Star Cast does not claim physiological
-                  sleep detection.
-                </Text>
-              </Glass>
-            </View>
-          ) : null}
           {notice ? (
             <Text style={[styles.notice, { color: p.muted }]}>{notice}</Text>
           ) : null}
         </ScrollView>
+        <TimerSheet
+          visible={timerOpen}
+          p={p}
+          onClose={() => setTimerOpen(false)}
+          onSet={(value) => {
+            if (value === "end") {
+              timer.current?.start({ kind: "end_of_episode" });
+              setNotice("Sleep Timer will pause at the end of this episode.");
+            } else setTimer(value);
+          }}
+        />
+        <AiSleepScreen
+          visible={aiScreenOpen}
+          p={p}
+          onClose={() => setAiScreenOpen(false)}
+          active={aiActive}
+          earliestPauseAt={earliestPauseAt}
+          onStart={startAi}
+          onStop={stopAi}
+          onExtend={extend}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -1079,8 +1258,8 @@ function Following({
                 </Text>
                 <Text style={[styles.newEpisodes, { color: p.accent2 }]}>
                   {state.feedEpisodes[show.id]?.length
-                    ? `${state.feedEpisodes[show.id].length} publisher episodes cached`
-                    : "Open to load publisher episodes"}
+                    ? `${state.feedEpisodes[show.id].length} episodes ready to explore`
+                    : "Open to see the latest episodes"}
                 </Text>
               </View>
               <Text style={[styles.chevron, { color: p.muted }]}>›</Text>
@@ -1885,7 +2064,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  content: { paddingHorizontal: 20, paddingBottom: 146 },
+  content: { paddingHorizontal: 20, paddingBottom: 132 },
   eyebrow: {
     fontSize: 10,
     fontWeight: "800",
@@ -2083,11 +2262,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 78,
-    minHeight: 61,
-    borderRadius: 18,
+    bottom: 73,
+    minHeight: 53,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 9,
+    padding: 6,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -2095,9 +2274,9 @@ const styles = StyleSheet.create({
   miniCopy: { flex: 1, minWidth: 0 },
   miniTitle: { fontSize: 14, fontWeight: "700" },
   miniPlay: {
-    width: 37,
-    height: 37,
-    borderRadius: 19,
+    width: 35,
+    height: 35,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2255,6 +2434,154 @@ const styles = StyleSheet.create({
   aiCopy: { fontSize: 14, marginTop: 4, textAlign: "center" },
   extensionRow: { flexDirection: "row", gap: 8, marginTop: 12 },
   notice: { fontSize: 13, textAlign: "center", marginTop: 13 },
+  aiSleepEntry: {
+    minHeight: 70,
+    borderRadius: 20,
+    marginTop: 10,
+    paddingHorizontal: 17,
+    justifyContent: "center",
+  },
+  aiSleepEntryTitle: { color: "#fff", fontSize: 17, fontWeight: "800" },
+  aiSleepEntryCopy: {
+    color: "rgba(255,255,255,.8)",
+    fontSize: 13,
+    marginTop: 3,
+  },
+  timerShade: {
+    flex: 1,
+    backgroundColor: "rgba(8,8,12,.46)",
+    justifyContent: "flex-end",
+  },
+  timerSheet: {
+    borderTopWidth: 1,
+    borderRadius: 28,
+    padding: 21,
+    paddingBottom: 28,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+  },
+  timerSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  timerOptionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+    marginTop: 18,
+  },
+  timerOption: {
+    width: "30.5%",
+    minHeight: 48,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timerOptionText: { fontSize: 14, fontWeight: "700" },
+  endEpisode: {
+    minHeight: 45,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 13,
+  },
+  aiSafe: { flex: 1 },
+  aiAmbient: {
+    position: "absolute",
+    width: 430,
+    height: 430,
+    borderRadius: 215,
+    top: 85,
+    left: -100,
+    opacity: 0.56,
+  },
+  aiHeader: {
+    height: 64,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  aiBack: {
+    minHeight: 44,
+    minWidth: 70,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 13,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stopButton: {
+    minHeight: 44,
+    minWidth: 108,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 13,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stopText: { fontSize: 13, fontWeight: "800" },
+  aiScreenContent: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 25,
+    paddingTop: 16,
+  },
+  aiScreenTitle: {
+    fontSize: 32,
+    lineHeight: 36,
+    fontWeight: "800",
+    letterSpacing: -1.2,
+    marginTop: 7,
+    textAlign: "center",
+  },
+  aiScreenCopy: {
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: "center",
+    marginTop: 8,
+    maxWidth: 290,
+  },
+  earliestCard: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 22,
+    paddingVertical: 15,
+  },
+  earliestTime: { fontSize: 27, fontWeight: "800", marginTop: 3 },
+  aiExtensions: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 9,
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  aiExtension: {
+    flex: 1,
+    minHeight: 66,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiExtensionText: { fontSize: 19, fontWeight: "800" },
+  aiStart: {
+    width: "100%",
+    minHeight: 55,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 25,
+  },
+  aiPrivacy: {
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: "center",
+    maxWidth: 290,
+    marginTop: 17,
+  },
   onboardingShade: {
     flex: 1,
     backgroundColor: "rgba(10,10,14,.48)",
