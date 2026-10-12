@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --check app.js && node --check server.mjs && node --check transcripts.mjs && node --check openai-intelligence.mjs && node --check transcription.mjs && node --check sleep.mjs && node --check sleep-ui.mjs && node --check playback.mjs && node --check playback-ui.mjs && node test-intelligence.mjs && node test-transcripts.mjs && node test-transcription.mjs && node test-ad-skip.mjs && node test-search.mjs && node test-sleep.mjs && node test-playback.mjs"
+    "eval:real-intelligence": "node scripts/real-intelligence-eval.mjs",
+    "test": "node --check app.js && node --check server.mjs && node --check transcripts.mjs && node --check openai-intelligence.mjs && node --check transcription.mjs && node --check sleep.mjs && node --check sleep-ui.mjs && node --check playback.mjs && node --check playback-ui.mjs && node --check scripts/real-intelligence-eval.mjs && node test-intelligence.mjs && node test-transcripts.mjs && node test-transcription.mjs && node test-ad-skip.mjs && node test-search.mjs && node test-sleep.mjs && node test-playback.mjs"
   },
   "dependencies": {
     "openai": "^7.32.0"
