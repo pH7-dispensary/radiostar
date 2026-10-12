@@ -1025,6 +1025,26 @@ function PlayerSheet({
               authorised on this server.
             </Text>
           ) : null}
+          {intelligence?.chapters?.length ? (
+            <Glass p={p} style={styles.briefCard}>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>EXPLORE EPISODE</Text>
+              {intelligence.chapters.map((chapter) => (
+                <Pressable
+                  key={`${chapter.startMs}-${chapter.title}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play chapter: ${chapter.title}`}
+                  onPress={() => seek(chapter.startMs)}
+                  style={[styles.chapterRow, { borderTopColor: p.line }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.toolText, { color: p.text }]}>{chapter.title}</Text>
+                    <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>{chapter.description}</Text>
+                  </View>
+                  <Text style={[styles.small, { color: p.accent2 }]}>{format(chapter.startMs)}</Text>
+                </Pressable>
+              ))}
+            </Glass>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             onPress={() => setTimerOpen(true)}
@@ -2540,6 +2560,7 @@ const styles = StyleSheet.create({
   },
   briefCard: { marginTop: 14, gap: 8 },
   briefOverview: { fontSize: 16, lineHeight: 22, fontWeight: "700" },
+  chapterRow: { minHeight: 48, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: 12 },
   tool: {
     minHeight: 59,
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -25,6 +25,13 @@ export type IntelligenceStatus = {
   readiness?: "FULLY_READY" | "TEXT_ONLY" | "PARTIAL" | "UNUSABLE";
   reason?: string;
   brief?: { overview: string; themes: string[]; detail: string };
+  chapters?: Array<{
+    title: string;
+    description: string;
+    startMs: number;
+    endMs: number;
+    sourceSegmentIds: string[];
+  }>;
   provenance?: { sourceType: string; originalFormat: string; language: string };
   paid?: { configured: boolean; enabled: boolean };
 };
