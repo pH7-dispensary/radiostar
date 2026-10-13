@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AccessibilityInfo,
   Animated,
-  Easing,
+  FlatList,
+  LayoutAnimation,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,79 +29,13 @@ import type { Source } from "./PlaybackProvider";
 import type { StarTheme } from "./design";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
 import { feedback } from "./feedback";
+import { LoadingState, useReducedMotion } from "./LoadingState";
+import { usePlayback } from "./PlaybackProvider";
+import { AdSkipPanel } from "./AdSkipPanel";
 
 type Panel = "brief" | "explore" | "ads";
 const stamp = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(true);
-  useEffect(() => {
-    let live = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then(
-      (value) => live && setReduced(value),
-    );
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      setReduced,
-    );
-    return () => {
-      live = false;
-      subscription.remove();
-    };
-  }, []);
-  return reduced;
-}
-function Thinking({ p }: { p: StarTheme }) {
-  const opacity = useRef(new Animated.Value(0.6)).current;
-  const reduced = useReducedMotion();
-  useEffect(() => {
-    opacity.setValue(reduced ? 0.75 : 0.6);
-    if (reduced) return;
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 1100,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.6,
-          duration: 1100,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [opacity, reduced]);
-  return (
-    <View
-      accessibilityLabel="Preparing your episode insight"
-      accessibilityRole="progressbar"
-      style={s.loading}
-    >
-      <Animated.View style={{ opacity, gap: 14 }}>
-        <Ionicons name="sparkles" size={22} color={p.accent2} />
-        {["92%", "100%", "64%"].map((width) => (
-          <View
-            key={width}
-            style={{
-              width: width as `${number}%`,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: p.wash,
-            }}
-          />
-        ))}
-      </Animated.View>
-      <Text style={[s.copy, { color: p.muted }]}>
-        Finding the ideas worth keeping.
-      </Text>
-    </View>
-  );
-}
 
 export function EpisodeIntelligenceView({
   panel,
@@ -127,6 +62,18 @@ export function EpisodeIntelligenceView({
   const [query, setQuery] = useState("");
   const [moments, setMoments] = useState<EpisodeMoment[]>([]);
   const [transcript, setTranscript] = useState<TranscriptPage | null>(null);
+  const [transcriptQuery, setTranscriptQuery] = useState("");
+  const [appliedTranscriptQuery, setAppliedTranscriptQuery] = useState("");
+  const transcriptQueryRef = useRef("");
+  const transcriptRequest = useRef(0);
+  const tabsRef = useRef<ScrollView>(null);
+  const { width: windowWidth, fontScale } = useWindowDimensions();
+  const [tabsWidth, setTabsWidth] = useState(Math.min(windowWidth, 720) - 40);
+  const visibleTabs = Math.max(
+    1,
+    Math.min(4, Math.floor(tabsWidth / (84 * fontScale))),
+  );
+  const { snapshot } = usePlayback();
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
   const [consent, setConsent] = useState<AnalysisPreflight | null>(null);
@@ -169,7 +116,7 @@ export function EpisodeIntelligenceView({
         },
       ]}
     >
-      <Text style={[s.buttonText, { color: secondary ? p.text : "#fff" }]}>
+      <Text style={[s.buttonText, { color: secondary ? p.text : p.onAccent }]}>
         {label}
       </Text>
     </Pressable>
@@ -210,8 +157,12 @@ export function EpisodeIntelligenceView({
       if (alive.current) setWorking(false);
     }
   };
-  const readTranscript = async (offset = 0) => {
-    if (!source.feedUrl || working) return;
+  const readTranscript = async (
+    offset = 0,
+    search = offset > 0 ? appliedTranscriptQuery : transcriptQueryRef.current,
+  ) => {
+    if (!source.feedUrl) return;
+    const requestId = ++transcriptRequest.current;
     setWorking(true);
     setMessage("");
     try {
@@ -219,19 +170,23 @@ export function EpisodeIntelligenceView({
         source.feedUrl,
         source.episodeId,
         offset,
+        search,
       );
-      if (alive.current)
+      if (alive.current && requestId === transcriptRequest.current) {
+        setAppliedTranscriptQuery(search);
         setTranscript((old) => ({
           ...page,
           segments: offset
             ? [...(old?.segments || []), ...page.segments]
             : page.segments,
         }));
+      }
     } catch {
-      if (alive.current)
+      if (alive.current && requestId === transcriptRequest.current)
         setMessage("Could not load the transcript. Please try again.");
     } finally {
-      if (alive.current) setWorking(false);
+      if (alive.current && requestId === transcriptRequest.current)
+        setWorking(false);
     }
   };
   useEffect(() => {
@@ -264,6 +219,94 @@ export function EpisodeIntelligenceView({
     }
   };
   const processing = isProcessing(status) && !paused;
+  const scrollSelectedTab = () => {
+    const index = ["Chapters", "Topics", "Find a Moment", "Transcript"].indexOf(
+      tab,
+    );
+    tabsRef.current?.scrollTo({
+      x:
+        index >= visibleTabs
+          ? ((index - visibleTabs + 1) * tabsWidth) / visibleTabs
+          : 0,
+      animated: !reduced,
+    });
+  };
+  useEffect(scrollSelectedTab, [tab, reduced, tabsWidth, visibleTabs]);
+  const transcriptMode = panel === "explore" && tab === "Transcript";
+  const headerContent = (
+    <>
+      <View style={s.episode}>
+        {source.artworkUrl ? (
+          <Image
+            source={{ uri: source.artworkUrl }}
+            style={s.art}
+            accessibilityLabel="Episode artwork"
+          />
+        ) : null}
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text numberOfLines={1} style={[s.caption, { color: p.muted }]}>
+            {source.show}
+          </Text>
+          <Text numberOfLines={2} style={[s.episodeTitle, { color: p.text }]}>
+            {source.title}
+          </Text>
+        </View>
+      </View>
+      <Text
+        accessibilityRole="header"
+        style={[s.eyebrow, { color: p.accent2, marginTop: 8 }]}
+      >
+        {panel === "brief"
+          ? "THE BRIEF"
+          : panel === "explore"
+            ? "EXPLORE EPISODE"
+            : "AD SKIP"}
+      </Text>
+      {panel === "explore" && (
+        <ScrollView
+          ref={tabsRef}
+          horizontal
+          onLayout={(e) => setTabsWidth(e.nativeEvent.layout.width)}
+          onContentSizeChange={scrollSelectedTab}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.tabs}
+        >
+          {["Chapters", "Topics", "Find a Moment", "Transcript"].map(
+            (label) => (
+              <Pressable
+                key={label}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === label }}
+                onPress={() => {
+                  setTab(label);
+                  setMessage("");
+                  feedback.selection();
+                }}
+                style={[
+                  s.tab,
+                  {
+                    width: tabsWidth / visibleTabs,
+                    backgroundColor: tab === label ? p.wash : "transparent",
+                    borderColor: tab === label ? p.accent2 : "transparent",
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: tab === label ? p.text : p.muted,
+                    fontWeight: "600",
+                    fontSize: 14,
+                  }}
+                >
+                  {label === "Find a Moment" ? "Moments" : label}
+                </Text>
+              </Pressable>
+            ),
+          )}
+        </ScrollView>
+      )}
+    </>
+  );
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -281,495 +324,505 @@ export function EpisodeIntelligenceView({
         <Text style={[s.eyebrow, { color: p.accent2 }]}>STAR CAST</Text>
         <View style={{ width: 44, height: 44 }} />
       </View>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.content}
-      >
-        <View style={s.episode}>
-          {source.artworkUrl ? (
-            <Image
-              source={{ uri: source.artworkUrl }}
-              style={s.art}
-              accessibilityLabel="Episode artwork"
-            />
-          ) : null}
-          <View style={{ flex: 1, gap: 5 }}>
-            <Text style={[s.eyebrow, { color: p.muted }]}>{source.show}</Text>
-            <Text numberOfLines={2} style={[s.episodeTitle, { color: p.text }]}>
-              {source.title}
-            </Text>
-          </View>
-        </View>
-        <Text accessibilityRole="header" style={[s.title, { color: p.text }]}>
-          {panel === "brief"
-            ? "The episode, distilled."
-            : panel === "explore"
-              ? "Follow your curiosity."
-              : "Ad Skip"}
-        </Text>
-        <Text style={[s.copy, { color: p.muted }]}>
-          {panel === "brief"
-            ? "A little context. A deeper listen."
-            : panel === "explore"
-              ? "Ideas, chapters and the moments behind them."
-              : "Your conversation comes first."}
-        </Text>
-        {panel === "ads" ? (
-          <View
-            style={[
-              s.card,
-              { backgroundColor: p.surface, borderColor: p.line },
-            ]}
-          >
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={28}
-              color={p.accent2}
-            />
-            <Text style={[s.heading, { color: p.text }]}>
-              Nothing skips without evidence.
-            </Text>
-            <Text style={[s.copy, { color: p.muted }]}>
-              Automatic Ad Skip remains off while real-world precision is
-              evaluated. Enabling Intelligence does not change this safety
-              control. Unverified intervals will not be skipped.
-            </Text>
-          </View>
-        ) : !enabled ? (
-          <LinearGradient
-            colors={[p.wash, p.surfaceStrong]}
-            style={[s.card, { borderColor: p.line }]}
-          >
-            <Ionicons name="sparkles" size={28} color={p.accent2} />
-            <Text style={[s.heading, { color: p.text }]}>
-              More from every listen.
-            </Text>
-            <Text style={[s.copy, { color: p.muted }]}>
-              Briefs, chapters and moments, together. Episodes you open can use
-              publisher transcripts within your server’s allowance. Audio
-              transcription always asks first. Ad Skip stays independent.
-            </Text>
-            {action("Enable Star Cast Intelligence", onEnable)}
-            <Text style={[s.caption, { color: p.muted }]}>
-              Remembered on this device.
-            </Text>
-          </LinearGradient>
-        ) : (
-          <>
-            {panel === "explore" && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.tabs}
-              >
-                {["Chapters", "Topics", "Find a Moment", "Transcript"].map(
-                  (label) => (
-                    <Pressable
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: tab === label }}
-                      key={label}
-                      onPress={() => {
-                        setTab(label);
-                        setMessage("");
-                        feedback.selection();
-                      }}
-                      style={[
-                        s.tab,
-                        {
-                          backgroundColor: tab === label ? p.wash : p.surface,
-                          borderColor: tab === label ? p.accent2 : p.line,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          color: tab === label ? p.text : p.muted,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {label}
-                      </Text>
-                    </Pressable>
-                  ),
-                )}
-              </ScrollView>
-            )}
-            {(busy || processing) && !status?.brief && !paused && (
-              <Thinking p={p} />
-            )}
-            {error ? (
-              <View style={[s.card, { borderColor: p.line }]}>
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={[s.copy, { color: p.muted }]}
-                >
-                  {error}
-                </Text>
-                {action("Check again", () => void session?.refresh(), true)}
-              </View>
-            ) : null}
-            {processing && (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => session?.stopWaiting()}
-                style={s.quietButton}
-              >
-                <Text style={{ color: p.muted }}>
-                  Stop waiting · keep listening
-                </Text>
-              </Pressable>
-            )}
-            {!processing && !busy && !error && !status?.brief && (
-              <View
+      {transcriptMode ? (
+        <FlatList
+          showsVerticalScrollIndicator={false}
+          data={transcript?.segments || []}
+          keyExtractor={(item) => item.id}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={7}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={s.content}
+          ListHeaderComponent={
+            <View style={{ gap: 12 }}>
+              {headerContent}
+              <TextInput
+                accessibilityLabel="Search this transcript"
+                placeholder="Search this transcript…"
+                placeholderTextColor={p.muted}
+                value={transcriptQuery}
+                maxLength={300}
+                onChangeText={(value) => {
+                  setTranscriptQuery(value);
+                  transcriptQueryRef.current = value;
+                }}
+                onSubmitEditing={() => void readTranscript(0)}
+                returnKeyType="search"
                 style={[
-                  s.card,
-                  { borderColor: p.line, backgroundColor: p.surface },
-                ]}
-              >
-                <Text style={[s.heading, { color: p.text }]}>
-                  {status?.requiresAudioConsent
-                    ? "Listen a little deeper."
-                    : "This episode needs a moment."}
-                </Text>
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={[s.copy, { color: p.muted }]}
-                >
-                  {!source.feedUrl
-                    ? "Open this episode from its podcast in Search so Star Cast can find its publisher feed."
-                    : status?.reason ||
-                      "Your episode has not been prepared yet."}
-                </Text>
-                {!source.feedUrl
-                  ? action("Back to player", onBack, true)
-                  : status?.requiresAudioConsent
-                    ? action("Use audio analysis", () => void prepareConsent())
-                    : status?.retryable ||
-                        status?.state === "NOT_REQUESTED" ||
-                        [
-                          "BUDGET_LIMIT",
-                          "SERVER_UNAVAILABLE",
-                          "AUDIO_DISABLED",
-                        ].includes(status?.code || "")
-                      ? action("Try again", () => void session?.request())
-                      : action(
-                          "Check again",
-                          () => void session?.refresh(),
-                          true,
-                        )}
-              </View>
-            )}
-            {consent && (
-              <View
-                style={[
-                  s.card,
-                  { borderColor: p.accent2, backgroundColor: p.wash },
-                ]}
-              >
-                <Text style={[s.heading, { color: p.text }]}>
-                  Analyse this episode’s audio?
-                </Text>
-                <Text style={[s.copy, { color: p.muted }]}>
-                  No usable publisher transcript was found. Transcribing{" "}
-                  {Math.ceil((consent.durationMs || 0) / 60000)} minutes is
-                  estimated at ${consent.estimatedAudioCost?.toFixed(2)} plus a
-                  small text-analysis cost. Your server’s daily, monthly and
-                  duration limits still apply. Inserted ads can make the
-                  delivered audio longer; usage is based on its measured
-                  duration. It may take several minutes.
-                </Text>
-                {action("Confirm audio analysis", () => {
-                  setConsent(null);
-                  void session?.request({ allowAudio: true });
-                })}
-                {action("Not now", () => setConsent(null), true)}
-              </View>
-            )}
-            {panel === "brief" && status?.brief && (
-              <Animated.View
-                style={[
-                  s.card,
+                  s.inputRow,
                   {
-                    opacity: reveal,
-                    backgroundColor: p.surfaceStrong,
+                    color: p.text,
                     borderColor: p.line,
+                    backgroundColor: p.surface,
+                    minHeight: 48,
+                    paddingHorizontal: 14,
                   },
                 ]}
-              >
-                <Ionicons name="sparkles" size={23} color={p.accent2} />
-                {status.qualityNote && (
-                  <Text style={[s.copy, { color: p.muted }]}>
-                    {status.qualityNote}
-                  </Text>
-                )}
-                <Text style={[s.overview, { color: p.text }]}>
-                  {status.brief.overview}
+              />
+              {action("Search transcript", () => void readTranscript(0), true)}
+              {transcript && (
+                <Text style={[s.caption, { color: p.muted }]}>
+                  {transcript.total} passages
+                  {appliedTranscriptQuery ? " matching your search" : ""}
                 </Text>
-                {!!status.brief.themes.length && (
-                  <Text style={[s.eyebrow, { color: p.accent2 }]}>
-                    KEY THEMES
-                  </Text>
-                )}
-                <View style={s.themes}>
-                  {status.brief.themes.map((theme) => (
-                    <View
-                      key={theme}
-                      style={[s.theme, { backgroundColor: p.wash }]}
-                    >
-                      <Text style={[s.copy, { color: p.text }]}>{theme}</Text>
-                    </View>
-                  ))}
-                </View>
+              )}
+            </View>
+          }
+          renderItem={({ item: segment }) => (
+            <View
+              style={[
+                s.transcriptRow,
+                {
+                  borderColor: p.line,
+                  backgroundColor:
+                    segment.startMs != null &&
+                    segment.endMs != null &&
+                    snapshot.episodeId === source.episodeId &&
+                    snapshot.positionMs >= segment.startMs &&
+                    snapshot.positionMs < segment.endMs
+                      ? p.wash
+                      : "transparent",
+                },
+              ]}
+            >
+              {typeof segment.startMs === "number" &&
+              Number.isFinite(segment.startMs) ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityState={{ expanded }}
-                  onPress={() => {
-                    setExpanded(!expanded);
-                    feedback.selection();
-                  }}
-                  style={s.quietButton}
+                  accessibilityLabel={`Play transcript at ${stamp(segment.startMs)}`}
+                  onPress={() => playAt(segment.startMs!)}
+                  style={s.timestamp}
                 >
-                  <Text style={{ color: p.accent2, fontWeight: "600" }}>
-                    {expanded
-                      ? "Less detail −"
-                      : status.brief.mode === "extractive"
-                        ? "Read source excerpts +"
-                        : "Read the full brief +"}
+                  <Text
+                    style={{ color: p.accent2, fontVariant: ["tabular-nums"] }}
+                  >
+                    {stamp(segment.startMs)}
                   </Text>
                 </Pressable>
-                {expanded && (
-                  <Text style={[s.copy, { color: p.text }]}>
-                    {status.brief.detail}
+              ) : (
+                <Text style={[s.caption, { color: p.muted }]}>Text</Text>
+              )}
+              <View style={{ flex: 1 }}>
+                {segment.speaker && (
+                  <Text style={[s.caption, { color: p.accent2 }]}>
+                    {segment.speaker}
                   </Text>
                 )}
-              </Animated.View>
-            )}
-            {panel === "explore" && (
-              <>
-                {status?.qualityNote && (
+                <Text selectable style={[s.copy, { color: p.text }]}>
+                  {segment.text}
+                </Text>
+              </View>
+            </View>
+          )}
+          ListEmptyComponent={
+            !working ? (
+              <Text style={[s.copy, { color: p.muted }]}>
+                {status?.transcriptAvailable
+                  ? "No matching passages. Try a different word."
+                  : "The transcript will appear here when available."}
+              </Text>
+            ) : null
+          }
+          ListFooterComponent={
+            <View>
+              {working && (
+                <LoadingState compact p={p} label="Reading the transcript…" />
+              )}
+              {message ? (
+                <Text style={[s.copy, { color: p.muted }]}>{message}</Text>
+              ) : null}
+              {transcript?.nextOffset != null &&
+                action(
+                  "More passages",
+                  () => void readTranscript(transcript.nextOffset!),
+                  true,
+                )}
+            </View>
+          }
+        />
+      ) : (
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.content}
+        >
+          {headerContent}
+          {panel === "ads" ? (
+            <AdSkipPanel source={source} p={p} onPlay={onPlay} />
+          ) : !enabled ? (
+            <LinearGradient
+              colors={[p.wash, p.surfaceStrong]}
+              style={[s.card, { borderColor: p.line }]}
+            >
+              <Ionicons name="sparkles" size={28} color={p.accent2} />
+              <Text style={[s.heading, { color: p.text }]}>
+                More from every listen.
+              </Text>
+              <Text style={[s.copy, { color: p.muted }]}>
+                Briefs, chapters and moments, together. Episodes you open can
+                use publisher transcripts within your server’s allowance. Audio
+                transcription always asks first. Ad Skip stays independent.
+              </Text>
+              {action("Enable Star Cast Intelligence", onEnable)}
+              <Text style={[s.caption, { color: p.muted }]}>
+                Remembered on this device.
+              </Text>
+            </LinearGradient>
+          ) : (
+            <>
+              {(busy || processing) && !status?.brief && !paused && (
+                <LoadingState p={p} />
+              )}
+              {error ? (
+                <View style={[s.card, { borderColor: p.line }]}>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[s.copy, { color: p.muted }]}
+                  >
+                    {error}
+                  </Text>
+                  {action("Check again", () => void session?.refresh(), true)}
+                </View>
+              ) : null}
+              {processing && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => session?.stopWaiting()}
+                  style={s.quietButton}
+                >
+                  <Text style={{ color: p.muted }}>
+                    Stop waiting · keep listening
+                  </Text>
+                </Pressable>
+              )}
+              {!processing && !busy && !error && !status?.brief && (
+                <View
+                  style={[
+                    s.card,
+                    { borderColor: p.line, backgroundColor: p.surface },
+                  ]}
+                >
+                  <Text style={[s.heading, { color: p.text }]}>
+                    {status?.requiresAudioConsent
+                      ? "Listen a little deeper."
+                      : "This episode needs a moment."}
+                  </Text>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[s.copy, { color: p.muted }]}
+                  >
+                    {!source.feedUrl
+                      ? "Open this episode from its podcast in Search so Star Cast can find its publisher feed."
+                      : status?.reason ||
+                        "Your episode has not been prepared yet."}
+                  </Text>
+                  {!source.feedUrl
+                    ? action("Back to player", onBack, true)
+                    : status?.requiresAudioConsent
+                      ? action(
+                          "Use audio analysis",
+                          () => void prepareConsent(),
+                        )
+                      : status?.retryable ||
+                          status?.state === "NOT_REQUESTED" ||
+                          [
+                            "BUDGET_LIMIT",
+                            "SERVER_UNAVAILABLE",
+                            "AUDIO_DISABLED",
+                          ].includes(status?.code || "")
+                        ? action("Try again", () => void session?.request())
+                        : action(
+                            "Check again",
+                            () => void session?.refresh(),
+                            true,
+                          )}
+                </View>
+              )}
+              {consent && (
+                <View
+                  style={[
+                    s.card,
+                    { borderColor: p.accent2, backgroundColor: p.wash },
+                  ]}
+                >
+                  <Text style={[s.heading, { color: p.text }]}>
+                    Analyse this episode’s audio?
+                  </Text>
                   <Text style={[s.copy, { color: p.muted }]}>
-                    Some generated content could not be verified. Available
-                    chapters and transcript passages are shown below.
+                    No usable publisher transcript was found. Transcribing{" "}
+                    {Math.ceil((consent.durationMs || 0) / 60000)} minutes is
+                    estimated at ${consent.estimatedAudioCost?.toFixed(2)} plus
+                    a small text-analysis cost. Your server’s daily, monthly and
+                    duration limits still apply. Inserted ads can make the
+                    delivered audio longer; usage is based on its measured
+                    duration. It may take several minutes.
                   </Text>
-                )}
-                {tab === "Topics" &&
-                  status?.brief &&
-                  !status.brief.themes.length && (
+                  {action("Confirm audio analysis", () => {
+                    setConsent(null);
+                    void session?.request({ allowAudio: true });
+                  })}
+                  {action("Not now", () => setConsent(null), true)}
+                </View>
+              )}
+              {panel === "brief" && status?.brief && (
+                <Animated.View
+                  style={[
+                    s.card,
+                    {
+                      opacity: reveal,
+                      backgroundColor: p.surfaceStrong,
+                      borderColor: p.line,
+                    },
+                  ]}
+                >
+                  {status.qualityNote && (
                     <Text style={[s.copy, { color: p.muted }]}>
-                      No verified topic summary is available. Search the
-                      transcript in Find a Moment instead.
+                      {status.qualityNote}
                     </Text>
                   )}
-                {tab === "Chapters" &&
-                  status?.chapters?.map((chapter, index) => (
-                    <Pressable
-                      key={`${chapter.startMs}-${chapter.title}`}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Play chapter: ${chapter.title}`}
-                      onPress={() => playAt(chapter.startMs)}
-                      style={[
-                        s.row,
-                        { borderColor: p.line, backgroundColor: p.surface },
-                      ]}
-                    >
-                      <Text style={[s.number, { color: p.accent2 }]}>
-                        {String(index + 1).padStart(2, "0")}
-                      </Text>
-                      <View style={{ flex: 1, gap: 6 }}>
-                        <Text style={[s.heading, { color: p.text }]}>
-                          {chapter.title}
-                        </Text>
-                        <Text style={[s.copy, { color: p.muted }]}>
-                          {chapter.description}
-                        </Text>
-                        <Text style={[s.caption, { color: p.accent2 }]}>
-                          Play from {stamp(chapter.startMs)}
-                        </Text>
-                      </View>
-                      <Ionicons name="play" size={16} color={p.accent2} />
-                    </Pressable>
-                  ))}
-                {tab === "Chapters" &&
-                  status?.brief &&
-                  !status.chapters?.length && (
-                    <Text style={[s.copy, { color: p.muted }]}>
-                      This transcript does not support verified chapters. You
-                      can still read the brief and explore its text.
+                  <Text style={[s.overview, { color: p.text }]}>
+                    {status.brief.overview}
+                  </Text>
+                  {!!status.brief.themes.length && (
+                    <Text style={[s.eyebrow, { color: p.accent2 }]}>
+                      KEY IDEAS
                     </Text>
                   )}
-                {tab === "Topics" &&
-                  status?.brief?.themes.map((theme) => (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={theme}
-                      onPress={() => void lookup(theme)}
-                      style={[
-                        s.row,
-                        { backgroundColor: p.surface, borderColor: p.line },
-                      ]}
-                    >
-                      <Ionicons
-                        name="sparkles-outline"
-                        size={20}
-                        color={p.accent2}
-                      />
-                      <Text style={[s.heading, { color: p.text, flex: 1 }]}>
-                        {theme}
-                      </Text>
-                      <Ionicons
-                        name="arrow-forward"
-                        size={18}
-                        color={p.muted}
-                      />
-                    </Pressable>
-                  ))}
-                {tab === "Find a Moment" && (
-                  <>
-                    <View
-                      style={[
-                        s.inputRow,
-                        { backgroundColor: p.surface, borderColor: p.line },
-                      ]}
-                    >
-                      <TextInput
-                        accessibilityLabel="Find a moment in this episode"
-                        value={query}
-                        onChangeText={setQuery}
-                        onSubmitEditing={() => void lookup()}
-                        placeholder="Where did they discuss…"
-                        placeholderTextColor={p.muted}
-                        style={[s.input, { color: p.text }]}
-                        maxLength={600}
-                        returnKeyType="search"
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Find moment"
-                        disabled={working || !status?.transcriptAvailable}
-                        onPress={() => void lookup()}
-                        style={s.back}
+                  <View style={s.themes}>
+                    {status.brief.themes.slice(0, 6).map((theme) => (
+                      <View
+                        key={theme}
+                        style={[s.theme, { backgroundColor: p.wash }]}
                       >
-                        <Ionicons
-                          name="arrow-forward"
-                          color={p.accent2}
-                          size={22}
-                        />
-                      </Pressable>
-                    </View>
-                    {!status?.transcriptAvailable && (
+                        <Text style={[s.copy, { color: p.text }]}>{theme}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded }}
+                    onPress={() => {
+                      if (!reduced)
+                        LayoutAnimation.configureNext(
+                          LayoutAnimation.Presets.easeInEaseOut,
+                        );
+                      setExpanded(!expanded);
+                      feedback.selection();
+                    }}
+                    style={s.quietButton}
+                  >
+                    <Text style={{ color: p.accent2, fontWeight: "600" }}>
+                      {expanded
+                        ? "Less detail −"
+                        : status.brief.mode === "extractive"
+                          ? "Read source excerpts +"
+                          : "EXPLORE FURTHER +"}
+                    </Text>
+                  </Pressable>
+                  {expanded && (
+                    <Text style={[s.copy, { color: p.text }]}>
+                      {status.brief.detail.replace(
+                        /\s*Coverage is based on segments?[\s\d,–—.\-]+$/i,
+                        "",
+                      )}
+                    </Text>
+                  )}
+                </Animated.View>
+              )}
+              {panel === "explore" && (
+                <>
+                  {status?.qualityNote && (
+                    <Text style={[s.copy, { color: p.muted }]}>
+                      Some generated content could not be verified. Available
+                      chapters and transcript passages are shown below.
+                    </Text>
+                  )}
+                  {tab === "Topics" &&
+                    status?.brief &&
+                    !status.brief.themes.length && (
                       <Text style={[s.copy, { color: p.muted }]}>
-                        Search becomes available as soon as the transcript
-                        arrives.
+                        No verified topic summary is available. Search the
+                        transcript in Find a Moment instead.
                       </Text>
                     )}
-                    {moments.map((moment) => (
+                  {tab === "Chapters" &&
+                    status?.chapters?.map((chapter, index) => (
                       <Pressable
-                        key={moment.segmentId}
+                        key={`${chapter.startMs}-${chapter.title}`}
                         accessibilityRole="button"
-                        accessibilityLabel={`Play from ${stamp(moment.startMs)}`}
-                        onPress={() => playAt(moment.startMs)}
+                        accessibilityLabel={`Play chapter: ${chapter.title}`}
+                        onPress={() => playAt(chapter.startMs)}
                         style={[
-                          s.card,
+                          s.row,
+                          { borderColor: p.line, backgroundColor: p.surface },
+                        ]}
+                      >
+                        <Text style={[s.number, { color: p.accent2 }]}>
+                          {String(index + 1).padStart(2, "0")}
+                        </Text>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={[s.heading, { color: p.text }]}>
+                            {chapter.title}
+                          </Text>
+                          <Text
+                            numberOfLines={2}
+                            style={[s.copy, { color: p.muted }]}
+                          >
+                            {chapter.description}
+                          </Text>
+                          <Text style={[s.caption, { color: p.accent2 }]}>
+                            Play from {stamp(chapter.startMs)}
+                          </Text>
+                        </View>
+                        <Ionicons name="play" size={16} color={p.accent2} />
+                      </Pressable>
+                    ))}
+                  {tab === "Chapters" &&
+                    status?.brief &&
+                    !status.chapters?.length && (
+                      <Text style={[s.copy, { color: p.muted }]}>
+                        This transcript does not support verified chapters. You
+                        can still read the brief and explore its text.
+                      </Text>
+                    )}
+                  {tab === "Topics" &&
+                    status?.brief?.themes.map((theme) => (
+                      <Pressable
+                        accessibilityRole="button"
+                        key={theme}
+                        onPress={() => void lookup(theme)}
+                        style={[
+                          s.row,
                           { backgroundColor: p.surface, borderColor: p.line },
                         ]}
                       >
-                        <Text style={[s.copy, { color: p.text }]}>
-                          {moment.context}
+                        <Ionicons
+                          name="sparkles-outline"
+                          size={20}
+                          color={p.accent2}
+                        />
+                        <Text style={[s.heading, { color: p.text, flex: 1 }]}>
+                          {theme}
                         </Text>
-                        <Text style={[s.caption, { color: p.accent2 }]}>
-                          Play from {stamp(moment.startMs)}
-                        </Text>
+                        <Ionicons
+                          name="arrow-forward"
+                          size={18}
+                          color={p.muted}
+                        />
                       </Pressable>
                     ))}
-                  </>
-                )}
-                {tab === "Transcript" && (
-                  <>
-                    {transcript?.segments.map((segment) => (
+                  {tab === "Find a Moment" && (
+                    <>
                       <View
-                        key={segment.id}
-                        style={[s.transcriptRow, { borderColor: p.line }]}
+                        style={[
+                          s.inputRow,
+                          { backgroundColor: p.surface, borderColor: p.line },
+                        ]}
                       >
-                        {typeof segment.startMs === "number" &&
-                        Number.isFinite(segment.startMs) ? (
+                        <TextInput
+                          accessibilityLabel="Find a moment in this episode"
+                          value={query}
+                          onChangeText={setQuery}
+                          onSubmitEditing={() => void lookup()}
+                          placeholder="Where did they discuss…"
+                          placeholderTextColor={p.muted}
+                          style={[s.input, { color: p.text }]}
+                          maxLength={600}
+                          returnKeyType="search"
+                        />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Find moment"
+                          disabled={working || !status?.transcriptAvailable}
+                          onPress={() => void lookup()}
+                          style={s.back}
+                        >
+                          <Ionicons
+                            name="arrow-forward"
+                            color={p.accent2}
+                            size={22}
+                          />
+                        </Pressable>
+                      </View>
+                      {!status?.transcriptAvailable && (
+                        <Text style={[s.copy, { color: p.muted }]}>
+                          Search becomes available as soon as the transcript
+                          arrives.
+                        </Text>
+                      )}
+                      {!query &&
+                        status?.brief?.themes.slice(0, 3).map((theme) => (
                           <Pressable
+                            key={theme}
                             accessibilityRole="button"
-                            accessibilityLabel={`Play transcript at ${stamp(segment.startMs)}`}
-                            onPress={() => playAt(segment.startMs!)}
-                            style={s.timestamp}
+                            onPress={() => void lookup(theme)}
+                            style={s.quietButton}
                           >
-                            <Text style={{ color: p.accent2 }}>
-                              {stamp(segment.startMs)}
+                            <Text style={[s.copy, { color: p.accent2 }]}>
+                              Where did they discuss {theme.toLowerCase()}?
                             </Text>
                           </Pressable>
-                        ) : (
-                          <Text style={[s.caption, { color: p.muted }]}>
-                            Text
+                        ))}
+                      {moments.map((moment) => (
+                        <Pressable
+                          key={moment.segmentId}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Play from ${stamp(moment.startMs)}`}
+                          onPress={() => playAt(moment.startMs)}
+                          style={[
+                            s.card,
+                            { backgroundColor: p.surface, borderColor: p.line },
+                          ]}
+                        >
+                          <Text style={[s.copy, { color: p.text }]}>
+                            {moment.context}
                           </Text>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          {segment.speaker && (
-                            <Text style={[s.caption, { color: p.accent2 }]}>
-                              {segment.speaker}
+                          <Text style={[s.caption, { color: p.accent2 }]}>
+                            Play from {stamp(moment.startMs)}
+                          </Text>
+                          {moment.relatedChapters?.map((chapter) => (
+                            <Text
+                              key={chapter.startMs}
+                              style={[s.caption, { color: p.muted }]}
+                            >
+                              In chapter: {chapter.title}
                             </Text>
-                          )}
-                          <Text selectable style={[s.copy, { color: p.text }]}>
-                            {segment.text}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                    {transcript?.nextOffset != null &&
-                      action(
-                        "Read more",
-                        () => void readTranscript(transcript.nextOffset!),
-                        true,
-                      )}
-                    {!transcript &&
-                      status?.transcriptAvailable &&
-                      !working &&
-                      action(
-                        "Load transcript",
-                        () => void readTranscript(),
-                        true,
-                      )}
-                  </>
-                )}
-              </>
-            )}
-            {working && (
-              <Text
-                accessibilityLiveRegion="polite"
-                style={[s.copy, { color: p.muted }]}
-              >
-                Just a moment…
-              </Text>
-            )}
-            {message ? (
-              <Text
-                accessibilityLiveRegion="polite"
-                style={[s.copy, { color: p.muted }]}
-              >
-                {message}
-              </Text>
-            ) : null}
-            {status?.provenance && (
-              <Text style={[s.caption, { color: p.muted }]}>
-                {status.provenance.sourceType === "publisher_rss"
-                  ? "Grounded in the publisher transcript"
-                  : "Grounded in transcribed episode audio"}
-                {status.readiness === "TEXT_ONLY"
-                  ? " · text only, no verified seek positions"
-                  : status.readiness === "PARTIAL"
-                    ? " · partial transcript coverage"
-                    : ""}
-                .
-              </Text>
-            )}
-          </>
-        )}
-      </ScrollView>
+                          ))}
+                        </Pressable>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
+              {working && (
+                <LoadingState compact p={p} label="Finding your moment…" />
+              )}
+              {message ? (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={[s.copy, { color: p.muted }]}
+                >
+                  {message}
+                </Text>
+              ) : null}
+              {status?.provenance && (
+                <Text style={[s.caption, { color: p.muted }]}>
+                  {status.provenance.sourceType === "publisher_rss"
+                    ? "Grounded in the publisher transcript"
+                    : "Grounded in transcribed episode audio"}
+                  {status.readiness === "TEXT_ONLY"
+                    ? " · text only, no verified seek positions"
+                    : status.readiness === "PARTIAL"
+                      ? " · partial transcript coverage"
+                      : ""}
+                  .
+                </Text>
+              )}
+            </>
+          )}
+        </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -790,9 +843,9 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   content: {
-    padding: 24,
+    padding: 20,
     paddingBottom: 48,
-    gap: 18,
+    gap: 12,
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
@@ -801,12 +854,12 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginBottom: 12,
+    marginBottom: 2,
   },
-  art: { width: 56, height: 56, borderRadius: 15 },
+  art: { width: 44, height: 44, borderRadius: 12 },
   episodeTitle: { fontSize: 15, lineHeight: 21, fontWeight: "600" },
   eyebrow: {
-    fontSize: 10,
+    fontSize: 12,
     lineHeight: 15,
     fontWeight: "700",
     letterSpacing: 1.5,
@@ -819,18 +872,18 @@ const s = StyleSheet.create({
   },
   heading: { fontSize: 17, lineHeight: 24, fontWeight: "600" },
   overview: {
-    fontSize: 23,
-    lineHeight: 32,
+    fontSize: 17,
+    lineHeight: 26,
     letterSpacing: -0.4,
     fontWeight: "500",
   },
-  copy: { fontSize: 15, lineHeight: 24 },
+  copy: { fontSize: 15, lineHeight: 22 },
   caption: { fontSize: 12, lineHeight: 19 },
   card: {
-    padding: 22,
-    borderRadius: 24,
+    padding: 16,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 18,
+    gap: 12,
   },
   loading: { paddingVertical: 20, gap: 22 },
   button: {
@@ -842,12 +895,13 @@ const s = StyleSheet.create({
   },
   buttonText: { fontSize: 15, fontWeight: "600", textAlign: "center" },
   quietButton: { minHeight: 44, justifyContent: "center" },
-  tabs: { gap: 8, paddingVertical: 4 },
+  tabs: { gap: 0, paddingVertical: 4 },
   tab: {
     minHeight: 44,
     justifyContent: "center",
     borderRadius: 22,
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
+    alignItems: "center",
     borderWidth: 1,
   },
   themes: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -860,9 +914,9 @@ const s = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    padding: 18,
-    borderRadius: 22,
+    gap: 10,
+    padding: 12,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
   },
   number: {

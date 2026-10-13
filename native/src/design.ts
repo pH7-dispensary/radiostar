@@ -7,6 +7,7 @@ export type StarTheme = {
   line: string;
   accent: string;
   accent2: string;
+  onAccent: string;
   wash: string;
   shadow: string;
   blurTint: "dark" | "light";
@@ -21,6 +22,7 @@ export const themes: { night: StarTheme; day: StarTheme } = {
     line: "rgba(255,255,255,.14)",
     accent: "#E08AAE",
     accent2: "#A99AFF",
+    onAccent: "#17181D",
     wash: "#342D47",
     shadow: "rgba(0,0,0,.30)",
     blurTint: "dark",
@@ -30,10 +32,11 @@ export const themes: { night: StarTheme; day: StarTheme } = {
     surface: "rgba(255,255,255,.78)",
     surfaceStrong: "rgba(255,255,255,.92)",
     text: "#26242B",
-    muted: "#6E6A74",
+    muted: "#686470",
     line: "rgba(50,45,62,.12)",
-    accent: "#C76391",
-    accent2: "#7669CB",
+    accent: "#A74673",
+    accent2: "#6757BB",
+    onAccent: "#FFFFFF",
     wash: "#EAE5FF",
     shadow: "rgba(69,58,93,.13)",
     blurTint: "light",

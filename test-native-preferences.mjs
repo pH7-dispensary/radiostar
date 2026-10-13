@@ -1,0 +1,49 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+const require = createRequire(
+  new URL("./native/package.json", import.meta.url),
+);
+const ts = require("typescript");
+let saved = null;
+const exports = {};
+const output = ts.transpileModule(
+  readFileSync(
+    new URL("./native/src/listenerState.ts", import.meta.url),
+    "utf8",
+  ),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+).outputText;
+runInNewContext(output, {
+  exports,
+  require: (name) => {
+    assert.equal(name, "./localStorage");
+    return {
+      readLocalDocument: async () => saved,
+      writeLocalDocument: async (_key, value) => {
+        saved = value;
+      },
+    };
+  },
+});
+assert.equal(exports.emptyListenerState().intelligenceEnabled, true);
+assert.equal((await exports.loadListenerState()).intelligenceEnabled, true);
+saved = JSON.stringify({
+  intelligenceEnabled: false,
+  following: [{ id: "kept" }],
+});
+let migrated = await exports.loadListenerState();
+assert.equal(migrated.intelligenceEnabled, true);
+assert.equal(migrated.following[0].id, "kept");
+await exports.saveListenerState({ ...migrated, intelligenceEnabled: false });
+assert.equal(
+  (await exports.loadListenerState()).intelligenceEnabled,
+  false,
+  "explicit v2 opt-out persists",
+);
+await exports.saveListenerState({ ...migrated, intelligenceEnabled: true });
+assert.equal((await exports.loadListenerState()).intelligenceEnabled, true);
+console.log(
+  "default-on intelligence migration, opt-out and listener persistence checks passed",
+);

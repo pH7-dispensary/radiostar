@@ -64,6 +64,7 @@ export type IntelligenceStatus = {
   paid?: { configured: boolean; enabled: boolean };
 };
 export type EpisodeMoment = {
+  relatedChapters?: Array<{ title: string; startMs: number; endMs: number }>;
   rank: number;
   label: string;
   segmentId: string;
@@ -75,7 +76,7 @@ const base = () =>
   process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
 const developmentIntelligenceToken =
   process.env.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN || "";
-async function request(path: string, init?: RequestInit) {
+export async function request(path: string, init?: RequestInit) {
   let origin = base();
   if (!origin)
     throw Error(
@@ -117,7 +118,7 @@ export async function loadIntelligenceStatus(
     { headers: developmentHeaders() },
   ).then((x) => x.status);
 }
-function developmentHeaders() {
+export function developmentHeaders() {
   if (!developmentIntelligenceToken)
     throw Error("Episode analysis is not available on this device yet.");
   return {
@@ -243,11 +244,12 @@ export async function loadEpisodeTranscript(
   feedUrl: string,
   episodeId: string,
   offset = 0,
+  query = "",
 ): Promise<TranscriptPage> {
   return request("/api/intelligence/transcript", {
     method: "POST",
     headers: developmentHeaders(),
-    body: JSON.stringify({ feedUrl, episodeId, offset }),
+    body: JSON.stringify({ feedUrl, episodeId, offset, query }),
   });
 }
 export const episodeIntelligenceApi = {

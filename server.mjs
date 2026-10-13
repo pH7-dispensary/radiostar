@@ -14,6 +14,8 @@ import { EpisodePipeline, publicIntelligence } from "./episode-pipeline.mjs";
 import { publicUrl, fetchPublicText } from "./safe-network.mjs";
 import { projectRoot, loadCredentials } from "./config.mjs";
 import { acquireServerLock } from "./server-lock.mjs";
+import { ListenerService, ListenerError } from "./listener-service.mjs";
+import { SkipService } from "./skip-service.mjs";
 
 const clean = (s) =>
   String(s || "")
@@ -246,6 +248,11 @@ export function createStarCastServer({
     fetchTranscript,
     audioFactory,
   });
+  const listeners = new ListenerService(store, {
+    inviteOrigin: env.STARCAST_INVITE_ORIGIN,
+    friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
+  });
+  const skips = new SkipService(store, pipeline);
   function rate(req) {
     const key = req.socket.remoteAddress || "unknown",
       now = Date.now(),
@@ -280,7 +287,7 @@ export function createStarCastServer({
         res.setHeader("vary", "Origin");
         res.setHeader(
           "access-control-allow-headers",
-          "content-type,x-star-cast-dev-token",
+          "content-type,x-star-cast-dev-token,authorization",
         );
         res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
         if (req.method === "OPTIONS") {
@@ -289,6 +296,25 @@ export function createStarCastServer({
         }
       }
       if (!url.pathname.startsWith("/api/")) {
+        const invitation = url.pathname.match(
+          /^\/invite\/([a-zA-Z0-9_-]{12})$/,
+        );
+        if (invitation && req.method === "GET") {
+          const code = invitation[1];
+          if (!store.get("invite-code", code))
+            return send(res, 404, { error: "Invite unavailable." });
+          res.writeHead(200, {
+            "content-type": "text/html; charset=utf-8",
+            "content-security-policy":
+              "default-src 'none'; style-src 'unsafe-inline'",
+            "cache-control": "no-store",
+            "x-content-type-options": "nosniff",
+            "referrer-policy": "no-referrer",
+          });
+          return res.end(
+            `<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Share the listening — Star Cast</title><style>body{background:#17181d;color:#f8f6f2;font:18px system-ui;margin:0;padding:10vh 8vw}main{max-width:520px;margin:auto}a{display:inline-block;color:#c8bbff;padding:18px 0}p{line-height:1.6}code{font-size:22px}</style><main><p>STAR CAST</p><h1>Share the listening.</h1><p>A friend has invited you to Star Cast.</p><a href="starcast://invite/${code}">Open Star Cast</a><p>If Star Cast is not installed, save this invite code for onboarding:</p><code>${code}</code><p>The native app is currently in development. Ask your friend for access; there is no public App Store download yet.</p></main></html>`,
+          );
+        }
         if (!["GET", "HEAD"].includes(req.method))
           return send(res, 405, { error: "Method not allowed." });
         const file = staticFiles.get(url.pathname);
@@ -357,6 +383,55 @@ export function createStarCastServer({
           error: "Analysis requires an authorised Star Cast device.",
           code: "DEVICE_UNAUTHORISED",
         });
+      if (url.pathname === "/api/listener/register" && req.method === "POST") {
+        if (env.NODE_ENV === "production")
+          return send(res, 503, {
+            error: "Verified installation enrollment is not configured.",
+          });
+        const input = await body(req);
+        const listener = listeners.register(input.credential);
+        return send(res, 200, listeners.summary(listener));
+      }
+      if (
+        url.pathname.startsWith("/api/listener/") ||
+        url.pathname.startsWith("/api/skips/")
+      ) {
+        const listener = listeners.authenticate(
+          req.headers.authorization?.replace(/^Bearer /, ""),
+        );
+        if (!listener)
+          return send(res, 401, {
+            error: "Reconnect your listener profile to continue.",
+          });
+        if (url.pathname === "/api/listener/summary" && req.method === "GET")
+          return send(res, 200, listeners.summary(listener));
+        if (req.method !== "POST")
+          return send(res, 405, { error: "Method not allowed." });
+        const input = await body(req);
+        if (url.pathname === "/api/listener/onboard")
+          return send(res, 200, listeners.onboard(listener));
+        if (url.pathname === "/api/listener/attribute")
+          return send(res, 200, listeners.attribute(listener, input.code));
+        if (url.pathname === "/api/listener/preferences")
+          return send(res, 200, listeners.preferences(listener, input));
+        if (url.pathname === "/api/listener/heartbeat")
+          return send(res, 200, listeners.heartbeat(listener, input));
+        if (url.pathname === "/api/listener/offline")
+          return send(res, 200, listeners.offline(listener, input));
+        if (!valid(input))
+          return send(res, 400, {
+            error: "A valid publisher episode is required.",
+          });
+        if (url.pathname === "/api/skips/status")
+          return send(res, 200, skips.inspect(input.feedUrl, input.episodeId));
+        if (url.pathname === "/api/skips/feedback")
+          return send(
+            res,
+            200,
+            skips.report(listener, input.feedUrl, input.episodeId, input),
+          );
+        return send(res, 404, { error: "Not found" });
+      }
       if (url.pathname === "/api/admin/intelligence" && req.method === "GET") {
         ledger.refresh();
         return send(res, 200, {
@@ -431,7 +506,12 @@ export function createStarCastServer({
         return send(
           res,
           200,
-          pipeline.transcriptPage(input.feedUrl, input.episodeId, input.offset),
+          pipeline.transcriptPage(
+            input.feedUrl,
+            input.episodeId,
+            input.offset,
+            input.query,
+          ),
         );
       if (url.pathname === "/api/intelligence/moment") {
         if (
@@ -454,13 +534,15 @@ export function createStarCastServer({
         });
       }
       return send(res, 404, { error: "Not found" });
-    } catch {
+    } catch (error) {
+      if (error instanceof ListenerError)
+        return send(res, error.status, { error: error.message });
       return send(res, 400, {
         error: "This request could not be completed. Please try again.",
       });
     }
   });
-  return { server, store, ledger, pipeline };
+  return { server, store, ledger, pipeline, listeners, skips };
 }
 if (
   process.argv[1] &&

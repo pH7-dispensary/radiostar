@@ -20,6 +20,7 @@ export type ListenerState = {
   nightMode: boolean;
   onboardingComplete: boolean;
   intelligenceEnabled: boolean;
+  intelligencePreferenceVersion?: number;
   moments: StoredEpisode[];
 };
 export const emptyListenerState = (): ListenerState => ({
@@ -29,7 +30,8 @@ export const emptyListenerState = (): ListenerState => ({
   feedEpisodes: {},
   nightMode: true,
   onboardingComplete: false,
-  intelligenceEnabled: false,
+  intelligenceEnabled: true,
+  intelligencePreferenceVersion: 2,
   moments: [],
 });
 export async function loadListenerState(): Promise<ListenerState> {
@@ -49,7 +51,12 @@ export async function loadListenerState(): Promise<ListenerState> {
           ? value.feedEpisodes
           : {},
       onboardingComplete: value.onboardingComplete === true,
-      intelligenceEnabled: value.intelligenceEnabled === true,
+      // v1 false meant "not activated", not an explicit opt-out. Migrate once.
+      intelligenceEnabled:
+        value.intelligencePreferenceVersion === 2
+          ? value.intelligenceEnabled !== false
+          : true,
+      intelligencePreferenceVersion: 2,
     };
   } catch {
     return emptyListenerState();

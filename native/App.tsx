@@ -53,6 +53,10 @@ import { motion, themes, type StarTheme } from "./src/design";
 import { useEpisodeIntelligence } from "./src/useEpisodeIntelligence";
 import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { SearchScreen } from "./src/SearchScreen";
+import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
+import { ListenerSync } from "./src/ListenerSync";
+import { LoadingState } from "./src/LoadingState";
+import { PodcastArtwork } from "./src/PodcastArtwork";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
@@ -85,8 +89,6 @@ const asStored = (
   artworkUrl: show.art,
   feedUrl: show.feedUrl,
 });
-const artworkFallback =
-  "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=400&q=80";
 
 function Art({
   url,
@@ -98,9 +100,8 @@ function Art({
   radius?: number;
 }) {
   return (
-    <Image
-      accessibilityLabel="Podcast artwork"
-      source={{ uri: url || artworkFallback }}
+    <PodcastArtwork
+      uri={url}
       style={{
         width: size,
         height: size,
@@ -111,6 +112,7 @@ function Art({
   );
 }
 function Onboarding({ p, onDone }: { p: Theme; onDone: () => void }) {
+  const [linkingInvite, setLinkingInvite] = useState(false);
   let cards = [
     [
       "◌",
@@ -131,53 +133,70 @@ function Onboarding({ p, onDone }: { p: Theme; onDone: () => void }) {
   return (
     <Modal visible transparent animationType="fade">
       <SafeAreaView style={styles.onboardingShade}>
-        <View
-          style={[
-            styles.onboarding,
-            { backgroundColor: p.bg, borderColor: p.line },
-          ]}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <Pressable
-            accessibilityRole="button"
-            onPress={onDone}
-            style={styles.onboardingSkip}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.onboarding,
+              { backgroundColor: p.bg, borderColor: p.line },
+            ]}
           >
-            <Text style={[styles.link, { color: p.muted }]}>Skip</Text>
-          </Pressable>
-          <Text style={[styles.eyebrow, { color: p.accent }]}>
-            WELCOME TO STAR CAST
-          </Text>
-          <Text style={[styles.onboardingTitle, { color: p.text }]}>
-            Listen{`\n`}beautifully.
-          </Text>
-          <Text style={[styles.onboardingCopy, { color: p.muted }]}>
-            A private, considered home for podcasts worth your time.
-          </Text>
-          <View style={styles.onboardingCards}>
-            {cards.map(([icon, title, copy]) => (
-              <Glass key={title} p={p} style={styles.onboardingCard}>
-                <Text style={[styles.onboardingIcon, { color: p.accent2 }]}>
-                  {icon}
-                </Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.onboardingCardTitle, { color: p.text }]}>
-                    {title}
+            <Pressable
+              accessibilityRole="button"
+              disabled={linkingInvite}
+              accessibilityState={{ disabled: linkingInvite }}
+              onPress={onDone}
+              style={styles.onboardingSkip}
+            >
+              <Text style={[styles.link, { color: p.muted }]}>Skip</Text>
+            </Pressable>
+            <Text style={[styles.eyebrow, { color: p.accent }]}>
+              WELCOME TO STAR CAST
+            </Text>
+            <Text style={[styles.onboardingTitle, { color: p.text }]}>
+              Listen{`\n`}beautifully.
+            </Text>
+            <Text style={[styles.onboardingCopy, { color: p.muted }]}>
+              A private, considered home for podcasts worth your time.
+            </Text>
+            <View style={styles.onboardingCards}>
+              {cards.map(([icon, title, copy]) => (
+                <Glass key={title} p={p} style={styles.onboardingCard}>
+                  <Text style={[styles.onboardingIcon, { color: p.accent2 }]}>
+                    {icon}
                   </Text>
-                  <Text style={[styles.onboardingCardCopy, { color: p.muted }]}>
-                    {copy}
-                  </Text>
-                </View>
-              </Glass>
-            ))}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onDone}
-            style={[styles.primary, { backgroundColor: p.accent2 }]}
-          >
-            <Text style={styles.primaryText}>Start listening</Text>
-          </Pressable>
-        </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[styles.onboardingCardTitle, { color: p.text }]}
+                    >
+                      {title}
+                    </Text>
+                    <Text
+                      style={[styles.onboardingCardCopy, { color: p.muted }]}
+                    >
+                      {copy}
+                    </Text>
+                  </View>
+                </Glass>
+              ))}
+            </View>
+            <InviteEntry p={p} onBusyChange={setLinkingInvite} />
+            <Pressable
+              accessibilityRole="button"
+              disabled={linkingInvite}
+              accessibilityState={{ disabled: linkingInvite }}
+              onPress={onDone}
+              style={[styles.primary, { backgroundColor: p.accent2 }]}
+            >
+              <Text style={[styles.primaryText, { color: p.onAccent }]}>
+                Start listening
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -252,9 +271,10 @@ function Discovery({
         ))}
       </ScrollView>
       {busy ? (
-        <Text style={[styles.emptyInline, { color: p.muted }]}>
-          Finding real {category.toLowerCase()} shows…
-        </Text>
+        <LoadingState
+          p={p}
+          label={`Finding ${category.toLowerCase()} shows…`}
+        />
       ) : null}
       {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
       <View style={styles.discoveryGrid}>
@@ -800,7 +820,9 @@ function AiSleepScreen({
               accessibilityRole="button"
               style={[styles.aiStart, { backgroundColor: p.accent2 }]}
             >
-              <Text style={styles.primaryText}>Start AI Sleep</Text>
+              <Text style={[styles.primaryText, { color: p.onAccent }]}>
+                Start AI Sleep
+              </Text>
             </Pressable>
           )}
           <Text style={[styles.aiPrivacy, { color: p.muted }]}>
@@ -1223,11 +1245,11 @@ function PlayerSheet({
                 onPress={() => setAiScreenOpen(true)}
                 style={[styles.aiSleepEntry, { backgroundColor: p.accent2 }]}
               >
-                <Text style={styles.aiSleepEntryTitle}>
-                  <Ionicons name="sparkles" size={17} color="#fff" />{" "}
+                <Text style={[styles.aiSleepEntryTitle, { color: p.onAccent }]}>
+                  <Ionicons name="sparkles" size={17} color={p.onAccent} />{" "}
                   {aiActive ? "AI Sleep active" : "AI Sleep"}
                 </Text>
-                <Text style={styles.aiSleepEntryCopy}>
+                <Text style={[styles.aiSleepEntryCopy, { color: p.onAccent }]}>
                   {aiActive
                     ? "Keep listening"
                     : "Fall asleep. We’ll take care of the rest."}
@@ -1798,33 +1820,35 @@ function Profile({
           <Text style={[styles.small, { color: p.muted }]}>Tap to switch</Text>
         </Pressable>
       </Section>
-      <Section title="Listening allowance" p={p}>
-        <Glass p={p} style={styles.allowance}>
-          <Text style={[styles.allowanceNumber, { color: p.text }]}>
-            10 hours
-          </Text>
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>
-            free each month
-          </Text>
-          <Text style={[styles.tiny, { color: p.muted }]}>
-            Referral credits are verified by the server before they are
-            displayed or awarded.
-          </Text>
-        </Glass>
+      <Section title="Your listening allowance" p={p}>
+        <ReferralPanel p={p} />
       </Section>
-      <Section title="Referrals" p={p}>
-        <Glass p={p} style={styles.referral}>
-          <Text style={[styles.followTitle, { color: p.text }]}>
-            Give listening time.
+      <Section title="Episode intelligence" p={p}>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel="Episode intelligence"
+          accessibilityState={{ checked: state.intelligenceEnabled }}
+          onPress={() => {
+            feedback.selection();
+            setState({
+              ...state,
+              intelligenceEnabled: !state.intelligenceEnabled,
+              intelligencePreferenceVersion: 2,
+            });
+          }}
+          style={[styles.setting, { borderBottomColor: p.line }]}
+        >
+          <Text style={[styles.settingTitle, { color: p.text }]}>
+            Briefs, chapters and moments
           </Text>
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>
-            Each qualified referral permanently adds 5 hours every month.
+          <Text style={[styles.small, { color: p.muted }]}>
+            {state.intelligenceEnabled ? "On" : "Off"}
           </Text>
-          <Text style={[styles.tiny, { color: p.muted }]}>
-            Pending and earned referral entitlements appear here only after
-            server verification.
-          </Text>
-        </Glass>
+        </Pressable>
+        <Text style={[styles.emptyCopy, { color: p.muted }]}>
+          Uses available publisher transcripts when you open an episode. Audio
+          analysis always asks first.
+        </Text>
       </Section>
       <Section title="AI Sleep" p={p}>
         <Text style={[styles.emptyCopy, { color: p.muted }]}>
@@ -1984,7 +2008,10 @@ function ShowDetail({
         ]}
       >
         <Text
-          style={[styles.primaryText, { color: following ? p.text : "#fff" }]}
+          style={[
+            styles.primaryText,
+            { color: following ? p.text : p.onAccent },
+          ]}
         >
           {following ? "✓ Following" : "＋ Follow show"}
         </Text>
@@ -1994,9 +2021,7 @@ function ShowDetail({
       </Text>
       <Section title="Episodes" p={p}>
         {busy ? (
-          <Text style={[styles.emptyInline, { color: p.muted }]}>
-            Loading publisher episodes…
-          </Text>
+          <LoadingState p={p} label="Loading publisher episodes…" />
         ) : null}
         {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
         {episodes.map((episode) => {
@@ -2211,6 +2236,7 @@ function AppContent({
     ) : null;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
+      {hydrated && <ListenerSync onboarded={state.onboardingComplete} />}
       <AmbientBackdrop p={p} />
       <View style={styles.root}>
         <View style={styles.topbar}>

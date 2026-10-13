@@ -490,9 +490,16 @@ export class EpisodePipeline {
       clearTimeout(timeout);
     }
   }
-  transcriptPage(feed, id, offset = 0) {
+  transcriptPage(feed, id, offset = 0, query = "") {
     const value = this.status(feed, id);
-    const segments = value?.transcript?.segments || [];
+    const term =
+      typeof query === "string"
+        ? query.trim().slice(0, 300).toLocaleLowerCase()
+        : "";
+    const all = value?.transcript?.segments || [];
+    const segments = term
+      ? all.filter((s) => s.text.toLocaleLowerCase().includes(term))
+      : all;
     const start = Math.max(0, Math.floor(Number(offset) || 0));
     return {
       segments: segments
@@ -506,15 +513,23 @@ export class EpisodePipeline {
         })),
       nextOffset: start + 60 < segments.length ? start + 60 : null,
       total: segments.length,
+      totalSegments: all.length,
       provenance: value?.provenance || null,
     };
   }
   moments(feed, id, query) {
     const value = this.status(feed, id);
     return value?.transcript
-      ? hybridRetrieve(value.transcript, query, 5).filter(
-          (m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs),
-        )
+      ? hybridRetrieve(value.transcript, query, 5)
+          .filter((m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs))
+          .map((moment) => ({
+            ...moment,
+            relatedChapters: (value.chapters || [])
+              .filter((chapter) =>
+                chapter.sourceSegmentIds?.includes(moment.segmentId),
+              )
+              .map(({ title, startMs, endMs }) => ({ title, startMs, endMs })),
+          }))
       : [];
   }
   search(query, { feedUrls = null, momentsOnly = false } = {}) {

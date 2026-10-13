@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LoadingState } from "./LoadingState";
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -419,12 +420,14 @@ export function SearchScreen({
             { backgroundColor: p.surface, borderColor: p.line },
           ]}
         >
-          <ActivityIndicator color={p.accent2} />
-          <Text style={[s.resultTitle, { color: p.text }]}>
-            {mode === "Podcasts"
-              ? "Discovering podcasts"
-              : "Exploring processed conversations"}
-          </Text>
+          <LoadingState
+            p={p}
+            label={
+              mode === "Podcasts"
+                ? "Discovering podcasts…"
+                : "Exploring processed conversations…"
+            }
+          />
           <Text style={[s.body, { color: p.muted }]}>{query}</Text>
         </View>
       )}
