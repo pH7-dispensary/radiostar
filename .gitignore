@@ -5,3 +5,6 @@ native/.env
 .env
 .env.local
 continue
+.starcast/
+native/dist/
+native/web-dist/

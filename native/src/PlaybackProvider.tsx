@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import * as SecureStore from "expo-secure-store";
+import { readLocalDocument, writeLocalDocument } from "./localStorage";
 import {
   createAudioPlayer,
   setAudioModeAsync,
@@ -22,6 +22,7 @@ export type Source = {
   artworkUrl?: string;
   feedUrl?: string;
   hasPublisherTranscript?: boolean;
+  startPositionMs?: number;
 };
 type Persisted = {
   source: Source;
@@ -35,6 +36,7 @@ type PlaybackContextValue = {
   seek: (ms: number) => Promise<void>;
   setSpeed: (speed: number) => Promise<void>;
   fadeAndPause: (durationMs: number) => Promise<number>;
+  cancelFade: () => void;
 };
 const KEY = "star-cast-native-playback-v1";
 const PlaybackContext = createContext<PlaybackContextValue | null>(null);
@@ -57,7 +59,28 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     [source, setSource] = useState<Source | null>(null),
     player = useMemo(() => createAudioPlayer(null), []),
     status = useAudioPlayerStatus(player),
-    lastWrite = useRef(0);
+    lastWrite = useRef(0),
+    operation = useRef(0),
+    fadeOperation = useRef(0);
+  const positions = useRef<Record<string, number>>({});
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+  const persistPosition = async (positionMs: number) => {
+    const currentSource = sourceRef.current;
+    if (!currentSource) return;
+    positions.current[currentSource.episodeId] = positionMs;
+    await writeLocalDocument(
+      KEY + "-positions",
+      JSON.stringify(positions.current),
+    );
+    await writeLocalDocument(
+      KEY,
+      JSON.stringify({
+        source: currentSource,
+        snapshot: { positionMs, speed: snapshot.speed },
+      }),
+    );
+  };
   useEffect(() => {
     void setAudioModeAsync({
       playsInSilentMode: true,
@@ -67,15 +90,26 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     void (async () => {
       try {
-        let raw = await SecureStore.getItemAsync(KEY);
+        const savedPositions = await readLocalDocument(KEY + "-positions");
+        if (savedPositions) positions.current = JSON.parse(savedPositions);
+        let raw = await readLocalDocument(KEY);
         if (!raw || cancelled) return;
         let stored = JSON.parse(raw) as Persisted;
-        if (!stored.source?.url) return;
+        if (!stored.source?.url || operation.current > 0) return;
         player.replace(stored.source.url);
         player.setPlaybackRate(stored.snapshot.speed || 1);
+        const started = Date.now();
+        while (
+          !player.isLoaded &&
+          !cancelled &&
+          operation.current === 0 &&
+          Date.now() - started < 15000
+        )
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        if (cancelled || operation.current > 0 || !player.isLoaded) return;
         await player.seekTo((stored.snapshot.positionMs || 0) / 1000);
         if (!cancelled) {
-          setSource(stored.source);
+          setSource({ ...stored.source, startPositionMs: undefined });
           setSnapshot((s) => ({
             ...s,
             episodeId: stored.source.episodeId,
@@ -107,7 +141,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!source || Date.now() - lastWrite.current < 5_000) return;
     lastWrite.current = Date.now();
-    void SecureStore.setItemAsync(
+    positions.current[source.episodeId] = snapshot.positionMs;
+    void writeLocalDocument(
+      KEY + "-positions",
+      JSON.stringify(positions.current),
+    ).catch(() => {});
+    void writeLocalDocument(
       KEY,
       JSON.stringify({
         source,
@@ -119,9 +158,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     snapshot,
     source,
     play: async (next) => {
-      if (source?.url !== next.url) {
+      const currentOperation = ++operation.current;
+      fadeOperation.current++;
+      player.volume = 1;
+      const switching = sourceRef.current?.url !== next.url;
+      if (switching) {
         player.replace(next.url);
-        setSource(next);
+        sourceRef.current = { ...next, startPositionMs: undefined };
+        setSource({ ...next, startPositionMs: undefined });
         setSnapshot((s) => ({
           ...s,
           episodeId: next.episodeId,
@@ -129,7 +173,22 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
           durationMs: null,
           playing: false,
         }));
+        const started = Date.now();
+        while (
+          !player.isLoaded &&
+          Date.now() - started < 20000 &&
+          currentOperation === operation.current
+        )
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        if (currentOperation !== operation.current) return;
+        if (!player.isLoaded)
+          throw Error("Audio could not load. Please try again.");
       }
+      const target =
+        next.startPositionMs ??
+        (switching ? positions.current[next.episodeId] : undefined);
+      if (target !== undefined) await player.seekTo(Math.max(0, target) / 1000);
+      if (currentOperation !== operation.current) return;
       player.setActiveForLockScreen(
         true,
         { title: next.title, artist: next.show, artworkUrl: next.artworkUrl },
@@ -138,27 +197,69 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       player.play();
     },
     pause: async () => {
+      operation.current++;
+      fadeOperation.current++;
       player.pause();
+      player.volume = 1;
+      if (sourceRef.current) {
+        positions.current[sourceRef.current.episodeId] =
+          player.currentTime * 1000;
+        await writeLocalDocument(
+          KEY + "-positions",
+          JSON.stringify(positions.current),
+        );
+        await writeLocalDocument(
+          KEY,
+          JSON.stringify({
+            source: sourceRef.current,
+            snapshot: {
+              positionMs: player.currentTime * 1000,
+              speed: snapshot.speed,
+            },
+          }),
+        );
+      }
     },
     seek: async (ms) => {
-      await player.seekTo(Math.max(0, ms) / 1000);
+      fadeOperation.current++;
+      player.volume = 1;
+      const target = Math.max(
+        0,
+        Math.min(ms, player.duration > 0 ? player.duration * 1000 : ms),
+      );
+      await player.seekTo(target / 1000);
+      await persistPosition(target);
     },
     setSpeed: async (speed) => {
       player.setPlaybackRate(speed);
       setSnapshot((s) => ({ ...s, speed }));
     },
+    cancelFade: () => {
+      fadeOperation.current++;
+      player.volume = 1;
+    },
     fadeAndPause: async (durationMs) => {
-      let pausedAt = snapshot.positionMs,
-        steps = Math.max(1, Math.min(20, Math.round(durationMs / 2_250)));
+      const token = ++fadeOperation.current;
+      const steps = Math.max(1, Math.min(20, Math.round(durationMs / 2_250)));
       for (let step = steps; step > 0; step--) {
+        if (token !== fadeOperation.current) {
+          player.volume = 1;
+          return player.currentTime * 1000;
+        }
         player.volume = step / steps;
         await new Promise<void>((resolve) =>
           setTimeout(resolve, durationMs / steps),
         );
       }
+      if (token !== fadeOperation.current) {
+        player.volume = 1;
+        return player.currentTime * 1000;
+      }
       player.pause();
       player.volume = 1;
-      return pausedAt;
+      const actualPausePosition = player.currentTime * 1000;
+      await persistPosition(actualPausePosition);
+      return actualPausePosition;
     },
   };
   return (

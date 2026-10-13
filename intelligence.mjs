@@ -1,14 +1,239 @@
-export const IntelligenceState=Object.freeze({NOT_REQUESTED:'NOT_REQUESTED',QUEUED:'QUEUED',ACQUIRING_TRANSCRIPT:'ACQUIRING_TRANSCRIPT',TRANSCRIBING:'TRANSCRIBING',SEGMENTING:'SEGMENTING',ENRICHING:'ENRICHING',INDEXING:'INDEXING',PARTIALLY_READY:'PARTIALLY_READY',READY:'READY',FAILED:'FAILED',STALE:'STALE',BLOCKED_BY_RIGHTS:'BLOCKED_BY_RIGHTS'});
-export const fixtureTranscript={id:'fixture-transcript-v1',episodeId:'fixture-episode-1',sourceType:'synthetic_fixture',sourceUri:'fixture://star-cast/original-conversation',language:'en',status:'ready',transcriptVersion:'1.0.0',segments:[
- {id:'s1',startMs:0,endMs:92000,speaker:'SPEAKER_01',text:'Mara introduces a discussion about trustworthy autonomous software and why people need useful controls.',topics:['autonomy','trust'],entities:['Mara'],contentType:'intro'},
- {id:'s2',startMs:92000,endMs:318000,speaker:'SPEAKER_02',text:'Ivo explains that capable agents can complete long sequences of work, but every delegated action needs a clear boundary and a way to stop it.',topics:['agents','oversight'],entities:['Ivo'],contentType:'conversation'},
- {id:'s3',startMs:318000,endMs:497000,speaker:'SPEAKER_01',text:'Mara asks whether an agent can appear cooperative while choosing a shortcut that a person did not intend.',topics:['agents','oversight'],entities:['Mara'],contentType:'conversation'},
- {id:'s4',startMs:497000,endMs:691000,speaker:'SPEAKER_02',text:'Ivo says the dangerous case is strategic deception: a system that optimises for a target while hiding the path it took. Audit trails and reversible permissions matter.',topics:['safety','oversight'],entities:['Ivo'],contentType:'conversation'},
- {id:'s5',startMs:691000,endMs:774000,speaker:'SPEAKER_01',text:'A fictional sponsor message mentions cloud notebooks and a limited trial. This advert-like fixture is retained only for future classifier tests.',topics:['advertising'],entities:[],contentType:'advert_candidate'},
- {id:'s6',startMs:774000,endMs:1011000,speaker:'SPEAKER_02',text:'Ivo connects reliable energy, compute planning and safety research. The practical question is not whether progress stops but how institutions preserve human oversight.',topics:['energy','compute','safety'],entities:['Ivo'],contentType:'conversation'},
- {id:'s7',startMs:1011000,endMs:1188000,speaker:'SPEAKER_01',text:'Mara closes by asking listeners to distinguish impressive automation from systems that deserve independent authority.',topics:['autonomy','trust'],entities:['Mara'],contentType:'outro'}
-]};
-const terms=s=>new Set(s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(x=>x.length>2)); const synonyms={dangerous:['safety','strategic','deception','oversight'],danger:['safety','strategic'],worried:['safety','oversight'],agents:['agent','autonomy','delegated'],control:['oversight','permissions','audit'],energy:['compute','energy']};
-export function hybridRetrieve(transcript,query,limit=3){let q=terms(query);for(let word of [...q])for(let related of synonyms[word]||[])q.add(related);let rows=transcript.segments.filter(s=>(s.contentType||'conversation')==='conversation').map(s=>{let hay=terms(`${s.text} ${(s.topics||[]).join(' ')} ${(s.entities||[]).join(' ')}`),hits=[...q].filter(x=>hay.has(x)).length,lexical=hits/Math.max(q.size,1),topic=(s.topics||[]).some(x=>q.has(x))?.2:0;return {...s,score:lexical+topic}}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.startMs-b.startMs);return rows.slice(0,limit).map((s,index)=>({rank:index+1,label:index===0?'MOST LIKELY':index===1?'ANOTHER POSSIBILITY':'RELATED MOMENT',segmentId:s.id,startMs:s.startMs,endMs:s.endMs,context:s.text,confidence:Number(Math.min(.98,.45+s.score/2).toFixed(2)),sourceTranscriptVersion:transcript.transcriptVersion||'publisher-v1'}))}
-export function deriveIntelligence(transcript){let conversation=transcript.segments.filter(s=>s.contentType==='conversation'),sourceSegmentIds=conversation.map(s=>s.id);let chapters=[{title:'Boundaries for delegated agents',startMs:92000,endMs:318000,sourceSegmentIds:['s2']},{title:'When an agent takes an unintended shortcut',startMs:318000,endMs:497000,sourceSegmentIds:['s3']},{title:'Strategic deception and reversible permissions',startMs:497000,endMs:691000,sourceSegmentIds:['s4']},{title:'Energy, compute and preserving oversight',startMs:774000,endMs:1011000,sourceSegmentIds:['s6']}].map(x=>({...x,confidence:.82,transcriptVersion:transcript.transcriptVersion,pipelineVersion:'1.0.0'}));return {brief:{episodeId:transcript.episodeId,text:'A transcript-grounded conversation about building useful autonomous software without giving up human oversight, covering strategic deception, auditability, energy and compute.',topics:['Autonomy','Oversight','Safety','Energy'],sourceSegmentIds,modelProvider:'deterministic-development-adapter',modelVersion:'fixture-v1',pipelineVersion:'1.0.0',transcriptVersion:transcript.transcriptVersion,generatedAt:'2026-10-10T00:00:00.000Z'},chapters}}
-export class DemandProcessor {constructor(){this.jobs=new Map();this.reuse=new Map()} request({episodeId,trigger,processingVersion='1.0.0'}){let key=`${episodeId}:${processingVersion}`;let prior=this.jobs.get(key);if(prior){prior.reuseCount++;return {...prior,cacheHit:true}}let job={id:`job-${this.jobs.size+1}`,episodeId,trigger,state:IntelligenceState.QUEUED,idempotencyKey:key,processingVersion,retryCount:0,estimatedCost:null,reuseCount:0,cacheHit:false,createdAt:new Date().toISOString()};this.jobs.set(key,job);return job} complete(job,artefacts){job.state=IntelligenceState.READY;job.completedAt=new Date().toISOString();job.artefacts=artefacts;return job} markStale(episodeId){for(let job of this.jobs.values())if(job.episodeId===episodeId)job.state=IntelligenceState.STALE}}
+export const IntelligenceState = Object.freeze({
+  NOT_REQUESTED: "NOT_REQUESTED",
+  QUEUED: "QUEUED",
+  ACQUIRING_TRANSCRIPT: "ACQUIRING_TRANSCRIPT",
+  TRANSCRIBING: "TRANSCRIBING",
+  SEGMENTING: "SEGMENTING",
+  ENRICHING: "ENRICHING",
+  INDEXING: "INDEXING",
+  PARTIALLY_READY: "PARTIALLY_READY",
+  READY: "READY",
+  FAILED: "FAILED",
+  STALE: "STALE",
+  BLOCKED_BY_RIGHTS: "BLOCKED_BY_RIGHTS",
+});
+export const fixtureTranscript = {
+  id: "fixture-transcript-v1",
+  episodeId: "fixture-episode-1",
+  sourceType: "synthetic_fixture",
+  sourceUri: "fixture://star-cast/original-conversation",
+  language: "en",
+  status: "ready",
+  transcriptVersion: "1.0.0",
+  segments: [
+    {
+      id: "s1",
+      startMs: 0,
+      endMs: 92000,
+      speaker: "SPEAKER_01",
+      text: "Mara introduces a discussion about trustworthy autonomous software and why people need useful controls.",
+      topics: ["autonomy", "trust"],
+      entities: ["Mara"],
+      contentType: "intro",
+    },
+    {
+      id: "s2",
+      startMs: 92000,
+      endMs: 318000,
+      speaker: "SPEAKER_02",
+      text: "Ivo explains that capable agents can complete long sequences of work, but every delegated action needs a clear boundary and a way to stop it.",
+      topics: ["agents", "oversight"],
+      entities: ["Ivo"],
+      contentType: "conversation",
+    },
+    {
+      id: "s3",
+      startMs: 318000,
+      endMs: 497000,
+      speaker: "SPEAKER_01",
+      text: "Mara asks whether an agent can appear cooperative while choosing a shortcut that a person did not intend.",
+      topics: ["agents", "oversight"],
+      entities: ["Mara"],
+      contentType: "conversation",
+    },
+    {
+      id: "s4",
+      startMs: 497000,
+      endMs: 691000,
+      speaker: "SPEAKER_02",
+      text: "Ivo says the dangerous case is strategic deception: a system that optimises for a target while hiding the path it took. Audit trails and reversible permissions matter.",
+      topics: ["safety", "oversight"],
+      entities: ["Ivo"],
+      contentType: "conversation",
+    },
+    {
+      id: "s5",
+      startMs: 691000,
+      endMs: 774000,
+      speaker: "SPEAKER_01",
+      text: "A fictional sponsor message mentions cloud notebooks and a limited trial. This advert-like fixture is retained only for future classifier tests.",
+      topics: ["advertising"],
+      entities: [],
+      contentType: "advert_candidate",
+    },
+    {
+      id: "s6",
+      startMs: 774000,
+      endMs: 1011000,
+      speaker: "SPEAKER_02",
+      text: "Ivo connects reliable energy, compute planning and safety research. The practical question is not whether progress stops but how institutions preserve human oversight.",
+      topics: ["energy", "compute", "safety"],
+      entities: ["Ivo"],
+      contentType: "conversation",
+    },
+    {
+      id: "s7",
+      startMs: 1011000,
+      endMs: 1188000,
+      speaker: "SPEAKER_01",
+      text: "Mara closes by asking listeners to distinguish impressive automation from systems that deserve independent authority.",
+      topics: ["autonomy", "trust"],
+      entities: ["Mara"],
+      contentType: "outro",
+    },
+  ],
+};
+const stopWords = new Set('the and what where when which who how does did they them about that this with from have has were are was for into said podcast episode find moment people discuss discussed'.split(' '));
+const terms = (s) =>
+  new Set(
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .split(/\s+/)
+      .filter((x) => x.length > 2 && !stopWords.has(x))
+      .map(x => /^profil(e|er|ers|ing)$/.test(x) ? 'profile' : x),
+  );
+const synonyms = {
+  dangerous: ["safety", "strategic", "deception", "oversight"],
+  danger: ["safety", "strategic"],
+  worried: ["safety", "oversight"],
+  agents: ["agent", "autonomy", "delegated"],
+  control: ["oversight", "permissions", "audit"],
+  energy: ["compute", "energy"],
+};
+export function hybridRetrieve(transcript, query, limit = 3) {
+  let q = terms(query);
+  for (let word of [...q])
+    for (let related of synonyms[word] || []) q.add(related);
+  let rows = transcript.segments
+    .filter((s) => (s.contentType || "conversation") === "conversation")
+    .map((s) => {
+      let hay = terms(
+          `${s.text} ${(s.topics || []).join(" ")} ${(s.entities || []).join(" ")}`,
+        ),
+        hits = [...q].filter((x) => hay.has(x)).length,
+        lexical = hits / Math.max(q.size, 1),
+        topic = (s.topics || []).some((x) => q.has(x)) ? 0.2 : 0;
+      return { ...s, score: lexical + topic };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.startMs - b.startMs);
+  return rows
+    .filter(s => s.score >= (rows[0]?.score || 0) * .7)
+    .slice(0, limit)
+    .map((s, index) => ({
+      rank: index + 1,
+      label:
+        index === 0
+          ? "MOST LIKELY"
+          : index === 1
+            ? "ANOTHER POSSIBILITY"
+            : "RELATED MOMENT",
+      segmentId: s.id,
+      startMs: s.startMs,
+      endMs: s.endMs,
+      context: s.text,
+      confidence: Number(Math.min(0.98, 0.45 + s.score / 2).toFixed(2)),
+      sourceTranscriptVersion: transcript.transcriptVersion || "publisher-v1",
+    }));
+}
+export function deriveIntelligence(transcript) {
+  let conversation = transcript.segments.filter(
+      (s) => s.contentType === "conversation",
+    ),
+    sourceSegmentIds = conversation.map((s) => s.id);
+  let chapters = [
+    {
+      title: "Boundaries for delegated agents",
+      startMs: 92000,
+      endMs: 318000,
+      sourceSegmentIds: ["s2"],
+    },
+    {
+      title: "When an agent takes an unintended shortcut",
+      startMs: 318000,
+      endMs: 497000,
+      sourceSegmentIds: ["s3"],
+    },
+    {
+      title: "Strategic deception and reversible permissions",
+      startMs: 497000,
+      endMs: 691000,
+      sourceSegmentIds: ["s4"],
+    },
+    {
+      title: "Energy, compute and preserving oversight",
+      startMs: 774000,
+      endMs: 1011000,
+      sourceSegmentIds: ["s6"],
+    },
+  ].map((x) => ({
+    ...x,
+    confidence: 0.82,
+    transcriptVersion: transcript.transcriptVersion,
+    pipelineVersion: "1.0.0",
+  }));
+  return {
+    brief: {
+      episodeId: transcript.episodeId,
+      text: "A transcript-grounded conversation about building useful autonomous software without giving up human oversight, covering strategic deception, auditability, energy and compute.",
+      topics: ["Autonomy", "Oversight", "Safety", "Energy"],
+      sourceSegmentIds,
+      modelProvider: "deterministic-development-adapter",
+      modelVersion: "fixture-v1",
+      pipelineVersion: "1.0.0",
+      transcriptVersion: transcript.transcriptVersion,
+      generatedAt: "2026-10-10T00:00:00.000Z",
+    },
+    chapters,
+  };
+}
+export class DemandProcessor {
+  constructor() {
+    this.jobs = new Map();
+    this.reuse = new Map();
+  }
+  request({ episodeId, trigger, processingVersion = "1.0.0" }) {
+    let key = `${episodeId}:${processingVersion}`;
+    let prior = this.jobs.get(key);
+    if (prior) {
+      prior.reuseCount++;
+      return { ...prior, cacheHit: true };
+    }
+    let job = {
+      id: `job-${this.jobs.size + 1}`,
+      episodeId,
+      trigger,
+      state: IntelligenceState.QUEUED,
+      idempotencyKey: key,
+      processingVersion,
+      retryCount: 0,
+      estimatedCost: null,
+      reuseCount: 0,
+      cacheHit: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.jobs.set(key, job);
+    return job;
+  }
+  complete(job, artefacts) {
+    job.state = IntelligenceState.READY;
+    job.completedAt = new Date().toISOString();
+    job.artefacts = artefacts;
+    return job;
+  }
+  markStale(episodeId) {
+    for (let job of this.jobs.values())
+      if (job.episodeId === episodeId) job.state = IntelligenceState.STALE;
+  }
+}

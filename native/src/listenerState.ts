@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import { readLocalDocument, writeLocalDocument } from "./localStorage";
 import type { CatalogueEpisode, CatalogueShow } from "./api";
 
 const KEY = "star-cast-listener-state-v1";
@@ -9,6 +9,8 @@ export type StoredEpisode = CatalogueEpisode & {
   artworkUrl?: string;
   playedAt?: number;
   positionMs?: number;
+  playCount?: number;
+  listenedMs?: number;
 };
 export type ListenerState = {
   following: CatalogueShow[];
@@ -17,6 +19,7 @@ export type ListenerState = {
   feedEpisodes: Record<string, StoredEpisode[]>;
   nightMode: boolean;
   onboardingComplete: boolean;
+  moments: StoredEpisode[];
 };
 export const emptyListenerState = (): ListenerState => ({
   following: [],
@@ -25,10 +28,11 @@ export const emptyListenerState = (): ListenerState => ({
   feedEpisodes: {},
   nightMode: true,
   onboardingComplete: false,
+  moments: [],
 });
 export async function loadListenerState(): Promise<ListenerState> {
   try {
-    let raw = await SecureStore.getItemAsync(KEY);
+    let raw = await readLocalDocument(KEY);
     if (!raw) return emptyListenerState();
     let value = JSON.parse(raw);
     return {
@@ -37,6 +41,7 @@ export async function loadListenerState(): Promise<ListenerState> {
       following: Array.isArray(value.following) ? value.following : [],
       saved: Array.isArray(value.saved) ? value.saved : [],
       history: Array.isArray(value.history) ? value.history : [],
+      moments: Array.isArray(value.moments) ? value.moments : [],
       feedEpisodes:
         value.feedEpisodes && typeof value.feedEpisodes === "object"
           ? value.feedEpisodes
@@ -48,7 +53,7 @@ export async function loadListenerState(): Promise<ListenerState> {
   }
 }
 export async function saveListenerState(value: ListenerState) {
-  await SecureStore.setItemAsync(KEY, JSON.stringify(value));
+  await writeLocalDocument(KEY, JSON.stringify(value));
 }
 export function toggleById<T extends { id: string }>(items: T[], item: T) {
   return items.some((x) => x.id === item.id)
@@ -60,7 +65,15 @@ export function recordHistory(
   episode: StoredEpisode,
 ) {
   return [
-    { ...episode, playedAt: Date.now() },
+    {
+      ...episode,
+      positionMs: undefined,
+      listenedMs:
+        episode.positionMs ??
+        history.find((x) => x.id === episode.id)?.listenedMs,
+      playedAt: Date.now(),
+      playCount: (history.find((x) => x.id === episode.id)?.playCount || 0) + 1,
+    },
     ...history.filter((x) => x.id !== episode.id),
   ].slice(0, 100);
 }

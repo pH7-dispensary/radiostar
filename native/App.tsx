@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
+  Alert,
+  AppState,
   Animated,
   Easing,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Modal,
   PanResponder,
   Pressable,
@@ -15,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { BlurView } from "expo-blur";
-import * as SecureStore from "expo-secure-store";
+import { getIdentity, setIdentity } from "./src/localStorage";
 import * as Crypto from "expo-crypto";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,6 +33,9 @@ import {
   loadFeed,
   loadIntelligenceStatus,
   requestEpisodeIntelligence,
+  preflightEpisode,
+  isProcessing,
+  processingLabel,
   searchCatalogue,
   type CatalogueEpisode,
   type CatalogueShow,
@@ -44,9 +51,14 @@ import {
   type ListenerState,
   type StoredEpisode,
 } from "./src/listenerState";
-import { NativeAiSleepBridge, NativeSleepTimer } from "./src/sleepBridge";
+import {
+  NativeAiSleepBridge,
+  NativeSleepTimer,
+  resetSleepLearning,
+} from "./src/sleepBridge";
 import { feedback } from "./src/feedback";
 import { motion, themes, type StarTheme } from "./src/design";
+import { SearchScreen } from "./src/SearchScreen";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
@@ -54,6 +66,21 @@ const dark = themes.night;
 const light = themes.day;
 const format = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+const episodeDurationMs = (value?: string) =>
+  value
+    ? value
+        .split(":")
+        .map(Number)
+        .reduce((n, x) => n * 60 + x, 0) * 1000
+    : 0;
+const durationLabel = (value?: string) => {
+  if (!value) return "Publisher episode";
+  const seconds = value
+    .split(":")
+    .map(Number)
+    .reduce((n, x) => n * 60 + x, 0);
+  return Number.isFinite(seconds) ? `${Math.round(seconds / 60)} min` : value;
+};
 const asStored = (
   episode: CatalogueEpisode,
   show: CatalogueShow,
@@ -421,31 +448,38 @@ function EpisodeRow({
   onSave?: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Play ${episode.title}`}
-      onPress={onPress}
-      style={[styles.episode, { borderBottomColor: p.line }]}
-    >
-      <Art url={episode.artworkUrl} size={55} radius={14} />
-      <View style={styles.episodeBody}>
-        <Text
-          numberOfLines={2}
-          style={[styles.episodeTitle, { color: p.text }]}
-        >
-          {episode.title}
-        </Text>
-        <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-          {episode.showName} ·{" "}
-          {episode.duration || episode.publishedAt || "Publisher episode"}
-        </Text>
-      </View>
+    <View style={[styles.episode, { borderBottomColor: p.line }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Play ${episode.title}`}
+        onPress={onPress}
+        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
+      >
+        <Art url={episode.artworkUrl} size={55} radius={14} />
+        <View style={styles.episodeBody}>
+          <Text
+            numberOfLines={2}
+            style={[styles.episodeTitle, { color: p.text }]}
+          >
+            {episode.title}
+          </Text>
+          <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+            {episode.showName} ·{" "}
+            {episode.positionMs !== undefined
+              ? `From ${format(episode.positionMs)}`
+              : durationLabel(episode.duration)}
+          </Text>
+        </View>
+      </Pressable>
       {onSave ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={saved ? "Remove saved episode" : "Save episode"}
           hitSlop={8}
-          onPress={onSave}
+          onPress={(event) => {
+            event.stopPropagation();
+            onSave();
+          }}
           style={styles.saveButton}
         >
           <Text
@@ -457,7 +491,7 @@ function EpisodeRow({
       ) : (
         <Text style={[styles.playGlyph, { color: p.text }]}>▶</Text>
       )}
-    </Pressable>
+    </View>
   );
 }
 
@@ -488,9 +522,9 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
     loop.start();
     return () => loop.stop();
   }, [active, phase, reducedMotion]);
-  let points = Array.from({ length: 28 }, (_, i) => {
-    let a = (i / 28) * Math.PI * 2,
-      r = 42 + (i % 5) * 9;
+  let points = Array.from({ length: 48 }, (_, i) => {
+    let a = i * 2.39996,
+      r = 15 + Math.sqrt(i / 48) * 80;
     let drift = phase.interpolate({
       inputRange: [0, 1],
       outputRange: [-5 + (i % 3) * 2, 5 - (i % 4)],
@@ -520,18 +554,26 @@ function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
   return (
     <View
       accessibilityLabel="AI Sleep animation"
-      style={[styles.organism, { backgroundColor: p.wash }]}
+      style={[styles.organism, { backgroundColor: "transparent" }]}
     >
-      <View style={[styles.orbit, { borderColor: p.accent2 }]} />
+      {Array.from({ length: 13 }, (_, i) => (
+        <Animated.View
+          key={`trace-${i}`}
+          style={{
+            position: "absolute",
+            height: 1,
+            width: 28 + (i % 4) * 9,
+            backgroundColor: p.accent2,
+            opacity: 0.18,
+            transform: [
+              { translateX: Math.sin(i * 2.3) * 55 },
+              { translateY: Math.cos(i * 1.7) * 64 },
+              { rotate: `${i * 37}deg` },
+            ],
+          }}
+        />
+      ))}
       {points}
-      <View
-        style={[
-          styles.core,
-          { backgroundColor: p.surfaceStrong, borderColor: p.line },
-        ]}
-      >
-        <Text style={{ color: p.accent2, fontSize: 25 }}>✦</Text>
-      </View>
     </View>
   );
 }
@@ -723,7 +765,7 @@ function AiSleepScreen({
               ? "Listening quietly. You can keep adding time whenever you need it."
               : "One tap starts your private listening companion."}
           </Text>
-          <LivingSleep p={p} active={active} />
+          <LivingSleep p={p} active={active && visible} />
           {active && earliest ? (
             <Glass p={p} style={styles.earliestCard}>
               <Text style={[styles.eyebrow, { color: p.accent }]}>
@@ -786,8 +828,16 @@ function PlayerSheet({
   onClose: () => void;
   p: Theme;
 }) {
-  let { source, snapshot, play, pause, seek, setSpeed, fadeAndPause } =
-      usePlayback(),
+  let {
+      source,
+      snapshot,
+      play,
+      pause,
+      seek,
+      setSpeed,
+      fadeAndPause,
+      cancelFade,
+    } = usePlayback(),
     timer = useRef<NativeSleepTimer | null>(null),
     ai = useRef<NativeAiSleepBridge | null>(null),
     [timerOpen, setTimerOpen] = useState(false),
@@ -798,12 +848,47 @@ function PlayerSheet({
     [intelligenceRequesting, setIntelligenceRequesting] = useState(false),
     [momentQuery, setMomentQuery] = useState(""),
     [moments, setMoments] = useState<EpisodeMoment[]>([]),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [briefExpanded, setBriefExpanded] = useState(false),
+    [progressWidth, setProgressWidth] = useState(1);
+  const [sleepRecovery, setSleepRecovery] = useState<{
+    lastHeard: number;
+    pausedAt: number;
+  } | null>(null);
+  const latestSnapshot = useRef(snapshot);
+  latestSnapshot.current = snapshot;
+  const playbackActions = useRef({ pause, fadeAndPause });
+  playbackActions.current = { pause, fadeAndPause };
   useEffect(() => {
-    timer.current = new NativeSleepTimer(pause);
-    ai.current = new NativeAiSleepBridge(fadeAndPause);
+    timer.current = new NativeSleepTimer(() => playbackActions.current.pause());
+    ai.current = new NativeAiSleepBridge((ms) =>
+      playbackActions.current.fadeAndPause(ms),
+    );
     return () => timer.current?.cancel();
-  }, [pause, fadeAndPause]);
+  }, []);
+  useEffect(() => {
+    if (!aiActive) return;
+    const interval = setInterval(() => {
+      const current = latestSnapshot.current;
+      if (AppState.currentState !== "active") {
+        ai.current?.interact(current.positionMs, current.playing);
+        return;
+      }
+      void ai.current
+        ?.tick(current.positionMs, current.playing)
+        .then((state) => {
+          if (state === "PAUSED") {
+            setAiActive(false);
+            setSleepRecovery({
+              lastHeard: ai.current?.session?.recoveryPositionMs || 0,
+              pausedAt: latestSnapshot.current.positionMs,
+            });
+          }
+          if (state === "OFF") setAiActive(false);
+        });
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [aiActive]);
   useEffect(() => {
     if (
       snapshot.durationMs &&
@@ -819,22 +904,55 @@ function PlayerSheet({
       return;
     }
     setIntelligence(null);
+    setMoments([]);
+    setBriefExpanded(false);
+    setNotice("");
     void loadIntelligenceStatus(source.feedUrl, source.episodeId)
       .then((status) => live && setIntelligence(status))
-      .catch((error) =>
-        live &&
-        setIntelligence({
-          state: "FAILED",
-          reason:
-            error instanceof Error
-              ? error.message
-              : "Episode intelligence is temporarily unavailable.",
-        }),
+      .catch(
+        (error) =>
+          live &&
+          setIntelligence({
+            state: "FAILED",
+            reason:
+              error instanceof Error
+                ? error.message
+                : "Episode intelligence is temporarily unavailable.",
+          }),
       );
     return () => {
       live = false;
     };
   }, [source?.episodeId, source?.feedUrl]);
+  useEffect(() => {
+    if (!source?.feedUrl || !isProcessing(intelligence)) return;
+    let live = true;
+    const refresh = setTimeout(() => {
+      void loadIntelligenceStatus(source.feedUrl!, source.episodeId)
+        .then((status) => {
+          if (live) {
+            setIntelligence(status);
+            setNotice(
+              status.state === "READY"
+                ? "Your episode is ready to explore."
+                : processingLabel(status),
+            );
+          }
+        })
+        .catch(() => {
+          if (live) {
+            setNotice(
+              "Connection interrupted. Analysis continues on the server.",
+            );
+            setIntelligence((value) => (value ? { ...value } : value));
+          }
+        });
+    }, 2500);
+    return () => {
+      live = false;
+      clearTimeout(refresh);
+    };
+  }, [source?.episodeId, source?.feedUrl, intelligence]);
   if (!source) return null;
   let percent = snapshot.durationMs
     ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
@@ -845,6 +963,7 @@ function PlayerSheet({
   };
   let extend = (minutes: number) => {
     try {
+      cancelFade();
       let session = ai.current?.extend(minutes);
       setEarliestPauseAt(session?.earliestPauseAt || null);
       setNotice(`AI Sleep will not pause for another ${minutes} minutes.`);
@@ -854,13 +973,24 @@ function PlayerSheet({
     }
   };
   let startAi = () => {
-    let session = ai.current?.start();
+    if (!snapshot.playing) {
+      setNotice("Start playback before activating AI Sleep.");
+      return;
+    }
+    let session;
+    try {
+      session = ai.current?.start(snapshot.positionMs);
+    } catch {
+      setNotice("Sleep preferences are loading. Please try again.");
+      return;
+    }
     setAiActive(true);
     setEarliestPauseAt(session?.earliestPauseAt || null);
     setNotice("AI Sleep active. Listening continues.");
     feedback.success();
   };
   let stopAi = () => {
+    cancelFade();
     ai.current?.stop();
     setAiActive(false);
     setEarliestPauseAt(null);
@@ -869,24 +999,84 @@ function PlayerSheet({
   };
   let analyseEpisode = async (capability: "brief" | "chapters") => {
     if (!source.feedUrl) return;
-    if (intelligenceRequesting) return;
+    if (intelligenceRequesting || isProcessing(intelligence)) return;
+    if (intelligence?.state === "FAILED" && intelligence.retryable === false) {
+      setNotice(
+        intelligence.reason || "This episode cannot be analysed right now.",
+      );
+      return;
+    }
+    if (intelligence?.state === "READY") {
+      setBriefExpanded(true);
+      return;
+    }
     setIntelligenceRequesting(true);
-    setNotice("Analysing this publisher transcript…");
+    setNotice("Checking this episode…");
     try {
+      const preflight = await preflightEpisode(
+        source.feedUrl,
+        source.episodeId,
+      );
+      if (!preflight.withinLimit) {
+        setNotice(
+          "This episode is longer than the current two-hour processing limit. Try a shorter episode.",
+        );
+        return;
+      }
+      if (!preflight.analysisEnabled) {
+        setNotice("Episode analysis is temporarily unavailable.");
+        return;
+      }
+      let allowAudio = false;
+      if (
+        preflight.requiresAudioConsent ||
+        intelligence?.requiresAudioConsent
+      ) {
+        if (!preflight.audioEnabled) {
+          setNotice(
+            "No publisher transcript is available, and audio analysis is unavailable.",
+          );
+          return;
+        }
+        allowAudio = await new Promise<boolean>((resolve) =>
+          Alert.alert(
+            "Analyse the audio?",
+            "No usable publisher transcript was found. This will transcribe this episode within your server’s analysis allowance. It may take a few minutes.",
+            [
+              {
+                text: "Not now",
+                style: "cancel",
+                onPress: () => resolve(false),
+              },
+              { text: "Analyse audio", onPress: () => resolve(true) },
+            ],
+            { cancelable: true, onDismiss: () => resolve(false) },
+          ),
+        );
+        if (!allowAudio) {
+          setNotice("");
+          return;
+        }
+      }
       let status = await requestEpisodeIntelligence(
         source.feedUrl,
         source.episodeId,
         capability,
+        { allowAudio, retry: intelligence?.state === "FAILED" },
       );
       setIntelligence(status);
       setNotice(
         status.state === "READY"
           ? "Episode intelligence is ready."
-          : status.reason || "Episode analysis is not available for this episode.",
+          : processingLabel(status),
       );
       if (status.state === "READY") feedback.success();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Analysis could not start on this development device.");
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Analysis could not start on this development device.",
+      );
     } finally {
       setIntelligenceRequesting(false);
     }
@@ -911,7 +1101,11 @@ function PlayerSheet({
           : "No timestamped moment matched that question.",
       );
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Moment search is not available for this episode.");
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Moment search is not available for this episode.",
+      );
     }
   };
   return (
@@ -922,20 +1116,44 @@ function PlayerSheet({
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.modalSafe, { backgroundColor: p.bg }]}>
-        <ScrollView contentContainerStyle={styles.playerSheet}>
-          <View style={styles.sheetHeader}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onClose}
-              style={[styles.roundButton, { borderColor: p.line }]}
-            >
-              <Ionicons name="chevron-down" size={22} color={p.text} />
-            </Pressable>
-            <Text style={[styles.eyebrow, { color: p.accent }]}>
-              NOW PLAYING
-            </Text>
-            <View style={styles.roundButton} />
+        {visible && source.artworkUrl && (
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", width: "100%", height: 400 }}
+          >
+            <Image
+              accessible={false}
+              source={{ uri: source.artworkUrl }}
+              blurRadius={45}
+              style={{
+                width: "100%",
+                height: 400,
+                opacity: p.blurTint === "dark" ? 0.12 : 0.08,
+              }}
+            />
           </View>
+        )}
+        <View
+          style={[
+            styles.sheetHeader,
+            { paddingHorizontal: 24, paddingTop: 10 },
+          ]}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close player"
+            onPress={onClose}
+            style={[styles.roundButton, { borderColor: p.line }]}
+          >
+            <Ionicons name="chevron-down" size={22} color={p.text} />
+          </Pressable>
+          <Text style={[styles.eyebrow, { color: p.accent }]}>NOW PLAYING</Text>
+          <View style={styles.roundButton} />
+        </View>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.playerSheet}
+        >
           <View style={[styles.playerArtwork, { backgroundColor: p.wash }]}>
             <Art url={source.artworkUrl} size={240} radius={28} />
           </View>
@@ -955,10 +1173,37 @@ function PlayerSheet({
           <Pressable
             accessibilityRole="adjustable"
             accessibilityLabel="Playback position"
-            onPress={() =>
+            onLayout={(event) =>
+              setProgressWidth(event.nativeEvent.layout.width)
+            }
+            accessibilityValue={{
+              min: 0,
+              max: snapshot.durationMs || 0,
+              now: snapshot.positionMs,
+            }}
+            accessibilityActions={[
+              { name: "increment", label: "Forward 15 seconds" },
+              { name: "decrement", label: "Back 15 seconds" },
+            ]}
+            onAccessibilityAction={(event) =>
+              void seek(
+                snapshot.positionMs +
+                  (event.nativeEvent.actionName === "increment"
+                    ? 15000
+                    : -15000),
+              )
+            }
+            onPress={(event) =>
               seek(
                 snapshot.durationMs
-                  ? Math.min(snapshot.durationMs, snapshot.positionMs + 15_000)
+                  ? snapshot.durationMs *
+                      Math.max(
+                        0,
+                        Math.min(
+                          1,
+                          event.nativeEvent.locationX / progressWidth,
+                        ),
+                      )
                   : snapshot.positionMs,
               )
             }
@@ -976,7 +1221,9 @@ function PlayerSheet({
               {format(snapshot.positionMs)}
             </Text>
             <Text style={[styles.small, { color: p.muted }]}>
-              {snapshot.durationMs ? format(snapshot.durationMs) : "--:--"}
+              {snapshot.durationMs
+                ? `−${format(Math.max(0, snapshot.durationMs - snapshot.positionMs))}`
+                : "--:--"}
             </Text>
           </View>
           <View style={styles.transport}>
@@ -1033,11 +1280,16 @@ function PlayerSheet({
                 key={label}
                 accessibilityRole="button"
                 accessibilityLabel={label}
-                disabled={Boolean(capability) && intelligenceRequesting}
+                disabled={
+                  Boolean(capability) &&
+                  (intelligenceRequesting || isProcessing(intelligence))
+                }
                 onPress={() =>
                   capability
                     ? void analyseEpisode(capability)
-                    : setNotice("Automatic Ad Skip remains off while it is evaluated.")
+                    : setNotice(
+                        "Automatic Ad Skip remains off while it is evaluated.",
+                      )
                 }
                 style={[styles.tool, { borderColor: p.line }]}
               >
@@ -1057,15 +1309,15 @@ function PlayerSheet({
                 </Text>
                 <Text style={[styles.small, { color: p.muted }]}>
                   {label === "Ad Skip"
-                    ? "Safety off"
-                    : intelligenceRequesting
+                    ? "Not enabled"
+                    : intelligenceRequesting || isProcessing(intelligence)
                       ? "Analysing…"
-                    : intelligence?.state === "READY"
-                      ? "Ready"
-                      : intelligence?.readiness
-                        ? "Analyse"
+                      : intelligence?.state === "READY"
+                        ? "Ready"
                         : intelligence?.state === "FAILED"
-                          ? "Unavailable"
+                          ? intelligence.retryable
+                            ? "Retry"
+                            : "Unavailable"
                           : "Analyse"}
                 </Text>
               </Pressable>
@@ -1082,40 +1334,107 @@ function PlayerSheet({
               <Text style={[styles.small, { color: p.muted }]}>
                 {intelligence.brief.themes.join(" · ")}
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: briefExpanded }}
+                onPress={() => setBriefExpanded(!briefExpanded)}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Text style={{ color: p.accent2 }}>
+                  {briefExpanded ? "Less detail" : "Read the full brief"}
+                </Text>
+              </Pressable>
+              {briefExpanded && (
+                <Text style={[styles.emptyCopy, { color: p.text }]}>
+                  {intelligence.brief.detail}
+                </Text>
+              )}
+              <Text style={[styles.tiny, { color: p.muted }]}>
+                {intelligence.provenance?.sourceType === "publisher_rss"
+                  ? "From the publisher transcript"
+                  : "From transcribed episode audio"}
+                {intelligence.readiness === "TEXT_ONLY"
+                  ? " · no verified timestamps"
+                  : ""}
+              </Text>
             </Glass>
-          ) : intelligence?.state === "FAILED" && intelligence.reason ? (
-            <Text style={[styles.notice, { color: p.muted }]}>
-              {intelligence.reason}
-            </Text>
-          ) : intelligence?.readiness || source.hasPublisherTranscript ? (
-            <Text style={[styles.notice, { color: p.muted }]}>
-              Publisher transcript available. Analyse it to unlock grounded
-              episode intelligence.
-            </Text>
-          ) : null}
+          ) : (
+            <Glass p={p} style={styles.briefCard}>
+              <Text style={[styles.briefOverview, { color: p.text }]}>
+                {isProcessing(intelligence)
+                  ? processingLabel(intelligence)
+                  : "Discover this episode"}
+              </Text>
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[styles.emptyCopy, { color: p.muted }]}
+              >
+                {intelligence?.reason ||
+                  "Get a concise episode brief, explore the main topics and find moments worth hearing."}
+              </Text>
+              {!isProcessing(intelligence) &&
+                (intelligence?.retryable !== false ||
+                  intelligence?.requiresAudioConsent) && (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={intelligenceRequesting}
+                    onPress={() => void analyseEpisode("brief")}
+                    style={[styles.primary, { backgroundColor: p.accent2 }]}
+                  >
+                    <Text style={styles.primaryText}>
+                      {intelligence?.state === "FAILED"
+                        ? "Retry analysis"
+                        : "Analyse episode"}
+                    </Text>
+                  </Pressable>
+                )}
+            </Glass>
+          )}
           {intelligence?.chapters?.length ? (
             <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>EXPLORE EPISODE</Text>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                EXPLORE EPISODE
+              </Text>
               {intelligence.chapters.map((chapter) => (
                 <Pressable
                   key={`${chapter.startMs}-${chapter.title}`}
                   accessibilityRole="button"
                   accessibilityLabel={`Play chapter: ${chapter.title}`}
-                  onPress={() => seek(chapter.startMs)}
+                  onPress={() =>
+                    void play({
+                      ...source,
+                      startPositionMs: chapter.startMs,
+                    }).catch(() =>
+                      setNotice(
+                        "This audio could not be played. Please try again.",
+                      ),
+                    )
+                  }
                   style={[styles.chapterRow, { borderTopColor: p.line }]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.toolText, { color: p.text }]}>{chapter.title}</Text>
-                    <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>{chapter.description}</Text>
+                    <Text style={[styles.toolText, { color: p.text }]}>
+                      {chapter.title}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.small, { color: p.muted }]}
+                    >
+                      {chapter.description}
+                    </Text>
                   </View>
-                  <Text style={[styles.small, { color: p.accent2 }]}>{format(chapter.startMs)}</Text>
+                  <Text style={[styles.small, { color: p.accent2 }]}>
+                    {format(chapter.startMs)}
+                  </Text>
                 </Pressable>
               ))}
             </Glass>
           ) : null}
           {intelligence?.state === "READY" ? (
             <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>FIND A MOMENT</Text>
+              <Text style={[styles.eyebrow, { color: p.accent }]}>
+                FIND A MOMENT
+              </Text>
               <View style={styles.momentSearchRow}>
                 <TextInput
                   accessibilityLabel="Find a moment in this episode"
@@ -1124,7 +1443,10 @@ function PlayerSheet({
                   onSubmitEditing={() => void findMoment()}
                   placeholder="Ask about a topic"
                   placeholderTextColor={p.muted}
-                  style={[styles.momentInput, { color: p.text, borderColor: p.line }]}
+                  style={[
+                    styles.momentInput,
+                    { color: p.text, borderColor: p.line },
+                  ]}
                 />
                 <Pressable
                   accessibilityRole="button"
@@ -1140,11 +1462,27 @@ function PlayerSheet({
                   key={`${moment.segmentId}-${moment.startMs}`}
                   accessibilityRole="button"
                   accessibilityLabel={`Play ${moment.label.toLowerCase()} at ${format(moment.startMs)}`}
-                  onPress={() => seek(moment.startMs)}
+                  onPress={() =>
+                    void play({
+                      ...source,
+                      startPositionMs: moment.startMs,
+                    }).catch(() =>
+                      setNotice(
+                        "This audio could not be played. Please try again.",
+                      ),
+                    )
+                  }
                   style={[styles.chapterRow, { borderTopColor: p.line }]}
                 >
-                  <Text numberOfLines={2} style={[styles.small, { color: p.text, flex: 1 }]}>{moment.context}</Text>
-                  <Text style={[styles.small, { color: p.accent2 }]}>{format(moment.startMs)}</Text>
+                  <Text
+                    numberOfLines={2}
+                    style={[styles.small, { color: p.text, flex: 1 }]}
+                  >
+                    {moment.context}
+                  </Text>
+                  <Text style={[styles.small, { color: p.accent2 }]}>
+                    {format(moment.startMs)}
+                  </Text>
                 </Pressable>
               ))}
             </Glass>
@@ -1163,6 +1501,57 @@ function PlayerSheet({
             </Text>
             <Text style={[styles.small, { color: p.muted }]}>Set a pause</Text>
           </Pressable>
+          {sleepRecovery && (
+            <Glass p={p} style={styles.briefCard}>
+              <Text style={[styles.briefOverview, { color: p.text }]}>
+                Welcome back.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void seek(sleepRecovery.lastHeard)}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Text style={{ color: p.accent2 }}>
+                  Continue from estimated last-heard position
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void seek(sleepRecovery.pausedAt)}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Text style={{ color: p.accent2 }}>
+                  Continue from pause position
+                </Text>
+              </Pressable>
+              <Text style={[styles.small, { color: p.muted }]}>
+                How was the timing? Early or late adjusts your next listening
+                window by five minutes.
+              </Text>
+              <View style={styles.speedRow}>
+                {(
+                  [
+                    ["Too early", "early"],
+                    ["About right", "correct"],
+                    ["Too late", "late"],
+                  ] as const
+                ).map(([label, kind]) => (
+                  <Chip
+                    key={kind}
+                    label={label}
+                    p={p}
+                    onPress={() => {
+                      ai.current?.feedback(kind);
+                      setNotice(
+                        "Your timing preference is saved on this device.",
+                      );
+                      setSleepRecovery(null);
+                    }}
+                  />
+                ))}
+              </View>
+            </Glass>
+          )}
           <Pressable
             accessibilityRole="button"
             onPress={() => setAiScreenOpen(true)}
@@ -1217,21 +1606,31 @@ function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
       tint={p.blurTint}
       style={[styles.mini, { borderColor: p.line, shadowColor: p.shadow }]}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open now playing"
-        onPress={onOpen}
-        style={styles.miniInner}
-      >
-        <Art url={source.artworkUrl} size={42} radius={12} />
-        <View style={styles.miniCopy}>
-          <Text numberOfLines={1} style={[styles.miniTitle, { color: p.text }]}>
-            {source.title}
-          </Text>
-          <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-            {source.show}
-          </Text>
-        </View>
+      <View style={styles.miniInner}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open now playing"
+          onPress={onOpen}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <Art url={source.artworkUrl} size={42} radius={12} />
+          <View style={styles.miniCopy}>
+            <Text
+              numberOfLines={1}
+              style={[styles.miniTitle, { color: p.text }]}
+            >
+              {source.title}
+            </Text>
+            <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
+              {source.show}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
@@ -1248,7 +1647,7 @@ function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
             color={p.bg}
           />
         </Pressable>
-      </Pressable>
+      </View>
     </BlurView>
   );
 }
@@ -1268,22 +1667,43 @@ function Listen({
 }) {
   let [filter, setFilter] = useState("Recent"),
     [popular, setPopular] = useState("Week"),
-    publisherEpisodes = Object.values(state.feedEpisodes).flat(),
+    publisherEpisodes = state.following.flatMap(
+      (show) => state.feedEpisodes[show.id] || [],
+    ),
     uniqueEpisodes = publisherEpisodes.filter(
       (episode, index, list) =>
         list.findIndex((item) => item.id === episode.id) === index,
     ),
-    episodes = uniqueEpisodes;
-  if (filter === "Popular")
     episodes = [...uniqueEpisodes].sort(
       (a, b) =>
-        state.history.filter((item) => item.id === b.id).length -
-        state.history.filter((item) => item.id === a.id).length,
+        Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""),
     );
-  if (filter === "Best Rated") episodes = [];
+  if (filter === "Popular")
+    episodes = [...uniqueEpisodes]
+      .filter(
+        (e) =>
+          Date.parse(e.publishedAt || "") >=
+          Date.now() - (popular === "Week" ? 7 : 30) * 86400000,
+      )
+      .sort(
+        (a, b) =>
+          (state.history.find((item) => item.id === b.id)?.playCount || 0) -
+          (state.history.find((item) => item.id === a.id)?.playCount || 0),
+      );
+  if (filter === "Best Rated")
+    episodes = [...episodes].sort(
+      (a, b) =>
+        Number(state.saved.some((e) => e.id === b.id)) -
+        Number(state.saved.some((e) => e.id === a.id)),
+    );
   let forYou = uniqueEpisodes
     .filter((episode) => !state.history.some((item) => item.id === episode.id))
     .slice(0, 3);
+  const continuing = state.history.find(
+    (episode) =>
+      !episodeDurationMs(episode.duration) ||
+      (episode.listenedMs || 0) < episodeDurationMs(episode.duration) - 30000,
+  );
   return (
     <>
       <Text style={[styles.eyebrow, { color: p.accent }]}>
@@ -1297,11 +1717,11 @@ function Listen({
         </View>
         <View style={[styles.lighting, { backgroundColor: p.wash }]} />
       </View>
-      {!state.following.length ? (
-        <Discovery state={state} setState={setState} onOpen={onOpen} p={p} />
-      ) : state.history[0] ? (
+      {continuing ? (
         <Pressable
-          onPress={() => onPlay(state.history[0])}
+          accessibilityRole="button"
+          accessibilityLabel={`Resume ${continuing.title}`}
+          onPress={() => onPlay(continuing)}
           style={[styles.continueCard, { borderColor: p.line }]}
         >
           <LinearGradient
@@ -1310,7 +1730,7 @@ function Listen({
             end={{ x: 1, y: 1 }}
             style={styles.continueCardInner}
           >
-            <Art url={state.history[0].artworkUrl} size={88} radius={21} />
+            <Art url={continuing.artworkUrl} size={88} radius={21} />
             <View style={styles.continueBody}>
               <Text style={[styles.eyebrow, { color: p.accent }]}>
                 CONTINUE LISTENING
@@ -1319,18 +1739,36 @@ function Listen({
                 numberOfLines={2}
                 style={[styles.continueTitle, { color: p.text }]}
               >
-                {state.history[0].title}
+                {continuing.title}
               </Text>
               <Text
                 numberOfLines={1}
                 style={[styles.small, { color: p.muted }]}
               >
-                {state.history[0].showName}
+                {continuing.showName}
               </Text>
+              <Text style={[styles.tiny, { color: p.muted }]}>
+                {episodeDurationMs(continuing.duration)
+                  ? `${format(Math.max(0, episodeDurationMs(continuing.duration) - (continuing.listenedMs || 0)))} remaining`
+                  : "Resume listening"}
+              </Text>
+              <View
+                style={{ height: 3, backgroundColor: p.line, marginTop: 8 }}
+              >
+                <View
+                  style={{
+                    height: 3,
+                    backgroundColor: p.accent2,
+                    width: `${Math.min(100, (100 * (continuing.listenedMs || 0)) / (episodeDurationMs(continuing.duration) || 1))}%`,
+                  }}
+                />
+              </View>
             </View>
             <Ionicons name="play" size={19} color={p.text} />
           </LinearGradient>
         </Pressable>
+      ) : !state.following.length ? (
+        <Discovery state={state} setState={setState} onOpen={onOpen} p={p} />
       ) : (
         <Glass p={p} style={styles.emptyHero}>
           <Text style={[styles.emptyIcon, { color: p.accent2 }]}>◌</Text>
@@ -1377,6 +1815,13 @@ function Listen({
             ))}
           </View>
         ) : null}
+        {filter !== "Recent" && (
+          <Text style={[styles.feedCaption, { color: p.muted }]}>
+            {filter === "Popular"
+              ? "Your most-played recent releases · no global popularity ranking"
+              : "Ratings unavailable · saved episodes first, then newest"}
+          </Text>
+        )}
         {episodes.length ? (
           episodes
             .slice(0, 5)
@@ -1439,6 +1884,12 @@ function Following({
     `${s.name} ${s.publisher}`.toLowerCase().includes(query.toLowerCase()),
   );
   if (order === "A–Z") shows.sort((a, b) => a.name.localeCompare(b.name));
+  if (order === "Latest")
+    shows.sort(
+      (a, b) =>
+        (Date.parse(state.feedEpisodes[b.id]?.[0]?.publishedAt || "") || 0) -
+        (Date.parse(state.feedEpisodes[a.id]?.[0]?.publishedAt || "") || 0),
+    );
   if (order === "Most listened")
     shows.sort(
       (a, b) =>
@@ -1506,7 +1957,7 @@ function Following({
                 </Text>
                 <Text style={[styles.newEpisodes, { color: p.accent2 }]}>
                   {state.feedEpisodes[show.id]?.length
-                    ? `${state.feedEpisodes[show.id].length} episodes ready to explore`
+                    ? state.feedEpisodes[show.id][0].title
                     : "Open to see the latest episodes"}
                 </Text>
               </View>
@@ -1540,184 +1991,6 @@ function Following({
   );
 }
 
-function Search({
-  state,
-  onOpen,
-  p,
-}: {
-  state: ListenerState;
-  onOpen: (show: CatalogueShow) => void;
-  p: Theme;
-}) {
-  let [query, setQuery] = useState(""),
-    [mode, setMode] = useState("Podcasts"),
-    [scope, setScope] = useState("All Podcasts"),
-    [results, setResults] = useState<CatalogueShow[]>([]),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  let suggestions = Array.from(
-      new Set([
-        ...state.following.map((show) => show.topic),
-        "Hard Fork",
-        "Technology",
-        "Science",
-      ]),
-    )
-      .filter(Boolean)
-      .slice(0, 3),
-    submit = async () => {
-      if (!query.trim() || mode !== "Podcasts") return;
-      setBusy(true);
-      setError("");
-      try {
-        let data = await searchCatalogue(query);
-        setResults(
-          scope === "My Podcasts"
-            ? data.results.filter((x) =>
-                state.following.some((s) => s.id === x.id),
-              )
-            : data.results,
-        );
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Search is unavailable.");
-      } finally {
-        setBusy(false);
-      }
-    };
-  return (
-    <>
-      <Text style={[styles.eyebrow, { color: p.accent }]}>
-        FIND SOMETHING WORTH HEARING
-      </Text>
-      <Text style={[styles.display, { color: p.text }]}>Search.</Text>
-      <View
-        style={[
-          styles.searchBox,
-          { backgroundColor: p.surface, borderColor: p.line },
-        ]}
-      >
-        <Text style={{ color: p.muted, fontSize: 18 }}>⌕</Text>
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={submit}
-          placeholder="Podcasts, hosts, topics"
-          placeholderTextColor={p.muted}
-          style={[styles.searchInput, { color: p.text }]}
-        />
-        {query ? (
-          <Pressable onPress={submit}>
-            <Text style={[styles.searchAction, { color: p.accent2 }]}>Go</Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipScroll}
-      >
-        {["Podcasts", "Conversations", "Moments"].map((item) => (
-          <Chip
-            key={item}
-            label={item}
-            active={mode === item}
-            disabled={item !== "Podcasts"}
-            onPress={() => setMode(item)}
-            p={p}
-          />
-        ))}
-      </ScrollView>
-      <View style={styles.scopeRow}>
-        {["My Podcasts", "All Podcasts"].map((item) => (
-          <Pressable key={item} onPress={() => setScope(item)}>
-            <Text
-              style={[
-                styles.scopeText,
-                {
-                  color: scope === item ? p.text : p.muted,
-                  textDecorationLine: scope === item ? "underline" : "none",
-                },
-              ]}
-            >
-              {item}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      {mode !== "Podcasts" ? (
-        <Glass p={p} style={styles.emptyCard}>
-          <Text style={[styles.emptyTitle, { color: p.text }]}>
-            Transcript search is not ready yet.
-          </Text>
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>
-            Conversation and moment search will appear only for genuinely
-            processed episode transcripts.
-          </Text>
-        </Glass>
-      ) : null}
-      {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
-      {busy ? (
-        <Text style={[styles.emptyInline, { color: p.muted }]}>
-          Searching the live podcast catalogue…
-        </Text>
-      ) : null}
-      {!results.length && !busy && mode === "Podcasts" ? (
-        <View style={styles.suggestions}>
-          <Text style={[styles.sectionTitle, { color: p.text }]}>
-            Try a prompt
-          </Text>
-          {suggestions.map((item) => (
-            <Pressable
-              key={item}
-              onPress={() => {
-                setQuery(item);
-                void (async () => {
-                  setBusy(true);
-                  try {
-                    let data = await searchCatalogue(item);
-                    setResults(data.results);
-                  } catch {
-                    setError("Search is temporarily unavailable.");
-                  } finally {
-                    setBusy(false);
-                  }
-                })();
-              }}
-              style={[
-                styles.prompt,
-                { backgroundColor: p.surface, borderColor: p.line },
-              ]}
-            >
-              <Text style={[styles.promptStar, { color: p.accent2 }]}>✦</Text>
-              <Text style={[styles.promptText, { color: p.text }]}>{item}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      <View style={styles.resultGrid}>
-        {results.map((show) => (
-          <Pressable
-            key={show.id}
-            onPress={() => onOpen(show)}
-            style={styles.showTile}
-          >
-            <Art url={show.art} size={150} radius={22} />
-            <Text
-              numberOfLines={2}
-              style={[styles.showTitle, { color: p.text }]}
-            >
-              {show.name}
-            </Text>
-            <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-              {show.publisher}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </>
-  );
-}
-
 function Library({
   state,
   onPlay,
@@ -1730,7 +2003,7 @@ function Library({
   let [section, setSection] = useState("Saved Episodes"),
     maps: { [key: string]: StoredEpisode[] } = {
       "Saved Episodes": state.saved,
-      "Saved Moments": [],
+      "Saved Moments": state.moments,
       Downloads: [],
       History: state.history,
     };
@@ -1755,6 +2028,8 @@ function Library({
             <Pressable
               key={item}
               onPress={() => setSection(item)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: section === item }}
               style={[
                 styles.libraryTab,
                 {
@@ -1778,7 +2053,7 @@ function Library({
       {items.length ? (
         items.map((episode) => (
           <EpisodeRow
-            key={episode.id}
+            key={`${episode.id}:${episode.positionMs ?? "episode"}`}
             episode={episode}
             onPress={() => onPlay(episode)}
             p={p}
@@ -1838,6 +2113,9 @@ function Profile({
       </Glass>
       <Section title="Appearance" p={p}>
         <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel="Night mode"
+          accessibilityState={{ checked: state.nightMode }}
           onPress={() => {
             feedback.selection();
             setState({ ...state, nightMode: !state.nightMode });
@@ -1883,6 +2161,57 @@ function Profile({
           AI Sleep learns from extensions and morning feedback on this device.
           It uses no physiological detection and does not upload motion streams.
         </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            Alert.alert(
+              "Reset sleep learning?",
+              "This removes timing preferences stored on this device. Restart AI Sleep to use the default window.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Reset learning",
+                  style: "destructive",
+                  onPress: () => void resetSleepLearning(),
+                },
+              ],
+            )
+          }
+          style={[styles.setting, { borderBottomColor: p.line }]}
+        >
+          <Text style={[styles.settingTitle, { color: p.text }]}>
+            Reset sleep learning
+          </Text>
+        </Pressable>
+        <Text style={[styles.tiny, { color: p.muted }]}>
+          Automatic pause in the background still needs physical-device
+          validation. Use a manual sleep timer when you need a fixed stopping
+          time.
+        </Text>
+      </Section>
+      <Section title="Privacy" p={p}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            Alert.alert(
+              "Clear listening history?",
+              "Your followed shows and saved episodes will stay here.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Clear history",
+                  style: "destructive",
+                  onPress: () => setState({ ...state, history: [] }),
+                },
+              ],
+            )
+          }
+          style={[styles.setting, { borderBottomColor: p.line }]}
+        >
+          <Text style={[styles.settingTitle, { color: p.text }]}>
+            Clear listening history
+          </Text>
+        </Pressable>
       </Section>
     </>
   );
@@ -1898,7 +2227,7 @@ function ShowDetail({
 }: {
   show: CatalogueShow;
   state: ListenerState;
-  setState: (next: ListenerState) => void;
+  setState: React.Dispatch<React.SetStateAction<ListenerState>>;
   onPlay: (e: StoredEpisode) => void;
   onBack: () => void;
   p: Theme;
@@ -1921,13 +2250,13 @@ function ShowDetail({
           streamable = feed.episodes.filter((x) => x.audioUrl);
         if (open) {
           setEpisodes(streamable);
-          setState({
-            ...state,
+          setState((current) => ({
+            ...current,
             feedEpisodes: {
-              ...state.feedEpisodes,
+              ...current.feedEpisodes,
               [show.id]: streamable.map((episode) => asStored(episode, show)),
             },
-          });
+          }));
         }
       } catch (e) {
         if (open)
@@ -2037,15 +2366,10 @@ function AppShell() {
   let p = state.nightMode ? dark : light;
   useEffect(() => {
     void (async () => {
-      let value = await SecureStore.getItemAsync(
-        "star-cast-installation-credential",
-      );
+      let value = await getIdentity("star-cast-installation-credential");
       if (!value) {
         value = Crypto.randomUUID();
-        await SecureStore.setItemAsync(
-          "star-cast-installation-credential",
-          value,
-        );
+        await setIdentity("star-cast-installation-credential", value);
       }
       setInstallation(value);
       setState(await loadListenerState());
@@ -2055,6 +2379,41 @@ function AppShell() {
   useEffect(() => {
     if (hydrated) void saveListenerState(state);
   }, [hydrated, state]);
+  useEffect(() => {
+    if (!hydrated) return;
+    let live = true;
+    void Promise.allSettled(
+      state.following
+        .filter((show) => show.feedUrl)
+        .slice(0, 30)
+        .map(async (show) => ({ show, feed: await loadFeed(show.feedUrl!) })),
+    ).then((results) => {
+      if (!live) return;
+      setState((current) => ({
+        ...current,
+        feedEpisodes: {
+          ...current.feedEpisodes,
+          ...Object.fromEntries(
+            results.flatMap((result) =>
+              result.status === "fulfilled"
+                ? [
+                    [
+                      result.value.show.id,
+                      result.value.feed.episodes
+                        .filter((e) => e.audioUrl)
+                        .map((e) => asStored(e, result.value.show)),
+                    ],
+                  ]
+                : [],
+            ),
+          ),
+        },
+      }));
+    });
+    return () => {
+      live = false;
+    };
+  }, [hydrated, state.following]);
   let playStored = (episode: StoredEpisode) => {
     let source: Source = {
       episodeId: episode.id,
@@ -2064,6 +2423,7 @@ function AppShell() {
       artworkUrl: episode.artworkUrl,
       feedUrl: episode.feedUrl,
       hasPublisherTranscript: episode.hasPublisherTranscript,
+      startPositionMs: episode.positionMs,
     };
     setState((current) => ({
       ...current,
@@ -2123,9 +2483,31 @@ function AppContent({
   setPlayerOpen: (v: boolean) => void;
   playStored: (e: StoredEpisode) => Source;
 }) {
-  let { play } = usePlayback();
+  let { play, snapshot } = usePlayback();
+  const progressBucket = Math.floor(snapshot.positionMs / 5000);
+  useEffect(() => {
+    if (!hydrated || !snapshot.episodeId) return;
+    setState((current) =>
+      current.history.some((e) => e.id === snapshot.episodeId)
+        ? {
+            ...current,
+            history: current.history.map((e) =>
+              e.id === snapshot.episodeId
+                ? { ...e, listenedMs: snapshot.positionMs }
+                : e,
+            ),
+          }
+        : current,
+    );
+  }, [hydrated, snapshot.episodeId, progressBucket, snapshot.playing]);
+  const profileReturn = useRef<Page>("Listen");
   let run = (episode: StoredEpisode) => {
-    void play(playStored(episode));
+    void play(playStored(episode)).catch(() =>
+      Alert.alert(
+        "Playback unavailable",
+        "This episode could not load. Check your connection and try again.",
+      ),
+    );
   };
   let currentTab: Exclude<Page, "Show" | "Profile"> =
     page === "Show" || page === "Profile" ? backPage : page;
@@ -2139,34 +2521,15 @@ function AppContent({
     setPage("Show");
   };
   let content =
-    page === "Listen" ? (
-      <Listen
-        state={state}
-        setState={setState}
-        onPlay={run}
-        onOpen={openShow}
-        p={p}
-      />
-    ) : page === "Following" ? (
-      <Following
-        state={state}
-        onOpen={openShow}
-        onDiscover={() => selectTab("Listen")}
-        p={p}
-      />
-    ) : page === "Search" ? (
-      <Search state={state} onOpen={openShow} p={p} />
-    ) : page === "Library" ? (
-      <Library state={state} onPlay={run} p={p} />
-    ) : page === "Profile" ? (
+    page === "Profile" ? (
       <Profile
         state={state}
         setState={setState}
         installation={installation}
-        onBack={() => selectTab(backPage)}
+        onBack={() => setPage(profileReturn.current)}
         p={p}
       />
-    ) : selectedShow ? (
+    ) : page === "Show" && selectedShow ? (
       <ShowDetail
         show={selectedShow}
         state={state}
@@ -2193,6 +2556,8 @@ function AppContent({
             accessibilityRole="button"
             accessibilityLabel="Open profile"
             onPress={() => {
+              profileReturn.current =
+                page === "Profile" ? profileReturn.current : page;
               setBackPage(currentTab);
               setPage("Profile");
             }}
@@ -2204,16 +2569,61 @@ function AppContent({
             <Text style={{ color: p.accent2, fontWeight: "800" }}>O</Text>
           </Pressable>
         </View>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          {page === "Show" || page === "Profile" ? (
-            <SwipeBack onBack={() => selectTab(backPage)}>{content}</SwipeBack>
-          ) : (
-            content
-          )}
-        </ScrollView>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+          >
+            <View style={{ display: page === "Listen" ? "flex" : "none" }}>
+              <Listen
+                state={state}
+                setState={setState}
+                onPlay={run}
+                onOpen={openShow}
+                p={p}
+              />
+            </View>
+            <View style={{ display: page === "Following" ? "flex" : "none" }}>
+              <Following
+                state={state}
+                onOpen={openShow}
+                onDiscover={() => selectTab("Search")}
+                p={p}
+              />
+            </View>
+            <View style={{ display: page === "Library" ? "flex" : "none" }}>
+              <Library state={state} onPlay={run} p={p} />
+            </View>
+            <View style={{ display: page === "Search" ? "flex" : "none" }}>
+              <SearchScreen
+                state={state}
+                setState={setState}
+                onOpen={openShow}
+                onPlay={run}
+                p={p}
+                active={page === "Search"}
+              />
+            </View>
+            {page === "Show" || page === "Profile" ? (
+              <SwipeBack
+                onBack={() =>
+                  page === "Profile"
+                    ? setPage(profileReturn.current)
+                    : selectTab(backPage)
+                }
+              >
+                {content}
+              </SwipeBack>
+            ) : (
+              content
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
         <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} />
         <BlurView
           intensity={42}
@@ -2532,7 +2942,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 81,
+    bottom: 87,
     minHeight: 53,
     borderRadius: 16,
     borderWidth: 1,
@@ -2552,9 +2962,9 @@ const styles = StyleSheet.create({
   miniCopy: { flex: 1, minWidth: 0 },
   miniTitle: { fontSize: 14, fontWeight: "700" },
   miniPlay: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2664,10 +3074,30 @@ const styles = StyleSheet.create({
   },
   briefCard: { marginTop: 14, gap: 8 },
   briefOverview: { fontSize: 16, lineHeight: 22, fontWeight: "700" },
-  chapterRow: { minHeight: 48, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: 12 },
+  chapterRow: {
+    minHeight: 48,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   momentSearchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
-  momentInput: { flex: 1, minHeight: 42, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, paddingHorizontal: 12, fontSize: 14 },
-  momentButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  momentInput: {
+    flex: 1,
+    minHeight: 42,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  momentButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   tool: {
     minHeight: 59,
     borderBottomWidth: StyleSheet.hairlineWidth,

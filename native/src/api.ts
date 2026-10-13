@@ -18,12 +18,21 @@ export type CatalogueEpisode = {
 export type IntelligenceStatus = {
   state:
     | "NOT_REQUESTED"
+    | "QUEUED"
+    | "DISCOVERING"
+    | "TRANSCRIBING"
+    | "UNDERSTANDING"
+    | "ORGANISING"
     | "TRANSCRIPT_READY"
     | "READY"
     | "UNAVAILABLE"
     | "FAILED";
   readiness?: "FULLY_READY" | "TEXT_ONLY" | "PARTIAL" | "UNUSABLE";
   reason?: string;
+  code?: string;
+  retryable?: boolean;
+  requiresAudioConsent?: boolean;
+  cacheHit?: boolean;
   brief?: { overview: string; themes: string[]; detail: string };
   chapters?: Array<{
     title: string;
@@ -32,7 +41,13 @@ export type IntelligenceStatus = {
     endMs: number;
     sourceSegmentIds: string[];
   }>;
-  provenance?: { sourceType: string; originalFormat: string; language: string };
+  provenance?: {
+    sourceType: string;
+    sourceUri: string;
+    originalFormat: string;
+    language: string;
+    transcriptVersion: string;
+  };
   paid?: { configured: boolean; enabled: boolean };
 };
 export type EpisodeMoment = {
@@ -51,9 +66,12 @@ async function request(path: string, init?: RequestInit) {
   let origin = base();
   if (!origin)
     throw Error(
-      "Set EXPO_PUBLIC_API_BASE_URL to your Star Cast server LAN address (not localhost).",
+      "Connect this device to your Star Cast listening server to continue.",
     );
-  let response = await fetch(`${origin}${path}`, init),
+  let response = await fetch(`${origin}${path}`, {
+      ...init,
+      signal: AbortSignal.timeout(20_000),
+    }),
     body = await response.json();
   if (!response.ok)
     throw Error(body.error || "Star Cast is temporarily unavailable.");
@@ -64,9 +82,7 @@ export async function searchCatalogue(
 ): Promise<{ provider: string; results: CatalogueShow[] }> {
   return request(`/api/catalogue/search?q=${encodeURIComponent(query)}`);
 }
-export async function loadFeed(
-  feedUrl: string,
-): Promise<{
+export async function loadFeed(feedUrl: string): Promise<{
   title: string;
   publisher: string;
   art?: string;
@@ -82,12 +98,13 @@ export async function loadIntelligenceStatus(
 ): Promise<IntelligenceStatus> {
   return request(
     `/api/intelligence/status?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=${encodeURIComponent(episodeId)}`,
+    { headers: developmentHeaders() },
   ).then((x) => x.status);
 }
 function developmentHeaders() {
   if (!developmentIntelligenceToken)
     throw Error(
-      "Episode analysis is available only in this configured local development build.",
+      "Episode analysis is not available on this device yet.",
     );
   return {
     "content-type": "application/json",
@@ -98,12 +115,86 @@ export async function requestEpisodeIntelligence(
   feedUrl: string,
   episodeId: string,
   capability: "brief" | "chapters" | "moment" = "brief",
+  options: { allowAudio?: boolean; retry?: boolean } = {},
 ): Promise<IntelligenceStatus> {
   return request("/api/intelligence/request", {
     method: "POST",
     headers: developmentHeaders(),
-    body: JSON.stringify({ feedUrl, episodeId, capability }),
+    body: JSON.stringify({ feedUrl, episodeId, capability, ...options }),
   }).then((x) => x.status);
+}
+
+export const isProcessing = (status: IntelligenceStatus | null) =>
+  !!status &&
+  [
+    "QUEUED",
+    "DISCOVERING",
+    "TRANSCRIBING",
+    "UNDERSTANDING",
+    "ORGANISING",
+  ].includes(status.state);
+const processingLabels: Record<string, string> = {
+  QUEUED: "Waiting to analyse",
+  DISCOVERING: "Finding a transcript",
+  TRANSCRIBING: "Transcribing the audio",
+  UNDERSTANDING: "Understanding the conversation",
+  ORGANISING: "Organising chapters",
+  READY: "Ready to explore",
+};
+export const processingLabel = (status: IntelligenceStatus | null) =>
+  processingLabels[status?.state || ""] ||
+  status?.reason ||
+  "Discover this episode";
+export type AnalysisPreflight = {
+  hasPublisherTranscript: boolean;
+  durationMs: number | null;
+  withinLimit: boolean;
+  audioEnabled: boolean;
+  analysisEnabled: boolean;
+  requiresAudioConsent: boolean;
+  estimatedAudioCost: number | null;
+};
+export async function preflightEpisode(
+  feedUrl: string,
+  episodeId: string,
+): Promise<AnalysisPreflight> {
+  return request("/api/intelligence/preflight", {
+    method: "POST",
+    headers: developmentHeaders(),
+    body: JSON.stringify({ feedUrl, episodeId }),
+  });
+}
+export type ConversationMatch = EpisodeMoment & {
+  speaker?: string;
+  episode: CatalogueEpisode & {
+    feedUrl: string;
+    showName: string;
+    artworkUrl?: string;
+  };
+  provenance: NonNullable<IntelligenceStatus["provenance"]>;
+};
+export type ConversationResults = {
+  query: string;
+  coverage: {
+    processedEpisodes: number;
+    matchedEpisodes: number;
+    scope: string;
+  };
+  synthesis: string;
+  synthesisType: string;
+  matches: ConversationMatch[];
+  followUps: string[];
+};
+export async function searchConversations(
+  query: string,
+  feedUrls?: string[],
+  mode = "Conversations",
+): Promise<ConversationResults> {
+  return request("/api/search/conversations", {
+    method: "POST",
+    headers: developmentHeaders(),
+    body: JSON.stringify({ query, feedUrls, mode }),
+  });
 }
 export async function findEpisodeMoment(
   feedUrl: string,

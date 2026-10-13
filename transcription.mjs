@@ -1,7 +1,240 @@
-import {rm} from 'node:fs/promises';
+import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { createHash } from "node:crypto";
+import ffmpeg from "ffmpeg-static";
+import ffprobe from "ffprobe-static";
+import { toFile } from "openai";
+import { downloadPublicAudio, publicUrl } from "./safe-network.mjs";
+import { assessTranscript } from "./transcripts.mjs";
 
-export function planAudioSegments({durationMs,maxSegmentMs=20*60_000,overlapMs=1_000}){if(!Number.isFinite(durationMs)||durationMs<=0)throw Error('A verified episode duration is required before transcription.');if(maxSegmentMs<=overlapMs)throw Error('Audio segment configuration is invalid.');let plan=[],startMs=0,index=0;while(startMs<durationMs){let endMs=Math.min(durationMs,startMs+maxSegmentMs);plan.push({index:index++,startMs,endMs,overlapMs:startMs?overlapMs:0});if(endMs>=durationMs)break;startMs=endMs-overlapMs}return plan}
-export function mergeTranscriptSegments(segments){let merged=[];for(let segment of [...segments].sort((a,b)=>a.startMs-b.startMs)){let prior=merged.at(-1),text=String(segment.text||'').trim();if(!text)continue;if(prior&&segment.startMs<prior.endMs&&prior.text.endsWith(text.slice(0,Math.min(48,text.length))))continue;merged.push({...segment,text})}return merged}
-export async function transcribeOnDemand({episodeId,audioUrl,durationMs,chunkFactory,client,ledger,requestId,model='gpt-4o-mini-transcribe',authorised=false}){if(!authorised)throw Error('Audio transcription has not been authorised for this server.');if(!/^https:\/\//i.test(audioUrl))throw Error('A public HTTPS audio source is required.');let plan=planAudioSegments({durationMs});ledger.reserve({id:requestId,usd:Math.min(.12,durationMs/3_600_000*.06),kind:'transcription',seconds:Math.ceil(durationMs/1000)});let files=[];try{let responses=[];for(let part of plan){let file=await chunkFactory(part);files.push(file);let response=await client.audio.transcriptions.create({file,model,response_format:'verbose_json'});responses.push(...(response.segments||[]).map((s,i)=>({id:`${part.index}-${i}`,startMs:part.startMs+Math.round(s.start*1000),endMs:part.startMs+Math.round(s.end*1000),text:s.text}))) }let segments=mergeTranscriptSegments(responses);ledger.reconcile(requestId,{usd:Math.min(.12,durationMs/3_600_000*.06),seconds:Math.ceil(durationMs/1000)});return {episodeId,sourceType:'on_demand_audio',audioUrl,model,segments,processingVersion:'1.0.0'}
-  }catch(error){ledger.reconcile(requestId,{usd:0,seconds:0,failed:true});throw error
-  }finally{await Promise.all(files.filter(x=>typeof x==='string').map(x=>rm(x,{force:true})))}}
+const exec = promisify(execFile);
+export function planAudioSegments({
+  durationMs,
+  maxSegmentMs = 20 * 60_000,
+  overlapMs = 1_000,
+}) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0)
+    throw Error(
+      "A verified episode duration is required before transcription.",
+    );
+  if (maxSegmentMs <= overlapMs)
+    throw Error("Audio segment configuration is invalid.");
+  const plan = [];
+  let startMs = 0;
+  while (startMs < durationMs) {
+    const endMs = Math.min(durationMs, startMs + maxSegmentMs);
+    plan.push({
+      index: plan.length,
+      startMs,
+      endMs,
+      overlapMs: startMs ? overlapMs : 0,
+    });
+    if (endMs >= durationMs) break;
+    startMs = endMs - overlapMs;
+  }
+  return plan;
+}
+export function mergeTranscriptSegments(segments) {
+  const merged = [];
+  for (const segment of [...segments].sort((a, b) => a.startMs - b.startMs)) {
+    const text = String(segment.text || "").trim(),
+      prior = merged.at(-1);
+    if (
+      !text ||
+      !Number.isFinite(segment.startMs) ||
+      !Number.isFinite(segment.endMs) ||
+      segment.endMs <= segment.startMs
+    )
+      continue;
+    if (
+      prior &&
+      segment.startMs < prior.endMs &&
+      prior.text.toLowerCase().endsWith(text.toLowerCase())
+    )
+      continue;
+    merged.push({ ...segment, text });
+  }
+  return merged;
+}
+export async function prepareAudio(audioUrl, maxSeconds) {
+  if (!publicUrl(audioUrl))
+    throw Error("A public HTTPS audio source is required.");
+  const directory = await mkdtemp(join(tmpdir(), "starcast-audio-")),
+    path = join(directory, "source.audio");
+  try {
+    await downloadPublicAudio(audioUrl, path);
+    const { stdout } = await exec(
+      ffprobe.path,
+      [
+        "-v",
+        "error",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "json",
+        path,
+      ],
+      { timeout: 30_000 },
+    );
+    const durationMs = Math.ceil(
+      Number(JSON.parse(stdout).format?.duration) * 1000,
+    );
+    if (!Number.isFinite(durationMs) || durationMs <= 0)
+      throw Error("Audio duration could not be verified.");
+    if (durationMs > maxSeconds * 1000)
+      throw Error(
+        "This episode is longer than the current two-hour processing limit.",
+      );
+    return {
+      durationMs,
+      cleanup: () => rm(directory, { recursive: true, force: true }),
+      chunkFactory: async (part) => {
+        const output = join(directory, "chunk-" + part.index + ".mp3");
+        await exec(
+          ffmpeg,
+          [
+            "-nostdin",
+            "-v",
+            "error",
+            "-protocol_whitelist",
+            "file,pipe",
+            "-ss",
+            String(part.startMs / 1000),
+            "-i",
+            path,
+            "-t",
+            String((part.endMs - part.startMs) / 1000),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            "-b:a",
+            "48k",
+            output,
+          ],
+          { timeout: 120_000 },
+        );
+        return toFile(await readFile(output), "chunk.mp3", {
+          type: "audio/mpeg",
+        });
+      },
+    };
+  } catch (error) {
+    await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
+}
+export async function transcribeOnDemand({
+  episodeId,
+  audioUrl,
+  durationMs,
+  chunkFactory,
+  client,
+  ledger,
+  requestId,
+  model = "whisper-1",
+  authorised = false,
+}) {
+  if (!authorised)
+    throw Error("Audio transcription has not been authorised for this server.");
+  if (!publicUrl(audioUrl))
+    throw Error("A public HTTPS audio source is required.");
+  if (model !== "whisper-1")
+    throw Error(
+      "A timestamp-capable, priced transcription adapter is required.",
+    );
+  const plan = planAudioSegments({ durationMs });
+  // Include chunk overlap and round each provider request up to a whole second.
+  const seconds = plan.reduce(
+    (n, p) => n + Math.ceil((p.endMs - p.startMs) / 1000),
+    0,
+  );
+  if (durationMs > ledger.controls.maxEpisodeSeconds * 1000)
+    throw Error(
+      "This episode is longer than the current two-hour processing limit.",
+    );
+  // Episode cap applies to source duration; overlap still consumes the daily allowance.
+  ledger.reserve({
+    id: requestId,
+    usd: seconds * 0.0001,
+    kind: "transcription",
+    seconds,
+    sourceSeconds: Math.ceil(durationMs / 1000),
+  });
+  let sent = false,
+    complete = false;
+  try {
+    const responses = [];
+    for (const part of plan) {
+      const file = await chunkFactory(part);
+      sent = true;
+      const response = await client.audio.transcriptions.create({
+        file,
+        model,
+        response_format: "verbose_json",
+        timestamp_granularities: ["segment"],
+      });
+      if (!response.segments?.length)
+        throw Error("Transcription returned no usable timestamped speech.");
+      for (const [i, s] of response.segments.entries()) {
+        if (s.no_speech_prob > 0.8 || s.avg_logprob < -1) continue;
+        const startMs = part.startMs + Math.round(s.start * 1000),
+          endMs = Math.min(durationMs, part.startMs + Math.round(s.end * 1000));
+        if (startMs < part.startMs || endMs > part.endMs + 1000)
+          throw Error("Transcription timing failed validation.");
+        responses.push({
+          id: part.index + "-" + i,
+          startMs,
+          endMs,
+          text: s.text,
+          contentType: "conversation",
+        });
+      }
+    }
+    const segments = mergeTranscriptSegments(responses),
+      quality = assessTranscript({ segments, durationMs });
+    if (
+      quality.readiness === "UNUSABLE" ||
+      segments.reduce((n, s) => n + s.text.length, 0) < 100
+    )
+      throw Error("Transcription quality was insufficient.");
+    const transcriptVersion = createHash("sha256")
+      .update(JSON.stringify(segments))
+      .digest("hex");
+    complete = true;
+    return {
+      id: "transcript-" + transcriptVersion,
+      transcriptVersion,
+      episodeId,
+      sourceType: "on_demand_audio",
+      sourceUri: audioUrl,
+      originalFormat: "verbose_json",
+      audioUrl,
+      model,
+      language: "und",
+      segments,
+      quality,
+      acquiredAt: new Date().toISOString(),
+      processingVersion: "2.0.0",
+    };
+  } finally {
+    for (const id of [requestId]) {
+      const reserved = ledger.reservations.get(id);
+      if (!reserved) continue;
+      if (sent)
+        ledger.reconcile(id, {
+          usd: reserved.usd,
+          seconds: reserved.seconds,
+          failed: !complete,
+          uncertain: !complete,
+        });
+      else ledger.cancel(id);
+    }
+  }
+}
