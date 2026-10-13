@@ -29,18 +29,10 @@ import {
   type Source,
 } from "./src/PlaybackProvider";
 import {
-  findEpisodeMoment,
   loadFeed,
-  loadIntelligenceStatus,
-  requestEpisodeIntelligence,
-  preflightEpisode,
-  isProcessing,
-  processingLabel,
   searchCatalogue,
   type CatalogueEpisode,
   type CatalogueShow,
-  type EpisodeMoment,
-  type IntelligenceStatus,
 } from "./src/api";
 import {
   emptyListenerState,
@@ -58,6 +50,8 @@ import {
 } from "./src/sleepBridge";
 import { feedback } from "./src/feedback";
 import { motion, themes, type StarTheme } from "./src/design";
+import { useEpisodeIntelligence } from "./src/useEpisodeIntelligence";
+import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { SearchScreen } from "./src/SearchScreen";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
@@ -822,11 +816,15 @@ function AiSleepScreen({
 function PlayerSheet({
   visible,
   onClose,
+  enabled,
+  onEnable,
   p,
 }: {
   visible: boolean;
   onClose: () => void;
   p: Theme;
+  enabled: boolean;
+  onEnable: () => void;
 }) {
   let {
       source,
@@ -844,13 +842,22 @@ function PlayerSheet({
     [aiScreenOpen, setAiScreenOpen] = useState(false),
     [aiActive, setAiActive] = useState(false),
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
-    [intelligence, setIntelligence] = useState<IntelligenceStatus | null>(null),
-    [intelligenceRequesting, setIntelligenceRequesting] = useState(false),
-    [momentQuery, setMomentQuery] = useState(""),
-    [moments, setMoments] = useState<EpisodeMoment[]>([]),
     [notice, setNotice] = useState(""),
-    [briefExpanded, setBriefExpanded] = useState(false),
+    [panel, setPanel] = useState<"brief" | "explore" | "ads" | null>(null),
     [progressWidth, setProgressWidth] = useState(1);
+  const intelligence = useEpisodeIntelligence(
+    source?.feedUrl,
+    source?.episodeId,
+    visible,
+    enabled,
+  );
+  useEffect(() => {
+    setPanel(null);
+    setNotice("");
+  }, [source?.episodeId, source?.feedUrl]);
+  useEffect(() => {
+    if (!visible) setPanel(null);
+  }, [visible]);
   const [sleepRecovery, setSleepRecovery] = useState<{
     lastHeard: number;
     pausedAt: number;
@@ -897,62 +904,6 @@ function PlayerSheet({
     )
       timer.current?.onEpisodeEnd();
   }, [snapshot.durationMs, snapshot.positionMs, snapshot.playing]);
-  useEffect(() => {
-    let live = true;
-    if (!source?.feedUrl) {
-      setIntelligence(null);
-      return;
-    }
-    setIntelligence(null);
-    setMoments([]);
-    setBriefExpanded(false);
-    setNotice("");
-    void loadIntelligenceStatus(source.feedUrl, source.episodeId)
-      .then((status) => live && setIntelligence(status))
-      .catch(
-        (error) =>
-          live &&
-          setIntelligence({
-            state: "FAILED",
-            reason:
-              error instanceof Error
-                ? error.message
-                : "Episode intelligence is temporarily unavailable.",
-          }),
-      );
-    return () => {
-      live = false;
-    };
-  }, [source?.episodeId, source?.feedUrl]);
-  useEffect(() => {
-    if (!source?.feedUrl || !isProcessing(intelligence)) return;
-    let live = true;
-    const refresh = setTimeout(() => {
-      void loadIntelligenceStatus(source.feedUrl!, source.episodeId)
-        .then((status) => {
-          if (live) {
-            setIntelligence(status);
-            setNotice(
-              status.state === "READY"
-                ? "Your episode is ready to explore."
-                : processingLabel(status),
-            );
-          }
-        })
-        .catch(() => {
-          if (live) {
-            setNotice(
-              "Connection interrupted. Analysis continues on the server.",
-            );
-            setIntelligence((value) => (value ? { ...value } : value));
-          }
-        });
-    }, 2500);
-    return () => {
-      live = false;
-      clearTimeout(refresh);
-    };
-  }, [source?.episodeId, source?.feedUrl, intelligence]);
   if (!source) return null;
   let percent = snapshot.durationMs
     ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
@@ -997,580 +948,299 @@ function PlayerSheet({
     setNotice("AI Sleep stopped. Playback continues.");
     feedback.light();
   };
-  let analyseEpisode = async (capability: "brief" | "chapters") => {
-    if (!source.feedUrl) return;
-    if (intelligenceRequesting || isProcessing(intelligence)) return;
-    if (intelligence?.state === "FAILED" && intelligence.retryable === false) {
-      setNotice(
-        intelligence.reason || "This episode cannot be analysed right now.",
-      );
-      return;
-    }
-    if (intelligence?.state === "READY") {
-      setBriefExpanded(true);
-      return;
-    }
-    setIntelligenceRequesting(true);
-    setNotice("Checking this episode…");
-    try {
-      const preflight = await preflightEpisode(
-        source.feedUrl,
-        source.episodeId,
-      );
-      if (!preflight.withinLimit) {
-        setNotice(
-          "This episode is longer than the current two-hour processing limit. Try a shorter episode.",
-        );
-        return;
-      }
-      if (!preflight.analysisEnabled) {
-        setNotice("Episode analysis is temporarily unavailable.");
-        return;
-      }
-      let allowAudio = false;
-      if (
-        preflight.requiresAudioConsent ||
-        intelligence?.requiresAudioConsent
-      ) {
-        if (!preflight.audioEnabled) {
-          setNotice(
-            "No publisher transcript is available, and audio analysis is unavailable.",
-          );
-          return;
-        }
-        allowAudio = await new Promise<boolean>((resolve) =>
-          Alert.alert(
-            "Analyse the audio?",
-            "No usable publisher transcript was found. This will transcribe this episode within your server’s analysis allowance. It may take a few minutes.",
-            [
-              {
-                text: "Not now",
-                style: "cancel",
-                onPress: () => resolve(false),
-              },
-              { text: "Analyse audio", onPress: () => resolve(true) },
-            ],
-            { cancelable: true, onDismiss: () => resolve(false) },
-          ),
-        );
-        if (!allowAudio) {
-          setNotice("");
-          return;
-        }
-      }
-      let status = await requestEpisodeIntelligence(
-        source.feedUrl,
-        source.episodeId,
-        capability,
-        { allowAudio, retry: intelligence?.state === "FAILED" },
-      );
-      setIntelligence(status);
-      setNotice(
-        status.state === "READY"
-          ? "Episode intelligence is ready."
-          : processingLabel(status),
-      );
-      if (status.state === "READY") feedback.success();
-    } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Analysis could not start on this development device.",
-      );
-    } finally {
-      setIntelligenceRequesting(false);
-    }
-  };
-  let findMoment = async () => {
-    if (!source.feedUrl || momentQuery.trim().length < 2) {
-      setNotice("Ask about a topic from this episode.");
-      return;
-    }
-    setNotice("Finding a grounded moment…");
-    try {
-      let result = await findEpisodeMoment(
-        source.feedUrl,
-        source.episodeId,
-        momentQuery.trim(),
-      );
-      setIntelligence(result.status);
-      setMoments(result.moments);
-      setNotice(
-        result.moments.length
-          ? "Moments are grounded in the publisher transcript."
-          : "No timestamped moment matched that question.",
-      );
-    } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Moment search is not available for this episode.",
-      );
-    }
-  };
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={() => (panel ? setPanel(null) : onClose())}
     >
       <SafeAreaView style={[styles.modalSafe, { backgroundColor: p.bg }]}>
-        {visible && source.artworkUrl && (
-          <View
-            pointerEvents="none"
-            style={{ position: "absolute", width: "100%", height: 400 }}
-          >
-            <Image
-              accessible={false}
-              source={{ uri: source.artworkUrl }}
-              blurRadius={45}
-              style={{
-                width: "100%",
-                height: 400,
-                opacity: p.blurTint === "dark" ? 0.12 : 0.08,
-              }}
-            />
-          </View>
-        )}
-        <View
-          style={[
-            styles.sheetHeader,
-            { paddingHorizontal: 24, paddingTop: 10 },
-          ]}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close player"
-            onPress={onClose}
-            style={[styles.roundButton, { borderColor: p.line }]}
-          >
-            <Ionicons name="chevron-down" size={22} color={p.text} />
-          </Pressable>
-          <Text style={[styles.eyebrow, { color: p.accent }]}>NOW PLAYING</Text>
-          <View style={styles.roundButton} />
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.playerSheet}
-        >
-          <View style={[styles.playerArtwork, { backgroundColor: p.wash }]}>
-            <Art url={source.artworkUrl} size={240} radius={28} />
-          </View>
-          <Text
-            numberOfLines={2}
-            style={[styles.playerTitle, { color: p.text }]}
-          >
-            {source.title}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={[styles.playerShow, { color: p.muted }]}
-          >
-            {source.show}
-            {snapshot.buffered ? " · Buffering…" : ""}
-          </Text>
-          <Pressable
-            accessibilityRole="adjustable"
-            accessibilityLabel="Playback position"
-            onLayout={(event) =>
-              setProgressWidth(event.nativeEvent.layout.width)
-            }
-            accessibilityValue={{
-              min: 0,
-              max: snapshot.durationMs || 0,
-              now: snapshot.positionMs,
-            }}
-            accessibilityActions={[
-              { name: "increment", label: "Forward 15 seconds" },
-              { name: "decrement", label: "Back 15 seconds" },
-            ]}
-            onAccessibilityAction={(event) =>
-              void seek(
-                snapshot.positionMs +
-                  (event.nativeEvent.actionName === "increment"
-                    ? 15000
-                    : -15000),
-              )
-            }
-            onPress={(event) =>
-              seek(
-                snapshot.durationMs
-                  ? snapshot.durationMs *
-                      Math.max(
-                        0,
-                        Math.min(
-                          1,
-                          event.nativeEvent.locationX / progressWidth,
-                        ),
-                      )
-                  : snapshot.positionMs,
-              )
-            }
-            style={[styles.progressTouch, { backgroundColor: p.line }]}
-          >
+        {panel ? (
+          <EpisodeIntelligenceView
+            key={`${source.feedUrl}-${source.episodeId}-${panel}`}
+            panel={panel}
+            source={source}
+            p={p}
+            enabled={enabled}
+            onEnable={onEnable}
+            onBack={() => setPanel(null)}
+            intelligence={intelligence}
+            onPlay={(ms) => play({ ...source, startPositionMs: ms })}
+          />
+        ) : (
+          <>
+            {visible && source.artworkUrl && (
+              <View
+                pointerEvents="none"
+                style={{ position: "absolute", width: "100%", height: 400 }}
+              >
+                <Image
+                  accessible={false}
+                  source={{ uri: source.artworkUrl }}
+                  blurRadius={45}
+                  style={{
+                    width: "100%",
+                    height: 400,
+                    opacity: p.blurTint === "dark" ? 0.12 : 0.08,
+                  }}
+                />
+              </View>
+            )}
             <View
               style={[
-                styles.progressFill,
-                { backgroundColor: p.accent2, width: `${percent}%` },
+                styles.sheetHeader,
+                { paddingHorizontal: 24, paddingTop: 10 },
               ]}
-            />
-          </Pressable>
-          <View style={styles.timeRow}>
-            <Text style={[styles.small, { color: p.muted }]}>
-              {format(snapshot.positionMs)}
-            </Text>
-            <Text style={[styles.small, { color: p.muted }]}>
-              {snapshot.durationMs
-                ? `−${format(Math.max(0, snapshot.durationMs - snapshot.positionMs))}`
-                : "--:--"}
-            </Text>
-          </View>
-          <View style={styles.transport}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back 15 seconds"
-              onPress={() => seek(snapshot.positionMs - 15_000)}
-              style={styles.transportSide}
             >
-              <Text style={{ color: p.text, fontSize: 19 }}>↶ 15</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
-              onPress={() => {
-                feedback.light();
-                snapshot.playing ? pause() : play(source);
-              }}
-              style={[styles.playButton, { backgroundColor: p.text }]}
-            >
-              <Ionicons
-                name={snapshot.playing ? "pause" : "play"}
-                size={22}
-                color={p.bg}
-              />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Forward 30 seconds"
-              onPress={() => seek(snapshot.positionMs + 30_000)}
-              style={styles.transportSide}
-            >
-              <Text style={{ color: p.text, fontSize: 19 }}>30 ↷</Text>
-            </Pressable>
-          </View>
-          <View style={styles.speedRow}>
-            {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
-              <Chip
-                key={speed}
-                label={`${speed}×`}
-                active={snapshot.speed === speed}
-                p={p}
-                onPress={() => setSpeed(speed)}
-              />
-            ))}
-          </View>
-          <View style={styles.playerTools}>
-            {[
-              { label: "AI Episode Brief", capability: "brief" as const },
-              { label: "Explore Episode", capability: "chapters" as const },
-              { label: "Ad Skip", capability: null },
-            ].map(({ label, capability }) => (
               <Pressable
-                key={label}
                 accessibilityRole="button"
-                accessibilityLabel={label}
-                disabled={
-                  Boolean(capability) &&
-                  (intelligenceRequesting || isProcessing(intelligence))
-                }
-                onPress={() =>
-                  capability
-                    ? void analyseEpisode(capability)
-                    : setNotice(
-                        "Automatic Ad Skip remains off while it is evaluated.",
-                      )
-                }
-                style={[styles.tool, { borderColor: p.line }]}
+                accessibilityLabel="Close player"
+                onPress={onClose}
+                style={[styles.roundButton, { borderColor: p.line }]}
               >
-                <Ionicons
-                  name={
-                    label === "Ad Skip"
-                      ? "shield-checkmark-outline"
-                      : label === "Explore Episode"
-                        ? "compass-outline"
-                        : "sparkles"
-                  }
-                  size={18}
-                  color={p.accent2}
-                />
-                <Text style={[styles.toolText, { color: p.text }]}>
-                  {label}
-                </Text>
-                <Text style={[styles.small, { color: p.muted }]}>
-                  {label === "Ad Skip"
-                    ? "Not enabled"
-                    : intelligenceRequesting || isProcessing(intelligence)
-                      ? "Analysing…"
-                      : intelligence?.state === "READY"
-                        ? "Ready"
-                        : intelligence?.state === "FAILED"
-                          ? intelligence.retryable
-                            ? "Retry"
-                            : "Unavailable"
-                          : "Analyse"}
-                </Text>
+                <Ionicons name="chevron-down" size={22} color={p.text} />
               </Pressable>
-            ))}
-          </View>
-          {intelligence?.brief ? (
-            <Glass p={p} style={styles.briefCard}>
               <Text style={[styles.eyebrow, { color: p.accent }]}>
-                AI EPISODE BRIEF
+                NOW PLAYING
               </Text>
-              <Text style={[styles.briefOverview, { color: p.text }]}>
-                {intelligence.brief.overview}
-              </Text>
-              <Text style={[styles.small, { color: p.muted }]}>
-                {intelligence.brief.themes.join(" · ")}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: briefExpanded }}
-                onPress={() => setBriefExpanded(!briefExpanded)}
-                style={{ minHeight: 44, justifyContent: "center" }}
+              <View style={styles.roundButton} />
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.playerSheet}
+            >
+              <View style={[styles.playerArtwork, { backgroundColor: p.wash }]}>
+                <Art url={source.artworkUrl} size={240} radius={28} />
+              </View>
+              <Text
+                numberOfLines={2}
+                style={[styles.playerTitle, { color: p.text }]}
               >
-                <Text style={{ color: p.accent2 }}>
-                  {briefExpanded ? "Less detail" : "Read the full brief"}
-                </Text>
-              </Pressable>
-              {briefExpanded && (
-                <Text style={[styles.emptyCopy, { color: p.text }]}>
-                  {intelligence.brief.detail}
-                </Text>
-              )}
-              <Text style={[styles.tiny, { color: p.muted }]}>
-                {intelligence.provenance?.sourceType === "publisher_rss"
-                  ? "From the publisher transcript"
-                  : "From transcribed episode audio"}
-                {intelligence.readiness === "TEXT_ONLY"
-                  ? " · no verified timestamps"
-                  : ""}
-              </Text>
-            </Glass>
-          ) : (
-            <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.briefOverview, { color: p.text }]}>
-                {isProcessing(intelligence)
-                  ? processingLabel(intelligence)
-                  : "Discover this episode"}
+                {source.title}
               </Text>
               <Text
-                accessibilityLiveRegion="polite"
-                style={[styles.emptyCopy, { color: p.muted }]}
+                numberOfLines={1}
+                style={[styles.playerShow, { color: p.muted }]}
               >
-                {intelligence?.reason ||
-                  "Get a concise episode brief, explore the main topics and find moments worth hearing."}
+                {source.show}
+                {snapshot.buffered ? " · Buffering…" : ""}
               </Text>
-              {!isProcessing(intelligence) &&
-                (intelligence?.retryable !== false ||
-                  intelligence?.requiresAudioConsent) && (
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={intelligenceRequesting}
-                    onPress={() => void analyseEpisode("brief")}
-                    style={[styles.primary, { backgroundColor: p.accent2 }]}
-                  >
-                    <Text style={styles.primaryText}>
-                      {intelligence?.state === "FAILED"
-                        ? "Retry analysis"
-                        : "Analyse episode"}
-                    </Text>
-                  </Pressable>
-                )}
-            </Glass>
-          )}
-          {intelligence?.chapters?.length ? (
-            <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>
-                EXPLORE EPISODE
-              </Text>
-              {intelligence.chapters.map((chapter) => (
-                <Pressable
-                  key={`${chapter.startMs}-${chapter.title}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Play chapter: ${chapter.title}`}
-                  onPress={() =>
-                    void play({
-                      ...source,
-                      startPositionMs: chapter.startMs,
-                    }).catch(() =>
-                      setNotice(
-                        "This audio could not be played. Please try again.",
-                      ),
-                    )
-                  }
-                  style={[styles.chapterRow, { borderTopColor: p.line }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.toolText, { color: p.text }]}>
-                      {chapter.title}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.small, { color: p.muted }]}
-                    >
-                      {chapter.description}
-                    </Text>
-                  </View>
-                  <Text style={[styles.small, { color: p.accent2 }]}>
-                    {format(chapter.startMs)}
-                  </Text>
-                </Pressable>
-              ))}
-            </Glass>
-          ) : null}
-          {intelligence?.state === "READY" ? (
-            <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>
-                FIND A MOMENT
-              </Text>
-              <View style={styles.momentSearchRow}>
-                <TextInput
-                  accessibilityLabel="Find a moment in this episode"
-                  value={momentQuery}
-                  onChangeText={setMomentQuery}
-                  onSubmitEditing={() => void findMoment()}
-                  placeholder="Ask about a topic"
-                  placeholderTextColor={p.muted}
+              <Pressable
+                accessibilityRole="adjustable"
+                accessibilityLabel="Playback position"
+                onLayout={(event) =>
+                  setProgressWidth(event.nativeEvent.layout.width)
+                }
+                accessibilityValue={{
+                  min: 0,
+                  max: snapshot.durationMs || 0,
+                  now: snapshot.positionMs,
+                }}
+                accessibilityActions={[
+                  { name: "increment", label: "Forward 15 seconds" },
+                  { name: "decrement", label: "Back 15 seconds" },
+                ]}
+                onAccessibilityAction={(event) =>
+                  void seek(
+                    snapshot.positionMs +
+                      (event.nativeEvent.actionName === "increment"
+                        ? 15000
+                        : -15000),
+                  )
+                }
+                onPress={(event) =>
+                  seek(
+                    snapshot.durationMs
+                      ? snapshot.durationMs *
+                          Math.max(
+                            0,
+                            Math.min(
+                              1,
+                              event.nativeEvent.locationX / progressWidth,
+                            ),
+                          )
+                      : snapshot.positionMs,
+                  )
+                }
+                style={[styles.progressTouch, { backgroundColor: p.line }]}
+              >
+                <View
                   style={[
-                    styles.momentInput,
-                    { color: p.text, borderColor: p.line },
+                    styles.progressFill,
+                    { backgroundColor: p.accent2, width: `${percent}%` },
                   ]}
                 />
+              </Pressable>
+              <View style={styles.timeRow}>
+                <Text style={[styles.small, { color: p.muted }]}>
+                  {format(snapshot.positionMs)}
+                </Text>
+                <Text style={[styles.small, { color: p.muted }]}>
+                  {snapshot.durationMs
+                    ? `−${format(Math.max(0, snapshot.durationMs - snapshot.positionMs))}`
+                    : "--:--"}
+                </Text>
+              </View>
+              <View style={styles.transport}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Find moment"
-                  onPress={() => void findMoment()}
-                  style={[styles.momentButton, { backgroundColor: p.accent2 }]}
+                  accessibilityLabel="Back 15 seconds"
+                  onPress={() => seek(snapshot.positionMs - 15_000)}
+                  style={styles.transportSide}
                 >
-                  <Ionicons name="search" size={17} color={p.bg} />
+                  <Text style={{ color: p.text, fontSize: 19 }}>↶ 15</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+                  onPress={() => {
+                    feedback.light();
+                    snapshot.playing ? pause() : play(source);
+                  }}
+                  style={[styles.playButton, { backgroundColor: p.text }]}
+                >
+                  <Ionicons
+                    name={snapshot.playing ? "pause" : "play"}
+                    size={22}
+                    color={p.bg}
+                  />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Forward 30 seconds"
+                  onPress={() => seek(snapshot.positionMs + 30_000)}
+                  style={styles.transportSide}
+                >
+                  <Text style={{ color: p.text, fontSize: 19 }}>30 ↷</Text>
                 </Pressable>
               </View>
-              {moments.map((moment) => (
-                <Pressable
-                  key={`${moment.segmentId}-${moment.startMs}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Play ${moment.label.toLowerCase()} at ${format(moment.startMs)}`}
-                  onPress={() =>
-                    void play({
-                      ...source,
-                      startPositionMs: moment.startMs,
-                    }).catch(() =>
-                      setNotice(
-                        "This audio could not be played. Please try again.",
-                      ),
-                    )
-                  }
-                  style={[styles.chapterRow, { borderTopColor: p.line }]}
-                >
-                  <Text
-                    numberOfLines={2}
-                    style={[styles.small, { color: p.text, flex: 1 }]}
-                  >
-                    {moment.context}
-                  </Text>
-                  <Text style={[styles.small, { color: p.accent2 }]}>
-                    {format(moment.startMs)}
-                  </Text>
-                </Pressable>
-              ))}
-            </Glass>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setTimerOpen(true)}
-            style={[
-              styles.sleepEntry,
-              { backgroundColor: p.wash, borderColor: p.line },
-            ]}
-          >
-            <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
-              <Ionicons name="moon-outline" size={18} color={p.text} /> Sleep
-              Timer
-            </Text>
-            <Text style={[styles.small, { color: p.muted }]}>Set a pause</Text>
-          </Pressable>
-          {sleepRecovery && (
-            <Glass p={p} style={styles.briefCard}>
-              <Text style={[styles.briefOverview, { color: p.text }]}>
-                Welcome back.
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void seek(sleepRecovery.lastHeard)}
-                style={{ minHeight: 44, justifyContent: "center" }}
-              >
-                <Text style={{ color: p.accent2 }}>
-                  Continue from estimated last-heard position
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void seek(sleepRecovery.pausedAt)}
-                style={{ minHeight: 44, justifyContent: "center" }}
-              >
-                <Text style={{ color: p.accent2 }}>
-                  Continue from pause position
-                </Text>
-              </Pressable>
-              <Text style={[styles.small, { color: p.muted }]}>
-                How was the timing? Early or late adjusts your next listening
-                window by five minutes.
-              </Text>
               <View style={styles.speedRow}>
-                {(
-                  [
-                    ["Too early", "early"],
-                    ["About right", "correct"],
-                    ["Too late", "late"],
-                  ] as const
-                ).map(([label, kind]) => (
+                {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
                   <Chip
-                    key={kind}
-                    label={label}
+                    key={speed}
+                    label={`${speed}×`}
+                    active={snapshot.speed === speed}
                     p={p}
-                    onPress={() => {
-                      ai.current?.feedback(kind);
-                      setNotice(
-                        "Your timing preference is saved on this device.",
-                      );
-                      setSleepRecovery(null);
-                    }}
+                    onPress={() => setSpeed(speed)}
                   />
                 ))}
               </View>
-            </Glass>
-          )}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setAiScreenOpen(true)}
-            style={[styles.aiSleepEntry, { backgroundColor: p.accent2 }]}
-          >
-            <Text style={styles.aiSleepEntryTitle}>
-              <Ionicons name="sparkles" size={17} color="#fff" />{" "}
-              {aiActive ? "AI Sleep active" : "AI Sleep"}
-            </Text>
-            <Text style={styles.aiSleepEntryCopy}>
-              {aiActive
-                ? "Keep listening"
-                : "Fall asleep. We’ll take care of the rest."}
-            </Text>
-          </Pressable>
-          {notice ? (
-            <Text style={[styles.notice, { color: p.muted }]}>{notice}</Text>
-          ) : null}
-        </ScrollView>
+              <View style={styles.playerTools}>
+                {(
+                  [
+                    ["AI Episode Brief", "brief", "sparkles"],
+                    ["Explore Episode", "explore", "compass-outline"],
+                    ["Ad Skip", "ads", "shield-checkmark-outline"],
+                  ] as const
+                ).map(([label, target, icon]) => (
+                  <Pressable
+                    key={target}
+                    accessibilityRole="button"
+                    accessibilityLabel={label}
+                    onPress={() => {
+                      feedback.light();
+                      setPanel(target);
+                    }}
+                    style={[styles.tool, { borderColor: p.line }]}
+                  >
+                    <Ionicons name={icon} size={20} color={p.accent2} />
+                    <Text style={[styles.toolText, { color: p.text }]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setTimerOpen(true)}
+                style={[
+                  styles.sleepEntry,
+                  { backgroundColor: p.wash, borderColor: p.line },
+                ]}
+              >
+                <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
+                  <Ionicons name="moon-outline" size={18} color={p.text} />{" "}
+                  Sleep Timer
+                </Text>
+                <Text style={[styles.small, { color: p.muted }]}>
+                  Set a pause
+                </Text>
+              </Pressable>
+              {sleepRecovery && (
+                <Glass p={p} style={styles.briefCard}>
+                  <Text style={[styles.briefOverview, { color: p.text }]}>
+                    Welcome back.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void seek(sleepRecovery.lastHeard)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <Text style={{ color: p.accent2 }}>
+                      Continue from estimated last-heard position
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void seek(sleepRecovery.pausedAt)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <Text style={{ color: p.accent2 }}>
+                      Continue from pause position
+                    </Text>
+                  </Pressable>
+                  <Text style={[styles.small, { color: p.muted }]}>
+                    How was the timing? Early or late adjusts your next
+                    listening window by five minutes.
+                  </Text>
+                  <View style={styles.speedRow}>
+                    {(
+                      [
+                        ["Too early", "early"],
+                        ["About right", "correct"],
+                        ["Too late", "late"],
+                      ] as const
+                    ).map(([label, kind]) => (
+                      <Chip
+                        key={kind}
+                        label={label}
+                        p={p}
+                        onPress={() => {
+                          ai.current?.feedback(kind);
+                          setNotice(
+                            "Your timing preference is saved on this device.",
+                          );
+                          setSleepRecovery(null);
+                        }}
+                      />
+                    ))}
+                  </View>
+                </Glass>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setAiScreenOpen(true)}
+                style={[styles.aiSleepEntry, { backgroundColor: p.accent2 }]}
+              >
+                <Text style={styles.aiSleepEntryTitle}>
+                  <Ionicons name="sparkles" size={17} color="#fff" />{" "}
+                  {aiActive ? "AI Sleep active" : "AI Sleep"}
+                </Text>
+                <Text style={styles.aiSleepEntryCopy}>
+                  {aiActive
+                    ? "Keep listening"
+                    : "Fall asleep. We’ll take care of the rest."}
+                </Text>
+              </Pressable>
+              {notice ? (
+                <Text style={[styles.notice, { color: p.muted }]}>
+                  {notice}
+                </Text>
+              ) : null}
+            </ScrollView>
+          </>
+        )}
         <TimerSheet
           visible={timerOpen}
           p={p}
@@ -2679,6 +2349,10 @@ function AppContent({
         </BlurView>
       </View>
       <PlayerSheet
+        enabled={hydrated && state.intelligenceEnabled}
+        onEnable={() =>
+          setState((current) => ({ ...current, intelligenceEnabled: true }))
+        }
         visible={playerOpen}
         onClose={() => setPlayerOpen(false)}
         p={p}

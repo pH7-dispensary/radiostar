@@ -423,9 +423,16 @@ export function createStarCastServer({
           ...input,
           allowAudio: input.allowAudio === true,
           retry: input.retry === true,
+          trigger: input.trigger === "automatic" ? "automatic" : "manual",
         });
         return send(res, status.state === "QUEUED" ? 202 : 200, { status });
       }
+      if (url.pathname === "/api/intelligence/transcript")
+        return send(
+          res,
+          200,
+          pipeline.transcriptPage(input.feedUrl, input.episodeId, input.offset),
+        );
       if (url.pathname === "/api/intelligence/moment") {
         if (
           typeof input.query !== "string" ||

@@ -60,8 +60,11 @@ const started = Date.now(),
   });
 let status = first.status;
 while (
+  status.processing !== false &&
   [
     "QUEUED",
+    "PROCESSING",
+    "PARTIAL_READY",
     "DISCOVERING",
     "TRANSCRIBING",
     "UNDERSTANDING",

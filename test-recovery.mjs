@@ -163,7 +163,7 @@ const audioPipeline = new EpisodePipeline({
   audioEnabled: true,
   configured: true,
   resolveEpisode: async () => ({
-    duration: "1:00",
+    duration: "0:40", // RSS omits inserted audio; the delivered variant is 60 seconds.
     audioUrl: "https://example.org/shared-audio.mp3",
     refs: [],
   }),
@@ -208,6 +208,11 @@ assert.equal(
   1,
 );
 assert.equal(audioPipeline.status(feed, "first").state, "READY");
+assert.equal(audioPipeline.status(feed, "first").transcript.durationMs, 60000);
+assert.equal(
+  audioPipeline.status(feed, "first").quality.readiness,
+  "FULLY_READY",
+);
 assert.equal(audioPipeline.status(feed, "second").state, "READY");
 audioStore.close();
 console.log(

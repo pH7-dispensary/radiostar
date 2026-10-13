@@ -7,6 +7,7 @@ import {
 } from "./openai-intelligence.mjs";
 import { prepareAudio, transcribeOnDemand } from "./transcription.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
+import { groundResult } from "./grounded-result.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -14,7 +15,12 @@ export const activeStates = new Set([
   "TRANSCRIBING",
   "UNDERSTANDING",
   "ORGANISING",
+  "PROCESSING",
+  "PARTIAL_READY",
 ]);
+const completed = (value) =>
+  value?.state === "READY" ||
+  (value?.state === "PARTIAL_READY" && !!value.completedAt);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 export const episodeKey = (feedUrl, episodeId) =>
   hash(JSON.stringify([feedUrl, episodeId]));
@@ -29,7 +35,19 @@ export function durationMs(value) {
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
   const { transcript, episode, refs, ...safe } = value;
-  return safe;
+  return {
+    ...safe,
+    state:
+      safe.state === "UNAVAILABLE"
+        ? "BLOCKED"
+        : activeStates.has(safe.state) && safe.state !== "QUEUED"
+          ? transcript
+            ? "PARTIAL_READY"
+            : "PROCESSING"
+          : safe.state,
+    processing: activeStates.has(safe.state) && !safe.completedAt,
+    transcriptAvailable: !!transcript?.segments?.length,
+  };
 }
 function failure(error) {
   const message = String(error?.message || "");
@@ -58,7 +76,7 @@ function failure(error) {
       code: "PROVIDER_UNAVAILABLE",
       reason:
         "Analysis is temporarily unavailable. Your listening can continue.",
-      retryable: false,
+      retryable: true,
     };
   return {
     code: "ANALYSIS_FAILED",
@@ -77,6 +95,7 @@ export class EpisodePipeline {
     client,
     fetchTranscript = fetchPublisherTranscript,
     audioFactory = prepareAudio,
+    jobTimeoutMs = 15 * 60 * 1000,
   }) {
     Object.assign(this, {
       store,
@@ -88,11 +107,12 @@ export class EpisodePipeline {
       client,
       fetchTranscript,
       audioFactory,
+      jobTimeoutMs,
     });
     this.inflight = new Map();
     this.audioInflight = new Map();
     for (const [key, value] of store.all("intelligence"))
-      if (activeStates.has(value.state))
+      if (activeStates.has(value.state) && !value.completedAt)
         store.set("intelligence", key, {
           ...value,
           state: "FAILED",
@@ -106,7 +126,13 @@ export class EpisodePipeline {
       ledger.reconcile(id, { usd: row.usd, failed: true, uncertain: true });
   }
   status(feed, id) {
-    const value = this.store.get("intelligence", episodeKey(feed, id));
+    const key = episodeKey(feed, id);
+    let value = this.store.get("intelligence", key);
+    if (completed(value) && value.transcript && !value.groundingVersion) {
+      value = groundResult(value, value.transcript);
+      if (value.partialResult) value.state = "PARTIAL_READY";
+      this.store.set("intelligence", key, value);
+    }
     return value?.processingVersion === PROCESSING_VERSION ? value : null;
   }
   async preflight(feed, id) {
@@ -124,11 +150,30 @@ export class EpisodePipeline {
       estimatedAudioCost: duration ? Math.ceil(duration / 1000) * 0.0001 : null,
     };
   }
-  async request({ feedUrl, episodeId, allowAudio = false, retry = false }) {
+  async request({
+    feedUrl,
+    episodeId,
+    allowAudio = false,
+    retry = false,
+    trigger = "manual",
+  }) {
     const key = episodeKey(feedUrl, episodeId);
+    // Global activation is never consent to pay for audio or retry failed work.
+    if (trigger === "automatic") {
+      allowAudio = false;
+      retry = false;
+    }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
-    if (previous?.state === "READY") {
+    if (
+      trigger === "automatic" &&
+      previous &&
+      ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state)
+    )
+      return publicIntelligence(previous);
+    if (!completed(previous) && previous?.attempts >= 2)
+      return publicIntelligence(previous);
+    if (completed(previous)) {
       const episode = await this.resolveEpisode(feedUrl, episodeId);
       const signature = hash(JSON.stringify([episode.audioUrl, episode.refs]));
       const priorSignature = hash(
@@ -147,7 +192,7 @@ export class EpisodePipeline {
       return publicIntelligence(this.status(feedUrl, episodeId));
     if (this.inflight.size >= 2)
       return {
-        state: "UNAVAILABLE",
+        state: "BLOCKED",
         code: "SERVER_BUSY",
         reason:
           "Two episodes are already being analysed. Please try again when one is ready.",
@@ -160,13 +205,12 @@ export class EpisodePipeline {
       return publicIntelligence(previous);
     if (!this.enabled || !this.configured)
       return {
-        state: "UNAVAILABLE",
+        state: "BLOCKED",
         code: "SERVER_UNAVAILABLE",
         reason: "Episode analysis is temporarily unavailable.",
         retryable: false,
       };
-    const attempts =
-      (previous?.state === "READY" ? 0 : previous?.attempts || 0) + 1;
+    const attempts = (completed(previous) ? 0 : previous?.attempts || 0) + 1;
     const initial = {
       state: "QUEUED",
       jobId: randomUUID(),
@@ -174,6 +218,8 @@ export class EpisodePipeline {
       processingVersion: PROCESSING_VERSION,
       startedAt: new Date().toISOString(),
       cacheHit: false,
+      trigger,
+      deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
     };
     this.store.set("intelligence", key, initial);
     const task = this.run({
@@ -198,7 +244,23 @@ export class EpisodePipeline {
     forcePublisherRefresh,
   }) {
     let value = { ...initial };
+    let expired = false;
+    const controller = new AbortController();
     const update = (patch) => {
+      if (expired) return;
+      if (
+        ["DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING"].includes(
+          patch.state,
+        )
+      )
+        patch = {
+          ...patch,
+          phase: patch.state,
+          state:
+            patch.transcript || value.transcript
+              ? "PARTIAL_READY"
+              : "PROCESSING",
+        };
       value = { ...value, ...patch };
       this.store.set("intelligence", key, value);
       console.log(
@@ -210,11 +272,24 @@ export class EpisodePipeline {
         }),
       );
     };
+    const timeout = setTimeout(() => {
+      update({
+        state: "FAILED",
+        code: "TIMEOUT",
+        reason:
+          "This analysis took too long. Check back before retrying; any uncertain provider cost remains counted.",
+        retryable: value.attempts < 2,
+      });
+      expired = true;
+      controller.abort();
+    }, this.jobTimeoutMs);
+    timeout.unref?.();
     try {
       update({ state: "DISCOVERING" });
       const episode = await this.resolveEpisode(feedUrl, episodeId),
         duration = durationMs(episode.duration),
         variant = hash(episode.audioUrl || "");
+      controller.signal.throwIfAborted();
       if (duration && duration > this.ledger.controls.maxEpisodeSeconds * 1000)
         throw Error(
           "This episode is longer than the current two-hour processing limit.",
@@ -224,6 +299,7 @@ export class EpisodePipeline {
         : this.store.get("transcript", key + ":" + variant);
       if (!transcript) {
         for (const ref of episode.refs) {
+          controller.signal.throwIfAborted();
           try {
             const candidate = await this.fetchTranscript(ref, {
               durationMs: duration,
@@ -241,10 +317,11 @@ export class EpisodePipeline {
         }
       }
       if (!transcript) transcript = this.store.get("audio-transcript", variant);
+      controller.signal.throwIfAborted();
       if (!transcript) {
         if (!this.audioEnabled || !allowAudio) {
           update({
-            state: "UNAVAILABLE",
+            state: "BLOCKED",
             attempts: Math.max(0, value.attempts - 1),
             code: this.audioEnabled
               ? "AUDIO_CONSENT_REQUIRED"
@@ -259,7 +336,7 @@ export class EpisodePipeline {
         }
         if (!duration) {
           update({
-            state: "UNAVAILABLE",
+            state: "BLOCKED",
             attempts: Math.max(0, value.attempts - 1),
             code: "DURATION_UNKNOWN",
             reason:
@@ -288,6 +365,7 @@ export class EpisodePipeline {
               this.ledger.controls.maxEpisodeSeconds,
             );
             try {
+              controller.signal.throwIfAborted();
               update({ state: "TRANSCRIBING" });
               const acquired = await transcribeOnDemand({
                 episodeId,
@@ -298,6 +376,7 @@ export class EpisodePipeline {
                 ledger: this.ledger,
                 requestId: value.jobId + ":audio",
                 authorised: true,
+                signal: controller.signal,
               });
               this.store.set("audio-transcript", variant, acquired);
               return acquired;
@@ -309,19 +388,31 @@ export class EpisodePipeline {
         } else update({ state: "TRANSCRIBING" });
         transcript = await audioTask;
       }
+      controller.signal.throwIfAborted();
+      // The delivered audio can include dynamically inserted material absent
+      // from RSS duration. Reuse the adapter's measured, validated transcript,
+      // including older cached entries that predate explicit duration metadata.
+      if (transcript.sourceType === "on_demand_audio") {
+        const measured = this.store.get("audio-transcript", variant);
+        if (measured?.transcriptVersion === transcript.transcriptVersion)
+          transcript = measured;
+      }
       transcript = {
         ...transcript,
         episodeId,
         audioVariant: variant,
-        quality: assessTranscript({
-          segments: transcript.segments,
-          durationMs: duration,
-          language: transcript.language,
-        }),
+        quality:
+          transcript.sourceType === "on_demand_audio"
+            ? transcript.quality
+            : assessTranscript({
+                segments: transcript.segments,
+                durationMs: duration,
+                language: transcript.language,
+              }),
       };
       this.store.set("transcript", key + ":" + variant, transcript);
       if (
-        previous?.state === "READY" &&
+        completed(previous) &&
         previous.transcript?.transcriptVersion ===
           transcript.transcriptVersion &&
         previous.transcript?.audioVariant === variant
@@ -354,21 +445,30 @@ export class EpisodePipeline {
         ledger: this.ledger,
         requestId: value.jobId + ":text",
         client: this.client,
+        signal: controller.signal,
         onProviderResponse: (response) =>
           this.store.set("provider-result", value.jobId, response),
       });
       update({ state: "ORGANISING", ...generated });
       update({
-        state: "READY",
+        state: generated.partialResult ? "PARTIAL_READY" : "READY",
         sourceCheckedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
         processingMs: Date.now() - Date.parse(value.startedAt),
       });
     } catch (error) {
       const detail = failure(error);
+      const blocked = [
+        "DURATION_LIMIT",
+        "BUDGET_LIMIT",
+        "PROVIDER_UNAVAILABLE",
+      ].includes(detail.code);
       update({
-        state: "FAILED",
+        state: blocked ? "BLOCKED" : "FAILED",
         ...detail,
+        ...(["DURATION_LIMIT", "BUDGET_LIMIT"].includes(detail.code)
+          ? { attempts: Math.max(0, value.attempts - 1) }
+          : {}),
         retryable: detail.retryable && value.attempts < 2,
         ...(detail.retryable && value.attempts >= 2
           ? {
@@ -386,11 +486,32 @@ export class EpisodePipeline {
             typeof error.status === "number" ? error.status : null,
         }),
       );
+    } finally {
+      clearTimeout(timeout);
     }
+  }
+  transcriptPage(feed, id, offset = 0) {
+    const value = this.status(feed, id);
+    const segments = value?.transcript?.segments || [];
+    const start = Math.max(0, Math.floor(Number(offset) || 0));
+    return {
+      segments: segments
+        .slice(start, start + 60)
+        .map(({ id, text, speaker, startMs, endMs }) => ({
+          id,
+          text,
+          speaker,
+          startMs,
+          endMs,
+        })),
+      nextOffset: start + 60 < segments.length ? start + 60 : null,
+      total: segments.length,
+      provenance: value?.provenance || null,
+    };
   }
   moments(feed, id, query) {
     const value = this.status(feed, id);
-    return value?.state === "READY"
+    return value?.transcript
       ? hybridRetrieve(value.transcript, query, 5).filter(
           (m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs),
         )
@@ -399,10 +520,12 @@ export class EpisodePipeline {
   search(query, { feedUrls = null, momentsOnly = false } = {}) {
     const corpus = this.store
       .all("intelligence")
-      .map(([, v]) => v)
+      .map(([, v]) =>
+        v.episode ? this.status(v.episode.feedUrl, v.episode.id) : v,
+      )
       .filter(
         (v) =>
-          v.state === "READY" &&
+          completed(v) &&
           v.processingVersion === PROCESSING_VERSION &&
           (!feedUrls || feedUrls.includes(v.episode.feedUrl)),
       );

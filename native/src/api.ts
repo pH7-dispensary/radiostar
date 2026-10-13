@@ -19,6 +19,9 @@ export type IntelligenceStatus = {
   state:
     | "NOT_REQUESTED"
     | "QUEUED"
+    | "PROCESSING"
+    | "PARTIAL_READY"
+    | "BLOCKED"
     | "DISCOVERING"
     | "TRANSCRIBING"
     | "UNDERSTANDING"
@@ -28,12 +31,22 @@ export type IntelligenceStatus = {
     | "UNAVAILABLE"
     | "FAILED";
   readiness?: "FULLY_READY" | "TEXT_ONLY" | "PARTIAL" | "UNUSABLE";
+  processing?: boolean;
+  transcriptAvailable?: boolean;
+  qualityNote?: string;
+  jobId?: string;
+  deadlineAt?: string;
   reason?: string;
   code?: string;
   retryable?: boolean;
   requiresAudioConsent?: boolean;
   cacheHit?: boolean;
-  brief?: { overview: string; themes: string[]; detail: string };
+  brief?: {
+    overview: string;
+    themes: string[];
+    detail: string;
+    mode?: "extractive";
+  };
   chapters?: Array<{
     title: string;
     description: string;
@@ -74,7 +87,10 @@ async function request(path: string, init?: RequestInit) {
     }),
     body = await response.json();
   if (!response.ok)
-    throw Error(body.error || "Star Cast is temporarily unavailable.");
+    throw Object.assign(
+      Error(body.error || "Star Cast is temporarily unavailable."),
+      { userFacing: true },
+    );
   return body;
 }
 export async function searchCatalogue(
@@ -103,9 +119,7 @@ export async function loadIntelligenceStatus(
 }
 function developmentHeaders() {
   if (!developmentIntelligenceToken)
-    throw Error(
-      "Episode analysis is not available on this device yet.",
-    );
+    throw Error("Episode analysis is not available on this device yet.");
   return {
     "content-type": "application/json",
     "x-star-cast-dev-token": developmentIntelligenceToken,
@@ -115,7 +129,11 @@ export async function requestEpisodeIntelligence(
   feedUrl: string,
   episodeId: string,
   capability: "brief" | "chapters" | "moment" = "brief",
-  options: { allowAudio?: boolean; retry?: boolean } = {},
+  options: {
+    allowAudio?: boolean;
+    retry?: boolean;
+    trigger?: "automatic" | "manual";
+  } = {},
 ): Promise<IntelligenceStatus> {
   return request("/api/intelligence/request", {
     method: "POST",
@@ -126,8 +144,11 @@ export async function requestEpisodeIntelligence(
 
 export const isProcessing = (status: IntelligenceStatus | null) =>
   !!status &&
+  status.processing !== false &&
   [
     "QUEUED",
+    "PROCESSING",
+    "PARTIAL_READY",
     "DISCOVERING",
     "TRANSCRIBING",
     "UNDERSTANDING",
@@ -207,3 +228,37 @@ export async function findEpisodeMoment(
     body: JSON.stringify({ feedUrl, episodeId, query }),
   });
 }
+export type TranscriptPage = {
+  segments: Array<{
+    id: string;
+    text: string;
+    speaker?: string;
+    startMs: number | null;
+    endMs: number | null;
+  }>;
+  nextOffset: number | null;
+  total: number;
+};
+export async function loadEpisodeTranscript(
+  feedUrl: string,
+  episodeId: string,
+  offset = 0,
+): Promise<TranscriptPage> {
+  return request("/api/intelligence/transcript", {
+    method: "POST",
+    headers: developmentHeaders(),
+    body: JSON.stringify({ feedUrl, episodeId, offset }),
+  });
+}
+export const episodeIntelligenceApi = {
+  status: loadIntelligenceStatus,
+  request: (
+    feed: string,
+    id: string,
+    options: {
+      allowAudio?: boolean;
+      retry?: boolean;
+      trigger?: "automatic" | "manual";
+    },
+  ) => requestEpisodeIntelligence(feed, id, "brief", options),
+};

@@ -140,7 +140,9 @@ export async function transcribeOnDemand({
   requestId,
   model = "whisper-1",
   authorised = false,
+  signal,
 }) {
+  signal?.throwIfAborted();
   if (!authorised)
     throw Error("Audio transcription has not been authorised for this server.");
   if (!publicUrl(audioUrl))
@@ -172,14 +174,19 @@ export async function transcribeOnDemand({
   try {
     const responses = [];
     for (const part of plan) {
+      signal?.throwIfAborted();
       const file = await chunkFactory(part);
+      signal?.throwIfAborted();
       sent = true;
-      const response = await client.audio.transcriptions.create({
-        file,
-        model,
-        response_format: "verbose_json",
-        timestamp_granularities: ["segment"],
-      });
+      const response = await client.audio.transcriptions.create(
+        {
+          file,
+          model,
+          response_format: "verbose_json",
+          timestamp_granularities: ["segment"],
+        },
+        { signal },
+      );
       if (!response.segments?.length)
         throw Error("Transcription returned no usable timestamped speech.");
       for (const [i, s] of response.segments.entries()) {
@@ -214,6 +221,7 @@ export async function transcribeOnDemand({
       episodeId,
       sourceType: "on_demand_audio",
       sourceUri: audioUrl,
+      durationMs,
       originalFormat: "verbose_json",
       audioUrl,
       model,

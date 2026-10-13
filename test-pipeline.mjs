@@ -122,6 +122,17 @@ try {
     true,
   );
   assert.equal(calls, 1);
+  const page = await post("/api/intelligence/transcript", {
+    feedUrl,
+    episodeId,
+  });
+  assert.equal(page.status, 200);
+  assert.equal((await page.json()).segments[0].id, "s1");
+  assert.equal(
+    (await post("/api/intelligence/transcript", { feedUrl, episodeId }, false))
+      .status,
+    403,
+  );
   assert.ok(
     app.pipeline.moments(feedUrl, episodeId, "compute")[0].startMs >= 0,
   );

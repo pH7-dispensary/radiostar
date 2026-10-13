@@ -19,6 +19,7 @@ export type ListenerState = {
   feedEpisodes: Record<string, StoredEpisode[]>;
   nightMode: boolean;
   onboardingComplete: boolean;
+  intelligenceEnabled: boolean;
   moments: StoredEpisode[];
 };
 export const emptyListenerState = (): ListenerState => ({
@@ -28,6 +29,7 @@ export const emptyListenerState = (): ListenerState => ({
   feedEpisodes: {},
   nightMode: true,
   onboardingComplete: false,
+  intelligenceEnabled: false,
   moments: [],
 });
 export async function loadListenerState(): Promise<ListenerState> {
@@ -47,6 +49,7 @@ export async function loadListenerState(): Promise<ListenerState> {
           ? value.feedEpisodes
           : {},
       onboardingComplete: value.onboardingComplete === true,
+      intelligenceEnabled: value.intelligenceEnabled === true,
     };
   } catch {
     return emptyListenerState();

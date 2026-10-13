@@ -18,6 +18,12 @@ See [the recovery and release-readiness report](docs/STAR-CAST-RECOVERY-2026-10-
 
 ## Local episode intelligence
 
+Open Brief or Explore and select **Enable Star Cast Intelligence** once. This preference stays on the device. Opening subsequent episodes checks the shared server cache and can automatically analyse publisher transcripts within the existing budgets. Brief and Explore open immediately and reveal results without a second tap. Audio fallback always needs a separate confirmation for that episode; activation never enables automatic Ad Skip.
+
+Explore includes chapters, topics, grounded moment search and a paged transcript. The authoritative lifecycle is NOT_REQUESTED → QUEUED → PROCESSING → PARTIAL_READY → READY, with FAILED/BLOCKED exits. Transcript navigation can work before text generation finishes. Jobs have a 15-minute deadline and bounded retries. “Stop waiting” pauses device polling, not the shared server job or its accounting. Reopening restores server state; server restart makes interrupted jobs explicitly retryable rather than silently repeating paid work.
+
+See [Mega Prompt 45 verification](docs/STAR-CAST-SEAMLESS-INTELLIGENCE-2026-10-13.md) for the latest real-episode evidence and remaining device/production gates.
+
 The backend discovers publisher-provided Podcasting 2.0 transcript references before any audio transcription. Paid processing is off by default, even when `OPENAI_API_KEY` is set. To authorise a trusted local development device, export `STARCAST_DEV_INTELLIGENCE_TOKEN` and require that value in the `X-Star-Cast-Dev-Token` request header. Set `STARCAST_PAID_INTELLIGENCE=enabled` only after reviewing the server-side budget controls (default $5/day, $25/month, three transcription hours/day, two hours/episode).
 
 `/api/admin/intelligence` exposes the local development ledger only to that trusted token. It reports actual cache entries and provider usage; metrics without collected data remain `null` rather than invented.
