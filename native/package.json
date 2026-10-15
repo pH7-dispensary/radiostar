@@ -4,7 +4,8 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas-build-pre-install": "node scripts/assert-release-env.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

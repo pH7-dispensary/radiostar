@@ -29,6 +29,8 @@ import {
   type Source,
 } from "./src/PlaybackProvider";
 import {
+  enrollPrivatePilot,
+  hasPilotAccess,
   loadFeed,
   searchCatalogue,
   type CatalogueEpisode,
@@ -2157,6 +2159,56 @@ function AppShell() {
   );
 }
 
+function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
+  const [code, setCode] = useState(""),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
+      <LinearGradient
+        colors={[dark.bg, "#26213a", dark.bg]}
+        style={[styles.pilotEnrollment, { backgroundColor: dark.bg }]}
+      >
+        <Text style={[styles.wordmark, { color: dark.text }]}>STAR <Text style={{ color: dark.accent }}>✦</Text> CAST</Text>
+        <View style={[styles.pilotCard, { backgroundColor: dark.surface, borderColor: dark.line }]}>
+          <Text style={[styles.eyebrow, { color: dark.accent }]}>PRIVATE BETA</Text>
+          <Text style={[styles.pilotTitle, { color: dark.text }]}>Your listening space is ready.</Text>
+          <Text style={[styles.emptyCopy, { color: dark.muted }]}>Enter the private-beta access code supplied with your TestFlight invitation. It securely connects this installation to Star Cast.</Text>
+          <TextInput
+            accessibilityLabel="Private-beta access code"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!busy}
+            maxLength={80}
+            onChangeText={(value) => { setCode(value); setMessage(""); }}
+            placeholder="Private-beta access code"
+            placeholderTextColor={dark.muted}
+            value={code}
+            style={[styles.pilotInput, { borderColor: dark.line, color: dark.text, backgroundColor: dark.surfaceStrong }]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: busy || !code.trim() }}
+            disabled={busy || !code.trim()}
+            onPress={() => {
+              setBusy(true);
+              void enrollPrivatePilot(code)
+                .then(() => { feedback.success(); onEnrolled(); })
+                .catch((error) => setMessage(error instanceof Error ? error.message : "This access code could not be accepted."))
+                .finally(() => setBusy(false));
+            }}
+            style={[styles.primary, { backgroundColor: dark.accent2, opacity: busy || !code.trim() ? 0.55 : 1 }]}
+          >
+            <Text style={[styles.primaryText, { color: dark.onAccent }]}>{busy ? "Connecting securely…" : "Connect Star Cast"}</Text>
+          </Pressable>
+          {!!message && <Text accessibilityLiveRegion="polite" style={{ color: "#E78FA9", textAlign: "center" }}>{message}</Text>}
+        </View>
+        <Text style={[styles.pilotFootnote, { color: dark.muted }]}>No OpenAI credential or shared server secret is stored in this app.</Text>
+      </LinearGradient>
+    </SafeAreaView>
+  );
+}
+
 function AppContent({
   page,
   setPage,
@@ -2403,9 +2455,18 @@ function AppContent({
   );
 }
 export default function App() {
+  const [checkingPilot, setCheckingPilot] = useState(true),
+    [enrolled, setEnrolled] = useState(false);
+  useEffect(() => {
+    void hasPilotAccess().then(setEnrolled).finally(() => setCheckingPilot(false));
+  }, []);
   return (
     <PlaybackProvider>
-      <AppShell />
+      {checkingPilot ? (
+        <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
+          <LoadingState p={dark} label="Connecting to Star Cast…" />
+        </SafeAreaView>
+      ) : enrolled ? <AppShell /> : <PilotEnrollment onEnrolled={() => setEnrolled(true)} />}
     </PlaybackProvider>
   );
 }
@@ -2413,6 +2474,11 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   root: { flex: 1, maxWidth: 760, width: "100%", alignSelf: "center" },
+  pilotEnrollment: { flex: 1, paddingHorizontal: 25, justifyContent: "center", gap: 26 },
+  pilotCard: { borderWidth: 1, borderRadius: 28, padding: 24, gap: 16 },
+  pilotTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.1, fontWeight: "700" },
+  pilotInput: { minHeight: 54, borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, fontSize: 16 },
+  pilotFootnote: { textAlign: "center", fontSize: 12, lineHeight: 18, paddingHorizontal: 14 },
   ambientLayer: {
     ...StyleSheet.absoluteFill,
     overflow: "hidden",

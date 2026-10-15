@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { transcriptRefsFromItem } from "./transcripts.mjs";
 import {
   BudgetLedger,
@@ -159,6 +159,10 @@ function send(res, status, body) {
   });
   res.end(JSON.stringify(body));
 }
+const tokenHash = (value) =>
+  createHash("sha256").update(String(value || "")).digest("hex");
+const enrollmentCode = () => `sc_${randomBytes(18).toString("base64url")}`;
+const pilotToken = () => randomBytes(32).toString("base64url");
 export function createStarCastServer({
   store,
   env = process.env,
@@ -183,12 +187,20 @@ export function createStarCastServer({
   const rights = new RightsRegistry(store);
   const trusted = (req) => {
     const expected = env.STARCAST_DEV_INTELLIGENCE_TOKEN,
-      received = req.headers["x-star-cast-dev-token"];
-    return (
+      received = req.headers["x-star-cast-dev-token"],
+      enrolled = req.headers["x-star-cast-pilot-token"];
+    if (
       typeof received === "string" &&
       Boolean(expected) &&
       Buffer.byteLength(received) === Buffer.byteLength(expected) &&
       timingSafeEqual(Buffer.from(received), Buffer.from(expected))
+    ) return true;
+    if (typeof enrolled !== "string" || enrolled.length < 32) return false;
+    const device = store.get("pilot-device", tokenHash(enrolled));
+    return Boolean(
+      device &&
+        !device.revokedAt &&
+        Date.parse(device.expiresAt || "") > Date.now(),
     );
   };
   const administrator = (req) => {
@@ -290,6 +302,7 @@ export function createStarCastServer({
     setTimeout(refresh, 5_000).unref?.();
   }
   const captionWindows = new Map();
+  const enrollmentWindows = new Map();
   const captionRate = (listener) => {
     const now = Date.now();
     const windows = (captionWindows.get(listener.id) || []).filter((at) => now - at < 60_000);
@@ -310,6 +323,61 @@ export function createStarCastServer({
         if (v.at(-1) < now - 60_000) windows.delete(k);
     return true;
   }
+  const enrollmentRate = (req) => {
+    const key = req.socket.remoteAddress || "unknown";
+    const now = Date.now();
+    const attempts = (enrollmentWindows.get(key) || []).filter(
+      (at) => now - at < 15 * 60_000,
+    );
+    if (attempts.length >= 8) return false;
+    attempts.push(now);
+    enrollmentWindows.set(key, attempts);
+    return true;
+  };
+  const issuePilotInvite = (input) => {
+    const maxUses = Math.max(1, Math.min(100, Math.floor(Number(input.maxUses) || 1)));
+    const expiresAt = new Date(input.expiresAt || Date.now() + 30 * 86400_000);
+    if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now() || expiresAt.getTime() > Date.now() + 90 * 86400_000)
+      throw Error("A pilot invite expiry within the next 90 days is required.");
+    const code = enrollmentCode();
+    const record = {
+      id: randomBytes(16).toString("hex"),
+      codeHash: tokenHash(code),
+      label: typeof input.label === "string" ? input.label.slice(0, 120) : "Private beta",
+      maxUses,
+      uses: 0,
+      expiresAt: expiresAt.toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    };
+    store.set("pilot-invite", record.id, record);
+    return { code, invite: { ...record, codeHash: undefined } };
+  };
+  const enrollPilot = (input) => {
+    const code = typeof input.code === "string" ? input.code.trim() : "";
+    if (!/^sc_[A-Za-z0-9_-]{20,}$/.test(code)) throw Error("A valid private-beta access code is required.");
+    const now = Date.now();
+    const invite = store.all("pilot-invite").map(([, value]) => value).find(
+      (value) => value.codeHash === tokenHash(code),
+    );
+    if (!invite || invite.revokedAt || invite.uses >= invite.maxUses || Date.parse(invite.expiresAt) <= now)
+      throw Error("This private-beta access code is unavailable.");
+    const token = pilotToken();
+    const device = {
+      id: tokenHash(token),
+      inviteId: invite.id,
+      label: invite.label,
+      enrolledAt: new Date(now).toISOString(),
+      expiresAt: invite.expiresAt,
+      revokedAt: null,
+      lastSeenAt: new Date(now).toISOString(),
+    };
+    store.transaction(() => {
+      store.set("pilot-invite", invite.id, { ...invite, uses: invite.uses + 1 });
+      store.set("pilot-device", device.id, device);
+    });
+    return { token, expiresAt: device.expiresAt };
+  };
   const valid = (r) =>
     publicUrl(r.feedUrl) &&
     typeof r.episodeId === "string" &&
@@ -322,6 +390,11 @@ export function createStarCastServer({
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
+      if (url.pathname === "/api/pilot/enroll" && req.method === "POST") {
+        if (!enrollmentRate(req)) return send(res, 429, { error: "Too many enrollment attempts. Please wait before trying again." });
+        const enrollment = enrollPilot(await body(req));
+        return send(res, 201, enrollment);
+      }
       const corpus = testCorpusEnabled && testCorpusOrigin && approvedTestCorpus.response(url.pathname, testCorpusOrigin);
       if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !corpus && req.method !== "OPTIONS" && !trusted(req))
         return send(res, 403, { error: "A private Star Cast pilot device is required." });
@@ -339,7 +412,7 @@ export function createStarCastServer({
         res.setHeader("vary", "Origin");
         res.setHeader(
           "access-control-allow-headers",
-          "content-type,x-star-cast-dev-token,authorization",
+          "content-type,x-star-cast-dev-token,x-star-cast-pilot-token,authorization",
         );
         res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
         if (req.method === "OPTIONS") {
@@ -561,6 +634,24 @@ export function createStarCastServer({
         const record = rights.set(await body(req), { actor: "api-admin" });
         rights.audit("rights-assessment", record.id, "api-admin");
         return send(res, 200, { record });
+      }
+      if (url.pathname === "/api/admin/pilot/invites" && ["GET", "POST"].includes(req.method)) {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (req.method === "GET") return send(res, 200, {
+          invites: store.all("pilot-invite").map(([, value]) => ({ ...value, codeHash: undefined })),
+          devices: store.all("pilot-device").map(([, value]) => value),
+        });
+        const issued = issuePilotInvite(await body(req));
+        return send(res, 201, issued);
+      }
+      if (url.pathname === "/api/admin/pilot/devices/revoke" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const input = await body(req);
+        const device = store.get("pilot-device", input.deviceId);
+        if (!device) return send(res, 404, { error: "Pilot device not found." });
+        const revoked = { ...device, revokedAt: new Date().toISOString() };
+        store.set("pilot-device", revoked.id, revoked);
+        return send(res, 200, { device: revoked });
       }
       if (url.pathname === "/api/admin/reports" && req.method === "GET") {
         if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });

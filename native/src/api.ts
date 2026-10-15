@@ -1,3 +1,5 @@
+import { getIdentity, setIdentity } from "./localStorage";
+
 export type CatalogueShow = {
   id: string;
   name: string;
@@ -72,10 +74,48 @@ export type EpisodeMoment = {
   endMs: number;
   context: string;
 };
-const base = () =>
-  process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
-const developmentIntelligenceToken =
-  process.env.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN || "";
+const cloudOrigin = "https://d3ri12f40b85i3.cloudfront.net";
+const pilotTokenKey = "star-cast-pilot-token";
+const legacyDevelopmentToken =
+  process.env.EXPO_PUBLIC_ALLOW_LEGACY_TOKEN === "enabled"
+    ? process.env.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN || ""
+    : "";
+let pilotToken: Promise<string | null> | null = null;
+const base = () => {
+  const origin = (process.env.EXPO_PUBLIC_API_BASE_URL || cloudOrigin).replace(/\/$/, "");
+  const cloud = origin === cloudOrigin;
+  const local = process.env.EXPO_PUBLIC_ALLOW_INSECURE_LOCAL_API === "enabled" && /^http:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+)(?::\d+)?$/.test(origin);
+  if (!cloud && !local)
+    throw Error("Star Cast requires its secure listening service.");
+  return origin;
+};
+const storedPilotToken = () =>
+  (pilotToken ||= getIdentity(pilotTokenKey));
+export async function hasPilotAccess() {
+  return Boolean(legacyDevelopmentToken || (await storedPilotToken()));
+}
+export async function enrollPrivatePilot(code: string) {
+  const response = await fetch(`${base()}/api/pilot/enroll`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code: code.trim() }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || typeof body.token !== "string" || body.token.length < 32)
+    throw Error(body.error || "That private-beta access code could not be accepted.");
+  pilotToken = Promise.resolve(body.token);
+  await setIdentity(pilotTokenKey, body.token);
+  return { expiresAt: typeof body.expiresAt === "string" ? body.expiresAt : null };
+}
+async function pilotHeaders(headers: Headers) {
+  if (legacyDevelopmentToken && !headers.has("x-star-cast-dev-token"))
+    headers.set("x-star-cast-dev-token", legacyDevelopmentToken);
+  const enrolled = await storedPilotToken();
+  if (enrolled && !headers.has("x-star-cast-pilot-token"))
+    headers.set("x-star-cast-pilot-token", enrolled);
+  return headers;
+}
 export async function request(path: string, init?: RequestInit) {
   let origin = base();
   if (!origin)
@@ -83,14 +123,13 @@ export async function request(path: string, init?: RequestInit) {
       "Connect this device to your Star Cast listening server to continue.",
     );
   const headers = new Headers(init?.headers);
-  if (developmentIntelligenceToken && !headers.has("x-star-cast-dev-token"))
-    headers.set("x-star-cast-dev-token", developmentIntelligenceToken);
+  await pilotHeaders(headers);
   let response = await fetch(`${origin}${path}`, {
       ...init,
       headers,
       signal: AbortSignal.timeout(20_000),
     }),
-    body = await response.json();
+    body = await response.json().catch(() => ({}));
   if (!response.ok)
     throw Object.assign(
       Error(body.error || "Star Cast is temporarily unavailable."),
@@ -122,13 +161,10 @@ export async function loadIntelligenceStatus(
     { headers: developmentHeaders() },
   ).then((x) => x.status);
 }
-export function developmentHeaders() {
-  if (!developmentIntelligenceToken)
-    throw Error("Episode analysis is not available on this device yet.");
-  return {
-    "content-type": "application/json",
-    "x-star-cast-dev-token": developmentIntelligenceToken,
-  };
+export function developmentHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (legacyDevelopmentToken) headers["x-star-cast-dev-token"] = legacyDevelopmentToken;
+  return headers;
 }
 export async function requestEpisodeIntelligence(
   feedUrl: string,

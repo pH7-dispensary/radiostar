@@ -15,17 +15,19 @@ const lan =
     .filter(([name]) => /^en\d/.test(name))
     .flatMap(([, addresses]) => addresses || [])
     .find((x) => x.family === "IPv4" && !x.internal)?.address;
-if (!configured.configured || !configured.authorisedDevice)
+const usingCloud = Boolean(process.env.STARCAST_CLOUD_API_URL);
+if ((!usingCloud && (!configured.configured || !configured.authorisedDevice)) ||
+    (usingCloud && !process.env.STARCAST_CLOUD_DEVICE_TOKEN))
   throw Error(
-    "The ignored server credential file must contain OPENAI_API_KEY and STARCAST_DEV_INTELLIGENCE_TOKEN. No credentials were printed.",
+    "The local development or AWS private-pilot connection is incomplete. No credentials were printed.",
   );
 if (!lan)
   throw Error(
     "Connect this Mac to Wi-Fi, or set STARCAST_LAN_HOST to its LAN address.",
   );
-const origin = "http://127.0.0.1:" + port,
+const origin = usingCloud ? process.env.STARCAST_CLOUD_API_URL : "http://127.0.0.1:" + port,
   headers = {
-    "x-star-cast-dev-token": process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
+    "x-star-cast-dev-token": usingCloud ? process.env.STARCAST_CLOUD_DEVICE_TOKEN : process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
   };
 async function free(port) {
   return new Promise((resolve) => {
@@ -56,7 +58,7 @@ if (!(await free(expoPort)))
       expoPort +
       " is occupied. Close the previous Expo session or set STARCAST_EXPO_PORT. No process was stopped.",
   );
-if (await free(port)) {
+if (!usingCloud && await free(port)) {
   child(process.execPath, ["server.mjs"], {
     ...process.env,
     PORT: String(port),
@@ -64,7 +66,7 @@ if (await free(port)) {
     STARCAST_AUDIO_TRANSCRIPTION: "enabled",
     STARCAST_PREVIEW_ORIGIN: "http://localhost:" + expoPort,
   });
-} else {
+} else if (!usingCloud) {
   try {
     const response = await fetch(origin + "/api/admin/intelligence", {
         headers,
@@ -107,8 +109,8 @@ if (!health || stopping) {
     "The backend did not become ready. Review the backend message above.",
   );
 }
-console.log("Backend ready: http://" + lan + ":" + port);
-if (process.env.STARCAST_CLOUD_API_URL)
+console.log("Backend ready: " + origin);
+if (usingCloud)
   console.log("Paid-processing authority and native API: " + process.env.STARCAST_CLOUD_API_URL + ". Local paid processing is disabled.");
 console.log(
   "OpenAI configured. Provider " +
@@ -122,18 +124,26 @@ console.log(
 console.log(
   "Starting Expo. When its QR code appears, scan it with your iPhone on the same Wi-Fi. iPhone connection pending.",
 );
-// Only the private-pilot device token enters Expo. Never ship this pilot build publicly.
-// The OpenAI key is removed from its environment.
+// The legacy pilot token is available only to an explicit local-development Expo Go
+// session. AWS/TestFlight uses the in-app, revocable enrollment flow instead.
+const exposeLegacyToken = !usingCloud || process.env.STARCAST_EXPO_LEGACY_TOKEN === "enabled";
 const expoEnv = {
   ...process.env,
-  EXPO_PUBLIC_API_BASE_URL: process.env.STARCAST_CLOUD_API_URL || "http://" + lan + ":" + port,
-  EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN:
-    process.env.STARCAST_CLOUD_DEVICE_TOKEN || process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
+  EXPO_PUBLIC_API_BASE_URL: usingCloud ? process.env.STARCAST_CLOUD_API_URL : "http://" + lan + ":" + port,
+  ...(exposeLegacyToken ? {
+    EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN:
+      process.env.STARCAST_CLOUD_DEVICE_TOKEN || process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
+    EXPO_PUBLIC_ALLOW_LEGACY_TOKEN: "enabled",
+  } : {}),
   REACT_NATIVE_PACKAGER_HOSTNAME: lan,
 };
 delete expoEnv.OPENAI_API_KEY;
 delete expoEnv.STARCAST_DEV_INTELLIGENCE_TOKEN;
 delete expoEnv.STARCAST_CLOUD_DEVICE_TOKEN;
+if (!exposeLegacyToken) {
+  delete expoEnv.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN;
+  delete expoEnv.EXPO_PUBLIC_ALLOW_LEGACY_TOKEN;
+}
 child(
   process.execPath,
   [

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const connectionPath = ".starcast/cloud-connection.json";
@@ -13,7 +13,7 @@ if (!/^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(apiUrl || "") ||
     typeof admin.token !== "string" || admin.token.length < 32)
   throw Error("The local Star Cast administration connection is invalid.");
 
-const [area, action, inputPath] = process.argv.slice(2);
+const [area, action, inputPath, ...flags] = process.argv.slice(2);
 const actions = {
   "rights:list": { method: "GET", path: "/api/admin/rights" },
   "reports:list": { method: "GET", path: "/api/admin/reports" },
@@ -21,10 +21,13 @@ const actions = {
   "rights:apply": { method: "POST", path: "/api/admin/rights" },
   "transcripts:suspend": { method: "POST", path: "/api/admin/transcripts/suspend" },
   "transcripts:delete": { method: "POST", path: "/api/admin/transcripts/delete" },
+  "pilot:list": { method: "GET", path: "/api/admin/pilot/invites" },
+  "pilot:issue": { method: "POST", path: "/api/admin/pilot/invites" },
+  "pilot:revoke": { method: "POST", path: "/api/admin/pilot/devices/revoke" },
 };
 const operation = actions[`${area}:${action}`];
 if (!operation) {
-  console.error("Use: rights list | rights apply INPUT.json | transcripts suspend INPUT.json | transcripts delete INPUT.json | reports list | intelligence status");
+  console.error("Use: rights list | rights apply INPUT.json | transcripts suspend INPUT.json | transcripts delete INPUT.json | reports list | intelligence status | pilot list | pilot issue INPUT.json [--write PATH] | pilot revoke INPUT.json");
   process.exitCode = 2;
 } else {
   let body;
@@ -45,5 +48,10 @@ if (!operation) {
   });
   const result = await response.json().catch(() => ({ error: "Invalid server response." }));
   if (!response.ok) throw Error(result.error || `Administrative request failed (${response.status}).`);
-  console.log(JSON.stringify(result, null, 2));
+  if (`${area}:${action}` === "pilot:issue") {
+    const flag = flags.indexOf("--write");
+    const target = resolve(flag >= 0 && flags[flag + 1] ? flags[flag + 1] : ".starcast/latest-pilot-invite.json");
+    writeFileSync(target, JSON.stringify(result), { mode: 0o600 });
+    console.log(JSON.stringify({ invite: result.invite, codeWritten: target, credentialPrinted: false }, null, 2));
+  } else console.log(JSON.stringify(result, null, 2));
 }

@@ -1,1 +1,39 @@
-{"expo":{"name":"Star Cast","slug":"star-cast","scheme":"starcast","ios":{"bundleIdentifier":"com.starcast.app","infoPlist":{"UIBackgroundModes":["audio"]}},"plugins":[["expo-audio",{"enableBackgroundPlayback":true}],"expo-secure-store"]}}
+{
+  "expo": {
+    "name": "Star Cast",
+    "slug": "star-cast",
+    "version": "1.0.0",
+    "scheme": "starcast",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "bundleIdentifier": "app.radiostar.ios",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "appleTeamId": "TETRODAXOL",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "starCastApiBaseUrl": "https://d3ri12f40b85i3.cloudfront.net",
+      "eas": {
+        "projectId": "249fb010-2c52-4be5-a7cf-e08b25f89cbe"
+      }
+    },
+    "owner": "radiostar"
+  }
+}
