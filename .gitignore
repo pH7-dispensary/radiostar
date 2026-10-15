@@ -8,3 +8,7 @@ continue
 .starcast/
 native/dist/
 native/web-dist/
+infra/aws/.terraform/
+infra/aws/*.tfstate*
+infra/aws/*.tfplan
+infra/aws/*.tfvars

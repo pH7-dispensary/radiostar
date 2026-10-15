@@ -273,6 +273,8 @@ export function createStarCastServer({
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
+      if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && req.method !== "OPTIONS" && !trusted(req))
+        return send(res, 403, { error: "A private Star Cast pilot device is required." });
       if (
         req.headers.origin &&
         [
@@ -383,8 +385,19 @@ export function createStarCastServer({
           error: "Analysis requires an authorised Star Cast device.",
           code: "DEVICE_UNAUTHORISED",
         });
+      if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|admin)(\/|$)/.test(url.pathname)) {
+        const payload = req.method === "POST" ? await body(req) : undefined;
+        const upstream = await fetch(env.STARCAST_CLOUD_API_URL + url.pathname + url.search, {
+          method: req.method,
+          headers: { "content-type": "application/json", "x-star-cast-dev-token": env.STARCAST_CLOUD_DEVICE_TOKEN,
+            ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}) },
+          body: payload ? JSON.stringify(payload) : undefined,
+          redirect: "error", signal: AbortSignal.timeout(25000),
+        });
+        return send(res, upstream.status, await upstream.json());
+      }
       if (url.pathname === "/api/listener/register" && req.method === "POST") {
-        if (env.NODE_ENV === "production")
+        if (env.NODE_ENV === "production" && env.STARCAST_PRIVATE_PILOT !== "enabled")
           return send(res, 503, {
             error: "Verified installation enrollment is not configured.",
           });

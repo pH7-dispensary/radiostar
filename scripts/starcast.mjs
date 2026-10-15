@@ -108,6 +108,8 @@ if (!health || stopping) {
   );
 }
 console.log("Backend ready: http://" + lan + ":" + port);
+if (process.env.STARCAST_CLOUD_API_URL)
+  console.log("Paid-processing authority and native API: " + process.env.STARCAST_CLOUD_API_URL + ". Local paid processing is disabled.");
 console.log(
   "OpenAI configured. Provider " +
     (health.providerVerified
@@ -120,16 +122,18 @@ console.log(
 console.log(
   "Starting Expo. When its QR code appears, scan it with your iPhone on the same Wi-Fi. iPhone connection pending.",
 );
-// Only the local device token enters Expo. The OpenAI key is removed from its environment.
+// Only the private-pilot device token enters Expo. Never ship this pilot build publicly.
+// The OpenAI key is removed from its environment.
 const expoEnv = {
   ...process.env,
-  EXPO_PUBLIC_API_BASE_URL: "http://" + lan + ":" + port,
+  EXPO_PUBLIC_API_BASE_URL: process.env.STARCAST_CLOUD_API_URL || "http://" + lan + ":" + port,
   EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN:
-    process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
+    process.env.STARCAST_CLOUD_DEVICE_TOKEN || process.env.STARCAST_DEV_INTELLIGENCE_TOKEN,
   REACT_NATIVE_PACKAGER_HOSTNAME: lan,
 };
 delete expoEnv.OPENAI_API_KEY;
 delete expoEnv.STARCAST_DEV_INTELLIGENCE_TOKEN;
+delete expoEnv.STARCAST_CLOUD_DEVICE_TOKEN;
 child(
   process.execPath,
   [

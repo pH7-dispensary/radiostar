@@ -82,8 +82,12 @@ export async function request(path: string, init?: RequestInit) {
     throw Error(
       "Connect this device to your Star Cast listening server to continue.",
     );
+  const headers = new Headers(init?.headers);
+  if (developmentIntelligenceToken && !headers.has("x-star-cast-dev-token"))
+    headers.set("x-star-cast-dev-token", developmentIntelligenceToken);
   let response = await fetch(`${origin}${path}`, {
       ...init,
+      headers,
       signal: AbortSignal.timeout(20_000),
     }),
     body = await response.json();
