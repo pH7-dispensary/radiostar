@@ -82,12 +82,16 @@ const legacyDevelopmentToken =
     : "";
 let pilotToken: Promise<string | null> | null = null;
 const base = () => {
-  const origin = (process.env.EXPO_PUBLIC_API_BASE_URL || cloudOrigin).replace(/\/$/, "");
-  const cloud = origin === cloudOrigin;
-  const local = process.env.EXPO_PUBLIC_ALLOW_INSECURE_LOCAL_API === "enabled" && /^http:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+)(?::\d+)?$/.test(origin);
-  if (!cloud && !local)
-    throw Error("Star Cast requires its secure listening service.");
-  return origin;
+  const configured = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+  const local =
+    process.env.EXPO_PUBLIC_ALLOW_INSECURE_LOCAL_API === "enabled" &&
+    configured &&
+    /^http:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+)(?::\d+)?$/.test(configured);
+
+  // Expo loads ignored .env files after the launch script has supplied its
+  // environment. A stale LAN value must never override the pinned production
+  // origin for a physical-device build. Local HTTP is deliberately opt-in.
+  return local ? configured : cloudOrigin;
 };
 const storedPilotToken = () =>
   (pilotToken ||= getIdentity(pilotTokenKey));
