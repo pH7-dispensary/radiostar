@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  FlatList,
   LayoutAnimation,
   Image,
   KeyboardAvoidingView,
@@ -19,11 +18,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   findEpisodeMoment,
   isProcessing,
-  loadEpisodeTranscript,
   preflightEpisode,
   type AnalysisPreflight,
   type EpisodeMoment,
-  type TranscriptPage,
 } from "./api";
 import type { Source } from "./PlaybackProvider";
 import type { StarTheme } from "./design";
@@ -61,11 +58,6 @@ export function EpisodeIntelligenceView({
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [moments, setMoments] = useState<EpisodeMoment[]>([]);
-  const [transcript, setTranscript] = useState<TranscriptPage | null>(null);
-  const [transcriptQuery, setTranscriptQuery] = useState("");
-  const [appliedTranscriptQuery, setAppliedTranscriptQuery] = useState("");
-  const transcriptQueryRef = useRef("");
-  const transcriptRequest = useRef(0);
   const tabsRef = useRef<ScrollView>(null);
   const { width: windowWidth, fontScale } = useWindowDimensions();
   const [tabsWidth, setTabsWidth] = useState(Math.min(windowWidth, 720) - 40);
@@ -157,42 +149,6 @@ export function EpisodeIntelligenceView({
       if (alive.current) setWorking(false);
     }
   };
-  const readTranscript = async (
-    offset = 0,
-    search = offset > 0 ? appliedTranscriptQuery : transcriptQueryRef.current,
-  ) => {
-    if (!source.feedUrl) return;
-    const requestId = ++transcriptRequest.current;
-    setWorking(true);
-    setMessage("");
-    try {
-      const page = await loadEpisodeTranscript(
-        source.feedUrl,
-        source.episodeId,
-        offset,
-        search,
-      );
-      if (alive.current && requestId === transcriptRequest.current) {
-        setAppliedTranscriptQuery(search);
-        setTranscript((old) => ({
-          ...page,
-          segments: offset
-            ? [...(old?.segments || []), ...page.segments]
-            : page.segments,
-        }));
-      }
-    } catch {
-      if (alive.current && requestId === transcriptRequest.current)
-        setMessage("Could not load the transcript. Please try again.");
-    } finally {
-      if (alive.current && requestId === transcriptRequest.current)
-        setWorking(false);
-    }
-  };
-  useEffect(() => {
-    if (tab === "Transcript" && status?.transcriptAvailable && !transcript)
-      void readTranscript();
-  }, [tab, status?.transcriptAvailable]);
   const prepareConsent = async () => {
     if (!source.feedUrl || working) return;
     setWorking(true);
@@ -220,7 +176,7 @@ export function EpisodeIntelligenceView({
   };
   const processing = isProcessing(status) && !paused;
   const scrollSelectedTab = () => {
-    const index = ["Chapters", "Topics", "Find a Moment", "Transcript"].indexOf(
+    const index = ["Chapters", "Topics", "Find a Moment"].indexOf(
       tab,
     );
     tabsRef.current?.scrollTo({
@@ -232,7 +188,6 @@ export function EpisodeIntelligenceView({
     });
   };
   useEffect(scrollSelectedTab, [tab, reduced, tabsWidth, visibleTabs]);
-  const transcriptMode = panel === "explore" && tab === "Transcript";
   const headerContent = (
     <>
       <View style={s.episode}>
@@ -271,7 +226,7 @@ export function EpisodeIntelligenceView({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.tabs}
         >
-          {["Chapters", "Topics", "Find a Moment", "Transcript"].map(
+          {["Chapters", "Topics", "Find a Moment"].map(
             (label) => (
               <Pressable
                 key={label}
@@ -324,125 +279,7 @@ export function EpisodeIntelligenceView({
         <Text style={[s.eyebrow, { color: p.accent2 }]}>STAR CAST</Text>
         <View style={{ width: 44, height: 44 }} />
       </View>
-      {transcriptMode ? (
-        <FlatList
-          showsVerticalScrollIndicator={false}
-          data={transcript?.segments || []}
-          keyExtractor={(item) => item.id}
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          windowSize={7}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={s.content}
-          ListHeaderComponent={
-            <View style={{ gap: 12 }}>
-              {headerContent}
-              <TextInput
-                accessibilityLabel="Search this transcript"
-                placeholder="Search this transcript…"
-                placeholderTextColor={p.muted}
-                value={transcriptQuery}
-                maxLength={300}
-                onChangeText={(value) => {
-                  setTranscriptQuery(value);
-                  transcriptQueryRef.current = value;
-                }}
-                onSubmitEditing={() => void readTranscript(0)}
-                returnKeyType="search"
-                style={[
-                  s.inputRow,
-                  {
-                    color: p.text,
-                    borderColor: p.line,
-                    backgroundColor: p.surface,
-                    minHeight: 48,
-                    paddingHorizontal: 14,
-                  },
-                ]}
-              />
-              {action("Search transcript", () => void readTranscript(0), true)}
-              {transcript && (
-                <Text style={[s.caption, { color: p.muted }]}>
-                  {transcript.total} passages
-                  {appliedTranscriptQuery ? " matching your search" : ""}
-                </Text>
-              )}
-            </View>
-          }
-          renderItem={({ item: segment }) => (
-            <View
-              style={[
-                s.transcriptRow,
-                {
-                  borderColor: p.line,
-                  backgroundColor:
-                    segment.startMs != null &&
-                    segment.endMs != null &&
-                    snapshot.episodeId === source.episodeId &&
-                    snapshot.positionMs >= segment.startMs &&
-                    snapshot.positionMs < segment.endMs
-                      ? p.wash
-                      : "transparent",
-                },
-              ]}
-            >
-              {typeof segment.startMs === "number" &&
-              Number.isFinite(segment.startMs) ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Play transcript at ${stamp(segment.startMs)}`}
-                  onPress={() => playAt(segment.startMs!)}
-                  style={s.timestamp}
-                >
-                  <Text
-                    style={{ color: p.accent2, fontVariant: ["tabular-nums"] }}
-                  >
-                    {stamp(segment.startMs)}
-                  </Text>
-                </Pressable>
-              ) : (
-                <Text style={[s.caption, { color: p.muted }]}>Text</Text>
-              )}
-              <View style={{ flex: 1 }}>
-                {segment.speaker && (
-                  <Text style={[s.caption, { color: p.accent2 }]}>
-                    {segment.speaker}
-                  </Text>
-                )}
-                <Text selectable style={[s.copy, { color: p.text }]}>
-                  {segment.text}
-                </Text>
-              </View>
-            </View>
-          )}
-          ListEmptyComponent={
-            !working ? (
-              <Text style={[s.copy, { color: p.muted }]}>
-                {status?.transcriptAvailable
-                  ? "No matching passages. Try a different word."
-                  : "The transcript will appear here when available."}
-              </Text>
-            ) : null
-          }
-          ListFooterComponent={
-            <View>
-              {working && (
-                <LoadingState compact p={p} label="Reading the transcript…" />
-              )}
-              {message ? (
-                <Text style={[s.copy, { color: p.muted }]}>{message}</Text>
-              ) : null}
-              {transcript?.nextOffset != null &&
-                action(
-                  "More passages",
-                  () => void readTranscript(transcript.nextOffset!),
-                  true,
-                )}
-            </View>
-          }
-        />
-      ) : (
-        <ScrollView
+      <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.content}
@@ -822,7 +659,6 @@ export function EpisodeIntelligenceView({
             </>
           )}
         </ScrollView>
-      )}
     </KeyboardAvoidingView>
   );
 }

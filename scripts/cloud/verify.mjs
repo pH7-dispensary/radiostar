@@ -51,8 +51,6 @@ assert.equal(status.state, "READY", JSON.stringify({state:status.state,code:stat
 assert.equal(status.provenance.sourceType, "publisher_rss");
 assert.ok(status.brief.overview && status.chapters.length);
 assert.ok(status.chapters.every(c => c.sourceSegmentIds.length && c.startMs >= 0 && c.endMs > c.startMs && c.endMs <= durationMs(episode.duration) + 1000));
-const transcript = await request("/api/intelligence/transcript", { feedUrl, episodeId: episode.id });
-assert.ok(transcript.segments.length);
 const query = paid ? status.brief.themes[0] : "profiling Python";
 const moments = await request("/api/intelligence/moment", { feedUrl, episodeId: episode.id, query });
 assert.ok(moments.moments.length, "Grounded moment retrieval returned evidence");
@@ -67,6 +65,6 @@ const usage = after.usage.slice(before.usage.length);
 assert.equal(after.reservations.length, 0);
 assert.ok(usage.every(x => x.kind === "text" && !x.failed && !x.uncertain));
 assert.equal(usage.length, paid ? 1 : 0);
-const report = { at:new Date().toISOString(),api:url,paidVerification:paid,episode:{id:episode.id,title:episode.title,duration:episode.duration},state:status.state,overview:status.brief.overview,chapters:status.chapters.length,provenance:status.provenance,transcriptSegments:transcript.total,moment: moments.moments[0],coverage:search.coverage,usage,totals:after.totals,physicalIPhoneVerified:false };
+const report = { at:new Date().toISOString(),api:url,paidVerification:paid,episode:{id:episode.id,title:episode.title,duration:episode.duration},state:status.state,overview:status.brief.overview,chapters:status.chapters.length,provenance:status.provenance,moment: moments.moments[0],coverage:search.coverage,usage,totals:after.totals,physicalIPhoneVerified:false };
 writeFileSync(paid ? ".starcast/aws-live-verification.json" : ".starcast/aws-cache-verification.json", JSON.stringify(report, null, 2), {mode:0o600});
 console.log(JSON.stringify(report, null, 2));

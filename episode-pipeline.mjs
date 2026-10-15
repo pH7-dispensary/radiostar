@@ -8,6 +8,7 @@ import {
 import { prepareAudio, transcribeOnDemand } from "./transcription.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
 import { groundResult } from "./grounded-result.mjs";
+import { captionWindow } from "./captions.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -71,6 +72,12 @@ function failure(error) {
         "The analysis allowance has been reached. Please try another day.",
       retryable: false,
     };
+  if (/rights|permission|authoris/i.test(message))
+    return {
+      code: "RIGHTS_RESTRICTED",
+      reason: "This episode is not authorised for this kind of processing.",
+      retryable: false,
+    };
   if (/401|403|key|quota|billing/.test(message))
     return {
       code: "PROVIDER_UNAVAILABLE",
@@ -95,6 +102,7 @@ export class EpisodePipeline {
     client,
     fetchTranscript = fetchPublisherTranscript,
     audioFactory = prepareAudio,
+    rights = null,
     jobTimeoutMs = 15 * 60 * 1000,
   }) {
     Object.assign(this, {
@@ -107,6 +115,7 @@ export class EpisodePipeline {
       client,
       fetchTranscript,
       audioFactory,
+      rights,
       jobTimeoutMs,
     });
     this.inflight = new Map();
@@ -137,7 +146,8 @@ export class EpisodePipeline {
   }
   async preflight(feed, id) {
     const episode = await this.resolveEpisode(feed, id),
-      duration = durationMs(episode.duration);
+      duration = durationMs(episode.duration),
+      rights = this.rights?.resolve(feed, id);
     return {
       hasPublisherTranscript: episode.refs.length > 0,
       durationMs: duration,
@@ -148,6 +158,14 @@ export class EpisodePipeline {
       analysisEnabled: this.enabled && this.configured,
       requiresAudioConsent: !episode.refs.length,
       estimatedAudioCost: duration ? Math.ceil(duration / 1000) * 0.0001 : null,
+      rights: rights
+        ? {
+            classification: rights.classification,
+            canProcessForAi: rights.canProcessForAi,
+            canTranscribeAudio: rights.canTranscribeAudio,
+            canDisplayCaptions: rights.canDisplayCaptions,
+          }
+        : null,
     };
   }
   async request({
@@ -248,6 +266,20 @@ export class EpisodePipeline {
     const controller = new AbortController();
     const update = (patch) => {
       if (expired) return;
+      if (value.episode && this.rights) {
+        const permission = this.rights.resolve(value.episode.feedUrl, value.episode.id);
+        if (!permission.canProcessForAi || !permission.canRetain || permission.suspendedAt || permission.deletedAt) {
+          const { transcript, episode, brief, chapters, provenance, ...redacted } = value;
+          value = redacted;
+          patch = {
+            ...patch,
+            state: "BLOCKED",
+            code: "RIGHTS_RESTRICTED",
+            reason: "This episode is no longer authorised for processing.",
+            retryable: false,
+          };
+        }
+      }
       if (
         ["DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING"].includes(
           patch.state,
@@ -289,6 +321,13 @@ export class EpisodePipeline {
       const episode = await this.resolveEpisode(feedUrl, episodeId),
         duration = durationMs(episode.duration),
         variant = hash(episode.audioUrl || "");
+      const rights = this.rights?.resolve(feedUrl, episodeId);
+      const rightsAllowed = () => {
+        const current = this.rights?.resolve(feedUrl, episodeId);
+        return !current || (current.canProcessForAi && current.canRetain && !current.suspendedAt && !current.deletedAt);
+      };
+      if (!rightsAllowed())
+        throw Error("Rights permission does not allow AI processing for this episode.");
       controller.signal.throwIfAborted();
       if (duration && duration > this.ledger.controls.maxEpisodeSeconds * 1000)
         throw Error(
@@ -298,6 +337,8 @@ export class EpisodePipeline {
         ? null
         : this.store.get("transcript", key + ":" + variant);
       if (!transcript) {
+        if (rights && !rights.canAcquireTranscript)
+          throw Error("Rights permission does not allow transcript acquisition for this episode.");
         for (const ref of episode.refs) {
           controller.signal.throwIfAborted();
           try {
@@ -334,6 +375,8 @@ export class EpisodePipeline {
           });
           return;
         }
+        if (rights && !rights.canTranscribeAudio)
+          throw Error("Rights permission does not allow audio transcription for this episode.");
         if (!duration) {
           update({
             state: "BLOCKED",
@@ -410,6 +453,8 @@ export class EpisodePipeline {
                 language: transcript.language,
               }),
       };
+      if (!rightsAllowed())
+        throw Error("Rights permission no longer allows AI processing for this episode.");
       this.store.set("transcript", key + ":" + variant, transcript);
       if (
         completed(previous) &&
@@ -446,9 +491,12 @@ export class EpisodePipeline {
         requestId: value.jobId + ":text",
         client: this.client,
         signal: controller.signal,
-        onProviderResponse: (response) =>
-          this.store.set("provider-result", value.jobId, response),
+        onProviderResponse: (response) => {
+          if (rightsAllowed()) this.store.set("provider-result", value.jobId, response);
+        },
       });
+      if (!rightsAllowed())
+        throw Error("Rights permission no longer allows AI processing for this episode.");
       update({ state: "ORGANISING", ...generated });
       update({
         state: generated.partialResult ? "PARTIAL_READY" : "READY",
@@ -462,6 +510,7 @@ export class EpisodePipeline {
         "DURATION_LIMIT",
         "BUDGET_LIMIT",
         "PROVIDER_UNAVAILABLE",
+        "RIGHTS_RESTRICTED",
       ].includes(detail.code);
       update({
         state: blocked ? "BLOCKED" : "FAILED",
@@ -490,7 +539,7 @@ export class EpisodePipeline {
       clearTimeout(timeout);
     }
   }
-  transcriptPage(feed, id, offset = 0, query = "") {
+  internalTranscriptPage(feed, id, offset = 0, query = "") {
     const value = this.status(feed, id);
     const term =
       typeof query === "string"
@@ -517,8 +566,38 @@ export class EpisodePipeline {
       provenance: value?.provenance || null,
     };
   }
+  captions(feed, id, positionMs) {
+    return captionWindow(this.status(feed, id)?.transcript, positionMs);
+  }
+  purgeEpisode(feed, id) {
+    const key = episodeKey(feed, id);
+    const intelligence = this.store.get("intelligence", key);
+    const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0 };
+    if (intelligence) {
+      this.store.delete("intelligence", key);
+      removed.intelligence++;
+      if (intelligence.jobId && this.store.get("provider-result", intelligence.jobId)) {
+        this.store.delete("provider-result", intelligence.jobId);
+        removed.providerResults++;
+      }
+    }
+    for (const [recordKey] of this.store.all("transcript"))
+      if (recordKey.startsWith(key + ":")) {
+        this.store.delete("transcript", recordKey);
+        removed.transcripts++;
+      }
+    for (const [recordKey, value] of this.store.all("skip-interval"))
+      if (value.episodeKey === key) {
+        this.store.delete("skip-interval", recordKey);
+        removed.skipIntervals++;
+      }
+    return removed;
+  }
   moments(feed, id, query) {
     const value = this.status(feed, id);
+    const rights = this.rights?.resolve(feed, id);
+    if (rights && (!rights.canDisplayDerivedIntelligence || rights.suspendedAt || rights.deletedAt))
+      return [];
     return value?.transcript
       ? hybridRetrieve(value.transcript, query, 5)
           .filter((m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs))
@@ -542,6 +621,10 @@ export class EpisodePipeline {
         (v) =>
           completed(v) &&
           v.processingVersion === PROCESSING_VERSION &&
+          (!this.rights || (() => {
+            const rights = this.rights.resolve(v.episode.feedUrl, v.episode.id);
+            return rights.canDisplayDerivedIntelligence && !rights.suspendedAt && !rights.deletedAt;
+          })()) &&
           (!feedUrls || feedUrls.includes(v.episode.feedUrl)),
       );
     const matches = corpus
@@ -550,6 +633,7 @@ export class EpisodePipeline {
           .filter((m) => !momentsOnly || Number.isFinite(m.startMs))
           .map((m) => ({
             ...m,
+            context: String(m.context || "").slice(0, 360),
             episode: { ...v.episode, refs: undefined },
             speaker: v.transcript.segments.find((s) => s.id === m.segmentId)
               ?.speaker,

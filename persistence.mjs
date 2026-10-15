@@ -32,6 +32,9 @@ export class LocalStore {
       .all(kind)
       .map((x) => [x.id, JSON.parse(x.payload)]);
   }
+  delete(kind, id) {
+    this.db.prepare("DELETE FROM records WHERE kind=? AND id=?").run(kind, id);
+  }
   transaction(fn) {
     this.db.exec("BEGIN IMMEDIATE");
     try {

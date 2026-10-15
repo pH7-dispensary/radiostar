@@ -16,6 +16,7 @@ import { projectRoot, loadCredentials } from "./config.mjs";
 import { acquireServerLock } from "./server-lock.mjs";
 import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
+import { RightsRegistry } from "./rights-registry.mjs";
 
 const clean = (s) =>
   String(s || "")
@@ -177,9 +178,20 @@ export function createStarCastServer({
     },
     store,
   );
+  const rights = new RightsRegistry(store);
   const trusted = (req) => {
     const expected = env.STARCAST_DEV_INTELLIGENCE_TOKEN,
       received = req.headers["x-star-cast-dev-token"];
+    return (
+      typeof received === "string" &&
+      Boolean(expected) &&
+      Buffer.byteLength(received) === Buffer.byteLength(expected) &&
+      timingSafeEqual(Buffer.from(received), Buffer.from(expected))
+    );
+  };
+  const administrator = (req) => {
+    const expected = env.STARCAST_ADMIN_TOKEN,
+      received = req.headers["x-star-cast-admin-token"];
     return (
       typeof received === "string" &&
       Boolean(expected) &&
@@ -247,12 +259,41 @@ export function createStarCastServer({
     client,
     fetchTranscript,
     audioFactory,
+    rights,
   });
   const listeners = new ListenerService(store, {
     inviteOrigin: env.STARCAST_INVITE_ORIGIN,
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
   });
   const skips = new SkipService(store, pipeline);
+  const scheduleFollowedFeed = async (feedUrl) => {
+    const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
+    const episode = [...parsed.episodes]
+      .filter((item) => item.id)
+      .sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
+    if (!episode) return { state: "UNAVAILABLE", code: "NO_EPISODE" };
+    const permission = rights.resolve(feedUrl, episode.id);
+    if (!permission.canProcessForAi || !permission.canAcquireTranscript || !permission.canRetain || permission.suspendedAt || permission.deletedAt)
+      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED" };
+    // Following is never consent to paid audio. Publisher transcripts only.
+    return pipeline.request({ feedUrl, episodeId: episode.id, trigger: "automatic" });
+  };
+  let followMonitor = null;
+  if (env.STARCAST_FOLLOW_MONITOR === "enabled") {
+    const refresh = () => Promise.allSettled(listeners.followedFeeds().map(scheduleFollowedFeed));
+    followMonitor = setInterval(refresh, 6 * 60 * 60 * 1000);
+    followMonitor.unref?.();
+    setTimeout(refresh, 5_000).unref?.();
+  }
+  const captionWindows = new Map();
+  const captionRate = (listener) => {
+    const now = Date.now();
+    const windows = (captionWindows.get(listener.id) || []).filter((at) => now - at < 60_000);
+    if (windows.length >= 24) return false;
+    windows.push(now);
+    captionWindows.set(listener.id, windows);
+    return true;
+  };
   function rate(req) {
     const key = req.socket.remoteAddress || "unknown",
       now = Date.now(),
@@ -385,7 +426,7 @@ export function createStarCastServer({
           error: "Analysis requires an authorised Star Cast device.",
           code: "DEVICE_UNAUTHORISED",
         });
-      if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|admin)(\/|$)/.test(url.pathname)) {
+      if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|captions|reports|admin)(\/|$)/.test(url.pathname)) {
         const payload = req.method === "POST" ? await body(req) : undefined;
         const upstream = await fetch(env.STARCAST_CLOUD_API_URL + url.pathname + url.search, {
           method: req.method,
@@ -427,6 +468,17 @@ export function createStarCastServer({
           return send(res, 200, listeners.attribute(listener, input.code));
         if (url.pathname === "/api/listener/preferences")
           return send(res, 200, listeners.preferences(listener, input));
+        if (url.pathname === "/api/listener/follow") {
+          if (!publicUrl(input.feedUrl))
+            return send(res, 400, { error: "A public publisher feed is required." });
+          const result = listeners.follow(listener, input);
+          if (!result.following) return send(res, 200, result);
+          try {
+            return send(res, 202, { ...result, processing: await scheduleFollowedFeed(input.feedUrl) });
+          } catch {
+            return send(res, 202, { ...result, processing: { state: "UNAVAILABLE", code: "FEED_UNAVAILABLE" } });
+          }
+        }
         if (url.pathname === "/api/listener/heartbeat")
           return send(res, 200, listeners.heartbeat(listener, input));
         if (url.pathname === "/api/listener/offline")
@@ -445,7 +497,34 @@ export function createStarCastServer({
           );
         return send(res, 404, { error: "Not found" });
       }
+      if (url.pathname === "/api/captions/window" && req.method === "POST") {
+        const input = await body(req);
+        const listener = listeners.authenticate(
+          req.headers.authorization?.replace(/^Bearer /, ""),
+        );
+        if (!listener)
+          return send(res, 401, { error: "Reconnect your listener profile to continue." });
+        if (!valid(input) || !Number.isFinite(input.positionMs) || input.positionMs < 0)
+          return send(res, 400, { error: "A valid playing episode and position are required." });
+        if (!captionRate(listener))
+          return send(res, 429, { error: "Caption updates are temporarily limited. Keep listening and try again shortly." });
+        const permission = rights.resolve(input.feedUrl, input.episodeId);
+        if (!permission.canDisplayCaptions || permission.suspendedAt || permission.deletedAt) {
+          rights.audit("caption-denied", `${input.feedUrl}:${input.episodeId}`, listener.id, { classification: permission.classification });
+          return send(res, 200, { available: false, reason: "Captions are not authorised for this episode." });
+        }
+        listeners.captionPlayback(listener, input);
+        const window = pipeline.captions(input.feedUrl, input.episodeId, input.positionMs);
+        rights.audit("caption-window", `${input.feedUrl}:${input.episodeId}`, listener.id, { startMs: window.windowStartMs || null });
+        return send(res, 200, window);
+      }
+      if (url.pathname === "/api/reports" && req.method === "POST") {
+        const listener = listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, ""));
+        if (!listener) return send(res, 401, { error: "Reconnect your listener profile to continue." });
+        return send(res, 200, listeners.reportProblem(listener, await body(req)));
+      }
       if (url.pathname === "/api/admin/intelligence" && req.method === "GET") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
         ledger.refresh();
         return send(res, 200, {
           controls: {
@@ -459,9 +538,46 @@ export function createStarCastServer({
           jobs: store.all("intelligence").map(([, v]) => publicIntelligence(v)),
         });
       }
+      if (url.pathname === "/api/admin/rights" && ["GET", "POST"].includes(req.method)) {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (req.method === "GET") return send(res, 200, { records: rights.list() });
+        const record = rights.set(await body(req), { actor: "api-admin" });
+        rights.audit("rights-assessment", record.id, "api-admin");
+        return send(res, 200, { record });
+      }
+      if (url.pathname === "/api/admin/reports" && req.method === "GET") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, { reports: store.all("problem-report").map(([, value]) => value) });
+      }
+      if (["/api/admin/transcripts/suspend", "/api/admin/transcripts/delete"].includes(url.pathname) && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const input = await body(req);
+        if (!valid(input)) return send(res, 400, { error: "A valid publisher episode is required." });
+        const reason = typeof input.reason === "string" ? input.reason : "Administrative rights review.";
+        if (url.pathname.endsWith("/suspend")) {
+          const record = rights.suspend(input.feedUrl, input.episodeId, reason, { actor: "api-admin" });
+          rights.audit("transcript-suspended", record.id, "api-admin");
+          return send(res, 200, { record });
+        }
+        const record = rights.markDeleted(input.feedUrl, input.episodeId, reason, { actor: "api-admin" });
+        const removed = pipeline.purgeEpisode(input.feedUrl, input.episodeId);
+        rights.audit("transcript-deleted", record.id, "api-admin", removed);
+        return send(res, 200, { record, removed });
+      }
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
         const feed = url.searchParams.get("feedUrl"),
           id = url.searchParams.get("episodeId");
+        const permission = rights.resolve(feed, id);
+        if (!permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
+          return send(res, 200, {
+            status: {
+              state: "BLOCKED",
+              code: "RIGHTS_RESTRICTED",
+              reason: "This episode is not authorised for displayed intelligence.",
+              transcriptAvailable: false,
+            },
+            features: featureControls,
+          });
         return send(res, 200, {
           status: publicIntelligence(pipeline.status(feed, id)),
           features: featureControls,
@@ -515,17 +631,6 @@ export function createStarCastServer({
         });
         return send(res, status.state === "QUEUED" ? 202 : 200, { status });
       }
-      if (url.pathname === "/api/intelligence/transcript")
-        return send(
-          res,
-          200,
-          pipeline.transcriptPage(
-            input.feedUrl,
-            input.episodeId,
-            input.offset,
-            input.query,
-          ),
-        );
       if (url.pathname === "/api/intelligence/moment") {
         if (
           typeof input.query !== "string" ||
@@ -555,7 +660,10 @@ export function createStarCastServer({
       });
     }
   });
-  return { server, store, ledger, pipeline, listeners, skips };
+  server.on("close", () => {
+    if (followMonitor) clearInterval(followMonitor);
+  });
+  return { server, store, ledger, pipeline, listeners, skips, rights };
 }
 if (
   process.argv[1] &&

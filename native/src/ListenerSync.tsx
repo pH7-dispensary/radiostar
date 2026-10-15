@@ -7,7 +7,7 @@ import { readLocalDocument, writeLocalDocument } from "./localStorage";
 
 // Deferred offline evidence is retained but never billed or used to qualify a referral by itself.
 export function ListenerSync({ onboarded }: { onboarded: boolean }) {
-  const { snapshot } = usePlayback();
+  const { snapshot, source } = usePlayback();
   const latest = useRef(snapshot);
   latest.current = snapshot;
   const onboardRef = useRef(onboarded);
@@ -79,6 +79,8 @@ export function ListenerSync({ onboarded }: { onboarded: boolean }) {
         await listenerRequest("/api/listener/heartbeat", {
           eventId: Crypto.randomUUID(),
           sessionId: session,
+          episodeId: current.episodeId,
+          feedUrl: source?.feedUrl,
           positionMs: current.positionMs,
           playing: current.playing && !current.buffered,
           speed: current.speed,
@@ -122,6 +124,6 @@ export function ListenerSync({ onboarded }: { onboarded: boolean }) {
       clearInterval(timer);
       sub.remove();
     };
-  }, [snapshot.playing]);
+  }, [snapshot.playing, snapshot.episodeId, source?.feedUrl]);
   return null;
 }

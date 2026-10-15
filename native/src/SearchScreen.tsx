@@ -27,6 +27,7 @@ import {
   type StoredEpisode,
 } from "./listenerState";
 import type { StarTheme } from "./design";
+import { updateFollow } from "./listenerApi";
 
 function Segments({
   items,
@@ -271,7 +272,9 @@ export function SearchScreen({
         accessibilityLabel={`${state.following.some((x) => x.id === show.id) ? "Unfollow" : "Follow"} ${show.name}`}
         onPress={() => {
           feedback.selection();
+          const following = state.following.some((item) => item.id === show.id);
           setState((v) => ({ ...v, following: toggleById(v.following, show) }));
+          if (show.feedUrl) void updateFollow(show.feedUrl, !following).catch(() => {});
         }}
         style={[s.follow, { borderColor: p.line }]}
       >

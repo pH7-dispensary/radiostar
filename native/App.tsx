@@ -55,8 +55,11 @@ import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { SearchScreen } from "./src/SearchScreen";
 import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
 import { ListenerSync } from "./src/ListenerSync";
+import { updateFollow } from "./src/listenerApi";
 import { LoadingState } from "./src/LoadingState";
 import { PodcastArtwork } from "./src/PodcastArtwork";
+import { ProblemReport } from "./src/ProblemReport";
+import { CaptionWindow } from "./src/CaptionWindow";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
@@ -301,10 +304,12 @@ function Discovery({
                 accessibilityRole="button"
                 onPress={() => {
                   feedback.success();
+                  const next = !following;
                   setState({
                     ...state,
                     following: toggleById(state.following, show),
                   });
+                  if (show.feedUrl) void updateFollow(show.feedUrl, next).catch(() => {});
                 }}
                 style={[
                   styles.followPill,
@@ -1148,6 +1153,7 @@ function PlayerSheet({
                   />
                 ))}
               </View>
+              <CaptionWindow p={p} />
               <View style={styles.playerTools}>
                 {(
                   [
@@ -1173,6 +1179,7 @@ function PlayerSheet({
                   </Pressable>
                 ))}
               </View>
+              <ProblemReport p={p} compact />
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setTimerOpen(true)}
@@ -1906,6 +1913,7 @@ function Profile({
             Clear listening history
           </Text>
         </Pressable>
+        <ProblemReport p={p} />
       </Section>
     </>
   );
@@ -1993,10 +2001,12 @@ function ShowDetail({
       <Pressable
         onPress={() => {
           feedback.success();
+          const next = !following;
           setState({
             ...state,
             following: toggleById(state.following, show),
           });
+          if (show.feedUrl) void updateFollow(show.feedUrl, next).catch(() => {});
         }}
         style={[
           styles.primary,

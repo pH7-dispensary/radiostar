@@ -56,6 +56,10 @@ export const loadListenerSummary = (): Promise<ListenerSummary> =>
   listenerRequest("/api/listener/summary");
 export const attributeInvite = (code: string) =>
   listenerRequest("/api/listener/attribute", { code: code.trim() });
+export const updateFollow = (feedUrl: string, following: boolean) =>
+  listenerRequest("/api/listener/follow", { feedUrl, following });
+export const reportProblem = (input: Record<string, unknown>) =>
+  listenerRequest("/api/reports", input);
 export type SkipStatus = {
   automaticSkipping: false;
   transcriptAvailable: boolean;

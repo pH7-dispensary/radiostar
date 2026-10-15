@@ -137,6 +137,26 @@ export class ListenerService {
       return { preferences, automaticSkipping: false };
     });
   }
+  follow(listener, { feedUrl, following }) {
+    if (typeof feedUrl !== "string" || !feedUrl || typeof following !== "boolean")
+      throw new ListenerError("A valid podcast follow update is required.");
+    const id = `follow:${listener.id}:${digest(feedUrl)}`;
+    if (!following) {
+      this.store.delete("follow", id);
+      return { following: false, feedUrl };
+    }
+    this.store.set("follow", id, {
+      id,
+      owner: listener.id,
+      feedUrl,
+      createdAt: this.now(),
+      updatedAt: this.now(),
+    });
+    return { following: true, feedUrl };
+  }
+  followedFeeds() {
+    return [...new Set(this.store.all("follow").map(([, record]) => record.feedUrl))];
+  }
   summary(listener) {
     const now = this.now(),
       date = new Date(now),
@@ -211,10 +231,14 @@ export class ListenerService {
     };
   }
   heartbeat(listener, input) {
-    const { eventId, sessionId, positionMs, playing, speed } = input;
+    const { eventId, sessionId, episodeId, feedUrl, positionMs, playing, speed } = input;
     if (
       !validEvent(eventId) ||
       !validEvent(sessionId) ||
+      typeof episodeId !== "string" ||
+      episodeId.length < 1 ||
+      episodeId.length > 2000 ||
+      (feedUrl !== undefined && (typeof feedUrl !== "string" || feedUrl.length > 4000)) ||
       !Number.isFinite(positionMs) ||
       positionMs < 0 ||
       typeof playing !== "boolean" ||
@@ -259,6 +283,8 @@ export class ListenerService {
       }
       this.store.set("listening-clock", listener.id, {
         sessionId,
+        episodeId,
+        feedUrl: feedUrl || null,
         at: now,
         positionMs,
         playing,
@@ -267,6 +293,49 @@ export class ListenerService {
       this.store.set("listening-event", key, { owner: listener.id, at: now });
       return { received: true };
     });
+  }
+  captionPlayback(listener, { feedUrl, episodeId, positionMs }) {
+    const clock = this.store.get("listening-clock", listener.id);
+    if (
+      !clock ||
+      clock.episodeId !== episodeId ||
+      clock.feedUrl !== feedUrl ||
+      !Number.isFinite(positionMs) ||
+      positionMs < 0 ||
+      this.now() - clock.at > 45_000 ||
+      Math.abs(clock.positionMs - positionMs) > 90_000
+    )
+      throw new ListenerError(
+        "Start playback before requesting captions for this moment.",
+        403,
+      );
+    return clock;
+  }
+  reportProblem(listener, input) {
+    const categories = ["incorrect_skip", "missed_advert", "playback", "episode_information", "ai_answer", "caption", "other"];
+    if (!input || !validEvent(input.eventId) || !categories.includes(input.category))
+      throw new ListenerError("Choose a valid problem category.");
+    if (input.note !== undefined && (typeof input.note !== "string" || input.note.length > 1000))
+      throw new ListenerError("Keep the report note under 1,000 characters.");
+    if (input.positionMs !== undefined && (!Number.isFinite(input.positionMs) || input.positionMs < 0))
+      throw new ListenerError("Problem position is invalid.");
+    const id = eventKey(listener.id, input.eventId);
+    if (!this.store.get("problem-report", id))
+      this.store.set("problem-report", id, {
+        id,
+        owner: listener.id,
+        category: input.category,
+        feedUrl: typeof input.feedUrl === "string" ? input.feedUrl.slice(0, 4000) : null,
+        episodeId: typeof input.episodeId === "string" ? input.episodeId.slice(0, 2000) : null,
+        audioVariant: typeof input.audioVariant === "string" ? input.audioVariant.slice(0, 200) : null,
+        positionMs: input.positionMs ?? null,
+        feature: typeof input.feature === "string" ? input.feature.slice(0, 100) : null,
+        appVersion: typeof input.appVersion === "string" ? input.appVersion.slice(0, 100) : null,
+        note: input.note?.trim() || null,
+        status: "open",
+        createdAt: this.now(),
+      });
+    return { received: true };
   }
   offline(listener, input) {
     if (

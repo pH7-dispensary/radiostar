@@ -130,8 +130,8 @@ assert.equal(
   publicIntelligence(p.status(feed, "publisher")).transcript,
   undefined,
 );
-assert.equal(p.transcriptPage(feed, "publisher").segments.length, 60);
-assert.equal(p.transcriptPage(feed, "publisher", 60).segments.length, 5);
+assert.equal(p.internalTranscriptPage(feed, "publisher").segments.length, 60);
+assert.equal(p.internalTranscriptPage(feed, "publisher", 60).segments.length, 5);
 assert.ok(p.moments(feed, "publisher", "science").length);
 await Promise.all(p.inflight.values());
 assert.equal(calls, 1);

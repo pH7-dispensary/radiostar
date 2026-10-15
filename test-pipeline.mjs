@@ -83,6 +83,17 @@ const make = () =>
     fetchTranscript: async () => transcript,
   });
 let app = make();
+app.rights.set({
+  feedUrl,
+  classification: "LICENSED",
+  canAcquireTranscript: true,
+  canProcessForAi: true,
+  canTranscribeAudio: true,
+  canDisplayCaptions: true,
+  canDisplayDerivedIntelligence: true,
+  canRetain: true,
+  canRegenerate: true,
+});
 await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
 let base = "http://127.0.0.1:" + app.server.address().port;
 const post = (route, input, auth = true) =>
@@ -126,11 +137,9 @@ try {
     feedUrl,
     episodeId,
   });
-  assert.equal(page.status, 200);
-  assert.equal((await page.json()).segments[0].id, "s1");
+  assert.equal(page.status, 404, "full transcript delivery is not public");
   assert.equal(
-    (await post("/api/intelligence/transcript", { feedUrl, episodeId }, false))
-      .status,
+    (await post("/api/intelligence/transcript", { feedUrl, episodeId }, false)).status,
     403,
   );
   assert.ok(

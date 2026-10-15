@@ -46,9 +46,9 @@ try {
   for (const path of ["/api/catalogue/search?q=test", "/api/admin/intelligence", "/api/intelligence/status", "/"])
     assert.equal((await fetch(base + path)).status, 403);
   assert.equal(upstreamRequests.length, 0);
-  for (const path of ["/api/search/conversations", "/api/intelligence/preflight", "/api/listener/register", "/api/skips/feedback"])
+  for (const path of ["/api/search/conversations", "/api/intelligence/preflight", "/api/listener/register", "/api/skips/feedback", "/api/captions/window", "/api/reports"])
     assert.deepEqual(await (await fetch(base + path, { method: "POST", headers: { "x-star-cast-dev-token": "local-test-device", authorization: "Bearer listener-test", "content-type": "application/json" }, body: JSON.stringify({ query: "real transcript evidence" }) })).json(), { cloud: true });
-  assert.equal(upstreamRequests.length, 4);
+  assert.equal(upstreamRequests.length, 6);
   assert.ok(upstreamRequests.every(r => r.token === "cloud-test-device" && r.authorization === "Bearer listener-test" && JSON.parse(r.data).query === "real transcript evidence"));
   assert.equal(app.store.all("budget").length, 0, "Proxy must not create a second paid ledger");
 } finally {

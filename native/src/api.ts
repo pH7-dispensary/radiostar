@@ -233,29 +233,6 @@ export async function findEpisodeMoment(
     body: JSON.stringify({ feedUrl, episodeId, query }),
   });
 }
-export type TranscriptPage = {
-  segments: Array<{
-    id: string;
-    text: string;
-    speaker?: string;
-    startMs: number | null;
-    endMs: number | null;
-  }>;
-  nextOffset: number | null;
-  total: number;
-};
-export async function loadEpisodeTranscript(
-  feedUrl: string,
-  episodeId: string,
-  offset = 0,
-  query = "",
-): Promise<TranscriptPage> {
-  return request("/api/intelligence/transcript", {
-    method: "POST",
-    headers: developmentHeaders(),
-    body: JSON.stringify({ feedUrl, episodeId, offset, query }),
-  });
-}
 export const episodeIntelligenceApi = {
   status: loadIntelligenceStatus,
   request: (

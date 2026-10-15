@@ -40,6 +40,15 @@ service.preferences(a, { title_sequence: true });
 assert.equal(service.summary(a).preferences.title_sequence, true);
 assert.throws(() => service.preferences(a, { advert: "on" }));
 assert.equal(
+  service.follow(a, { feedUrl: "https://publisher.example/feed.xml", following: true }).following,
+  true,
+);
+assert.deepEqual(service.followedFeeds(), ["https://publisher.example/feed.xml"]);
+assert.equal(
+  service.follow(a, { feedUrl: "https://publisher.example/feed.xml", following: false }).following,
+  false,
+);
+assert.equal(
   unionDuration([
     [0, 10],
     [5, 15],
@@ -52,6 +61,8 @@ const tick = (eventId, playing = true, extra = {}) =>
   service.heartbeat(b, {
     eventId,
     sessionId: "fixture-session",
+    episodeId: "fixture-episode",
+    feedUrl: "https://publisher.example/feed.xml",
     positionMs: position,
     playing,
     speed: 1,
@@ -353,11 +364,11 @@ store.set("intelligence", episodeKey(feed, "paged"), {
     })),
   },
 });
-const initial = app.pipeline.transcriptPage(feed, "paged");
+const initial = app.pipeline.internalTranscriptPage(feed, "paged");
 assert.equal(initial.segments.length, 60);
 assert.equal(initial.nextOffset, 60);
 assert.equal(initial.segments[0].startMs, null, "untimed text remains untimed");
-const searched = app.pipeline.transcriptPage(feed, "paged", 0, "SCIENTIFIC");
+const searched = app.pipeline.internalTranscriptPage(feed, "paged", 0, "SCIENTIFIC");
 assert.equal(searched.total, 1);
 assert.equal(searched.segments[0].id, "s120");
 assert.equal(searched.nextOffset, null);
