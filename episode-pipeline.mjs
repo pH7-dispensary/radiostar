@@ -103,6 +103,7 @@ export class EpisodePipeline {
     fetchTranscript = fetchPublisherTranscript,
     audioFactory = prepareAudio,
     rights = null,
+    queue = null,
     jobTimeoutMs = 15 * 60 * 1000,
   }) {
     Object.assign(this, {
@@ -116,12 +117,17 @@ export class EpisodePipeline {
       fetchTranscript,
       audioFactory,
       rights,
+      queue,
       jobTimeoutMs,
     });
     this.inflight = new Map();
     this.audioInflight = new Map();
     for (const [key, value] of store.all("intelligence"))
       if (activeStates.has(value.state) && !value.completedAt)
+        // A durable queued job has not started and can be recovered by the
+        // single consumer. In-progress work remains failed on restart because
+        // its provider outcome may be unknown and must not be retried blindly.
+        if (!(this.queue && value.state === "QUEUED"))
         store.set("intelligence", key, {
           ...value,
           state: "FAILED",
@@ -208,6 +214,8 @@ export class EpisodePipeline {
     }
     if (this.inflight.has(key))
       return publicIntelligence(this.status(feedUrl, episodeId));
+    if (previous && activeStates.has(previous.state) && !previous.completedAt)
+      return publicIntelligence(previous);
     if (this.inflight.size >= 2)
       return {
         state: "BLOCKED",
@@ -240,6 +248,30 @@ export class EpisodePipeline {
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
     };
     this.store.set("intelligence", key, initial);
+    if (this.queue) {
+      const queued = {
+        jobId: initial.jobId,
+        key,
+        feedUrl,
+        episodeId,
+        allowAudio,
+        queuedAt: initial.startedAt,
+      };
+      // The SQLite outbox is persisted before attempting SQS. If AWS is
+      // temporarily unavailable, the single consumer will reconcile it later.
+      this.store.set("processing-outbox", initial.jobId, queued);
+      try {
+        await this.queue.enqueue(queued);
+        this.store.delete("processing-outbox", initial.jobId);
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: "processing-queue-enqueue-deferred",
+          jobId: initial.jobId,
+          code: error?.name || "QUEUE_UNAVAILABLE",
+        }));
+      }
+      return publicIntelligence(initial);
+    }
     const task = this.run({
       key,
       feedUrl,
@@ -251,6 +283,40 @@ export class EpisodePipeline {
     }).finally(() => this.inflight.delete(key));
     this.inflight.set(key, task);
     return publicIntelligence(initial);
+  }
+  async recoverQueued() {
+    if (!this.queue) return;
+    for (const [, queued] of this.store.all("processing-outbox")) {
+      const status = this.store.get("intelligence", queued.key);
+      if (status?.jobId !== queued.jobId || status.state !== "QUEUED") {
+        this.store.delete("processing-outbox", queued.jobId);
+        continue;
+      }
+      try {
+        await this.queue.enqueue(queued);
+        this.store.delete("processing-outbox", queued.jobId);
+      } catch {
+        // The persisted record is intentionally retained for the next poll.
+      }
+    }
+  }
+  async executeQueued(queued) {
+    if (!queued?.jobId || !queued?.key || !queued?.feedUrl || !queued?.episodeId)
+      throw Error("Invalid processing queue message.");
+    if (this.inflight.has(queued.key)) return;
+    const initial = this.store.get("intelligence", queued.key);
+    if (initial?.jobId !== queued.jobId || initial.state !== "QUEUED") return;
+    const task = this.run({
+      key: queued.key,
+      feedUrl: queued.feedUrl,
+      episodeId: queued.episodeId,
+      allowAudio: queued.allowAudio === true,
+      initial,
+      previous: null,
+      forcePublisherRefresh: false,
+    }).finally(() => this.inflight.delete(queued.key));
+    this.inflight.set(queued.key, task);
+    await task;
   }
   async run({
     key,

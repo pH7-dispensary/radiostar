@@ -39,6 +39,7 @@ Environment=AWS_REGION=eu-west-2
 Environment=STARCAST_SECRET_ARN=${secret_arn}
 Environment=STARCAST_DATA_FILE=/var/lib/starcast/backend.sqlite
 Environment=STARCAST_BACKUP_BUCKET=${bucket}
+Environment=STARCAST_PROCESSING_QUEUE_URL=${processing_queue_url}
 Environment=NODE_OPTIONS=--max-old-space-size=768
 ExecStart=/usr/local/bin/node scripts/cloud/server.mjs
 Restart=on-failure

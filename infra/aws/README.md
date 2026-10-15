@@ -8,10 +8,10 @@ API: **https://d3ri12f40b85i3.cloudfront.net**. This is an authenticated private
 - Existing Node backend on one `t3a.small`, Amazon Linux 2023, Node 24.22.0. x86 is necessary for the pinned `ffprobe-static` binary. CPU credits are standard, not unlimited.
 - One durable SQLite writer on a 30 GiB encrypted gp3 volume. Transactional budget reservations and the existing persisted job/cache implementation are retained. **Do not scale replicas against this database.** PostgreSQL migrations remain the future multi-worker contract; an unused RDS instance is not provisioned.
 - CloudFront HTTPS with a private EC2 VPC origin. Port 4173 accepts only CloudFront's VPC service security group. No public origin access, SSH, NAT gateway, load balancer, GPU or Kubernetes. One public IPv4 enables outbound HTTPS to publishers/OpenAI/SSM without a NAT gateway. Origin HTTP travels over the private VPC path.
-- Secrets Manager holds the existing server-only OpenAI key and a separate private-pilot device token. Secret values are provisioned outside Terraform and never appear in its state/user-data. EC2's workload role can read only its secret and release/seed objects, write backups/logs, and use Systems Manager.
+- Secrets Manager holds the existing server-only OpenAI key, a private-pilot device token and a separate administrator token. Secret values are provisioned outside Terraform and never appear in its state/user-data. The local administrator connection is owner-only and ignored by Git. EC2's workload role can read only its secret and release/seed objects, use its dedicated processing queue, write backups/logs, and use Systems Manager.
 - Private, encrypted, versioned S3 storage. Online SQLite backups every 15 minutes, 30-day backup retention. Retained encrypted root volume, instance termination protection, Terraform destruction guards.
 - CloudWatch backend logs retained 14 days; local log rotation. Project/Environment/CostCenter/ManagedBy attribution tags. A $25 AWS monitoring budget with actual 80% and forecast 100% email thresholds; it is **not a hard spending cap**. Recipient is in ignored `phase1.auto.tfvars`.
-- Encrypted SQS queue and DLQ are prepared but **not consumed**. Phase 1 uses the existing durable single-process job lifecycle and bounded manual retry. Do not claim distributed queue workers or high availability.
+- An encrypted SQS queue and DLQ provide durable dispatch to the single EC2 consumer. SQLite remains the only writer: the consumer uses a persisted outbox, idempotent job IDs and bounded retries. This is not a distributed worker fleet or high availability.
 - Terraform state is encrypted/versioned in `s3://starcast-phase1-208096650030-eu-west-2/infra/terraform.tfstate` with S3 lockfile locking. The workload role cannot read state.
 
 No pH7 infrastructure is used. CloudFront/IAM/billing are global AWS control planes; regional compute, storage, secrets, queues and logs are in London. Apple signing details were supplied for later use and were not changed.
@@ -66,7 +66,18 @@ node scripts/aws-account-guard.mjs .starcast/tools/terraform -chdir=infra/aws ap
 
 Changing user-data/AMI does not replace the running instance. Bootstrap changes require an explicit maintenance action through SSM; patch the OS during maintenance, with a verified database backup first. The latest bootstrap file is not proof it has executed on an existing instance.
 
-Secrets: `node scripts/cloud/provision-secret.mjs` copies the existing ignored credential with paid work disabled; `--enable-paid` enables the already-authorized AWS authority. Both require the dedicated STS identity. Restart through `ops.mjs restart`, then poll. Rotation uses the same secret, not a second API integration. The short-lived owner-only CLI transfer file is removed after the operation.
+Secrets: `node scripts/cloud/provision-secret.mjs` copies the existing ignored credential with paid work disabled; `--enable-paid` enables the already-authorized AWS authority. It also creates/preserves a separate owner-only administrator credential in ignored `.starcast/cloud-admin.json`, activates the single queue consumer and enables publisher-transcript-only followed-podcast checks. Both require the dedicated STS identity. Restart through `ops.mjs restart`, then poll. Rotation uses the same secret, not a second API integration. The short-lived owner-only CLI transfer file is removed after the operation.
+
+Rights administration is an authenticated local CLI, not a public web page. It requires both private-pilot and administrator credentials, and accepts explicit owner-controlled JSON files for mutations:
+
+```sh
+node scripts/cloud/admin.mjs rights list
+node scripts/cloud/admin.mjs rights apply assessment.json
+node scripts/cloud/admin.mjs transcripts suspend removal.json
+node scripts/cloud/admin.mjs reports list
+```
+
+An assessment must identify a concrete feed (and optional episode), rights basis, classification, permitted operations, restrictions and review date. No public RSS feed is implicitly approved.
 
 On a new checkout, recover the existing S3 Terraform backend with `init`, not a new state; obtain the existing seed/release artifacts privately before planning. Do not regenerate or overwrite the cloud ledger from local data. Initial account bootstrap used local Terraform state and `private_origin_ready=false`; after CloudFront created its service security group, the default `true` restricted ingress. Do not set it false for routine updates.
 

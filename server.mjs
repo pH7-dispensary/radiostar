@@ -17,6 +17,8 @@ import { acquireServerLock } from "./server-lock.mjs";
 import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
+import { processingQueueFromEnv } from "./processing-queue.mjs";
+import { approvedTestCorpus } from "./approved-test-corpus.mjs";
 
 const clean = (s) =>
   String(s || "")
@@ -249,6 +251,7 @@ export function createStarCastServer({
       refs,
     };
   }
+  const queue = processingQueueFromEnv(env);
   const pipeline = new EpisodePipeline({
     store,
     ledger,
@@ -260,6 +263,7 @@ export function createStarCastServer({
     fetchTranscript,
     audioFactory,
     rights,
+    queue,
   });
   const listeners = new ListenerService(store, {
     inviteOrigin: env.STARCAST_INVITE_ORIGIN,
@@ -311,10 +315,15 @@ export function createStarCastServer({
     typeof r.episodeId === "string" &&
     r.episodeId.length > 0 &&
     r.episodeId.length <= 2000;
+  const testCorpusEnabled = env.STARCAST_APPROVED_TEST_CORPUS === "enabled";
+  const testCorpusOrigin = /^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(env.STARCAST_TEST_CORPUS_ORIGIN || "")
+    ? env.STARCAST_TEST_CORPUS_ORIGIN
+    : null;
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
-      if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && req.method !== "OPTIONS" && !trusted(req))
+      const corpus = testCorpusEnabled && testCorpusOrigin && approvedTestCorpus.response(url.pathname, testCorpusOrigin);
+      if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !corpus && req.method !== "OPTIONS" && !trusted(req))
         return send(res, 403, { error: "A private Star Cast pilot device is required." });
       if (
         req.headers.origin &&
@@ -339,6 +348,14 @@ export function createStarCastServer({
         }
       }
       if (!url.pathname.startsWith("/api/")) {
+        if (corpus && ["GET", "HEAD"].includes(req.method)) {
+          res.writeHead(200, {
+            "content-type": corpus.type,
+            "cache-control": "public, max-age=300",
+            "x-content-type-options": "nosniff",
+          });
+          return res.end(req.method === "HEAD" ? undefined : corpus.body);
+        }
         const invitation = url.pathname.match(
           /^\/invite\/([a-zA-Z0-9_-]{12})$/,
         );
@@ -662,8 +679,18 @@ export function createStarCastServer({
   });
   server.on("close", () => {
     if (followMonitor) clearInterval(followMonitor);
+    queue?.stop();
   });
-  return { server, store, ledger, pipeline, listeners, skips, rights };
+  if (queue) {
+    queue.run({
+      execute: (job) => pipeline.executeQueued(job),
+      recover: () => pipeline.recoverQueued(),
+    }).catch((error) => console.error(JSON.stringify({
+      event: "processing-queue-stopped",
+      code: error?.name || "QUEUE_STOPPED",
+    })));
+  }
+  return { server, store, ledger, pipeline, listeners, skips, rights, queue };
 }
 if (
   process.argv[1] &&

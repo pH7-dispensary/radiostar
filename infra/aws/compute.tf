@@ -82,6 +82,7 @@ resource "aws_iam_role_policy" "backend" {
       { Effect = "Allow", Action = ["s3:GetObject"], Resource = ["${aws_s3_bucket.objects.arn}/releases/*", "${aws_s3_bucket.objects.arn}/seed/*"] },
       { Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/backups/*"] },
       { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.backend.arn },
+      { Effect = "Allow", Action = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes"], Resource = aws_sqs_queue.processing.arn },
       { Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.backend.arn}:*" }
     ]
   })
@@ -121,11 +122,12 @@ resource "aws_instance" "backend" {
     tags                  = { Project = "StarCast", Environment = "phase1", CostCenter = "RadioStar" }
   }
   user_data = templatefile("${path.module}/bootstrap.sh.tftpl", {
-    bucket      = aws_s3_bucket.objects.id
-    release_key = aws_s3_object.release.key
-    release_sha = filesha256("../../.starcast/aws-release.tar.gz")
-    secret_arn  = aws_secretsmanager_secret.backend.arn
-    log_group   = aws_cloudwatch_log_group.backend.name
+    bucket               = aws_s3_bucket.objects.id
+    release_key          = aws_s3_object.release.key
+    release_sha          = filesha256("../../.starcast/aws-release.tar.gz")
+    secret_arn           = aws_secretsmanager_secret.backend.arn
+    log_group            = aws_cloudwatch_log_group.backend.name
+    processing_queue_url = aws_sqs_queue.processing.url
   })
   # Code updates use the reviewed SSM release command, not implicit instance replacement.
   lifecycle {

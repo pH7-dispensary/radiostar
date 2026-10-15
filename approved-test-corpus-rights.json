@@ -1,0 +1,17 @@
+{
+  "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+  "episodeId": "starcast-approved-test-episode-v1",
+  "publisher": "Star Cast",
+  "podcast": "Star Cast Approved Test Corpus",
+  "classification": "LICENSED",
+  "licence": "Star Cast-owned synthetic test corpus; internal verification only.",
+  "restrictions": "No redistribution, catalogue promotion, or audio transcription. This approval applies only to the named synthetic episode.",
+  "assessmentDate": "2026-10-15T00:00:00.000Z",
+  "canAcquireTranscript": true,
+  "canProcessForAi": true,
+  "canTranscribeAudio": false,
+  "canDisplayCaptions": true,
+  "canDisplayDerivedIntelligence": true,
+  "canRetain": true,
+  "canRegenerate": true
+}
