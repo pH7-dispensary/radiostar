@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   loadListenerSummary,
@@ -241,7 +241,7 @@ export function ReferralPanel({ p }: { p: StarTheme }) {
             disabled={busy || stale}
             onPress={() => {
               void Share.share({
-                message: `Share the listening with me on Star Cast. Invite code: ${summary.code}\n${summary.inviteUrl}`,
+                message: `Share the listening with me on Radio Star. Invite code: ${summary.code}\n${summary.inviteUrl}`,
                 ...(summary.webInviteAvailable
                   ? { url: summary.inviteUrl }
                   : {}),
@@ -290,7 +290,7 @@ export function ReferralPanel({ p }: { p: StarTheme }) {
               referral adds five hours every month, with no referral cap.{" "}
               {summary.webInviteAvailable
                 ? "Your invite includes a web fallback."
-                : "Development invites open an installed Star Cast build; no public download is available yet."}{" "}
+                : "Development invites open an installed Radio Star build; no public download is available yet."}{" "}
               {!summary.friendBonusMinutes
                 ? "The friend’s bonus has not been configured."
                 : "The friend’s bonus expires at the next monthly reset."}{" "}

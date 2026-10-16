@@ -21,6 +21,7 @@ const idleCheck = "/usr/local/bin/node --input-type=module -e " + quote(`
 `);
 let commands;
 if (action === "status") commands = ["cloud-init status", "systemctl is-active starcast", "tail -n 12 /var/log/starcast/backend.log"];
+else if (action === "verify-runtime") commands = ["set -eu", "cd /opt/starcast/app", "/usr/local/bin/node -e " + quote(`const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) {execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});} console.log('FFmpeg and FFprobe executable checks passed.');`)];
 else if (action === "check-idle") commands = ["set -eu", idleCheck, "echo 'No active intelligence jobs.'"];
 else if (action === "restart") commands = ["set -eu", idleCheck, "systemctl restart starcast", "curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4173/api/health"];
 else if (action === "verify-store") commands = ["/usr/local/bin/node --input-type=module -e " + quote(`
@@ -58,6 +59,7 @@ echo '${sha}  /opt/starcast/update.tar.gz' | sha256sum -c -
 tar -xzf /opt/starcast/update.tar.gz -C ${staged}
 cd ${staged}
 npm ci --omit=dev --no-audit --no-fund
+node -e "const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});"
 dnf install -y logrotate
 cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast
@@ -76,7 +78,7 @@ if ! curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4
   exit 1
 fi
 echo 'Release ${sha} healthy; previous source retained for rollback.'`];
-} else throw Error("Use status, check-idle, verify-store, restart, connect, deploy or poll <command-id>");
+} else throw Error("Use status, check-idle, verify-store, verify-runtime, restart, connect, deploy or poll <command-id>");
 if (commands) {
   const command = aws(["ssm", "send-command", "--instance-ids", instance, "--document-name", "AWS-RunShellScript", "--parameters", JSON.stringify({ commands, executionTimeout: ["600"] })]);
   console.log({ commandId: command.Command.CommandId, action, instance, followUp: "Run this script with poll and the command id to verify completion." });

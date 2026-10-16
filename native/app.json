@@ -1,8 +1,14 @@
 {
   "expo": {
-    "name": "Star Cast",
+    "name": "Radio Star",
     "slug": "star-cast",
     "version": "1.0.0",
+    "icon": "./assets/radio-star-icon.png",
+    "splash": {
+      "image": "./assets/radio-star-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#171320"
+    },
     "scheme": "starcast",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -11,7 +17,6 @@
       "bundleIdentifier": "app.radiostar.ios",
       "buildNumber": "1",
       "supportsTablet": false,
-      "appleTeamId": "TETRODAXOL",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
@@ -26,7 +31,8 @@
           "enableBackgroundPlayback": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-iap"
     ],
     "extra": {
       "starCastApiBaseUrl": "https://d3ri12f40b85i3.cloudfront.net",

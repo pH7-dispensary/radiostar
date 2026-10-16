@@ -16,6 +16,7 @@ export type ListenerState = {
   following: CatalogueShow[];
   saved: StoredEpisode[];
   history: StoredEpisode[];
+  historyEnabled: boolean;
   feedEpisodes: Record<string, StoredEpisode[]>;
   nightMode: boolean;
   onboardingComplete: boolean;
@@ -27,6 +28,7 @@ export const emptyListenerState = (): ListenerState => ({
   following: [],
   saved: [],
   history: [],
+  historyEnabled: true,
   feedEpisodes: {},
   nightMode: true,
   onboardingComplete: false,

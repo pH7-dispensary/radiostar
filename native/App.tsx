@@ -7,6 +7,7 @@ import {
   Easing,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Modal,
   PanResponder,
@@ -21,7 +22,7 @@ import {
 import { BlurView } from "expo-blur";
 import { getIdentity, setIdentity } from "./src/localStorage";
 import * as Crypto from "expo-crypto";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   PlaybackProvider,
@@ -31,6 +32,7 @@ import {
 import {
   enrollPrivatePilot,
   hasPilotAccess,
+  onSessionEnded,
   loadFeed,
   searchCatalogue,
   type CatalogueEpisode,
@@ -57,11 +59,12 @@ import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { SearchScreen } from "./src/SearchScreen";
 import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
 import { ListenerSync } from "./src/ListenerSync";
-import { updateFollow } from "./src/listenerApi";
+import { updateFollow, deleteListenerProfile, resetListenerConnection, listenerRequest } from "./src/listenerApi";
 import { LoadingState } from "./src/LoadingState";
 import { PodcastArtwork } from "./src/PodcastArtwork";
 import { ProblemReport } from "./src/ProblemReport";
 import { CaptionWindow } from "./src/CaptionWindow";
+import { SubscriptionPanel } from "./src/SubscriptionPanel";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
@@ -159,7 +162,7 @@ function Onboarding({ p, onDone }: { p: Theme; onDone: () => void }) {
               <Text style={[styles.link, { color: p.muted }]}>Skip</Text>
             </Pressable>
             <Text style={[styles.eyebrow, { color: p.accent }]}>
-              WELCOME TO STAR CAST
+              WELCOME TO RADIO STAR
             </Text>
             <Text style={[styles.onboardingTitle, { color: p.text }]}>
               Listen{`\n`}beautifully.
@@ -1559,7 +1562,7 @@ function Listen({
           </>
         ) : (
           <Text style={[styles.emptyInline, { color: p.muted }]}>
-            Follow shows in Search to make this personal. Star Cast does not
+            Follow shows in Search to make this personal. Radio Star does not
             invent recommendations.
           </Text>
         )}
@@ -1781,11 +1784,13 @@ function Profile({
   p,
 }: {
   state: ListenerState;
-  setState: (state: ListenerState) => void;
+  setState: React.Dispatch<React.SetStateAction<ListenerState>>;
   installation?: string;
   onBack: () => void;
   p: Theme;
 }) {
+  const [deletingProfile, setDeletingProfile] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   return (
     <>
       <Pressable
@@ -1832,18 +1837,22 @@ function Profile({
       <Section title="Your listening allowance" p={p}>
         <ReferralPanel p={p} />
       </Section>
+      <Section title="Subscriptions" p={p}>
+        <SubscriptionPanel p={p} />
+      </Section>
       <Section title="Episode intelligence" p={p}>
         <Pressable
           accessibilityRole="switch"
           accessibilityLabel="Episode intelligence"
-          accessibilityState={{ checked: state.intelligenceEnabled }}
+          accessibilityState={{ checked: state.intelligenceEnabled, disabled: savingPrivacy }}
+          disabled={savingPrivacy}
           onPress={() => {
             feedback.selection();
-            setState({
-              ...state,
-              intelligenceEnabled: !state.intelligenceEnabled,
-              intelligencePreferenceVersion: 2,
-            });
+            setSavingPrivacy(true);
+            void listenerRequest("/api/listener/privacy", { intelligenceEnabled: !state.intelligenceEnabled })
+              .then(() => setState(current => ({ ...current, intelligenceEnabled: !state.intelligenceEnabled, intelligencePreferenceVersion: 2 })))
+              .catch(() => Alert.alert("Preference not saved", "Connect to the internet and try again. Your previous setting is unchanged."))
+              .finally(() => setSavingPrivacy(false));
           }}
           style={[styles.setting, { borderBottomColor: p.line }]}
         >
@@ -1855,8 +1864,7 @@ function Profile({
           </Text>
         </Pressable>
         <Text style={[styles.emptyCopy, { color: p.muted }]}>
-          Uses available publisher transcripts when you open an episode. Audio
-          analysis always asks first.
+          Uses authorised publisher transcripts for episodes you open and shows you follow. Turning this off stops future automatic requests for your profile; shared or already-running jobs may finish. Audio analysis asks first. Provider details are in the Privacy Policy.
         </Text>
       </Section>
       <Section title="AI Sleep" p={p}>
@@ -1893,12 +1901,20 @@ function Profile({
         </Text>
       </Section>
       <Section title="Privacy" p={p}>
+        <Pressable accessibilityRole="switch" accessibilityLabel="Remember local listening history"
+          accessibilityState={{ checked: state.historyEnabled }}
+          style={[styles.setting, { borderBottomColor: p.line }]}
+          onPress={() => setState({ ...state, historyEnabled: !state.historyEnabled })}>
+          <Text style={[styles.settingTitle, { color: p.text }]}>Remember local listening history</Text>
+          <Text style={[styles.small, { color: p.muted }]}>{state.historyEnabled ? "On" : "Off"}</Text>
+        </Pressable>
+        <Text style={[styles.emptyCopy, { color: p.muted }]}>Turn off to stop adding episodes to local history. Clear existing history below to remove history-based suggestions. Playback position and server allowance reports are separate.</Text>
         <Pressable
           accessibilityRole="button"
           onPress={() =>
             Alert.alert(
               "Clear listening history?",
-              "Your followed shows and saved episodes will stay here.",
+              "Clears the history shown on this device. Server listening records used for allowance verification are not removed. Your followed shows and saved episodes stay here.",
               [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -1912,8 +1928,23 @@ function Profile({
           style={[styles.setting, { borderBottomColor: p.line }]}
         >
           <Text style={[styles.settingTitle, { color: p.text }]}>
-            Clear listening history
+            Clear history on this device
           </Text>
+        </Pressable>
+        <LegalLinks p={p} />
+        <Pressable accessibilityRole="button" disabled={deletingProfile}
+          accessibilityState={{ disabled: deletingProfile }}
+          style={[styles.setting, { borderBottomColor: p.line }]}
+          onPress={() => Alert.alert("Delete listener profile?",
+            "Removes your active server profile, listening records, follows, referrals and local listening data. Beta access ends. Minimal security revocation records and existing backups may remain. Apple subscriptions, if any, must be cancelled separately in Settings. This cannot be undone.",
+            [{ text: "Cancel", style: "cancel" }, { text: "Delete profile", style: "destructive", onPress: () => {
+              setDeletingProfile(true);
+              void deleteListenerProfile().catch((error) => {
+                setDeletingProfile(false);
+                Alert.alert("Deletion could not finish", error instanceof Error ? error.message : "Please try again, or contact info@getradiostar.com.");
+              });
+            } }])}>
+          <Text style={[styles.settingTitle, { color: p.text }]}>{deletingProfile ? "Deleting profile…" : "Delete listener profile"}</Text>
         </Pressable>
         <ProblemReport p={p} />
       </Section>
@@ -2134,7 +2165,7 @@ function AppShell() {
     };
     setState((current) => ({
       ...current,
-      history: recordHistory(current.history, episode),
+      history: current.historyEnabled ? recordHistory(current.history, episode) : current.history,
     }));
     setPlayerOpen(true);
     return source;
@@ -2159,21 +2190,32 @@ function AppShell() {
   );
 }
 
+function LegalLinks({ p }: { p: Theme }) {
+  return <View style={{ gap: 8 }}>
+    {[ ["Privacy Policy", "https://www.getradiostar.com/privacy"], ["Terms of Service", "https://www.getradiostar.com/terms"], ["Contact support", "mailto:info@getradiostar.com"] ].map(([label, url]) =>
+      <Pressable key={url} accessibilityRole="link" style={{ minHeight: 44, justifyContent: "center" }}
+        onPress={() => { void Linking.openURL(url).catch(() => Alert.alert("Could not open link", url)); }}>
+        <Text style={[styles.link, { color: p.accent2 }]}>{label} ↗</Text>
+      </Pressable>)}
+  </View>;
+}
+
 function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
   const [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
       <LinearGradient
         colors={[dark.bg, "#26213a", dark.bg]}
-        style={[styles.pilotEnrollment, { backgroundColor: dark.bg }]}
+        style={[styles.pilotEnrollment, { backgroundColor: dark.bg, paddingVertical: 24 }]}
       >
-        <Text style={[styles.wordmark, { color: dark.text }]}>STAR <Text style={{ color: dark.accent }}>✦</Text> CAST</Text>
+        <Text style={[styles.wordmark, { color: dark.text }]}>RADIO <Text style={{ color: dark.accent }}>✦</Text> STAR</Text>
         <View style={[styles.pilotCard, { backgroundColor: dark.surface, borderColor: dark.line }]}>
           <Text style={[styles.eyebrow, { color: dark.accent }]}>PRIVATE BETA</Text>
           <Text style={[styles.pilotTitle, { color: dark.text }]}>Your listening space is ready.</Text>
-          <Text style={[styles.emptyCopy, { color: dark.muted }]}>Enter the private-beta access code supplied with your TestFlight invitation. It securely connects this installation to Star Cast.</Text>
+          <Text style={[styles.emptyCopy, { color: dark.muted }]}>Enter the private-beta access code supplied with your TestFlight invitation. It securely connects this installation to Radio Star.</Text>
           <TextInput
             accessibilityLabel="Private-beta access code"
             autoCapitalize="none"
@@ -2199,12 +2241,14 @@ function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
             }}
             style={[styles.primary, { backgroundColor: dark.accent2, opacity: busy || !code.trim() ? 0.55 : 1 }]}
           >
-            <Text style={[styles.primaryText, { color: dark.onAccent }]}>{busy ? "Connecting securely…" : "Connect Star Cast"}</Text>
+            <Text style={[styles.primaryText, { color: dark.onAccent }]}>{busy ? "Connecting securely…" : "Connect Radio Star"}</Text>
           </Pressable>
           {!!message && <Text accessibilityLiveRegion="polite" style={{ color: "#E78FA9", textAlign: "center" }}>{message}</Text>}
         </View>
         <Text style={[styles.pilotFootnote, { color: dark.muted }]}>No OpenAI credential or shared server secret is stored in this app.</Text>
+        <LegalLinks p={dark} />
       </LinearGradient>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -2245,7 +2289,7 @@ function AppContent({
   useEffect(() => {
     if (!hydrated || !snapshot.episodeId) return;
     setState((current) =>
-      current.history.some((e) => e.id === snapshot.episodeId)
+      current.historyEnabled && current.history.some((e) => e.id === snapshot.episodeId)
         ? {
             ...current,
             history: current.history.map((e) =>
@@ -2298,7 +2342,7 @@ function AppContent({
     ) : null;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
-      {hydrated && <ListenerSync onboarded={state.onboardingComplete} />}
+      {hydrated && <ListenerSync onboarded={state.onboardingComplete} intelligenceEnabled={state.intelligenceEnabled} />}
       <AmbientBackdrop p={p} />
       <View style={styles.root}>
         <View style={styles.topbar}>
@@ -2307,7 +2351,7 @@ function AppContent({
             accessibilityRole="button"
           >
             <Text style={[styles.wordmark, { color: p.text }]}>
-              STAR <Text style={{ color: p.accent }}>✦</Text> CAST
+              RADIO <Text style={{ color: p.accent }}>✦</Text> STAR
             </Text>
           </Pressable>
           <Pressable
@@ -2459,14 +2503,15 @@ export default function App() {
     [enrolled, setEnrolled] = useState(false);
   useEffect(() => {
     void hasPilotAccess().then(setEnrolled).finally(() => setCheckingPilot(false));
+    return onSessionEnded(() => setEnrolled(false));
   }, []);
   return (
-    <PlaybackProvider>
+    <PlaybackProvider key={enrolled ? "listener" : "enrollment"}>
       {checkingPilot ? (
         <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
-          <LoadingState p={dark} label="Connecting to Star Cast…" />
+          <LoadingState p={dark} label="Connecting to Radio Star…" />
         </SafeAreaView>
-      ) : enrolled ? <AppShell /> : <PilotEnrollment onEnrolled={() => setEnrolled(true)} />}
+      ) : enrolled ? <AppShell /> : <PilotEnrollment onEnrolled={() => { resetListenerConnection(); setEnrolled(true); }} />}
     </PlaybackProvider>
   );
 }
@@ -2687,7 +2732,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  settingTitle: { fontSize: 16, fontWeight: "700" },
+  settingTitle: { fontSize: 16, fontWeight: "700", flexShrink: 1, paddingRight: 8 },
   allowance: { alignItems: "flex-start" },
   allowanceNumber: { fontSize: 29, fontWeight: "800", letterSpacing: -1 },
   referral: { alignItems: "flex-start" },

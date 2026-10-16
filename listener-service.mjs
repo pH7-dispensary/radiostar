@@ -41,6 +41,8 @@ export class ListenerService {
     const hash = digest(credential);
     return this.store.transaction(() => {
       const old = this.store.get("installation", hash);
+      if (this.store.get("revoked-installation", hash) || old?.revokedAt)
+        throw new ListenerError("This listener profile has been deleted or revoked.", 401);
       if (old) return old;
       const listener = {
         id: randomUUID(),
@@ -65,6 +67,40 @@ export class ListenerService {
     if (typeof credential !== "string" || credential.length > 200) return null;
     const listener = this.store.get("installation", digest(credential));
     return listener && !listener.revokedAt ? listener : null;
+  }
+  deleteProfile(listener) {
+    return this.store.transaction(() => {
+      const ownedKinds = ["invite-code", "allowance-ledger", "follow", "listening-event",
+        "listening-session", "offline-listening", "problem-report", "verified-subject", "qualification-audit", "subscription"];
+      for (const kind of ownedKinds)
+        for (const [id, record] of this.store.all(kind))
+          if (record.owner === listener.id) this.store.delete(kind, id);
+      const feedback = new Set();
+      for (const [id, record] of this.store.all("skip-feedback"))
+        if (record.owner === listener.id) { feedback.add(id); this.store.delete("skip-feedback", id); }
+      for (const [id, record] of this.store.all("skip-vote"))
+        if (feedback.has(record.reportId)) this.store.delete("skip-vote", id);
+      for (const [id, record] of this.store.all("referral"))
+        if (record.referrer === listener.id || record.referred === listener.id) {
+          // Other listeners keep already-earned recurring allowances, without a link to this person.
+          for (const [entryId, entry] of this.store.all("allowance-ledger"))
+            if (entry.referralId === record.id) {
+              const { referralId, ...retained } = entry;
+              this.store.set("allowance-ledger", entryId, retained);
+            }
+          this.store.delete("referral", id);
+        }
+      for (const [id, record] of this.store.all("pilot-device"))
+        if (record.listenerId === listener.id)
+          this.store.set("pilot-device", id, { id, revokedAt: new Date(this.now()).toISOString() });
+      for (const [id, record] of this.store.all("rights-audit"))
+        if (record.actor === listener.id) this.store.set("rights-audit", id, { ...record, actor: "deleted-listener" });
+      this.store.delete("listening-clock", listener.id);
+      this.store.delete("installation", listener.credentialHash);
+      // Minimal revocation marker prevents a delayed registration from recreating a deleted profile.
+      this.store.set("revoked-installation", listener.credentialHash, { revokedAt: this.now() });
+      return { deleted: true };
+    });
   }
   update(listener, patch) {
     const fresh = this.store.get("installation", listener.credentialHash);
@@ -151,11 +187,21 @@ export class ListenerService {
       feedUrl,
       createdAt: this.now(),
       updatedAt: this.now(),
+      intelligenceEnabled: this.store.get("installation", listener.credentialHash)?.intelligenceEnabled !== false,
     });
     return { following: true, feedUrl };
   }
   followedFeeds() {
-    return [...new Set(this.store.all("follow").map(([, record]) => record.feedUrl))];
+    return [...new Set(this.store.all("follow").filter(([, record]) => record.intelligenceEnabled !== false).map(([, record]) => record.feedUrl))];
+  }
+  privacy(listener, { intelligenceEnabled }) {
+    if (typeof intelligenceEnabled !== "boolean") throw new ListenerError("Choose a valid intelligence preference.");
+    return this.store.transaction(() => {
+      this.update(listener, { intelligenceEnabled });
+      for (const [id, record] of this.store.all("follow"))
+        if (record.owner === listener.id) this.store.set("follow", id, { ...record, intelligenceEnabled });
+      return { intelligenceEnabled };
+    });
   }
   summary(listener) {
     const now = this.now(),

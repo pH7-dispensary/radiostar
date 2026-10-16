@@ -6,13 +6,16 @@ import { attributeInvite, listenerRequest } from "./listenerApi";
 import { readLocalDocument, writeLocalDocument } from "./localStorage";
 
 // Deferred offline evidence is retained but never billed or used to qualify a referral by itself.
-export function ListenerSync({ onboarded }: { onboarded: boolean }) {
+export function ListenerSync({ onboarded, intelligenceEnabled }: { onboarded: boolean; intelligenceEnabled: boolean }) {
   const { snapshot, source } = usePlayback();
   const latest = useRef(snapshot);
   latest.current = snapshot;
   const onboardRef = useRef(onboarded);
   onboardRef.current = onboarded;
   const ready = useRef(false);
+  useEffect(() => {
+    void listenerRequest("/api/listener/privacy", { intelligenceEnabled }).catch(() => {});
+  }, [intelligenceEnabled]);
   useEffect(() => {
     let alive = true;
     const invite = async (url: string | null) => {
@@ -124,6 +127,6 @@ export function ListenerSync({ onboarded }: { onboarded: boolean }) {
       clearInterval(timer);
       sub.remove();
     };
-  }, [snapshot.playing, snapshot.episodeId, source?.feedUrl]);
+  }, [snapshot.playing, snapshot.episodeId, source?.feedUrl, snapshot.playing ? null : snapshot.positionMs]);
   return null;
 }

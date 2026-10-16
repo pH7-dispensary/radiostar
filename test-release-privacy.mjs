@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { LocalStore } from "./persistence.mjs";
+import { ListenerService } from "./listener-service.mjs";
+
+const store = new LocalStore(":memory:");
+const service = new ListenerService(store);
+const a = service.register("a".repeat(64));
+const b = service.register("b".repeat(64));
+service.follow(a, { feedUrl: "https://example.org/rss", following: true });
+service.privacy(a, { intelligenceEnabled: false });
+assert.deepEqual(service.followedFeeds(), []);
+service.privacy(a, { intelligenceEnabled: true });
+assert.deepEqual(service.followedFeeds(), ["https://example.org/rss"]);
+store.set("referral", a.id, { id: "earned", referred: a.id, referrer: b.id, status: "qualified" });
+store.set("allowance-ledger", "referral:earned", { owner: b.id, kind: "referral", monthlyMinutes: 300, referralId: "earned", effectiveAt: 1 });
+store.set("pilot-device", "device", { listenerId: a.id });
+store.set("listening-clock", a.id, { episodeId: "test" });
+store.set("skip-feedback", "feedback", { owner: a.id });
+store.set("skip-vote", "vote", { reportId: "feedback" });
+store.set("rights-audit", "audit", { actor: a.id, action: "caption-window" });
+store.set("rights", "shared", { classification: "RESTRICTED" });
+store.set("budget", "shared", { total: 1 });
+assert.deepEqual(service.deleteProfile(a), { deleted: true });
+assert.equal(service.authenticate("a".repeat(64)), null);
+assert.throws(() => service.register("a".repeat(64)), /deleted or revoked/);
+assert.equal(service.summary(b).monthlyMinutes, 900);
+assert.equal(store.get("allowance-ledger", "referral:earned").referralId, undefined);
+for (const kind of ["follow", "listening-clock", "skip-feedback", "skip-vote", "referral"])
+  assert.equal(store.all(kind).length, 0, kind);
+assert.ok(store.get("pilot-device", "device").revokedAt);
+assert.equal(store.get("rights-audit", "audit").actor, "deleted-listener");
+assert.equal(store.get("rights", "shared").classification, "RESTRICTED");
+assert.equal(store.get("budget", "shared").total, 1);
+store.close();
+const env = { PATH: process.env.PATH, EAS_BUILD_PROFILE: "testflight" };
+assert.equal(spawnSync(process.execPath, ["native/scripts/assert-release-env.mjs"], { env }).status, 0);
+for (const key of ["EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN", "EXPO_PUBLIC_ALLOW_LEGACY_TOKEN", "EXPO_PUBLIC_ALLOW_INSECURE_LOCAL_API", "EXPO_PUBLIC_API_BASE_URL"])
+  assert.notEqual(spawnSync(process.execPath, ["native/scripts/assert-release-env.mjs"], { env: { ...env, [key]: "unsafe-test-value" } }).status, 0, key);
+console.log("Deletion, revocation, reward preservation and release environment checks passed.");

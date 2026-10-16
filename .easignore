@@ -1,0 +1,16 @@
+node_modules/
+native/node_modules/
+native/.expo/
+.env
+.env.*
+native/.env
+native/.env.*
+continue
+.starcast/
+native/dist/
+native/web-dist/
+infra/
+*.log
+*.p8
+*.p12
+*.mobileprovision

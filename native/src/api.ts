@@ -1,4 +1,4 @@
-import { getIdentity, setIdentity } from "./localStorage";
+import { getIdentity, setIdentity, removeIdentity, resumeLocalWrites } from "./localStorage";
 
 export type CatalogueShow = {
   id: string;
@@ -81,6 +81,16 @@ const legacyDevelopmentToken =
     ? process.env.EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN || ""
     : "";
 let pilotToken: Promise<string | null> | null = null;
+const sessionListeners = new Set<() => void>();
+export function onSessionEnded(callback: () => void) {
+  sessionListeners.add(callback);
+  return () => { sessionListeners.delete(callback); };
+}
+export async function endPilotSession() {
+  pilotToken = Promise.resolve(null);
+  await removeIdentity(pilotTokenKey);
+  sessionListeners.forEach((callback) => callback());
+}
 const base = () => {
   const configured = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
   const local =
@@ -108,8 +118,9 @@ export async function enrollPrivatePilot(code: string) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || typeof body.token !== "string" || body.token.length < 32)
     throw Error(body.error || "That private-beta access code could not be accepted.");
-  pilotToken = Promise.resolve(body.token);
   await setIdentity(pilotTokenKey, body.token);
+  pilotToken = Promise.resolve(body.token);
+  resumeLocalWrites();
   return { expiresAt: typeof body.expiresAt === "string" ? body.expiresAt : null };
 }
 async function pilotHeaders(headers: Headers) {
@@ -134,10 +145,12 @@ export async function request(path: string, init?: RequestInit) {
       signal: AbortSignal.timeout(20_000),
     }),
     body = await response.json().catch(() => ({}));
+  if (response.status === 403 && body.code === "DEVICE_UNAUTHORISED")
+    await endPilotSession();
   if (!response.ok)
     throw Object.assign(
       Error(body.error || "Star Cast is temporarily unavailable."),
-      { userFacing: true },
+      { userFacing: true, status: response.status, code: body.code },
     );
   return body;
 }

@@ -28,6 +28,7 @@ runInNewContext(output, {
   },
 });
 assert.equal(exports.emptyListenerState().intelligenceEnabled, true);
+assert.equal(exports.emptyListenerState().historyEnabled, true);
 assert.equal((await exports.loadListenerState()).intelligenceEnabled, true);
 saved = JSON.stringify({
   intelligenceEnabled: false,
@@ -44,6 +45,8 @@ assert.equal(
 );
 await exports.saveListenerState({ ...migrated, intelligenceEnabled: true });
 assert.equal((await exports.loadListenerState()).intelligenceEnabled, true);
+await exports.saveListenerState({ ...migrated, historyEnabled: false });
+assert.equal((await exports.loadListenerState()).historyEnabled, false);
 console.log(
   "default-on intelligence migration, opt-out and listener persistence checks passed",
 );

@@ -19,6 +19,7 @@ import { SkipService } from "./skip-service.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus } from "./approved-test-corpus.mjs";
+import { subscriptionsFromEnv } from "./subscriptions.mjs";
 
 const clean = (s) =>
   String(s || "")
@@ -282,6 +283,7 @@ export function createStarCastServer({
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
   });
   const skips = new SkipService(store, pipeline);
+  const subscriptions = subscriptionsFromEnv(store, env);
   const scheduleFollowedFeed = async (feedUrl) => {
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
@@ -390,6 +392,10 @@ export function createStarCastServer({
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
+      if (url.pathname === "/api/apple/notifications" && req.method === "POST") {
+        if (!rate(req)) return send(res, 429, { error: "Please retry later." });
+        return send(res, 200, await subscriptions.notification((await body(req)).signedPayload));
+      }
       if (url.pathname === "/api/pilot/enroll" && req.method === "POST") {
         if (!enrollmentRate(req)) return send(res, 429, { error: "Too many enrollment attempts. Please wait before trying again." });
         const enrollment = enrollPilot(await body(req));
@@ -397,7 +403,7 @@ export function createStarCastServer({
       }
       const corpus = testCorpusEnabled && testCorpusOrigin && approvedTestCorpus.response(url.pathname, testCorpusOrigin);
       if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !corpus && req.method !== "OPTIONS" && !trusted(req))
-        return send(res, 403, { error: "A private Star Cast pilot device is required." });
+        return send(res, 403, { error: "Your private-beta access has expired or been revoked. Reconnect with a new invitation.", code: "DEVICE_UNAUTHORISED" });
       if (
         req.headers.origin &&
         [
@@ -533,7 +539,16 @@ export function createStarCastServer({
             error: "Verified installation enrollment is not configured.",
           });
         const input = await body(req);
+        const deviceId = typeof req.headers["x-star-cast-pilot-token"] === "string"
+          ? tokenHash(req.headers["x-star-cast-pilot-token"]) : null;
+        const device = deviceId ? store.get("pilot-device", deviceId) : null;
+        if (device?.listenerId) {
+          const existing = listeners.authenticate(input.credential);
+          if (!existing || existing.id !== device.listenerId)
+            return send(res, 403, { error: "This beta access belongs to another listener profile." });
+        }
         const listener = listeners.register(input.credential);
+        if (device) store.set("pilot-device", deviceId, { ...device, listenerId: listener.id });
         return send(res, 200, listeners.summary(listener));
       }
       if (
@@ -549,20 +564,33 @@ export function createStarCastServer({
           });
         if (url.pathname === "/api/listener/summary" && req.method === "GET")
           return send(res, 200, listeners.summary(listener));
+        if (url.pathname === "/api/listener/subscriptions" && req.method === "GET")
+          return send(res, 200, subscriptions.config(listener));
         if (req.method !== "POST")
           return send(res, 405, { error: "Method not allowed." });
         const input = await body(req);
+        if (!listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, "")))
+          return send(res, 401, { error: "This listener profile is no longer active." });
+        if (url.pathname === "/api/listener/subscriptions/verify")
+          return send(res, 200, await subscriptions.refresh(listener, input.signedTransaction));
+        if (url.pathname === "/api/listener/delete") {
+          if (input.confirm !== true) return send(res, 400, { error: "Confirm listener profile deletion." });
+          return send(res, 200, listeners.deleteProfile(listener));
+        }
         if (url.pathname === "/api/listener/onboard")
           return send(res, 200, listeners.onboard(listener));
         if (url.pathname === "/api/listener/attribute")
           return send(res, 200, listeners.attribute(listener, input.code));
         if (url.pathname === "/api/listener/preferences")
           return send(res, 200, listeners.preferences(listener, input));
+        if (url.pathname === "/api/listener/privacy")
+          return send(res, 200, listeners.privacy(listener, input));
         if (url.pathname === "/api/listener/follow") {
           if (!publicUrl(input.feedUrl))
             return send(res, 400, { error: "A public publisher feed is required." });
           const result = listeners.follow(listener, input);
           if (!result.following) return send(res, 200, result);
+          if (listener.intelligenceEnabled === false) return send(res, 200, { ...result, processing: { state: "DISABLED" } });
           try {
             return send(res, 202, { ...result, processing: await scheduleFollowedFeed(input.feedUrl) });
           } catch {

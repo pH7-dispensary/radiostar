@@ -1,6 +1,6 @@
 import * as Crypto from "expo-crypto";
-import { request, developmentHeaders } from "./api";
-import { getIdentity, setIdentity } from "./localStorage";
+import { request, developmentHeaders, endPilotSession } from "./api";
+import { getIdentity, setIdentity, eraseLocalListenerData } from "./localStorage";
 export type SkipCategory =
   "advert" | "intro" | "title_sequence" | "preview" | "outro";
 export type ListenerSummary = {
@@ -24,6 +24,15 @@ export type ListenerSummary = {
   verificationAvailable: boolean;
 };
 let connection: Promise<string> | null = null;
+let deleting = false;
+export function resetListenerConnection() { connection = null; deleting = false; }
+export async function deleteListenerProfile() {
+  if (!deleting) await listenerRequest("/api/listener/delete", { confirm: true });
+  deleting = true;
+  connection = null;
+  await eraseLocalListenerData();
+  await endPilotSession();
+}
 async function credential() {
   if (!connection)
     connection = (async () => {
@@ -45,6 +54,7 @@ async function credential() {
   return connection;
 }
 export async function listenerRequest(path: string, payload?: unknown) {
+  if (deleting) throw Error("This profile has been deleted. Restart Radio Star before joining again.");
   const token = await credential();
   return request(path, {
     method: payload === undefined ? "GET" : "POST",

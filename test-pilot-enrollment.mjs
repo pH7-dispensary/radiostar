@@ -21,9 +21,18 @@ try {
   const enrolled = await call("/api/pilot/enroll", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: invite.code }) });
   assert.equal(enrolled.status, 201);
   const enrolledValue = await enrolled.json();
+  const listenerHeaders = { "content-type": "application/json", "x-star-cast-pilot-token": enrolledValue.token, authorization: `Bearer ${"a".repeat(64)}` };
+  const register = credential => call("/api/listener/register", { method: "POST", headers: listenerHeaders, body: JSON.stringify({credential}) });
+  assert.equal((await register("a".repeat(64))).status, 200);
+  assert.equal((await register("b".repeat(64))).status, 403, "one pilot cannot mint arbitrary listeners");
+  assert.equal((await call("/api/listener/subscriptions", {headers:listenerHeaders})).status, 200);
+  assert.equal((await call("/api/listener/delete", {method:"POST",headers:listenerHeaders,body:"{}"})).status, 400);
   assert.ok(enrolledValue.token.length >= 32);
   assert.equal((await call("/api/intelligence/status?feedUrl=https%3A%2F%2Fpublisher.example%2Ffeed&episodeId=episode", { headers: { "x-star-cast-pilot-token": enrolledValue.token } })).status, 200);
   assert.equal((await call("/api/pilot/enroll", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: invite.code }) })).status, 400, "a consumed invite is rejected");
+  assert.equal((await call("/api/listener/privacy", {method:"POST",headers:listenerHeaders,body:JSON.stringify({intelligenceEnabled:false})})).status,200);
+  assert.equal((await call("/api/listener/delete", {method:"POST",headers:listenerHeaders,body:JSON.stringify({confirm:true})})).status,200);
+  assert.equal((await call("/api/listener/summary", {headers:listenerHeaders})).status,403,"deletion revokes beta credential");
   const revoked = await call("/api/admin/pilot/devices/revoke", { method: "POST", headers, body: JSON.stringify({ deviceId: app.store.all("pilot-device")[0][1].id }) });
   assert.equal(revoked.status, 200);
   assert.equal((await call("/api/intelligence/status?feedUrl=https%3A%2F%2Fpublisher.example%2Ffeed&episodeId=episode", { headers: { "x-star-cast-pilot-token": enrolledValue.token } })).status, 403, "revoked pilot tokens are rejected");

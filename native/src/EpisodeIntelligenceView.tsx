@@ -13,7 +13,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   findEpisodeMoment,
@@ -276,7 +276,7 @@ export function EpisodeIntelligenceView({
         >
           <Ionicons name="chevron-back" size={22} color={p.text} />
         </Pressable>
-        <Text style={[s.eyebrow, { color: p.accent2 }]}>STAR CAST</Text>
+        <Text style={[s.eyebrow, { color: p.accent2 }]}>RADIO STAR</Text>
         <View style={{ width: 44, height: 44 }} />
       </View>
       <ScrollView
@@ -301,7 +301,7 @@ export function EpisodeIntelligenceView({
                 use publisher transcripts within your server’s allowance. Audio
                 transcription always asks first. Ad Skip stays independent.
               </Text>
-              {action("Enable Star Cast Intelligence", onEnable)}
+              {action("Enable Radio Star Intelligence", onEnable)}
               <Text style={[s.caption, { color: p.muted }]}>
                 Remembered on this device.
               </Text>
@@ -350,7 +350,7 @@ export function EpisodeIntelligenceView({
                     style={[s.copy, { color: p.muted }]}
                   >
                     {!source.feedUrl
-                      ? "Open this episode from its podcast in Search so Star Cast can find its publisher feed."
+                      ? "Open this episode from its podcast in Search so Radio Star can find its publisher feed."
                       : status?.reason ||
                         "Your episode has not been prepared yet."}
                   </Text>
