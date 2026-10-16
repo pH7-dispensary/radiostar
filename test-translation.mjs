@@ -27,15 +27,17 @@ try {
   assert.equal(beta.eligible("https://publisher.example/feed", "episode"), false, "a takedown always wins");
   assert.equal(beta.purgeEpisode(identity.feedUrl, identity.episodeId).translations, 1);
 } finally { store.close(); }
-const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "translation-test-token" } });
+const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "translation-test-token", STARCAST_ADMIN_TOKEN: "translation-admin-token", RADIOSTAR_TRANSLATE_BETA: "INTERNAL_TESTING" } });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 try {
   const base = `http://127.0.0.1:${app.server.address().port}`;
   const credential = "b".repeat(64), headers = { "content-type": "application/json", "x-star-cast-dev-token": "translation-test-token", authorization: `Bearer ${credential}` };
   assert.equal((await fetch(base + "/api/listener/register", { method: "POST", headers, body: JSON.stringify({ credential }) })).status, 200);
   const initial = await fetch(base + "/api/listener/translation", { headers });
-  assert.equal(initial.status, 200);
-  assert.equal((await initial.json()).availability, "UNAVAILABLE");
+  assert.equal(initial.status, 404, "translation stays hidden without server beta authorisation");
+  const listener = app.listeners.authenticate(credential);
+  assert.equal((await fetch(base + "/api/admin/translation/beta", { method: "POST", headers: { ...headers, "x-star-cast-admin-token": "translation-admin-token" }, body: JSON.stringify({ listenerId: listener.id, enabled: true }) })).status, 200);
+  assert.equal((await fetch(base + "/api/listener/translation", { headers })).status, 200);
   assert.equal((await fetch(base + "/api/listener/translation", { method: "POST", headers, body: JSON.stringify({ listeningLanguage: "made-up" }) })).status, 400);
   const saved = await fetch(base + "/api/listener/translation", { method: "POST", headers, body: JSON.stringify({ listeningLanguage: "pt", listenInMyLanguage: true }) });
   assert.equal(saved.status, 200);

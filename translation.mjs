@@ -46,13 +46,26 @@ export class TranslationService {
   config(listener) {
     const preference = listener.languagePreferences || {};
     const entitlement = this.subscriptions.entitlement(listener);
-    return { controls: this.controls, preference: {
+    return { visible: this.visible(listener), controls: this.controls, preference: {
       listeningLanguage: validLanguage(preference.listeningLanguage) ? preference.listeningLanguage : null,
       listenInMyLanguage: preference.listenInMyLanguage === true,
       naturalVoices: preference.naturalVoices !== false,
     }, entitlement: { active: entitlement.active, expiresAt: entitlement.expiresAt },
     availability: this.controls.enabled && entitlement.active && this.controls.providerAvailable ? "AVAILABLE"
       : this.controls.enabled ? "PREPARING" : "UNAVAILABLE" };
+  }
+  visible(listener) {
+    const access = listener && this.rights.store.get("translation-beta", listener.id);
+    return Boolean(this.controls.enabled && access && !access.revokedAt);
+  }
+  setBetaAccess(listenerId, enabled, actor = "admin") {
+    if (typeof listenerId !== "string" || !/^[0-9a-f-]{36}$/i.test(listenerId) || typeof enabled !== "boolean")
+      throw Error("A valid beta listener and enabled state are required.");
+    const existing = this.rights.store.get("translation-beta", listenerId);
+    const record = { listenerId, enabled, authorisedAt: existing?.authorisedAt || Date.now(), updatedAt: Date.now(), actor,
+      revokedAt: enabled ? null : Date.now() };
+    this.rights.store.set("translation-beta", listenerId, record);
+    return record;
   }
   eligible(feedUrl, episodeId) {
     const rights = this.rights.resolve(feedUrl, episodeId);

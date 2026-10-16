@@ -1792,6 +1792,12 @@ function Profile({
 }) {
   const [deletingProfile, setDeletingProfile] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
+  const [translationVisible, setTranslationVisible] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void listenerRequest("/api/listener/translation").then(() => { if (active) setTranslationVisible(true); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   return (
     <>
       <Pressable
@@ -1841,9 +1847,7 @@ function Profile({
       <Section title="Subscriptions" p={p}>
         <SubscriptionPanel p={p} />
       </Section>
-      <Section title="Language & Translation" p={p}>
-        <TranslationPanel p={p} />
-      </Section>
+      {translationVisible && <Section title="Language & Translation" p={p}><TranslationPanel p={p} /></Section>}
       <Section title="Episode intelligence" p={p}>
         <Pressable
           accessibilityRole="switch"

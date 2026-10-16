@@ -569,7 +569,7 @@ export function createStarCastServer({
         if (url.pathname === "/api/listener/subscriptions" && req.method === "GET")
           return send(res, 200, subscriptions.config(listener));
         if (url.pathname === "/api/listener/translation" && req.method === "GET")
-          return send(res, 200, translation.config(listener));
+          return translation.visible(listener) ? send(res, 200, translation.config(listener)) : send(res, 404, { error: "Not found." });
         if (req.method !== "POST")
           return send(res, 405, { error: "Method not allowed." });
         const input = await body(req);
@@ -588,6 +588,7 @@ export function createStarCastServer({
         if (url.pathname === "/api/listener/preferences")
           return send(res, 200, listeners.preferences(listener, input));
         if (url.pathname === "/api/listener/translation") {
+          if (!translation.visible(listener)) return send(res, 404, { error: "Not found." });
           if (input.listeningLanguage !== undefined && !validLanguage(input.listeningLanguage))
             return send(res, 400, { error: "Choose a supported listening language." });
           const preference = listeners.languagePreferences(listener, input);
@@ -672,6 +673,11 @@ export function createStarCastServer({
         const record = rights.set(await body(req), { actor: "api-admin" });
         rights.audit("rights-assessment", record.id, "api-admin");
         return send(res, 200, { record });
+      }
+      if (url.pathname === "/api/admin/translation/beta" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const input = await body(req);
+        return send(res, 200, { record: translation.setBetaAccess(input.listenerId, input.enabled, "api-admin") });
       }
       if (url.pathname === "/api/admin/pilot/invites" && ["GET", "POST"].includes(req.method)) {
         if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
