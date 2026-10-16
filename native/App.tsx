@@ -65,6 +65,7 @@ import { PodcastArtwork } from "./src/PodcastArtwork";
 import { ProblemReport } from "./src/ProblemReport";
 import { CaptionWindow } from "./src/CaptionWindow";
 import { SubscriptionPanel } from "./src/SubscriptionPanel";
+import { TranslationPanel } from "./src/TranslationPanel";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
@@ -1839,6 +1840,9 @@ function Profile({
       </Section>
       <Section title="Subscriptions" p={p}>
         <SubscriptionPanel p={p} />
+      </Section>
+      <Section title="Language & Translation" p={p}>
+        <TranslationPanel p={p} />
       </Section>
       <Section title="Episode intelligence" p={p}>
         <Pressable

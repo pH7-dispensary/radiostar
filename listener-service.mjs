@@ -51,6 +51,7 @@ export class ListenerService {
         createdAt: this.now(),
         onboardedAt: null,
         preferences: Object.fromEntries(categories.map((c) => [c, false])),
+        languagePreferences: { listeningLanguage: null, listenInMyLanguage: false, naturalVoices: true },
       };
       this.store.set("installation", hash, listener);
       this.store.set("invite-code", listener.code, { owner: listener.id });
@@ -171,6 +172,19 @@ export class ListenerService {
       };
       this.update(listener, { preferences });
       return { preferences, automaticSkipping: false };
+    });
+  }
+  languagePreferences(listener, input) {
+    if (!input || (input.listeningLanguage !== undefined &&
+      (typeof input.listeningLanguage !== "string" || input.listeningLanguage.length > 35)) ||
+      (input.listenInMyLanguage !== undefined && typeof input.listenInMyLanguage !== "boolean") ||
+      (input.naturalVoices !== undefined && typeof input.naturalVoices !== "boolean"))
+      throw new ListenerError("Choose valid language preferences.");
+    return this.store.transaction(() => {
+      const fresh = this.store.get("installation", listener.credentialHash);
+      const languagePreferences = { ...fresh.languagePreferences, ...input };
+      this.update(listener, { languagePreferences });
+      return languagePreferences;
     });
   }
   follow(listener, { feedUrl, following }) {

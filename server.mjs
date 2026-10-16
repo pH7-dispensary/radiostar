@@ -20,6 +20,7 @@ import { RightsRegistry } from "./rights-registry.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus } from "./approved-test-corpus.mjs";
 import { subscriptionsFromEnv } from "./subscriptions.mjs";
+import { TranslationService, validLanguage } from "./translation.mjs";
 
 const clean = (s) =>
   String(s || "")
@@ -284,6 +285,7 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline);
   const subscriptions = subscriptionsFromEnv(store, env);
+  const translation = new TranslationService({ rights, subscriptions, env });
   const scheduleFollowedFeed = async (feedUrl) => {
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
@@ -566,6 +568,8 @@ export function createStarCastServer({
           return send(res, 200, listeners.summary(listener));
         if (url.pathname === "/api/listener/subscriptions" && req.method === "GET")
           return send(res, 200, subscriptions.config(listener));
+        if (url.pathname === "/api/listener/translation" && req.method === "GET")
+          return send(res, 200, translation.config(listener));
         if (req.method !== "POST")
           return send(res, 405, { error: "Method not allowed." });
         const input = await body(req);
@@ -583,6 +587,12 @@ export function createStarCastServer({
           return send(res, 200, listeners.attribute(listener, input.code));
         if (url.pathname === "/api/listener/preferences")
           return send(res, 200, listeners.preferences(listener, input));
+        if (url.pathname === "/api/listener/translation") {
+          if (input.listeningLanguage !== undefined && !validLanguage(input.listeningLanguage))
+            return send(res, 400, { error: "Choose a supported listening language." });
+          const preference = listeners.languagePreferences(listener, input);
+          return send(res, 200, { ...translation.config(listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, ""))), preference });
+        }
         if (url.pathname === "/api/listener/privacy")
           return send(res, 200, listeners.privacy(listener, input));
         if (url.pathname === "/api/listener/follow") {
@@ -809,7 +819,7 @@ export function createStarCastServer({
       code: error?.name || "QUEUE_STOPPED",
     })));
   }
-  return { server, store, ledger, pipeline, listeners, skips, rights, queue };
+  return { server, store, ledger, pipeline, listeners, skips, rights, subscriptions, translation, queue };
 }
 if (
   process.argv[1] &&

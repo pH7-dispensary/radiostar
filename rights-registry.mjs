@@ -15,6 +15,11 @@ const permissions = [
   "canDisplayDerivedIntelligence",
   "canRetain",
   "canRegenerate",
+  "canTranslateText",
+  "canGenerateDubbedAudio",
+  "canCacheTranslatedAudio",
+  "canDistributeTranslation",
+  "canCloneSpeakerVoice",
 ];
 const key = (feedUrl, episodeId = "") =>
   createHash("sha256").update(JSON.stringify([feedUrl, episodeId])).digest("hex");
