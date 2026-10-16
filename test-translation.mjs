@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { LocalStore } from "./persistence.mjs";
 import { ListenerService } from "./listener-service.mjs";
 import { RightsRegistry, RightsClassification } from "./rights-registry.mjs";
-import { TranslationService, TranslationBetaState, languageFor, translationControls } from "./translation.mjs";
+import { TranslationService, TranslationBetaState, languageFor, translationControls, validAlignment } from "./translation.mjs";
 import { createStarCastServer } from "./server.mjs";
 const store = new LocalStore(":memory:");
 try {
@@ -18,8 +18,14 @@ try {
   rights.set({ feedUrl: "https://publisher.example/feed", episodeId: "episode", classification: RightsClassification.LICENSED,
     canTranslateText: true, canGenerateDubbedAudio: true, canCacheTranslatedAudio: true, canDistributeTranslation: true });
   assert.equal(beta.eligible("https://publisher.example/feed", "episode"), true);
+  const identity = { feedUrl: "https://publisher.example/feed", episodeId: "episode", audioVariant: "source-v1", sourceLanguage: "en", targetLanguage: "pt", voiceProfile: "licensed-default", translationVersion: "v1", rightsVersion: "v1" };
+  const alignment = [{ originalStartMs: 0, originalEndMs: 1000, translatedStartMs: 0, translatedEndMs: 1100 }];
+  assert.equal(validAlignment(alignment), true);
+  beta.cacheReady(identity, { alignment, audioUrl: "https://cache.example/dub.mp3", actualCostUsd: 0.02 });
+  assert.equal(beta.cacheStatus(identity)?.state, "READY");
   rights.suspend("https://publisher.example/feed", "episode", "rights holder review");
   assert.equal(beta.eligible("https://publisher.example/feed", "episode"), false, "a takedown always wins");
+  assert.equal(beta.purgeEpisode(identity.feedUrl, identity.episodeId).translations, 1);
 } finally { store.close(); }
 const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "translation-test-token" } });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));

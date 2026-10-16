@@ -706,7 +706,7 @@ export function createStarCastServer({
           return send(res, 200, { record });
         }
         const record = rights.markDeleted(input.feedUrl, input.episodeId, reason, { actor: "api-admin" });
-        const removed = pipeline.purgeEpisode(input.feedUrl, input.episodeId);
+        const removed = { ...pipeline.purgeEpisode(input.feedUrl, input.episodeId), ...translation.purgeEpisode(input.feedUrl, input.episodeId) };
         rights.audit("transcript-deleted", record.id, "api-admin", removed);
         return send(res, 200, { record, removed });
       }
