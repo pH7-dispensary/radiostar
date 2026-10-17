@@ -16,6 +16,12 @@ try {
   process.env.STARCAST_ADMIN_TOKEN = value.STARCAST_ADMIN_TOKEN;
   process.env.STARCAST_PAID_INTELLIGENCE = value.paidEnabled === true ? "enabled" : "disabled";
   process.env.STARCAST_AUDIO_TRANSCRIPTION = value.paidEnabled === true ? "enabled" : "disabled";
+  if (value.translationBeta === "INTERNAL_TESTING" && value.translationProvider === "aws") {
+    process.env.RADIOSTAR_TRANSLATE_BETA = "INTERNAL_TESTING";
+    process.env.RADIOSTAR_TRANSLATE_PROVIDER = "aws";
+    process.env.STARCAST_TRANSLATION_BUCKET = process.env.STARCAST_BACKUP_BUCKET;
+    process.env.AWS_REGION = "eu-west-2";
+  }
   if (value.processingQueueUrl) process.env.STARCAST_PROCESSING_QUEUE_URL = value.processingQueueUrl;
   if (value.followMonitorEnabled === true) process.env.STARCAST_FOLLOW_MONITOR = "enabled";
   if (value.approvedTestCorpusEnabled === true && /^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(value.testCorpusOrigin || "")) {

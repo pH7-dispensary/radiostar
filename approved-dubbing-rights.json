@@ -1,0 +1,21 @@
+{
+  "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+  "episodeId": "starcast-approved-test-episode-v1",
+  "publisher": "Star Cast",
+  "podcast": "Star Cast Approved Test Corpus",
+  "classification": "LICENSED",
+  "licence": "Star Cast-owned synthetic material for internal multilingual dubbing verification.",
+  "restrictions": "Internal testing only. No public distribution, voice cloning, or third-party source material.",
+  "canAcquireTranscript": true,
+  "canProcessForAi": true,
+  "canTranscribeAudio": false,
+  "canDisplayCaptions": true,
+  "canDisplayDerivedIntelligence": true,
+  "canRetain": true,
+  "canRegenerate": true,
+  "canTranslateText": true,
+  "canGenerateDubbedAudio": true,
+  "canCacheTranslatedAudio": true,
+  "canDistributeTranslation": true,
+  "canCloneSpeakerVoice": false
+}

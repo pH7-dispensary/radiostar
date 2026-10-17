@@ -15,7 +15,9 @@ const admin = existsSync(adminFile) ? JSON.parse(readFileSync(adminFile, "utf8")
 if (typeof connection.token !== "string" || connection.token.length < 32) throw Error("The private pilot token is invalid.");
 if (typeof admin.token !== "string" || admin.token.length < 32) throw Error("The administrator token is invalid.");
 const enable = process.argv.includes("--enable-paid");
+const enableTranslation = process.argv.includes("--enable-translation");
 if (enable && !existsSync(".starcast/cloud-authority.json")) throw Error("Local paid authority has not been transferred.");
+if (enableTranslation && !existsSync(".starcast/cloud-authority.json")) throw Error("Local paid authority has not been transferred.");
 const terraform = JSON.parse(execFileSync(".starcast/tools/terraform", ["-chdir=infra/aws", "output", "-json"], { encoding: "utf8" }));
 const queueUrl = terraform.processing_queue_url?.value;
 if (!/^https:\/\/sqs\.eu-west-2\.amazonaws\.com\/208096650030\/starcast-phase1-processing$/.test(queueUrl || ""))
@@ -30,6 +32,9 @@ try {
       STARCAST_DEV_INTELLIGENCE_TOKEN: connection.token,
       STARCAST_ADMIN_TOKEN: admin.token,
       paidEnabled: enable,
+      translationBeta: enableTranslation ? "INTERNAL_TESTING" : "DISABLED",
+      translationProvider: enableTranslation ? "aws" : "disabled",
+      translationBudget: enableTranslation ? { dailyUsd: 2, monthlyUsd: 10, maxSourceSeconds: 600 } : null,
       followMonitorEnabled: true,
       processingQueueUrl: queueUrl,
       approvedTestCorpusEnabled: true,
@@ -40,7 +45,7 @@ try {
   });
   writeFileSync(file, JSON.stringify(connection), { mode: 0o600 });
   writeFileSync(adminFile, JSON.stringify({ url: terraform.api_url?.value, token: admin.token }), { mode: 0o600 });
-  console.log({ storedInSecretsManager: true, paidEnabled: enable, queueEnabled: true, followMonitorEnabled: true, credentialPrinted: false });
+  console.log({ storedInSecretsManager: true, paidEnabled: enable, translationInternalTesting: enableTranslation, queueEnabled: true, followMonitorEnabled: true, credentialPrinted: false });
 } catch (error) {
   const diagnostic = String(error.stderr || "");
   const code = diagnostic.match(/An error occurred \(([A-Za-z0-9]+)\)/)?.[1] ||

@@ -81,6 +81,8 @@ resource "aws_iam_role_policy" "backend" {
     Statement = [
       { Effect = "Allow", Action = ["s3:GetObject"], Resource = ["${aws_s3_bucket.objects.arn}/releases/*", "${aws_s3_bucket.objects.arn}/seed/*"] },
       { Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/backups/*"] },
+      { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/translation-cache/*"] },
+      { Effect = "Allow", Action = ["polly:SynthesizeSpeech", "translate:TranslateText"], Resource = "*" },
       { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.backend.arn },
       { Effect = "Allow", Action = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes"], Resource = aws_sqs_queue.processing.arn },
       { Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.backend.arn}:*" }

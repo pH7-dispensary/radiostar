@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { transcriptRefsFromItem } from "./transcripts.mjs";
+import { parseVtt, transcriptRefsFromItem } from "./transcripts.mjs";
 import {
   BudgetLedger,
   defaultControls,
@@ -18,7 +18,7 @@ import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
-import { approvedTestCorpus } from "./approved-test-corpus.mjs";
+import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-corpus.mjs";
 import { subscriptionsFromEnv } from "./subscriptions.mjs";
 import { TranslationService, validLanguage } from "./translation.mjs";
 
@@ -285,7 +285,14 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline);
   const subscriptions = subscriptionsFromEnv(store, env);
-  const translation = new TranslationService({ rights, subscriptions, env });
+  const translation = new TranslationService({ rights, subscriptions, env, store });
+  const fixtureIdentity = () => {
+    const origin = String(env.STARCAST_TEST_CORPUS_ORIGIN || "").replace(/\/$/, "");
+    if (!/^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(origin)) throw Error("The owned translation fixture origin is unavailable.");
+    return { feedUrl: origin + approvedTestCorpus.feedPath, episodeId: approvedTestCorpus.episodeId,
+      audioVariant: "starcast-owned-source-v1", sourceLanguage: "en", targetLanguage: "pt",
+      voiceProfile: "polly-neural-pt-PT-Ines", translationVersion: "aws-v1", rightsVersion: "owned-fixture-v1" };
+  };
   const scheduleFollowedFeed = async (feedUrl) => {
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
@@ -570,6 +577,14 @@ export function createStarCastServer({
           return send(res, 200, subscriptions.config(listener));
         if (url.pathname === "/api/listener/translation" && req.method === "GET")
           return translation.visible(listener) ? send(res, 200, translation.config(listener)) : send(res, 404, { error: "Not found." });
+        if (url.pathname === "/api/listener/translation/audio" && req.method === "GET") {
+          if (!translation.visible(listener)) return send(res, 404, { error: "Not found." });
+          const identity = fixtureIdentity();
+          if (url.searchParams.get("feedUrl") !== identity.feedUrl || url.searchParams.get("episodeId") !== identity.episodeId)
+            return send(res, 404, { error: "Not found." });
+          const audioUrl = await translation.signedAudioUrl(identity);
+          return audioUrl ? send(res, 200, { audioUrl, identity, record: translation.cacheStatus(identity) }) : send(res, 404, { error: "No translated audio is ready." });
+        }
         if (req.method !== "POST")
           return send(res, 405, { error: "Method not allowed." });
         const input = await body(req);
@@ -678,6 +693,17 @@ export function createStarCastServer({
         if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
         const input = await body(req);
         return send(res, 200, { record: translation.setBetaAccess(input.listenerId, input.enabled, "api-admin") });
+      }
+      if (url.pathname === "/api/admin/translation/status" && req.method === "GET") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, translation.status());
+      }
+      if (url.pathname === "/api/admin/translation/fixture" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const input = await body(req), listenerId = String(input.listenerId || "");
+        if (!/^[0-9a-f-]{36}$/i.test(listenerId)) return send(res, 400, { error: "A private beta listener is required." });
+        const result = await translation.generateOwnedFixture({ listener: { id: listenerId }, identity: fixtureIdentity(), segments: parseVtt(approvedTestTranscriptVtt), sourceSeconds: 360 });
+        return send(res, result.cacheReuse ? 200 : 201, result);
       }
       if (url.pathname === "/api/admin/pilot/invites" && ["GET", "POST"].includes(req.method)) {
         if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { LocalStore } from "./persistence.mjs";
 import { ListenerService } from "./listener-service.mjs";
 import { RightsRegistry, RightsClassification } from "./rights-registry.mjs";
-import { TranslationService, TranslationBetaState, languageFor, translationControls, validAlignment } from "./translation.mjs";
+import { TranslationLedger, TranslationService, TranslationBetaState, languageFor, translationControls, validAlignment } from "./translation.mjs";
 import { createStarCastServer } from "./server.mjs";
 const store = new LocalStore(":memory:");
 try {
@@ -26,6 +26,13 @@ try {
   rights.suspend("https://publisher.example/feed", "episode", "rights holder review");
   assert.equal(beta.eligible("https://publisher.example/feed", "episode"), false, "a takedown always wins");
   assert.equal(beta.purgeEpisode(identity.feedUrl, identity.episodeId).translations, 1);
+  const translationLedger = new TranslationLedger({ store, controls: { dailyUsd: 2, monthlyUsd: 10, maxSourceSeconds: 600 } });
+  translationLedger.reserve({ id: "first", sourceSeconds: 360, translatedCharacters: 1000, synthesisedCharacters: 1300, provider: "test" });
+  assert.throws(() => translationLedger.reserve({ id: "too-long", sourceSeconds: 601, translatedCharacters: 1, synthesisedCharacters: 1, provider: "test" }), /private beta limits/);
+  assert.throws(() => translationLedger.reserve({ id: "first", sourceSeconds: 1, translatedCharacters: 1, synthesisedCharacters: 1, provider: "test" }), /already been reserved/);
+  translationLedger.reconcile("first", { status: "COMPLETE", actualCostUsd: null, costEstimated: true, audioDurationSeconds: 351 });
+  assert.equal(translationLedger.totals().dayUsd, 0.046);
+  assert.equal(translationControls({ RADIOSTAR_TRANSLATE_BETA: "INTERNAL_TESTING", RADIOSTAR_TRANSLATE_PROVIDER: "aws", STARCAST_TRANSLATION_BUCKET: "bucket", AWS_REGION: "eu-west-2" }).providerAvailable, true);
 } finally { store.close(); }
 const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "translation-test-token", STARCAST_ADMIN_TOKEN: "translation-admin-token", RADIOSTAR_TRANSLATE_BETA: "INTERNAL_TESTING" } });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));

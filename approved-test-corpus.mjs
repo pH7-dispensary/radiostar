@@ -13,7 +13,7 @@ const xml = (origin) => `<?xml version="1.0" encoding="UTF-8"?>
   </channel>
 </rss>`;
 
-const vtt = `WEBVTT
+export const approvedTestTranscriptVtt = `WEBVTT
 
 00:00.000 --> 01:00.000
 Ada: This is Star Cast-owned synthetic test material. I think an intelligent podcast listener should distinguish a publisher transcript from a generated summary and preserve where every claim came from.
@@ -42,7 +42,7 @@ export const approvedTestCorpus = Object.freeze({
     if (path === this.feedPath)
       return { type: "application/rss+xml; charset=utf-8", body: xml(origin) };
     if (path === this.transcriptPath)
-      return { type: "text/vtt; charset=utf-8", body: vtt };
+      return { type: "text/vtt; charset=utf-8", body: approvedTestTranscriptVtt };
     return null;
   },
 });
