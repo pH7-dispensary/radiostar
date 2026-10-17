@@ -16,22 +16,22 @@ const xml = (origin) => `<?xml version="1.0" encoding="UTF-8"?>
 const vtt = `WEBVTT
 
 00:00.000 --> 01:00.000
-This is Star Cast-owned synthetic test material. The speaker explains that an intelligent podcast listener should distinguish a publisher transcript from a generated summary and should preserve where every claim came from.
+Ada: This is Star Cast-owned synthetic test material. I think an intelligent podcast listener should distinguish a publisher transcript from a generated summary and preserve where every claim came from.
 
 01:00.000 --> 02:00.000
-The discussion says rights review comes before processing. A public RSS link alone is not permission to retain text, create captions, or generate analysis. The system should default to restriction until a documented assessment authorises the precise use.
+Bruno: I agree. Rights review comes before processing. A public RSS link alone is not permission to retain text, create captions, or generate analysis. The system should default to restriction until a documented assessment authorises the precise use.
 
 02:00.000 --> 03:00.000
-The speaker describes cost controls. A listener request may use a publisher transcript, but audio transcription requires explicit consent, a duration below the limit, an available budget, and a lawful source. Following a show is never permission to spend on audio.
+Ada: Cost controls matter too. A listener request may use a publisher transcript, but audio transcription requires explicit consent, a duration below the limit, an available budget, and a lawful source. Following a show is never permission to spend on audio.
 
 03:00.000 --> 04:00.000
-The conversation turns to search. A useful answer should cite the transcript segment that supports it, show a validated timestamp only when the source has timing, and state the limits of the processed corpus instead of pretending to search every podcast.
+Bruno: Search should cite the transcript segment that supports an answer, show a validated timestamp only when the source has timing, and state the limits of the processed corpus instead of pretending to search every podcast.
 
 04:00.000 --> 05:00.000
-The speaker says an advertisement skip is conservative by design. Candidate intervals can be reviewed, but automatic skipping remains off until compatible audio and real-world precision demonstrate that genuine conversation will not be removed.
+Ada: Advertisement skip is conservative by design. Candidate intervals can be reviewed, but automatic skipping remains off until compatible audio and real-world precision demonstrate that genuine conversation will not be removed.
 
 05:00.000 --> 06:00.000
-Finally, the discussion explains durable processing. A queue can preserve an explicit analysis request, while one writer keeps the spending ledger consistent. If a service restarts during paid work, uncertain provider outcomes stay charged and are not automatically retried.
+Bruno: Finally, durable processing matters. A queue can preserve an explicit analysis request, while one writer keeps the spending ledger consistent. If a service restarts during paid work, uncertain provider outcomes stay charged and are not automatically retried.
 `;
 
 export const approvedTestCorpus = Object.freeze({

@@ -8,5 +8,7 @@ assert.match(feed.type, /rss/);
 assert.match(feed.body, new RegExp(origin.replaceAll(".", "\\.") + approvedTestCorpus.transcriptPath));
 assert.match(transcript.type, /vtt/);
 assert.match(transcript.body, /rights review comes before processing/i);
+assert.match(transcript.body, /Ada:/);
+assert.match(transcript.body, /Bruno:/);
 assert.equal(approvedTestCorpus.response("/fixtures/unknown", origin), null);
 console.log("Approved Star Cast-owned test corpus contract passed");
