@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { listenerRequest } from "./listenerApi";
 import type { StarTheme } from "./design";
+import { usePlayback } from "./PlaybackProvider";
 
 type Language = { tag: string; label: string };
 type TranslationConfig = {
@@ -18,6 +19,7 @@ const deviceLanguage = () => {
 };
 
 export function TranslationPanel({ p }: { p: StarTheme }) {
+  const { play } = usePlayback();
   const [config, setConfig] = useState<TranslationConfig | null>(null);
   const [message, setMessage] = useState("Loading language preferences…");
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,22 @@ export function TranslationPanel({ p }: { p: StarTheme }) {
   }, []);
   const preference = config?.preference;
   const ready = config?.availability === "AVAILABLE";
+  const playOwnedVerification = () => {
+    setSaving(true);
+    void listenerRequest("/api/listener/translation/audio?" + new URLSearchParams({
+      feedUrl: "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+      episodeId: "starcast-approved-test-episode-v1",
+    }).toString())
+      .then((value) => {
+        const audioUrl = (value as { audioUrl?: unknown }).audioUrl;
+        if (typeof audioUrl !== "string") throw Error("Translated audio is unavailable.");
+        return play({ episodeId: "starcast-approved-test-episode-v1:pt-PT", url: audioUrl,
+          title: "Evidence and an intelligent listener", show: "Star Cast — Portuguese verification" });
+      })
+      .then(() => setMessage("Playing the rights-authorised Portuguese verification audio."))
+      .catch(() => setMessage("Translated audio is not ready. Original audio remains unchanged."))
+      .finally(() => setSaving(false));
+  };
   return <View style={{ gap: 10 }}>
     <View style={{ gap: 3 }}>
       <Text style={{ color: p.text, fontSize: 16, fontWeight: "700" }}>Radio Star Translate</Text>
@@ -78,6 +96,11 @@ export function TranslationPanel({ p }: { p: StarTheme }) {
           : config.availability === "PREPARING" ? "Preparing your language. Original audio remains available while translation is being tested."
           : config.entitlement.active ? "Your translated listening preference is ready." : "A verified Radio Star Translate subscription is required."}
       </Text>
+      {ready && preference?.listenInMyLanguage && <Pressable accessibilityRole="button" accessibilityLabel="Play Portuguese verification audio"
+        disabled={saving} onPress={playOwnedVerification}
+        style={{ minHeight: 46, justifyContent: "center", alignItems: "center", borderRadius: 14, backgroundColor: p.wash, borderWidth: 1, borderColor: p.accent2 }}>
+        <Text style={{ color: p.text, fontSize: 14, fontWeight: "800" }}>Play Portuguese verification audio</Text>
+      </Pressable>}
     </>}
   </View>;
 }
