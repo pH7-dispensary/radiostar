@@ -4,11 +4,6 @@
     "slug": "star-cast",
     "version": "1.0.0",
     "icon": "./assets/radio-star-icon.png",
-    "splash": {
-      "image": "./assets/radio-star-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#171320"
-    },
     "scheme": "starcast",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -29,6 +24,14 @@
         "expo-audio",
         {
           "enableBackgroundPlayback": true
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/radio-star-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#171320"
         }
       ],
       "expo-secure-store",
