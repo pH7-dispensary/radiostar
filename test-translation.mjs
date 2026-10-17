@@ -29,6 +29,7 @@ try {
   const translationLedger = new TranslationLedger({ store, controls: { dailyUsd: 2, monthlyUsd: 10, maxSourceSeconds: 600 } });
   translationLedger.reserve({ id: "first", sourceSeconds: 360, translatedCharacters: 1000, synthesisedCharacters: 1300, provider: "test" });
   assert.throws(() => translationLedger.reserve({ id: "too-long", sourceSeconds: 601, translatedCharacters: 1, synthesisedCharacters: 1, provider: "test" }), /private beta limits/);
+  assert.throws(() => translationLedger.reserve({ id: "over-budget", sourceSeconds: 1, translatedCharacters: 100000, synthesisedCharacters: 100000, provider: "test" }), /budget has been reached/);
   assert.throws(() => translationLedger.reserve({ id: "first", sourceSeconds: 1, translatedCharacters: 1, synthesisedCharacters: 1, provider: "test" }), /already been reserved/);
   translationLedger.reconcile("first", { status: "COMPLETE", actualCostUsd: null, costEstimated: true, audioDurationSeconds: 351 });
   assert.equal(translationLedger.totals().dayUsd, 0.046);
