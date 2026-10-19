@@ -10,7 +10,7 @@ assert.equal(service.can({ role: AdministratorRole.SUPPORT_AGENT }, "rights:writ
 assert.throws(() => service.setFeatureFlag({ id: "episodeBrief", state: "ENABLED", rolloutPercent: 100, reason: "test" }, { id: "root", name: "Root", role: AdministratorRole.SUPER_ADMIN }), /CONFIRM/);
 store.close();
 
-const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "device-token", STARCAST_ADMIN_TOKEN: "admin-token" } });
+const app = createStarCastServer({ store: new LocalStore(":memory:"), env: { NODE_ENV: "production", STARCAST_DEV_INTELLIGENCE_TOKEN: "device-token", STARCAST_ADMIN_TOKEN: "admin-token" } });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;
 try {
@@ -21,7 +21,7 @@ try {
   const login = await fetch(base + "/api/admin/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ adminToken: "admin-token" }) });
   assert.equal(login.status, 201);
   const cookies = login.headers.getSetCookie();
-  assert.equal(cookies.some((value) => /HttpOnly/.test(value) && /SameSite=Strict/.test(value)), true, "session is HttpOnly and same-site");
+  assert.equal(cookies.some((value) => /HttpOnly/.test(value) && /SameSite=Strict/.test(value) && /Secure/.test(value)), true, "production sessions are HttpOnly, same-site and secure");
   assert.equal((await login.json()).actor.role, "SUPER_ADMIN");
   const cookie = cookies.map((value) => value.split(";")[0]).join("; ");
   assert.equal((await fetch(base + "/api/admin/overview", { headers: { cookie } })).status, 200, "session may read permitted operations");

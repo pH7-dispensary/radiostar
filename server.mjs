@@ -380,7 +380,9 @@ export function createStarCastServer({
     attempts.push(now); adminLoginWindows.set(key, attempts);
     return true;
   };
-  const secureCookie = (req) => req.socket.encrypted || req.headers["x-forwarded-proto"] === "https";
+  // CloudFront terminates viewer TLS before its private HTTP origin, so the
+  // origin socket is not encrypted even though the browser connection is.
+  const secureCookie = (req) => env.NODE_ENV === "production" || req.socket.encrypted || req.headers["x-forwarded-proto"] === "https" || req.headers["cloudfront-forwarded-proto"] === "https";
   const adminCookie = (value, req, maxAge = 8 * 60 * 60) => `starcast_admin=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookie(req) ? "; Secure" : ""}`;
   const csrfCookie = (value, req, maxAge = 8 * 60 * 60) => `starcast_admin_csrf=${encodeURIComponent(value)}; Path=/; SameSite=Strict; Max-Age=${maxAge}${secureCookie(req) ? "; Secure" : ""}`;
   const issuePilotInvite = (input) => {
