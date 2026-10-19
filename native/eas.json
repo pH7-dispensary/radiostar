@@ -16,5 +16,12 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://d3ri12f40b85i3.cloudfront.net"
       }
     }
+  },
+  "submit": {
+    "testflight": {
+      "ios": {
+        "ascAppId": "6822706958"
+      }
+    }
   }
 }
