@@ -21,6 +21,7 @@ import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-corpus.mjs";
 import { subscriptionsFromEnv } from "./subscriptions.mjs";
 import { TranslationService, validLanguage } from "./translation.mjs";
+import { AdminService } from "./admin-service.mjs";
 
 export const decodeHtmlEntity = (value) =>
   String(value || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, token) => {
@@ -141,6 +142,11 @@ const staticFiles = new Map([
   ["/index.html", "index.html"],
   ["/styles.css", "styles.css"],
   ["/app.js", "app.js"],
+  ["/admin", "admin.html"],
+  ["/admin/", "admin.html"],
+  ["/admin.html", "admin.html"],
+  ["/admin.css", "admin.css"],
+  ["/admin.js", "admin.js"],
   ...[
     "playback",
     "playback-ui",
@@ -151,13 +157,6 @@ const staticFiles = new Map([
     "ad-skip",
   ].map((name) => ["/" + name + ".mjs", name + ".mjs"]),
 ]);
-const featureControls = Object.freeze({
-  episodeBriefs: true,
-  exploreEpisode: true,
-  momentSearch: true,
-  conversationSearch: true,
-  adSkip: false,
-});
 function send(res, status, body) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -192,6 +191,15 @@ export function createStarCastServer({
     store,
   );
   const rights = new RightsRegistry(store);
+  const adminService = new AdminService(store);
+  const featureEnabled = (id) => adminService.featureFlags().find((feature) => feature.id === id)?.state !== "DISABLED";
+  const listenerFeatures = () => ({
+    episodeBriefs: featureEnabled("episodeBrief"),
+    exploreEpisode: featureEnabled("smartChapters"),
+    momentSearch: featureEnabled("findMoment"),
+    conversationSearch: featureEnabled("conversationSearch"),
+    adSkip: false,
+  });
   const trusted = (req) => {
     const expected = env.STARCAST_DEV_INTELLIGENCE_TOKEN,
       received = req.headers["x-star-cast-dev-token"],
@@ -219,6 +227,17 @@ export function createStarCastServer({
       Buffer.byteLength(received) === Buffer.byteLength(expected) &&
       timingSafeEqual(Buffer.from(received), Buffer.from(expected))
     );
+  };
+  const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").split(/;\s*/).filter(Boolean).map((item) => {
+    const at = item.indexOf("=");
+    return at < 0 ? [item, ""] : [item.slice(0, at), decodeURIComponent(item.slice(at + 1))];
+  }));
+  const adminActor = (req, permission, { write = false } = {}) => {
+    const tokenActor = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, req.headers["x-star-cast-admin-token"]);
+    if (tokenActor) return tokenActor;
+    const cookie = cookies(req).starcast_admin;
+    const actor = adminService.authenticate(cookie, req.headers["x-star-cast-csrf"], { write });
+    return adminService.can(actor, permission) ? actor : null;
   };
   async function cached(key, fn, ttl = 300_000) {
     const hit = cache.get(key);
@@ -299,6 +318,7 @@ export function createStarCastServer({
       voiceProfile: "polly-neural-pt-PT-Ines", translationVersion: "aws-v1", rightsVersion: "owned-fixture-v1" };
   };
   const scheduleFollowedFeed = async (feedUrl) => {
+    if (!featureEnabled("automaticProcessing")) return { state: "DISABLED", code: "FEATURE_DISABLED" };
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
       .filter((item) => item.id)
@@ -321,6 +341,7 @@ export function createStarCastServer({
   }
   const captionWindows = new Map();
   const enrollmentWindows = new Map();
+  const adminLoginWindows = new Map();
   const captionRate = (listener) => {
     const now = Date.now();
     const windows = (captionWindows.get(listener.id) || []).filter((at) => now - at < 60_000);
@@ -352,6 +373,16 @@ export function createStarCastServer({
     enrollmentWindows.set(key, attempts);
     return true;
   };
+  const adminLoginRate = (req) => {
+    const key = req.socket.remoteAddress || "unknown", now = Date.now();
+    const attempts = (adminLoginWindows.get(key) || []).filter((at) => now - at < 15 * 60_000);
+    if (attempts.length >= 8) return false;
+    attempts.push(now); adminLoginWindows.set(key, attempts);
+    return true;
+  };
+  const secureCookie = (req) => req.socket.encrypted || req.headers["x-forwarded-proto"] === "https";
+  const adminCookie = (value, req, maxAge = 8 * 60 * 60) => `starcast_admin=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookie(req) ? "; Secure" : ""}`;
+  const csrfCookie = (value, req, maxAge = 8 * 60 * 60) => `starcast_admin_csrf=${encodeURIComponent(value)}; Path=/; SameSite=Strict; Max-Age=${maxAge}${secureCookie(req) ? "; Secure" : ""}`;
   const issuePilotInvite = (input) => {
     const maxUses = Math.max(1, Math.min(100, Math.floor(Number(input.maxUses) || 1)));
     const expiresAt = new Date(input.expiresAt || Date.now() + 30 * 86400_000);
@@ -417,8 +448,30 @@ export function createStarCastServer({
         const enrollment = enrollPilot(await body(req));
         return send(res, 201, enrollment);
       }
+      if (url.pathname === "/api/admin/session" && req.method === "POST") {
+        if (!adminLoginRate(req)) return send(res, 429, { error: "Too many administrator login attempts. Please wait before trying again." });
+        const input = await body(req);
+        const actor = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
+        if (!actor) return send(res, 401, { error: "Administrator authentication failed." });
+        const session = adminService.startSession(actor);
+        res.setHeader("set-cookie", [adminCookie(session.id, req), csrfCookie(session.csrf, req)]);
+        return send(res, 201, { actor, permissions: adminService.permissionsFor(actor.role), expiresAt: session.expiresAt });
+      }
+      if (url.pathname === "/api/admin/session" && req.method === "GET") {
+        const actor = adminActor(req, "overview:read");
+        if (!actor) return send(res, 401, { error: "Administrator authentication is required." });
+        return send(res, 200, { actor, permissions: adminService.permissionsFor(actor.role) });
+      }
+      if (url.pathname === "/api/admin/session" && req.method === "DELETE") {
+        const actor = adminActor(req, "overview:read", { write: true });
+        if (!actor) return send(res, 403, { error: "A valid administrator session and CSRF token are required." });
+        adminService.revokeSession(cookies(req).starcast_admin, actor);
+        res.setHeader("set-cookie", [adminCookie("", req, 0), csrfCookie("", req, 0)]);
+        return send(res, 200, { revoked: true });
+      }
       const corpus = testCorpusEnabled && testCorpusOrigin && approvedTestCorpus.response(url.pathname, testCorpusOrigin);
-      if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !corpus && req.method !== "OPTIONS" && !trusted(req))
+      const isAdminSurface = url.pathname === "/admin" || url.pathname.startsWith("/admin.") || url.pathname.startsWith("/api/admin/");
+      if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !isAdminSurface && !corpus && req.method !== "OPTIONS" && !trusted(req))
         return send(res, 403, { error: "Your private-beta access has expired or been revoked. Reconnect with a new invitation.", code: "DEVICE_UNAUTHORISED" });
       if (
         req.headers.origin &&
@@ -482,6 +535,7 @@ export function createStarCastServer({
               ? "text/html"
               : "text/javascript",
           "x-content-type-options": "nosniff",
+          ...(file.startsWith("admin") ? { "cache-control": "no-store", "content-security-policy": "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self'" } : {}),
         });
         return res.end(req.method === "HEAD" ? undefined : data);
       }
@@ -495,7 +549,7 @@ export function createStarCastServer({
           backend: "ready",
           openai: openAIStatus(env),
           persistence: "sqlite",
-          features: featureControls,
+          features: listenerFeatures(),
           providerVerified: ledger.usage.some(
             (x) => !x.failed && !x.uncertain && x.kind === "text",
           ),
@@ -533,12 +587,12 @@ export function createStarCastServer({
           });
         }
       }
-      if (!trusted(req))
+      if (!trusted(req) && !url.pathname.startsWith("/api/admin/"))
         return send(res, 403, {
           error: "Analysis requires an authorised Star Cast device.",
           code: "DEVICE_UNAUTHORISED",
         });
-      if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|captions|reports|admin)(\/|$)/.test(url.pathname)) {
+      if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|captions|reports)(\/|$)/.test(url.pathname)) {
         const payload = req.method === "POST" ? await body(req) : undefined;
         const upstream = await fetch(env.STARCAST_CLOUD_API_URL + url.pathname + url.search, {
           method: req.method,
@@ -675,15 +729,42 @@ export function createStarCastServer({
         if (!listener) return send(res, 401, { error: "Reconnect your listener profile to continue." });
         return send(res, 200, listeners.reportProblem(listener, await body(req)));
       }
+      if (url.pathname === "/api/admin/overview" && req.method === "GET") {
+        if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
+        ledger.refresh();
+        return send(res, 200, adminService.overview({ ledger, pipeline, rights, translation }));
+      }
+      if (url.pathname === "/api/admin/configuration" && ["GET", "POST"].includes(req.method)) {
+        const actor = adminActor(req, req.method === "GET" ? "configuration:read" : "configuration:write", { write: req.method === "POST" });
+        if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
+        if (req.method === "GET") return send(res, 200, { configuration: adminService.configuration() });
+        return send(res, 200, { configuration: adminService.setConfiguration(await body(req), actor) });
+      }
+      if (url.pathname === "/api/admin/features" && ["GET", "POST"].includes(req.method)) {
+        const actor = adminActor(req, req.method === "GET" ? "features:read" : "features:write", { write: req.method === "POST" });
+        if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
+        if (req.method === "GET") return send(res, 200, { features: adminService.featureFlags() });
+        return send(res, 200, { feature: adminService.setFeatureFlag(await body(req), actor) });
+      }
+      if (url.pathname === "/api/admin/audit" && req.method === "GET") {
+        if (!adminActor(req, "audit:read")) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, { events: adminService.audit({ limit: url.searchParams.get("limit") }) });
+      }
+      if (url.pathname === "/api/admin/administrators" && ["GET", "POST"].includes(req.method)) {
+        const actor = adminActor(req, req.method === "GET" ? "administrators:read" : "administrators:write", { write: req.method === "POST" });
+        if (!actor) return send(res, 403, { error: "Super administrator access and CSRF validation are required." });
+        if (req.method === "GET") return send(res, 200, { administrators: adminService.members() });
+        return send(res, 201, { administrator: adminService.addMember(await body(req), actor) });
+      }
       if (url.pathname === "/api/admin/intelligence" && req.method === "GET") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
         ledger.refresh();
         return send(res, 200, {
           controls: {
             ...ledger.controls,
             audioAnalysisEnabled: pipeline.audioEnabled,
           },
-          features: featureControls,
+          features: listenerFeatures(),
           usage: ledger.usage,
           reservations: [...ledger.reservations.values()],
           totals: ledger.totals(),
@@ -691,55 +772,64 @@ export function createStarCastServer({
         });
       }
       if (url.pathname === "/api/admin/rights" && ["GET", "POST"].includes(req.method)) {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const actor = adminActor(req, req.method === "GET" ? "rights:read" : "rights:write", { write: req.method === "POST" });
+        if (!actor) return send(res, 403, { error: "Rights administrator access is required." });
         if (req.method === "GET") return send(res, 200, { records: rights.list() });
-        const record = rights.set(await body(req), { actor: "api-admin" });
-        rights.audit("rights-assessment", record.id, "api-admin");
+        const record = rights.set(await body(req), { actor: actor.id });
+        rights.audit("rights-assessment", record.id, actor.id);
         return send(res, 200, { record });
       }
       if (url.pathname === "/api/admin/rights/control-centre" && req.method === "GET") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Rights administrator access is required." });
         return send(res, 200, rights.controlCentre());
       }
       if (url.pathname === "/api/admin/rights/policy" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
-        const policy = rights.setPolicy(await body(req), { actor: "api-admin" });
-        rights.audit("rights-policy-changed", "global", "api-admin", { policyVersion: policy.version, mode: policy.mode });
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
+        const policy = rights.setPolicy(await body(req), { actor: actor.id });
+        rights.audit("rights-policy-changed", "global", actor.id, { policyVersion: policy.version, mode: policy.mode });
+        adminService.appendAudit({ actor, action: "rights-policy-changed", resource: "global", newState: { mode: policy.mode, version: policy.version }, outcome: "ALLOWED" });
         return send(res, 200, { policy });
       }
       if (url.pathname === "/api/admin/rights/override" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
-        const override = rights.setOverride(await body(req), { actor: "api-admin" });
-        rights.audit("rights-policy-override", override.id, "api-admin", { scope: override.episodeId ? "episode" : "publisher" });
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
+        const override = rights.setOverride(await body(req), { actor: actor.id });
+        rights.audit("rights-policy-override", override.id, actor.id, { scope: override.episodeId ? "episode" : "publisher" });
         return send(res, 200, { override });
       }
       if (url.pathname === "/api/admin/rights/suspend" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
         const input = await body(req);
         if (!publicUrl(input.feedUrl) || (input.episodeId !== undefined && (typeof input.episodeId !== "string" || !input.episodeId || input.episodeId.length > 2000))) return send(res, 400, { error: "A valid publisher feed and optional episode are required." });
-        const record = rights.suspend(input.feedUrl, input.episodeId || "", input.reason, { actor: "api-admin" });
+        const record = rights.suspend(input.feedUrl, input.episodeId || "", input.reason, { actor: actor.id });
         const removed = input.episodeId ? { ...pipeline.purgeEpisode(input.feedUrl, input.episodeId), ...translation.purgeEpisode(input.feedUrl, input.episodeId) } : { ...pipeline.purgeFeed(input.feedUrl), ...translation.purgeFeed(input.feedUrl) };
-        rights.audit("rights-immediate-suspension", record.id, "api-admin", { scope: input.episodeId ? "episode" : "publisher", removed });
+        rights.audit("rights-immediate-suspension", record.id, actor.id, { scope: input.episodeId ? "episode" : "publisher", removed });
+        adminService.appendAudit({ actor, action: "rights-immediate-suspension", resource: record.id, reason: input.reason, outcome: "ALLOWED" });
         return send(res, 200, { record, removed });
       }
       if (url.pathname === "/api/admin/translation/beta" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const actor = adminActor(req, "translation:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
         const input = await body(req);
-        return send(res, 200, { record: translation.setBetaAccess(input.listenerId, input.enabled, "api-admin") });
+        const record = translation.setBetaAccess(input.listenerId, input.enabled, actor.id);
+        adminService.appendAudit({ actor, action: input.enabled ? "translation-beta-authorised" : "translation-beta-revoked", resource: input.listenerId, outcome: "ALLOWED" });
+        return send(res, 200, { record });
       }
       if (url.pathname === "/api/admin/translation/status" && req.method === "GET") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, "translation:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, translation.status());
       }
       if (url.pathname === "/api/admin/translation/fixture" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, "translation:write", { write: true })) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
         const input = await body(req), listenerId = String(input.listenerId || "");
         if (!/^[0-9a-f-]{36}$/i.test(listenerId)) return send(res, 400, { error: "A private beta listener is required." });
         const result = await translation.generateOwnedFixture({ listener: { id: listenerId }, identity: fixtureIdentity(), segments: parseVtt(approvedTestTranscriptVtt), sourceSeconds: 360 });
         return send(res, result.cacheReuse ? 200 : 201, result);
       }
       if (url.pathname === "/api/admin/pilot/invites" && ["GET", "POST"].includes(req.method)) {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, req.method === "GET" ? "listeners:read" : "listeners:write", { write: req.method === "POST" })) return send(res, 403, { error: "Administrator access is required." });
         if (req.method === "GET") return send(res, 200, {
           invites: store.all("pilot-invite").map(([, value]) => ({ ...value, codeHash: undefined })),
           devices: store.all("pilot-device").map(([, value]) => value),
@@ -748,31 +838,35 @@ export function createStarCastServer({
         return send(res, 201, issued);
       }
       if (url.pathname === "/api/admin/pilot/devices/revoke" && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const actor = adminActor(req, "listeners:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Administrator access is required." });
         const input = await body(req);
         const device = store.get("pilot-device", input.deviceId);
         if (!device) return send(res, 404, { error: "Pilot device not found." });
         const revoked = { ...device, revokedAt: new Date().toISOString() };
         store.set("pilot-device", revoked.id, revoked);
+        adminService.appendAudit({ actor, action: "pilot-device-revoked", resource: revoked.id, outcome: "ALLOWED" });
         return send(res, 200, { device: revoked });
       }
       if (url.pathname === "/api/admin/reports" && req.method === "GET") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        if (!adminActor(req, "support:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, { reports: store.all("problem-report").map(([, value]) => value) });
       }
       if (["/api/admin/transcripts/suspend", "/api/admin/transcripts/delete"].includes(url.pathname) && req.method === "POST") {
-        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
         const input = await body(req);
         if (!valid(input)) return send(res, 400, { error: "A valid publisher episode is required." });
         const reason = typeof input.reason === "string" ? input.reason : "Administrative rights review.";
         if (url.pathname.endsWith("/suspend")) {
-          const record = rights.suspend(input.feedUrl, input.episodeId, reason, { actor: "api-admin" });
-          rights.audit("transcript-suspended", record.id, "api-admin");
+          const record = rights.suspend(input.feedUrl, input.episodeId, reason, { actor: actor.id });
+          rights.audit("transcript-suspended", record.id, actor.id);
           return send(res, 200, { record });
         }
-        const record = rights.markDeleted(input.feedUrl, input.episodeId, reason, { actor: "api-admin" });
+        const record = rights.markDeleted(input.feedUrl, input.episodeId, reason, { actor: actor.id });
         const removed = { ...pipeline.purgeEpisode(input.feedUrl, input.episodeId), ...translation.purgeEpisode(input.feedUrl, input.episodeId) };
-        rights.audit("transcript-deleted", record.id, "api-admin", removed);
+        rights.audit("transcript-deleted", record.id, actor.id, removed);
+        adminService.appendAudit({ actor, action: "transcript-deleted", resource: record.id, reason, outcome: "ALLOWED" });
         return send(res, 200, { record, removed });
       }
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
@@ -787,17 +881,19 @@ export function createStarCastServer({
               reason: decision.reason,
               transcriptAvailable: false,
             },
-            features: featureControls,
+            features: listenerFeatures(),
           });
         return send(res, 200, {
           status: publicIntelligence(pipeline.status(feed, id)),
-          features: featureControls,
+          features: listenerFeatures(),
         });
       }
       if (req.method !== "POST")
         return send(res, 405, { error: "Method not allowed." });
       const input = await body(req);
       if (url.pathname === "/api/search/conversations") {
+        if (!featureEnabled(input.mode === "Moments" ? "findMoment" : "conversationSearch"))
+          return send(res, 403, { error: "This search feature is currently unavailable.", code: "FEATURE_DISABLED" });
         if (
           typeof input.query !== "string" ||
           input.query.trim().length < 2 ||
@@ -837,6 +933,9 @@ export function createStarCastServer({
         const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         if (!decision.allowed)
           return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: decision.reason, retryable: false } });
+        const featureForCapability = { brief: "episodeBrief", chapters: "smartChapters", moment: "findMoment" };
+        if (!featureEnabled(featureForCapability[input.capability]))
+          return send(res, 200, { status: { state: "BLOCKED", code: "FEATURE_DISABLED", reason: "This feature is currently unavailable.", retryable: false } });
         const status = await pipeline.request({
           ...input,
           allowAudio: input.allowAudio === true,
@@ -846,6 +945,7 @@ export function createStarCastServer({
         return send(res, status.state === "QUEUED" ? 202 : 200, { status });
       }
       if (url.pathname === "/api/intelligence/moment") {
+        if (!featureEnabled("findMoment")) return send(res, 403, { error: "This feature is currently unavailable.", code: "FEATURE_DISABLED" });
         if (
           typeof input.query !== "string" ||
           input.query.trim().length < 2 ||

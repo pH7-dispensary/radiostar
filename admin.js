@@ -1,0 +1,83 @@
+const root = document.querySelector("#app");
+let state = { view: "overview" };
+const navigation = [["overview", "Overview"], ["features", "Feature flags"], ["rights", "Rights"], ["intelligence", "Intelligence"], ["translate", "Translate"], ["costs", "Costs"], ["audit", "Audit log"], ["settings", "Settings"]];
+const html = (value) => String(value ?? "—").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+const when = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not recorded";
+const csrf = () => document.cookie.split("; ").find((item) => item.startsWith("starcast_admin_csrf="))?.slice("starcast_admin_csrf=".length) || "";
+const api = async (path, options = {}) => {
+  const response = await fetch(path, { credentials: "same-origin", ...options, headers: { ...(options.body ? { "content-type": "application/json", "x-star-cast-csrf": csrf() } : {}), ...(options.headers || {}) } });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw Error(payload.error || `Request failed (${response.status}).`);
+  return payload;
+};
+const label = (value) => String(value || "UNAVAILABLE").replaceAll("_", " ");
+const badge = (value) => {
+  const text = String(value || "UNAVAILABLE");
+  const kind = /READY|ALLOWED|ENABLED|APPROVED/.test(text) ? "ok" : /BLOCK|FAIL|SUSPEND|REJECT|UNAVAILABLE/.test(text) ? "stop" : /QUEUE|PROCESS|PENDING|LITE|MEDIUM/.test(text) ? "warn" : "purple";
+  return `<span class="badge ${kind}">${html(label(text))}</span>`;
+};
+const notify = (message) => { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.textContent = message; document.body.append(toast); setTimeout(() => toast.remove(), 4000); };
+const card = (name, value, note) => `<article class="card"><div class="label">${html(name)}</div><div class="metric">${html(value)}</div><div class="note">${html(note)}</div></article>`;
+
+function login(error = "") {
+  root.innerHTML = `<section class="login"><form class="login-card" id="login"><div class="brand">RADIO STAR / OPERATIONS</div><h1>Control Centre</h1><p>Secure access for the Radio Star operations team. The supplied credential is exchanged for a short-lived protected session and is never retained by the browser.</p><label>Administrator credential<input type="password" name="adminToken" autocomplete="current-password" required autofocus></label><button class="primary">Sign in securely</button>${error ? `<div class="error">${html(error)}</div>` : ""}<div class="helper">Server-side roles, SameSite cookies, CSRF validation, login rate limiting and audit logging are enforced by the backend.</div></form></section>`;
+  document.querySelector("#login").onsubmit = async (event) => {
+    event.preventDefault(); const form = event.currentTarget; const button = form.querySelector("button"); button.disabled = true;
+    try { await api("/api/admin/session", { method: "POST", body: JSON.stringify({ adminToken: new FormData(form).get("adminToken") }) }); form.reset(); await initialise(); }
+    catch (err) { login(err.message); }
+  };
+}
+
+async function load(view = state.view) {
+  const paths = { overview: "/api/admin/overview", features: "/api/admin/features", rights: "/api/admin/rights/control-centre", intelligence: "/api/admin/intelligence", translate: "/api/admin/translation/status", costs: "/api/admin/intelligence", audit: "/api/admin/audit?limit=100", settings: "/api/admin/configuration" };
+  state[view] = await api(paths[view]);
+}
+async function initialise() {
+  try { state.session = await api("/api/admin/session"); await load(); render(); }
+  catch { login(); }
+}
+function page(title, copy, body) {
+  root.innerHTML = `<div class="shell"><aside class="sidebar"><div class="brand">RADIO STAR</div><h1>Control Centre</h1><small>Server-authoritative operations</small><nav class="nav">${navigation.map(([id, name]) => `<button data-view="${id}" ${state.view === id ? 'aria-current="page"' : ""}>${name}</button>`).join("")}</nav><div class="sidebar-foot">Signed in as <strong>${html(state.session.actor.name)}</strong><br>${html(state.session.actor.role)}<br><button class="sign-out" id="logout">Sign out</button></div></aside><section class="content"><header class="topline"><div><div class="eyebrow">${html(title)}</div><h2>${html(title)}</h2><p>${html(copy)}</p></div><div class="identity"><strong>${html(state.session.actor.name)}</strong>${html(state.session.actor.role)}</div></header>${body}</section></div>`;
+  document.querySelectorAll("[data-view]").forEach((button) => button.onclick = async () => { state.view = button.dataset.view; try { await load(); render(); } catch (err) { notify(err.message); } });
+  document.querySelector("#logout").onclick = async () => { try { await api("/api/admin/session", { method: "DELETE", body: "{}" }); } finally { state = { view: "overview" }; login(); } };
+}
+
+function overview() {
+  const d = state.overview;
+  const body = `<div class="banner">${html(d.infrastructure.reason)}</div><div class="grid">${card("Listeners", d.listeners.total, "Measured anonymous profiles")}${card("Intelligence ready", d.intelligence.READY, "Authorised completed jobs")}${card("In progress", d.intelligence.QUEUED + d.intelligence.PROCESSING, "Queue and active processing")}${card("Rights records", d.rights.records, "Publisher and episode assessments")}</div><div class="split"><section class="panel"><div class="panel-head"><div><h3>Processing operations</h3><p>Current backend records; no estimated progress is invented.</p></div>${badge(d.rights.policy?.mode)}</div><div class="grid compact-grid">${card("Queued", d.intelligence.QUEUED, "")}${card("Processing", d.intelligence.PROCESSING, "")}${card("Failed", d.intelligence.FAILED, "")}${card("Restricted", d.intelligence.BLOCKED, "")}${card("Transcript records", d.operations.transcriptRecords, "")}${card("Open support", d.listeners.reportsOpen, "")}</div></section><section class="panel"><h3>Cost safeguards</h3><p>Server-side limits remain independent from monitoring alerts.</p><div class="actions small">Daily AI ceiling: <strong>$${html(d.intelligence.budget?.controls.dailyUsd ?? "—")}</strong><br>Monthly AI ceiling: <strong>$${html(d.intelligence.budget?.controls.monthlyUsd ?? "—")}</strong></div></section></div>`;
+  page("Overview", "Measured operational state across persisted server records.", body);
+}
+
+function features() {
+  const rows = state.features.features.map((feature) => `<tr><td><strong>${html(feature.name)}</strong><br><span class="muted small">${html(feature.environment)}</span></td><td>${badge(feature.state)}</td><td>${html(feature.rolloutPercent)}%</td><td>${feature.dependencies.map(html).join(" · ")}</td><td>${when(feature.updatedAt)}<br><span class="muted small">${html(feature.updatedBy)}</span></td><td><button class="secondary" data-flag="${html(feature.id)}">Change</button></td></tr>`).join("");
+  page("Feature flags", "Controlled rollouts. Flags never override rights, authentication, budgets or Ad Skip safety gates.", `<section class="panel"><div class="table-wrap"><table><thead><tr><th>Feature</th><th>State</th><th>Rollout</th><th>Dependencies</th><th>Last modification</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section><section id="editor" class="panel" hidden></section>`);
+  document.querySelectorAll("[data-flag]").forEach((button) => button.onclick = () => flagEditor(state.features.features.find((feature) => feature.id === button.dataset.flag)));
+}
+function flagEditor(feature) {
+  const target = document.querySelector("#editor"); target.hidden = false;
+  target.innerHTML = `<h3>Change ${html(feature.name)}</h3><p>High-impact state changes require a reason and CONFIRM. Independent server checks still apply.</p><form id="flag-form"><div class="form-grid"><label>State<select name="state">${["DISABLED", "INTERNAL_TESTING", "PRIVATE_BETA", "ENABLED"].map((name) => `<option ${name === feature.state ? "selected" : ""}>${name}</option>`).join("")}</select></label><label>Rollout percentage<input name="rolloutPercent" type="number" min="0" max="100" value="${html(feature.rolloutPercent)}"></label></div><label>Eligibility rules<input name="eligibilityRules" value="${html(feature.eligibilityRules || "")}" placeholder="Optional server-enforced rule summary"></label><label>Reason<textarea name="reason" required></textarea></label><label>Confirmation<input name="confirmation" placeholder="Type CONFIRM for enabled or disabled changes" required></label><div class="actions"><button class="primary">Save controlled change</button></div></form>`;
+  document.querySelector("#flag-form").onsubmit = async (event) => { event.preventDefault(); const input = Object.fromEntries(new FormData(event.currentTarget)); input.id = feature.id; input.rolloutPercent = Number(input.rolloutPercent); try { await api("/api/admin/features", { method: "POST", body: JSON.stringify(input) }); notify("Feature control updated and audited."); await load("features"); render(); } catch (err) { notify(err.message); } };
+}
+
+function rights() {
+  const d = state.rights;
+  const body = `<div class="grid">${card("Current policy", d.policy.mode, `Policy v${d.policy.version}`)}${card("Rights records", d.records.length, "Assessed content")}${card("Reservations", d.reservations.length, "Explicit restrictions")}${card("Takedowns", d.takedowns.length, "Suspended or removed")}</div><div class="split"><section class="panel"><h3>Enforcement policy</h3><p>OFF disables optional product restrictions only. Legal restrictions, explicit reservations, disputes and takedowns remain mandatory.</p><div class="actions">${badge(d.policy.mode)} <span class="small muted">Last changed ${when(d.policy.updatedAt)} by ${html(d.policy.updatedBy)}</span></div></section><section class="panel"><h3>Recent rights decisions</h3>${d.audit.length ? `<div class="table-wrap"><table><thead><tr><th>Decision</th><th>Feature</th><th>Reason</th></tr></thead><tbody>${d.audit.slice(0, 6).map((event) => `<tr><td>${badge(event.decision)}</td><td>${html(event.feature)}</td><td>${html(event.code)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No rights evaluations have been recorded.</div>`}</section></div>`;
+  page("Rights Control Centre", "Policy, reservations and takedowns remain server authoritative.", body);
+}
+
+function intelligence() {
+  const d = state.intelligence;
+  const body = `<div class="grid">${card("Jobs", d.jobs.length, "Persisted intelligence jobs")}${card("Daily cap", `$${d.controls.dailyUsd}`, "Hard server limit")}${card("Monthly cap", `$${d.controls.monthlyUsd}`, "Hard server limit")}${card("Audio analysis", d.controls.audioAnalysisEnabled ? "Enabled" : "Disabled", "Consent still required")}</div><section class="panel"><h3>Processing queue</h3><p>Only recorded jobs are shown. Retry and invalidation are withheld until their rights and cost revalidation path is complete.</p>${d.jobs.length ? `<div class="table-wrap"><table><thead><tr><th>Episode</th><th>State</th><th>Transcript</th><th>Updated</th></tr></thead><tbody>${d.jobs.slice(0, 50).map((job) => `<tr><td>${html(job.episodeId)}</td><td>${badge(job.state)}</td><td>${html(job.transcript?.provenance || "Not recorded")}</td><td>${when(job.updatedAt)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No processing jobs have been recorded.</div>`}</section>`;
+  page("Intelligence operations", "Queue and budget records from the existing backend.", body);
+}
+function translate() { page("Private Translate", "Internal beta only. Public translation and subscription billing remain disabled.", `<section class="panel"><h3>Private translation status</h3><p>Rights permissions and separate translation budgets are enforced server-side.</p><pre class="data">${html(JSON.stringify(state.translate, null, 2))}</pre></section>`); }
+function costs() { const d = state.costs; page("Costs", "Separate ledger controls and truthful availability states.", `<div class="banner">AWS monitoring is unavailable until a scoped server-side CloudWatch integration is deployed. Browser credentials are never exposed.</div><div class="grid">${card("AI daily ceiling", `$${d.controls.dailyUsd}`, "Hard processing limit")}${card("AI monthly ceiling", `$${d.controls.monthlyUsd}`, "Hard processing limit")}${card("Audio hours / day", d.controls.dailyTranscriptionSeconds / 3600, "Hard processing limit")}${card("Maximum episode", `${d.controls.maxEpisodeSeconds / 3600}h`, "Hard processing limit")}</div><section class="panel"><h3>Recorded usage</h3><p>Only actual provider usage and reservations are reported; no spend estimate is fabricated.</p><pre class="data">${html(JSON.stringify(d.totals, null, 2))}</pre></section>`); }
+function audit() { const events = state.audit.events; page("Audit log", "Server-side history with integrity linkage. Ordinary administrators cannot alter events.", `<section class="panel">${events.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead><tbody>${events.map((event) => `<tr><td>${when(event.at)}</td><td>${html(event.actor?.name || "system")}<br><span class="muted small">${html(event.actor?.role || "")}</span></td><td>${html(event.action)}</td><td>${html(event.resource)}</td><td>${badge(event.outcome)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No administrative events yet.</div>`}</section>`); }
+function settings() {
+  const c = state.settings.configuration;
+  const body = `<div class="split"><section class="panel"><h3>Application configuration</h3><p>Changes are versioned, reasoned, confirmed and audited. Secrets do not appear here.</p><form id="configuration"><label>Automatic preparation of eligible followed podcasts<select name="automaticFollowPreparation"><option value="true" ${c.values.processing.automaticFollowPreparation ? "selected" : ""}>Enabled</option><option value="false" ${!c.values.processing.automaticFollowPreparation ? "selected" : ""}>Disabled</option></select></label><label>Reason<textarea name="reason" required></textarea></label><label>Confirmation<input name="confirmation" placeholder="Type CONFIRM" required></label><div class="actions"><button class="primary">Save configuration</button></div></form></section><section class="panel"><h3>Current version</h3><div class="metric">${c.version}</div><p>Last updated ${when(c.updatedAt)} by ${html(c.updatedBy)}.</p><p class="small muted">Rights policy, spending controls, feature flags and credentials retain independent authority boundaries.</p></section></div>`;
+  page("Settings", "Global configuration with confirmation and audit history.", body);
+  document.querySelector("#configuration").onsubmit = async (event) => { event.preventDefault(); const form = Object.fromEntries(new FormData(event.currentTarget)); const input = { expectedVersion: c.version, reason: form.reason, confirmation: form.confirmation, values: { processing: { automaticFollowPreparation: form.automaticFollowPreparation === "true" } } }; try { await api("/api/admin/configuration", { method: "POST", body: JSON.stringify(input) }); notify("Configuration saved and audited."); await load("settings"); render(); } catch (err) { notify(err.message); } };
+}
+function render() { ({ overview, features, rights, intelligence, translate, costs, audit, settings }[state.view] || overview)(); }
+initialise();
