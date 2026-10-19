@@ -270,14 +270,17 @@ export class RightsRegistry {
   }
   controlCentre() {
     const audits = this.store.all("rights-policy-audit").map(([, value]) => value).sort((a, b) => b.at - a.at).slice(0, 500);
+    const records = this.list();
     return {
       policy: this.policy(),
       overrides: this.store.all("rights-policy-override").map(([, value]) => value),
-      records: this.list(),
+      records,
       metrics: this.store.all("rights-policy-metric").map(([, value]) => value),
-      assessments: this.list().map((record) => ({ id: record.id, feedUrl: record.feedUrl, episodeId: record.episodeId, publisher: record.publisher, classification: record.classification, assessmentStatus: record.assessmentStatus || RightsAssessmentStatus.UNASSESSED, legalBasis: record.legalBasis || null, explicitAuthorisation: record.explicitAuthorisation === true, rightsReserved: record.rightsReserved === true, updatedAt: record.updatedAt })),
-      takedowns: this.list().filter((record) => record.suspendedAt || record.deletedAt),
+      assessments: records.map((record) => ({ id: record.id, feedUrl: record.feedUrl, episodeId: record.episodeId, publisher: record.publisher, classification: record.classification, assessmentStatus: record.assessmentStatus || RightsAssessmentStatus.UNASSESSED, legalBasis: record.legalBasis || null, explicitAuthorisation: record.explicitAuthorisation === true, rightsReserved: record.rightsReserved === true, updatedAt: record.updatedAt })),
+      reservations: records.filter((record) => record.rightsReserved === true),
+      takedowns: records.filter((record) => record.suspendedAt || record.deletedAt),
       audit: audits,
+      auditHistory: this.store.all("rights-audit").map(([, value]) => value).sort((a, b) => b.at - a.at).slice(0, 500),
       policyHistory: this.store.all("rights-policy-history").map(([, value]) => value).sort((a, b) => b.at - a.at).slice(0, 500),
     };
   }

@@ -23,6 +23,8 @@ try {
   assert.equal(centre.status, 200);
   assert.equal(body.policy.mode, "LITE");
   assert.equal(body.overrides[0].mode, "MEDIUM");
+  assert.deepEqual(body.reservations, []);
+  assert.equal(Array.isArray(body.auditHistory), true);
   assert.equal(body.policyHistory.length >= 2, true, "policy and override changes have durable history");
   const suspended = await post("/api/admin/rights/suspend", { feedUrl, reason: "Rights holder review" });
   assert.equal(suspended.status, 200);
