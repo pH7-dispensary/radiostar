@@ -266,7 +266,7 @@ export class RightsRegistry {
     return deleted;
   }
   list() {
-    return this.store.all("rights").map(([, value]) => value);
+    return this.store.all("rights").map(([, value]) => normaliseRecord(value));
   }
   controlCentre() {
     const audits = this.store.all("rights-policy-audit").map(([, value]) => value).sort((a, b) => b.at - a.at).slice(0, 500);
