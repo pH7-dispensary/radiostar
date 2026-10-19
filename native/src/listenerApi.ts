@@ -23,6 +23,15 @@ export type ListenerSummary = {
   enforcement: boolean;
   verificationAvailable: boolean;
 };
+export type FollowResult = {
+  following: boolean;
+  feedUrl: string;
+  processing?: {
+    state: "READY" | "PARTIAL_READY" | "QUEUED" | "PROCESSING" | "UNAVAILABLE" | "BLOCKED" | "DISABLED" | "FAILED";
+    code?: string;
+    reason?: string;
+  };
+};
 let connection: Promise<string> | null = null;
 let deleting = false;
 export function resetListenerConnection() { connection = null; deleting = false; }
@@ -67,7 +76,7 @@ export const loadListenerSummary = (): Promise<ListenerSummary> =>
 export const attributeInvite = (code: string) =>
   listenerRequest("/api/listener/attribute", { code: code.trim() });
 export const updateFollow = (feedUrl: string, following: boolean) =>
-  listenerRequest("/api/listener/follow", { feedUrl, following });
+  listenerRequest("/api/listener/follow", { feedUrl, following }) as Promise<FollowResult>;
 export const reportProblem = (input: Record<string, unknown>) =>
   listenerRequest("/api/reports", input);
 export type SkipStatus = {

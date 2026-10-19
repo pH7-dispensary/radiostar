@@ -106,6 +106,7 @@ p.store.set("intelligence", episodeKey(feed, "legacy"), ungrounded);
 const migrated = p.status(feed, "legacy");
 assert.equal(migrated.state, "PARTIAL_READY");
 assert.equal(publicIntelligence(migrated).processing, false);
+assert.equal(publicIntelligence({ state: "UNAVAILABLE" }).state, "UNAVAILABLE");
 assert.equal(migrated.attempts, 2, "source repair must not reset retries");
 new EpisodePipeline({ store: p.store, ledger: p.ledger });
 assert.equal(

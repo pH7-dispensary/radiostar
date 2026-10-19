@@ -125,18 +125,23 @@ function Onboarding({ p, onDone }: { p: Theme; onDone: () => void }) {
   let cards = [
     [
       "◌",
-      "Ad Skip",
-      "Only activates after real-world audio validation. It stays off until then.",
+      "Your podcasts",
+      "Follow favourite shows to keep their newest episodes close.",
     ],
     [
       "⌕",
-      "Podcast Search",
-      "Find live shows and publisher episodes without an account.",
+      "Conversational Search",
+      "Ask about ideas and jump to real, sourced moments where available.",
     ],
     [
       "☾",
-      "AI Sleep",
-      "A private, on-device listening companion. Not physiological sleep detection.",
+      "Episode intelligence",
+      "Briefs and chapters prepare automatically when the publisher allows it.",
+    ],
+    [
+      "⌁",
+      "Ad Skip, carefully",
+      "Only verified intervals can be skipped. It is off while evidence is limited.",
     ],
   ];
   return (
@@ -315,7 +320,12 @@ function Discovery({
                     ...state,
                     following: toggleById(state.following, show),
                   });
-                  if (show.feedUrl) void updateFollow(show.feedUrl, next).catch(() => {});
+                  if (show.feedUrl) void updateFollow(show.feedUrl, next)
+                    .then((result) => setState({ ...state, followIntelligence: {
+                      ...state.followIntelligence,
+                      [show.feedUrl!]: result.processing || { state: "DISABLED" },
+                    } }))
+                    .catch(() => {});
                 }}
                 style={[
                   styles.followPill,
@@ -1665,6 +1675,17 @@ function Following({
                     ? state.feedEpisodes[show.id][0].title
                     : "Open to see the latest episodes"}
                 </Text>
+                {show.feedUrl && state.followIntelligence[show.feedUrl] && (
+                  <Text numberOfLines={1} style={[styles.tiny, { color: p.muted }]}>
+                    {state.followIntelligence[show.feedUrl].code === "RIGHTS_RESTRICTED"
+                      ? "Intelligence unavailable for this show’s latest episode"
+                      : state.followIntelligence[show.feedUrl].state === "READY" || state.followIntelligence[show.feedUrl].state === "PARTIAL_READY"
+                        ? "Latest eligible episode is ready"
+                        : state.followIntelligence[show.feedUrl].state === "QUEUED" || state.followIntelligence[show.feedUrl].state === "PROCESSING"
+                          ? "Preparing the latest eligible episode"
+                          : "Intelligence is currently unavailable"}
+                  </Text>
+                )}
               </View>
               <Text style={[styles.chevron, { color: p.muted }]}>›</Text>
             </Pressable>
@@ -2047,7 +2068,12 @@ function ShowDetail({
             ...state,
             following: toggleById(state.following, show),
           });
-          if (show.feedUrl) void updateFollow(show.feedUrl, next).catch(() => {});
+          if (show.feedUrl) void updateFollow(show.feedUrl, next)
+            .then((result) => setState((current) => ({ ...current, followIntelligence: {
+              ...current.followIntelligence,
+              [show.feedUrl!]: result.processing || { state: "DISABLED" },
+            } })))
+            .catch(() => {});
         }}
         style={[
           styles.primary,
@@ -2070,6 +2096,17 @@ function ShowDetail({
       <Text style={[styles.emptyCopy, { color: p.muted, marginTop: 12 }]}>
         Live publisher feed · real streamable episodes
       </Text>
+      {following && show.feedUrl && state.followIntelligence[show.feedUrl] && (
+        <Text accessibilityLiveRegion="polite" style={[styles.feedCaption, { color: p.muted }]}>
+          {state.followIntelligence[show.feedUrl].code === "RIGHTS_RESTRICTED"
+            ? "Intelligence is not available for this show’s latest episode because the publisher has not authorised displayed AI notes. Listening is unchanged."
+            : state.followIntelligence[show.feedUrl].state === "READY" || state.followIntelligence[show.feedUrl].state === "PARTIAL_READY"
+              ? "Latest eligible episode is ready for intelligence."
+              : state.followIntelligence[show.feedUrl].state === "QUEUED" || state.followIntelligence[show.feedUrl].state === "PROCESSING"
+                ? "Preparing the latest eligible episode. You can listen while this continues."
+                : "Intelligence is currently unavailable for the latest episode."}
+        </Text>
+      )}
       <Section title="Episodes" p={p}>
         {busy ? (
           <LoadingState p={p} label="Loading publisher episodes…" />
@@ -2213,17 +2250,17 @@ function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: light.bg }]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
       <LinearGradient
-        colors={[dark.bg, "#26213a", dark.bg]}
-        style={[styles.pilotEnrollment, { backgroundColor: dark.bg, paddingVertical: 24 }]}
+        colors={[light.bg, "#EEE9FF", light.bg]}
+        style={[styles.pilotEnrollment, { backgroundColor: light.bg, paddingVertical: 24 }]}
       >
-        <Text style={[styles.wordmark, { color: dark.text }]}>RADIO <Text style={{ color: dark.accent }}>✦</Text> STAR</Text>
-        <View style={[styles.pilotCard, { backgroundColor: dark.surface, borderColor: dark.line }]}>
-          <Text style={[styles.eyebrow, { color: dark.accent }]}>PRIVATE BETA</Text>
-          <Text style={[styles.pilotTitle, { color: dark.text }]}>Your listening space is ready.</Text>
-          <Text style={[styles.emptyCopy, { color: dark.muted }]}>Enter the private-beta access code supplied with your TestFlight invitation. It securely connects this installation to Radio Star.</Text>
+        <Text style={[styles.wordmark, { color: light.text }]}>RADIO <Text style={{ color: light.accent }}>✦</Text> STAR</Text>
+        <View style={[styles.pilotCard, { backgroundColor: light.surface, borderColor: light.line }]}>
+          <Text style={[styles.eyebrow, { color: light.accent }]}>PRIVATE BETA</Text>
+          <Text style={[styles.pilotTitle, { color: light.text }]}>Your listening space is ready.</Text>
+          <Text style={[styles.emptyCopy, { color: light.muted }]}>Enter the private-beta access code supplied with your TestFlight invitation. It securely connects this installation to Radio Star.</Text>
           <TextInput
             accessibilityLabel="Private-beta access code"
             autoCapitalize="none"
@@ -2232,9 +2269,9 @@ function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
             maxLength={80}
             onChangeText={(value) => { setCode(value); setMessage(""); }}
             placeholder="Private-beta access code"
-            placeholderTextColor={dark.muted}
+            placeholderTextColor={light.muted}
             value={code}
-            style={[styles.pilotInput, { borderColor: dark.line, color: dark.text, backgroundColor: dark.surfaceStrong }]}
+            style={[styles.pilotInput, { borderColor: light.line, color: light.text, backgroundColor: light.surfaceStrong }]}
           />
           <Pressable
             accessibilityRole="button"
@@ -2247,14 +2284,14 @@ function PilotEnrollment({ onEnrolled }: { onEnrolled: () => void }) {
                 .catch((error) => setMessage(error instanceof Error ? error.message : "This access code could not be accepted."))
                 .finally(() => setBusy(false));
             }}
-            style={[styles.primary, { backgroundColor: dark.accent2, opacity: busy || !code.trim() ? 0.55 : 1 }]}
+            style={[styles.primary, { backgroundColor: light.accent2, opacity: busy || !code.trim() ? 0.55 : 1 }]}
           >
-            <Text style={[styles.primaryText, { color: dark.onAccent }]}>{busy ? "Connecting securely…" : "Connect Radio Star"}</Text>
+            <Text style={[styles.primaryText, { color: light.onAccent }]}>{busy ? "Connecting securely…" : "Connect Radio Star"}</Text>
           </Pressable>
           {!!message && <Text accessibilityLiveRegion="polite" style={{ color: "#E78FA9", textAlign: "center" }}>{message}</Text>}
         </View>
-        <Text style={[styles.pilotFootnote, { color: dark.muted }]}>No OpenAI credential or shared server secret is stored in this app.</Text>
-        <LegalLinks p={dark} />
+        <Text style={[styles.pilotFootnote, { color: light.muted }]}>No OpenAI credential or shared server secret is stored in this app.</Text>
+        <LegalLinks p={light} />
       </LinearGradient>
       </ScrollView>
     </SafeAreaView>

@@ -22,15 +22,20 @@ import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-c
 import { subscriptionsFromEnv } from "./subscriptions.mjs";
 import { TranslationService, validLanguage } from "./translation.mjs";
 
-const clean = (s) =>
-  String(s || "")
+export const decodeHtmlEntity = (value) =>
+  String(value || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, token) => {
+    const named = { amp: "&", quot: '"', apos: "'", nbsp: " ", lt: "<", gt: ">" };
+    if (named[token.toLowerCase()] !== undefined) return named[token.toLowerCase()];
+    const code = token[1]?.toLowerCase() === "x" ? Number.parseInt(token.slice(2), 16) : token[0] === "#" ? Number.parseInt(token.slice(1), 10) : NaN;
+    return Number.isInteger(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+  });
+export const cleanMetadata = (s) =>
+  decodeHtmlEntity(String(s || "")
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
+    .replace(/<[^>]+>/g, ""))
     .trim();
 const tag = (xml, name) =>
-  clean(
+  cleanMetadata(
     (xml.match(
       new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"),
     ) || [])[1],
@@ -245,7 +250,7 @@ export function createStarCastServer({
     for (const match of item.matchAll(
       /<a\b[^>]*href=["']([^"']+)["'][^>]*>[^<]*transcript[^<]*<\/a>/gi,
     )) {
-      const url = clean(match[1]);
+      const url = cleanMetadata(match[1]);
       if (publicUrl(url))
         refs.push({
           url,
@@ -300,8 +305,8 @@ export function createStarCastServer({
       .sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
     if (!episode) return { state: "UNAVAILABLE", code: "NO_EPISODE" };
     const permission = rights.resolve(feedUrl, episode.id);
-    if (!permission.canProcessForAi || !permission.canAcquireTranscript || !permission.canRetain || permission.suspendedAt || permission.deletedAt)
-      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED" };
+    if (!permission.canProcessForAi || !permission.canAcquireTranscript || !permission.canRetain || !permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
+      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: "The publisher has not authorised displayed episode intelligence." };
     // Following is never consent to paid audio. Publisher transcripts only.
     return pipeline.request({ feedUrl, episodeId: episode.id, trigger: "automatic" });
   };
@@ -801,6 +806,9 @@ export function createStarCastServer({
           return send(res, 400, {
             error: "A valid analysis capability is required.",
           });
+        const permission = rights.resolve(input.feedUrl, input.episodeId);
+        if (!permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
+          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: "This episode is not authorised for displayed intelligence.", retryable: false } });
         const status = await pipeline.request({
           ...input,
           allowAudio: input.allowAudio === true,

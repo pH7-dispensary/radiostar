@@ -8,7 +8,7 @@ import {
   defaultControls,
   validateChapters,
 } from "./openai-intelligence.mjs";
-import { createStarCastServer } from "./server.mjs";
+import { cleanMetadata, createStarCastServer } from "./server.mjs";
 import { parseJsonTranscript, assessTranscript } from "./transcripts.mjs";
 import { publicUrl } from "./safe-network.mjs";
 import { transcribeOnDemand } from "./transcription.mjs";
@@ -18,6 +18,7 @@ const directory = await mkdtemp(join(tmpdir(), "starcast-test-")),
 const feedUrl = "https://publisher.example/feed.xml",
   episodeId = "episode-real-contract";
 let calls = 0;
+assert.equal(cleanMetadata("Rock &amp; Roll — Bob&#039;s &quot;Notes&quot;"), "Rock & Roll — Bob's \"Notes\"");
 const segments = [
   {
     id: "s1",
@@ -154,6 +155,28 @@ try {
   await Promise.all(app.pipeline.inflight.values());
   assert.equal(app.pipeline.status(feedUrl, "long").code, "DURATION_LIMIT");
   assert.equal(calls, 1);
+  app.rights.set({
+    feedUrl,
+    classification: "LICENSED",
+    canAcquireTranscript: true,
+    canProcessForAi: true,
+    canDisplayDerivedIntelligence: false,
+    canRetain: true,
+  });
+  const rightsBlocked = await post("/api/intelligence/request", input);
+  assert.equal((await rightsBlocked.json()).status.code, "RIGHTS_RESTRICTED");
+  assert.equal(calls, 1, "display-restricted episodes never enter paid preparation");
+  app.rights.set({
+    feedUrl,
+    classification: "LICENSED",
+    canAcquireTranscript: true,
+    canProcessForAi: true,
+    canTranscribeAudio: true,
+    canDisplayCaptions: true,
+    canDisplayDerivedIntelligence: true,
+    canRetain: true,
+    canRegenerate: true,
+  });
   await new Promise((r) => app.server.close(r));
   app.store.close();
   app = make();

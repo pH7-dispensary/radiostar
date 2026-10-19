@@ -175,6 +175,35 @@ export function EpisodeIntelligenceView({
     }
   };
   const processing = isProcessing(status) && !paused;
+  const rightsRestricted = status?.code === "RIGHTS_RESTRICTED";
+  const processingLabel =
+    status?.state === "QUEUED"
+      ? "Queued for preparation. Keep listening while Radio Star works."
+      : status?.phase === "DISCOVERING"
+        ? "Checking the publisher transcript. Keep listening while Radio Star works."
+        : status?.phase === "TRANSCRIBING"
+          ? "Preparing authorised audio. Keep listening while Radio Star works."
+          : status?.phase === "UNDERSTANDING"
+            ? "Preparing the episode brief. Keep listening while Radio Star works."
+            : status?.phase === "ORGANISING"
+              ? "Organising chapters and moments. Keep listening while Radio Star works."
+              : "Preparing episode intelligence. Keep listening while Radio Star works.";
+  const emptyHeading = !source.feedUrl
+    ? "Open this from its podcast."
+    : rightsRestricted
+      ? "Intelligence isn’t available for this episode."
+      : status?.requiresAudioConsent
+        ? "Listen a little deeper."
+        : status?.state === "UNAVAILABLE"
+          ? "Intelligence is unavailable right now."
+          : status?.state === "FAILED"
+            ? "This episode could not be prepared."
+            : "Preparing this episode.";
+  const emptyCopy = !source.feedUrl
+    ? "Open this episode from its podcast in Search so Radio Star can find its publisher feed."
+    : rightsRestricted
+      ? "The publisher’s permissions do not cover displayed AI notes for this episode. You can keep listening, or explore another episode."
+      : status?.reason || "This episode has not been prepared yet.";
   const scrollSelectedTab = () => {
     const index = ["Chapters", "Topics", "Find a Moment"].indexOf(
       tab,
@@ -309,7 +338,7 @@ export function EpisodeIntelligenceView({
           ) : (
             <>
               {(busy || processing) && !status?.brief && !paused && (
-                <LoadingState p={p} />
+                <LoadingState p={p} label={processingLabel} />
               )}
               {error ? (
                 <View style={[s.card, { borderColor: p.line }]}>
@@ -341,21 +370,18 @@ export function EpisodeIntelligenceView({
                   ]}
                 >
                   <Text style={[s.heading, { color: p.text }]}>
-                    {status?.requiresAudioConsent
-                      ? "Listen a little deeper."
-                      : "This episode needs a moment."}
+                    {emptyHeading}
                   </Text>
                   <Text
                     accessibilityLiveRegion="polite"
                     style={[s.copy, { color: p.muted }]}
                   >
-                    {!source.feedUrl
-                      ? "Open this episode from its podcast in Search so Radio Star can find its publisher feed."
-                      : status?.reason ||
-                        "Your episode has not been prepared yet."}
+                    {emptyCopy}
                   </Text>
                   {!source.feedUrl
                     ? action("Back to player", onBack, true)
+                    : rightsRestricted
+                      ? action("Back to player", onBack, true)
                     : status?.requiresAudioConsent
                       ? action(
                           "Use audio analysis",
@@ -363,11 +389,7 @@ export function EpisodeIntelligenceView({
                         )
                       : status?.retryable ||
                           status?.state === "NOT_REQUESTED" ||
-                          [
-                            "BUDGET_LIMIT",
-                            "SERVER_UNAVAILABLE",
-                            "AUDIO_DISABLED",
-                          ].includes(status?.code || "")
+                          status?.code === "SERVER_UNAVAILABLE"
                         ? action("Try again", () => void session?.request())
                         : action(
                             "Check again",

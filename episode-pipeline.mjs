@@ -39,9 +39,7 @@ export function publicIntelligence(value) {
   return {
     ...safe,
     state:
-      safe.state === "UNAVAILABLE"
-        ? "BLOCKED"
-        : activeStates.has(safe.state) && safe.state !== "QUEUED"
+      activeStates.has(safe.state) && safe.state !== "QUEUED"
           ? transcript
             ? "PARTIAL_READY"
             : "PROCESSING"
@@ -234,6 +232,14 @@ export class EpisodePipeline {
         state: "BLOCKED",
         code: "SERVER_UNAVAILABLE",
         reason: "Episode analysis is temporarily unavailable.",
+        retryable: false,
+      };
+    const permission = this.rights?.resolve(feedUrl, episodeId);
+    if (permission && (!permission.canProcessForAi || !permission.canRetain || !permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt))
+      return {
+        state: "BLOCKED",
+        code: "RIGHTS_RESTRICTED",
+        reason: "This episode is not authorised for displayed intelligence.",
         retryable: false,
       };
     const attempts = (completed(previous) ? 0 : previous?.attempts || 0) + 1;

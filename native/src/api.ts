@@ -34,6 +34,7 @@ export type IntelligenceStatus = {
     | "FAILED";
   readiness?: "FULLY_READY" | "TEXT_ONLY" | "PARTIAL" | "UNUSABLE";
   processing?: boolean;
+  phase?: "DISCOVERING" | "TRANSCRIBING" | "UNDERSTANDING" | "ORGANISING";
   transcriptAvailable?: boolean;
   qualityNote?: string;
   jobId?: string;

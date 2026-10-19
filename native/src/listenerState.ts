@@ -12,12 +12,18 @@ export type StoredEpisode = CatalogueEpisode & {
   playCount?: number;
   listenedMs?: number;
 };
+export type FollowPreparation = {
+  state: "READY" | "PARTIAL_READY" | "QUEUED" | "PROCESSING" | "UNAVAILABLE" | "BLOCKED" | "DISABLED" | "FAILED";
+  code?: string;
+  reason?: string;
+};
 export type ListenerState = {
   following: CatalogueShow[];
   saved: StoredEpisode[];
   history: StoredEpisode[];
   historyEnabled: boolean;
   feedEpisodes: Record<string, StoredEpisode[]>;
+  followIntelligence: Record<string, FollowPreparation>;
   nightMode: boolean;
   onboardingComplete: boolean;
   intelligenceEnabled: boolean;
@@ -30,7 +36,10 @@ export const emptyListenerState = (): ListenerState => ({
   history: [],
   historyEnabled: true,
   feedEpisodes: {},
-  nightMode: true,
+  followIntelligence: {},
+  // Light is the intentional first-run appearance. A persisted boolean remains
+  // an explicit listener choice and is never replaced with the device scheme.
+  nightMode: false,
   onboardingComplete: false,
   intelligenceEnabled: true,
   intelligencePreferenceVersion: 2,
@@ -51,6 +60,10 @@ export async function loadListenerState(): Promise<ListenerState> {
       feedEpisodes:
         value.feedEpisodes && typeof value.feedEpisodes === "object"
           ? value.feedEpisodes
+          : {},
+      followIntelligence:
+        value.followIntelligence && typeof value.followIntelligence === "object"
+          ? value.followIntelligence
           : {},
       onboardingComplete: value.onboardingComplete === true,
       // v1 false meant "not activated", not an explicit opt-out. Migrate once.

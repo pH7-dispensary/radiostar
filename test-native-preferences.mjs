@@ -29,6 +29,7 @@ runInNewContext(output, {
 });
 assert.equal(exports.emptyListenerState().intelligenceEnabled, true);
 assert.equal(exports.emptyListenerState().historyEnabled, true);
+assert.equal(exports.emptyListenerState().nightMode, false, "new listeners start in light mode");
 assert.equal((await exports.loadListenerState()).intelligenceEnabled, true);
 saved = JSON.stringify({
   intelligenceEnabled: false,
@@ -37,6 +38,8 @@ saved = JSON.stringify({
 let migrated = await exports.loadListenerState();
 assert.equal(migrated.intelligenceEnabled, true);
 assert.equal(migrated.following[0].id, "kept");
+saved = JSON.stringify({ nightMode: true });
+assert.equal((await exports.loadListenerState()).nightMode, true, "saved appearance choices persist");
 await exports.saveListenerState({ ...migrated, intelligenceEnabled: false });
 assert.equal(
   (await exports.loadListenerState()).intelligenceEnabled,

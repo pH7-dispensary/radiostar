@@ -274,7 +274,12 @@ export function SearchScreen({
           feedback.selection();
           const following = state.following.some((item) => item.id === show.id);
           setState((v) => ({ ...v, following: toggleById(v.following, show) }));
-          if (show.feedUrl) void updateFollow(show.feedUrl, !following).catch(() => {});
+          if (show.feedUrl) void updateFollow(show.feedUrl, !following)
+            .then((result) => setState((v) => ({ ...v, followIntelligence: {
+              ...v.followIntelligence,
+              [show.feedUrl!]: result.processing || { state: "DISABLED" },
+            } })))
+            .catch(() => {});
         }}
         style={[s.follow, { borderColor: p.line }]}
       >
