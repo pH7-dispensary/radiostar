@@ -234,12 +234,13 @@ export class EpisodePipeline {
         reason: "Episode analysis is temporarily unavailable.",
         retryable: false,
       };
-    const permission = this.rights?.resolve(feedUrl, episodeId);
-    if (permission && (!permission.canProcessForAi || !permission.canRetain || !permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt))
+    const processingDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId, audit: true });
+    const displayDecision = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId, audit: true });
+    if ((processingDecision && !processingDecision.allowed) || (displayDecision && !displayDecision.allowed))
       return {
         state: "BLOCKED",
         code: "RIGHTS_RESTRICTED",
-        reason: "This episode is not authorised for displayed intelligence.",
+        reason: processingDecision?.allowed === false ? processingDecision.reason : displayDecision.reason,
         retryable: false,
       };
     const attempts = (completed(previous) ? 0 : previous?.attempts || 0) + 1;
@@ -248,6 +249,7 @@ export class EpisodePipeline {
       jobId: randomUUID(),
       attempts,
       processingVersion: PROCESSING_VERSION,
+      rightsPolicy: { mode: processingDecision?.mode || null, version: processingDecision?.policyVersion || null, outputProfile: processingDecision?.outputProfile || "standard" },
       startedAt: new Date().toISOString(),
       cacheHit: false,
       trigger,
@@ -339,15 +341,15 @@ export class EpisodePipeline {
     const update = (patch) => {
       if (expired) return;
       if (value.episode && this.rights) {
-        const permission = this.rights.resolve(value.episode.feedUrl, value.episode.id);
-        if (!permission.canProcessForAi || !permission.canRetain || permission.suspendedAt || permission.deletedAt) {
+        const decision = this.rights.evaluate({ feature: "intelligence-processing", feedUrl: value.episode.feedUrl, episodeId: value.episode.id });
+        if (!decision.allowed) {
           const { transcript, episode, brief, chapters, provenance, ...redacted } = value;
           value = redacted;
           patch = {
             ...patch,
             state: "BLOCKED",
             code: "RIGHTS_RESTRICTED",
-            reason: "This episode is no longer authorised for processing.",
+            reason: decision.reason,
             retryable: false,
           };
         }
@@ -394,9 +396,10 @@ export class EpisodePipeline {
         duration = durationMs(episode.duration),
         variant = hash(episode.audioUrl || "");
       const rights = this.rights?.resolve(feedUrl, episodeId);
+      const policyDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
       const rightsAllowed = () => {
-        const current = this.rights?.resolve(feedUrl, episodeId);
-        return !current || (current.canProcessForAi && current.canRetain && !current.suspendedAt && !current.deletedAt);
+        const current = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
+        return !current || current.allowed;
       };
       if (!rightsAllowed())
         throw Error("Rights permission does not allow AI processing for this episode.");
@@ -563,6 +566,7 @@ export class EpisodePipeline {
         requestId: value.jobId + ":text",
         client: this.client,
         signal: controller.signal,
+        outputProfile: policyDecision?.outputProfile || "standard",
         onProviderResponse: (response) => {
           if (rightsAllowed()) this.store.set("provider-result", value.jobId, response);
         },
@@ -665,10 +669,19 @@ export class EpisodePipeline {
       }
     return removed;
   }
+  purgeFeed(feed) {
+    const totals = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0 };
+    for (const [, value] of this.store.all("intelligence")) {
+      if (value?.episode?.feedUrl !== feed) continue;
+      const removed = this.purgeEpisode(feed, value.episode.id);
+      for (const [name, count] of Object.entries(removed)) totals[name] += count;
+    }
+    return totals;
+  }
   moments(feed, id, query) {
     const value = this.status(feed, id);
-    const rights = this.rights?.resolve(feed, id);
-    if (rights && (!rights.canDisplayDerivedIntelligence || rights.suspendedAt || rights.deletedAt))
+    const decision = this.rights?.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: id });
+    if (decision && !decision.allowed)
       return [];
     return value?.transcript
       ? hybridRetrieve(value.transcript, query, 5)
@@ -693,10 +706,7 @@ export class EpisodePipeline {
         (v) =>
           completed(v) &&
           v.processingVersion === PROCESSING_VERSION &&
-          (!this.rights || (() => {
-            const rights = this.rights.resolve(v.episode.feedUrl, v.episode.id);
-            return rights.canDisplayDerivedIntelligence && !rights.suspendedAt && !rights.deletedAt;
-          })()) &&
+          (!this.rights || this.rights.evaluate({ feature: "conversation-search", feedUrl: v.episode.feedUrl, episodeId: v.episode.id }).allowed) &&
           (!feedUrls || feedUrls.includes(v.episode.feedUrl)),
       );
     const matches = corpus

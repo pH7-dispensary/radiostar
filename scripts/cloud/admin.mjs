@@ -16,6 +16,10 @@ if (!/^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(apiUrl || "") ||
 const [area, action, inputPath, ...flags] = process.argv.slice(2);
 const actions = {
   "rights:list": { method: "GET", path: "/api/admin/rights" },
+  "rights:control-centre": { method: "GET", path: "/api/admin/rights/control-centre" },
+  "rights:policy": { method: "POST", path: "/api/admin/rights/policy" },
+  "rights:override": { method: "POST", path: "/api/admin/rights/override" },
+  "rights:suspend": { method: "POST", path: "/api/admin/rights/suspend" },
   "reports:list": { method: "GET", path: "/api/admin/reports" },
   "intelligence:status": { method: "GET", path: "/api/admin/intelligence" },
   "translation:status": { method: "GET", path: "/api/admin/translation/status" },
@@ -29,7 +33,7 @@ const actions = {
 };
 const operation = actions[`${area}:${action}`];
 if (!operation) {
-  console.error("Use: rights list | rights apply INPUT.json | transcripts suspend INPUT.json | transcripts delete INPUT.json | reports list | intelligence status | pilot list | pilot issue INPUT.json [--write PATH] | pilot revoke INPUT.json");
+  console.error("Use: rights list | rights control-centre | rights apply INPUT.json | rights policy INPUT.json | rights override INPUT.json | rights suspend INPUT.json | transcripts suspend INPUT.json | transcripts delete INPUT.json | reports list | intelligence status | pilot list | pilot issue INPUT.json [--write PATH] | pilot revoke INPUT.json");
   process.exitCode = 2;
 } else {
   let body;

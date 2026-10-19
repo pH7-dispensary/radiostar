@@ -305,8 +305,10 @@ export function createStarCastServer({
       .sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
     if (!episode) return { state: "UNAVAILABLE", code: "NO_EPISODE" };
     const permission = rights.resolve(feedUrl, episode.id);
-    if (!permission.canProcessForAi || !permission.canAcquireTranscript || !permission.canRetain || !permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
-      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: "The publisher has not authorised displayed episode intelligence." };
+    const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id, audit: true });
+    const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id, audit: true });
+    if (!permission.canAcquireTranscript || !processing.allowed || !display.allowed)
+      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: !permission.canAcquireTranscript ? "The publisher has not authorised transcript acquisition." : processing.allowed ? display.reason : processing.reason };
     // Following is never consent to paid audio. Publisher transcripts only.
     return pipeline.request({ feedUrl, episodeId: episode.id, trigger: "automatic" });
   };
@@ -658,13 +660,14 @@ export function createStarCastServer({
         if (!captionRate(listener))
           return send(res, 429, { error: "Caption updates are temporarily limited. Keep listening and try again shortly." });
         const permission = rights.resolve(input.feedUrl, input.episodeId);
-        if (!permission.canDisplayCaptions || permission.suspendedAt || permission.deletedAt) {
-          rights.audit("caption-denied", `${input.feedUrl}:${input.episodeId}`, listener.id, { classification: permission.classification });
+        const captionDecision = rights.evaluate({ feature: "captions", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
+        if (!captionDecision.allowed) {
+          rights.audit("caption-denied", `${input.feedUrl}:${input.episodeId}`, "listener", { classification: permission.classification, code: captionDecision.code });
           return send(res, 200, { available: false, reason: "Captions are not authorised for this episode." });
         }
         listeners.captionPlayback(listener, input);
         const window = pipeline.captions(input.feedUrl, input.episodeId, input.positionMs);
-        rights.audit("caption-window", `${input.feedUrl}:${input.episodeId}`, listener.id, { startMs: window.windowStartMs || null });
+        rights.audit("caption-window", `${input.feedUrl}:${input.episodeId}`, "listener", { startMs: window.windowStartMs || null });
         return send(res, 200, window);
       }
       if (url.pathname === "/api/reports" && req.method === "POST") {
@@ -693,6 +696,31 @@ export function createStarCastServer({
         const record = rights.set(await body(req), { actor: "api-admin" });
         rights.audit("rights-assessment", record.id, "api-admin");
         return send(res, 200, { record });
+      }
+      if (url.pathname === "/api/admin/rights/control-centre" && req.method === "GET") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, rights.controlCentre());
+      }
+      if (url.pathname === "/api/admin/rights/policy" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const policy = rights.setPolicy(await body(req), { actor: "api-admin" });
+        rights.audit("rights-policy-changed", "global", "api-admin", { policyVersion: policy.version, mode: policy.mode });
+        return send(res, 200, { policy });
+      }
+      if (url.pathname === "/api/admin/rights/override" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const override = rights.setOverride(await body(req), { actor: "api-admin" });
+        rights.audit("rights-policy-override", override.id, "api-admin", { scope: override.episodeId ? "episode" : "publisher" });
+        return send(res, 200, { override });
+      }
+      if (url.pathname === "/api/admin/rights/suspend" && req.method === "POST") {
+        if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
+        const input = await body(req);
+        if (!publicUrl(input.feedUrl) || (input.episodeId !== undefined && (typeof input.episodeId !== "string" || !input.episodeId || input.episodeId.length > 2000))) return send(res, 400, { error: "A valid publisher feed and optional episode are required." });
+        const record = rights.suspend(input.feedUrl, input.episodeId || "", input.reason, { actor: "api-admin" });
+        const removed = input.episodeId ? { ...pipeline.purgeEpisode(input.feedUrl, input.episodeId), ...translation.purgeEpisode(input.feedUrl, input.episodeId) } : { ...pipeline.purgeFeed(input.feedUrl), ...translation.purgeFeed(input.feedUrl) };
+        rights.audit("rights-immediate-suspension", record.id, "api-admin", { scope: input.episodeId ? "episode" : "publisher", removed });
+        return send(res, 200, { record, removed });
       }
       if (url.pathname === "/api/admin/translation/beta" && req.method === "POST") {
         if (!administrator(req)) return send(res, 403, { error: "Administrator access is required." });
@@ -750,13 +778,13 @@ export function createStarCastServer({
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
         const feed = url.searchParams.get("feedUrl"),
           id = url.searchParams.get("episodeId");
-        const permission = rights.resolve(feed, id);
-        if (!permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
+        const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: id });
+        if (!decision.allowed)
           return send(res, 200, {
             status: {
               state: "BLOCKED",
               code: "RIGHTS_RESTRICTED",
-              reason: "This episode is not authorised for displayed intelligence.",
+              reason: decision.reason,
               transcriptAvailable: false,
             },
             features: featureControls,
@@ -806,9 +834,9 @@ export function createStarCastServer({
           return send(res, 400, {
             error: "A valid analysis capability is required.",
           });
-        const permission = rights.resolve(input.feedUrl, input.episodeId);
-        if (!permission.canDisplayDerivedIntelligence || permission.suspendedAt || permission.deletedAt)
-          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: "This episode is not authorised for displayed intelligence.", retryable: false } });
+        const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
+        if (!decision.allowed)
+          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: decision.reason, retryable: false } });
         const status = await pipeline.request({
           ...input,
           allowAudio: input.allowAudio === true,
