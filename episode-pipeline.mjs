@@ -205,6 +205,17 @@ export class EpisodePipeline {
     }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
+    // A source-refresh job can fail before it starts (for example after an
+    // SQS visibility lease expires). Retry from the preserved completed
+    // record so the next worker rechecks the publisher source without
+    // discarding valid cached intelligence or repaying for identical input.
+    if (previous?.state === "FAILED" && retry && previous.refreshBaseJobId) {
+      const preserved = this.store.get("intelligence-refresh", previous.refreshBaseJobId);
+      if (completed(preserved)) {
+        previous = preserved;
+        forcePublisherRefresh = true;
+      }
+    }
     if (
       trigger === "automatic" &&
       previous &&
@@ -220,6 +231,7 @@ export class EpisodePipeline {
         JSON.stringify([previous.episode.audioUrl, previous.episode.refs]),
       );
       if (
+        !forcePublisherRefresh &&
         signature === priorSignature &&
         Date.now() -
           Date.parse(previous.sourceCheckedAt || previous.completedAt) <
@@ -283,13 +295,16 @@ export class EpisodePipeline {
       feedUrl,
       episodeId,
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
+      refreshBaseJobId: forcePublisherRefresh && completed(previous) ? null : undefined,
     };
     // The queue message stays deliberately small. A completed result is kept
     // locally by the refresh job id so the worker can restore it when a
     // publisher source recheck yields the identical transcript, rather than
     // spending on duplicate generation.
-    if (forcePublisherRefresh && completed(previous))
+    if (forcePublisherRefresh && completed(previous)) {
+      initial.refreshBaseJobId = initial.jobId;
       this.store.set("intelligence-refresh", initial.jobId, previous);
+    }
     this.store.set("intelligence", key, initial);
     if (this.queue) {
       const queued = {
@@ -333,6 +348,28 @@ export class EpisodePipeline {
   }
   async recoverQueued() {
     if (!this.queue) return;
+    const now = Date.now();
+    for (const [key, status] of this.store.all("intelligence")) {
+      if (
+        status?.state === "QUEUED" &&
+        status.deadlineAt &&
+        Date.parse(status.deadlineAt) <= now
+      ) {
+        this.store.set("intelligence", key, {
+          ...status,
+          state: "FAILED",
+          code: "QUEUE_TIMEOUT",
+          reason: "The processing worker did not start before its queue deadline. You can retry once.",
+          retryable: status.attempts < 2,
+        });
+        this.store.delete("processing-outbox", status.jobId);
+        console.error(JSON.stringify({
+          event: "processing-queue-job-expired",
+          jobId: status.jobId,
+          code: "QUEUE_TIMEOUT",
+        }));
+      }
+    }
     for (const [, queued] of this.store.all("processing-outbox")) {
       const status = this.store.get("intelligence", queued.key);
       if (status?.jobId !== queued.jobId || status.state !== "QUEUED") {
@@ -383,7 +420,8 @@ export class EpisodePipeline {
       previous,
       forcePublisherRefresh: queued.forcePublisherRefresh === true,
     }).finally(() => {
-      this.store.delete("intelligence-refresh", queued.jobId);
+      if (completed(this.store.get("intelligence", queued.key)))
+        this.store.delete("intelligence-refresh", queued.jobId);
       this.inflight.delete(queued.key);
     });
     this.inflight.set(queued.key, task);

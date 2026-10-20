@@ -82,4 +82,19 @@ assert.equal(queuedJobs.at(-1).forcePublisherRefresh, true);
 await pipeline.executeQueued(queuedJobs.at(-1));
 assert.equal(transcriptFetches, 2, "a queued source recheck must reach the publisher parser");
 assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").cacheHit, true);
+const completedCache = pipeline.status("https://publisher.example/feed", "queue-episode");
+store.set("intelligence-refresh", "expired-refresh", completedCache);
+store.set("intelligence", storedKey, {
+  ...completedCache,
+  state: "QUEUED",
+  jobId: "expired-refresh",
+  refreshBaseJobId: "expired-refresh",
+  attempts: 1,
+  deadlineAt: "2020-01-01T00:00:00.000Z",
+});
+await pipeline.recoverQueued();
+assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").code, "QUEUE_TIMEOUT");
+const recovered = await pipeline.request({ feedUrl: "https://publisher.example/feed", episodeId: "queue-episode", retry: true });
+assert.equal(recovered.state, "QUEUED");
+assert.equal(queuedJobs.at(-1).forcePublisherRefresh, true, "a timed-out recheck preserves its completed cache for one safe retry");
 console.log("Dedicated SQS processing queue contract passed");
