@@ -7,12 +7,16 @@ import { publisherRightsEvidence } from "./rights-assessment.mjs";
 const feedUrl = "https://publisher.example/licensed.xml";
 const restrictedFeedUrl = "https://publisher.example/restricted.xml";
 const noBasisFeedUrl = "https://publisher.example/no-basis.xml";
+const historicalFeedUrl = "https://publisher.example/historical.xml";
 const vttUrl = "https://publisher.example/licensed.vtt";
 const xml = (id, body = "") => `<?xml version="1.0"?><rss><channel><title>Publisher licensed show</title><itunes:author>Publisher</itunes:author>${body}<item><guid>${id}</guid><title>${id} &amp; evidence</title><pubDate>Tue, 20 Oct 2026 12:00:00 GMT</pubDate><itunes:duration>00:02:00</itunes:duration><podcast:transcript url="${vttUrl}" type="text/vtt"/>${body}</item></channel></rss>`;
+const fillerItems = Array.from({ length: 85 }, (_, index) => `<item><guid>recent-${index}</guid><title>Recent ${index}</title></item>`).join("");
+const historicalXml = `<?xml version="1.0"?><rss><channel><title>Licensed archive</title><itunes:author>Publisher</itunes:author><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright>${fillerItems}<item><guid>older-licensed</guid><title>Older licensed episode</title><itunes:duration>00:02:00</itunes:duration><podcast:transcript url="${vttUrl}" type="text/vtt"/></item></channel></rss>`;
 const feeds = new Map([
   [feedUrl, xml("licensed", '<podcast:license url="https://creativecommons.org/licenses/by/4.0/"/>')],
   [restrictedFeedUrl, xml("restricted", "<rights>All rights reserved. No AI or text and data mining.</rights>")],
   [noBasisFeedUrl, xml("no-basis")],
+  [historicalFeedUrl, historicalXml],
 ]);
 const transcript = {
   segments: [
@@ -51,6 +55,14 @@ try {
     channelXml: "<channel><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright></channel>",
   });
   assert.equal(copyrightEvidence.licences[0]?.kind, "CC-BY", "an explicit publisher copyright licence is recognised without trusting incidental episode text");
+
+  const historical = await post("/api/intelligence/preflight", { feedUrl: historicalFeedUrl, episodeId: "older-licensed" });
+  const historicalBody = await historical.json();
+  assert.equal(historical.status, 200, "an explicitly requested older episode is resolved from the bounded publisher history");
+  assert.equal(historicalBody.assessment.classification, "LICENSED");
+  const missing = await post("/api/intelligence/preflight", { feedUrl: historicalFeedUrl, episodeId: "not-in-feed" });
+  assert.equal(missing.status, 404, "a removed episode gets a specific source response instead of a generic processing failure");
+  assert.equal((await missing.json()).code, "EPISODE_NOT_FOUND");
 
   // A pre-existing, owned record is never overwritten by automatic evidence.
   app.rights.set({ feedUrl: "https://owned.example/feed.xml", episodeId: "owned", classification: "LICENSED", explicitAuthorisation: true, legalBasis: "Owned fixture authorisation.", canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true });

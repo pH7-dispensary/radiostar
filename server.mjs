@@ -96,15 +96,31 @@ async function podcastIndexSearch(query, limit = 12) {
     source: "Podcast Index",
   }));
 }
-function feedParts(xml, feed) {
+const MAX_CATALOGUE_EPISODES = 30;
+// A listener can legitimately reopen an older episode from their library or a
+// shared link. Keep catalogue responses compact, while allowing a bounded
+// look-back for an explicit episode request. The publisher document has
+// already passed the server's 8 MB network limit.
+const MAX_RESOLVABLE_EPISODES = 120;
+
+class PublisherEpisodeError extends Error {
+  constructor(message, code = "EPISODE_NOT_FOUND") {
+    super(message);
+    this.name = "PublisherEpisodeError";
+    this.code = code;
+    this.status = 404;
+  }
+}
+
+function feedParts(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
   let channel = xml.match(/<channel[\s\S]*?<\/channel>/i)?.[0] || xml,
     items = [...channel.matchAll(/<(item|entry)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi)]
       .map((m) => m[0])
-      .slice(0, 30);
+      .slice(0, limit);
   return { channel, items, feed };
 }
-function episodesFromFeed(xml, feed) {
-  let { channel, items } = feedParts(xml, feed);
+function episodesFromFeed(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
+  let { channel, items } = feedParts(xml, feed, limit);
   return {
     title: tag(channel, "title"),
     publisher: tag(channel, "itunes:author") || tag(channel, "author"),
@@ -275,12 +291,12 @@ export function createStarCastServer({
   }
   async function resolve(feed, id) {
     const xml = await feedXml(feed),
-      parts = feedParts(xml, feed),
+      parts = feedParts(xml, feed, MAX_RESOLVABLE_EPISODES),
       items = parts.items,
-      parsed = episodesFromFeed(xml, feed),
+      parsed = episodesFromFeed(xml, feed, MAX_RESOLVABLE_EPISODES),
       index = parsed.episodes.findIndex((x) => x.id === id);
     if (index < 0)
-      throw Error("Episode no longer appears in the publisher feed.");
+      throw new PublisherEpisodeError("This episode is no longer available in the publisher feed's supported history.");
     const item = items[index],
       refs = transcriptRefsFromItem(item);
     // Explicit publisher transcript links, without scraping arbitrary page navigation.
@@ -1961,7 +1977,18 @@ export function createStarCastServer({
     } catch (error) {
       if (error instanceof ListenerError)
         return send(res, error.status, { error: error.message });
-      console.error(JSON.stringify({ event: "request-failed", path: req.url, code: error?.name || "REQUEST_FAILED" }));
+      if (error instanceof PublisherEpisodeError)
+        return send(res, error.status, { error: error.message, code: error.code });
+      // Keep listener responses deliberately non-sensitive, but retain a
+      // bounded internal reason so an operator can distinguish a bad
+      // publisher document from an application regression. Do not log the
+      // request body, credentials, or stack trace.
+      console.error(JSON.stringify({
+        event: "request-failed",
+        path: req.url,
+        code: error?.name || "REQUEST_FAILED",
+        reason: String(error?.message || "Unknown server error").slice(0, 500),
+      }));
       return send(res, 400, {
         error: "This request could not be completed. Please try again.",
       });
