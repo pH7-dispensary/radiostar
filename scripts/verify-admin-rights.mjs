@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { createReviewFixture, feedUrl } from "../test-phase3-fixture.mjs";
+import { episodeKey } from "../episode-pipeline.mjs";
+import { PROCESSING_VERSION } from "../openai-intelligence.mjs";
 const { chromium } = await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || "playwright");
 const { app, providerCalls } = createReviewFixture();
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
@@ -54,6 +56,24 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator(".processing-status").scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/desktop-ready.png` });
+  app.store.set("intelligence", episodeKey(feedUrl, "owned-one"), {
+    state: "BLOCKED", code: "DURATION_LIMIT", reason: "Historical duration gate before transcript discovery.", attempts: 2,
+    jobId: "browser-legacy-duration", feedUrl, episodeId: "owned-one", processingVersion: PROCESSING_VERSION,
+    startedAt: "2026-01-01T00:00:00.000Z", completedAt: "2026-01-01T00:00:01.000Z",
+  });
+  await page.locator("#back-to-podcast").click();
+  await page.getByRole("button", { name: "Open episode", exact: true }).first().click();
+  await page.getByRole("heading", { name: "Historical failure · current eligibility", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Recheck transcripts & prepare", exact: true }).waitFor();
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: `${output}/desktop-reassessment.png` });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => scrollTo(0, 0));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+  await page.screenshot({ path: `${output}/mobile-reassessment.png` });
+  await page.getByRole("button", { name: "Recheck transcripts & prepare", exact: true }).click();
+  await page.locator(".processing-status").getByRole("heading", { name: "READY", exact: true }).waitFor();
+  assert.equal(app.store.get("intelligence-history", "browser-legacy-duration").code, "DURATION_LIMIT");
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ passed: true, desktop: 1440, mobile: 390, errors, mockProviderCalls: providerCalls(), paidCalls: 0, output }));
   await context.close();

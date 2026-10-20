@@ -251,6 +251,7 @@ export class EpisodePipeline {
       jobTimeoutMs,
     });
     this.inflight = new Map();
+    this.requesting = new Map();
     this.audioInflight = new Map();
     for (const [key, value] of store.all("intelligence"))
       if (activeStates.has(value.state) && !value.completedAt)
@@ -272,14 +273,14 @@ export class EpisodePipeline {
     for (const [id, row] of ledger.reservations)
       ledger.reconcile(id, { usd: row.usd, failed: true, uncertain: true });
   }
-  transition(key, current, patch, { force = false } = {}) {
+  transition(key, current, patch, { force = false, replace = false } = {}) {
     const now = new Date().toISOString();
     return this.store.transaction(() => {
       const stored = this.store.get("intelligence", key) || current || {};
       // A late worker must never overwrite a newer retry or completed record.
       if (current?.jobId && stored.jobId && current.jobId !== stored.jobId)
         return stored;
-      let next = { ...stored, ...patch };
+      let next = { ...(replace ? {} : stored), ...patch };
       if (!transitionAllowed(stored.state, next.state) && !force)
         throw Error(`Invalid processing transition: ${stored.state || "NONE"} to ${next.state || "NONE"}.`);
       const previousStage = stored.processingStage || stored.phase || null;
@@ -306,7 +307,7 @@ export class EpisodePipeline {
         reason: next.reason || null,
         processingVersion: next.processingVersion || null,
       };
-      next.lifecycle = [...(stored.lifecycle || []), event].slice(-lifecycleLimit);
+      next.lifecycle = [...(replace ? [] : stored.lifecycle || []), event].slice(-lifecycleLimit);
       if (next.completedAt) next.timing = {
         ...processingTiming(next),
         episodeDurationMs: durationMs(next.episode?.duration),
@@ -333,7 +334,16 @@ export class EpisodePipeline {
       processingStage: "QUEUED",
       lifecycle: [],
     };
-    return this.transition(key, null, initial, { force: true });
+    return this.store.transaction(() => {
+      const previous = this.store.get("intelligence", key);
+      if (previous?.jobId && previous.jobId !== initial.jobId) {
+        // Preserve recorded diagnostics, not a second copy of protected
+        // transcripts or derived content outside the existing purge lifecycle.
+        const fields = ["jobId", "feedUrl", "episodeId", "state", "code", "reason", "attempts", "retryable", "startedAt", "completedAt", "updatedAt", "processingVersion", "processingStage", "transcriptChecks", "reassessedFromJobId"];
+        this.store.set("intelligence-history", previous.jobId, Object.fromEntries(fields.filter((field) => previous[field] !== undefined).map((field) => [field, previous[field]])));
+      }
+      return this.transition(key, null, initial, { force: true, replace: true });
+    });
   }
   eventsFor(feedUrl, episodeId) {
     return this.store.all("processing-event")
@@ -355,7 +365,11 @@ export class EpisodePipeline {
     const episode = await this.resolveEpisode(feed, id),
       duration = durationMs(episode.duration),
       rights = this.rights?.resolve(feed, id);
+    const variant = hash(episode.audioUrl || "");
+    const cached = this.store.get("transcript", `${episodeKey(feed, id)}:${variant}`) || this.store.get("audio-transcript", variant);
+    const hasCachedTranscript = !!cached?.segments?.length;
     return {
+      hasCachedTranscript,
       hasPublisherTranscript: episode.refs.length > 0,
       durationMs: duration,
       withinLimit:
@@ -363,7 +377,9 @@ export class EpisodePipeline {
         duration <= this.ledger.controls.maxEpisodeSeconds * 1000,
       audioEnabled: this.audioEnabled,
       analysisEnabled: this.enabled && this.configured,
-      requiresAudioConsent: !episode.refs.length,
+      requiresAudioConsent: !hasCachedTranscript && !episode.refs.length,
+      durationLimitAppliesTo: "NEW_AUDIO_TRANSCRIPTION",
+      recovery: this.transcriptRecovery(feed, id, episode),
       estimatedAudioCost: duration ? Math.ceil(duration / 1000) * 0.0001 : null,
       rights: rights
         ? {
@@ -375,7 +391,48 @@ export class EpisodePipeline {
         : null,
     };
   }
-  async request({
+  transcriptRecovery(feedUrl, episodeId, episode) {
+    const previous = this.status(feedUrl, episodeId);
+    if (previous?.code !== "DURATION_LIMIT" || !["FAILED", "BLOCKED"].includes(previous.state)) return null;
+    const variant = episode.audioUrl ? hash(episode.audioUrl) : null;
+    const cached = variant && (this.store.get("transcript", `${episodeKey(feedUrl, episodeId)}:${variant}`) || this.store.get("audio-transcript", variant));
+    const cacheFound = !!cached?.segments?.length;
+    const publisherReference = Boolean(episode.refs?.length || episode.hasPublisherTranscript);
+    // Only the legacy duration-before-discovery defect is automatically
+    // reassessed. A current duration refusal is not an unlimited retry token.
+    const stale = !previous.transcriptChecks?.publisherTranscriptChecked && !previous.reassessedFromJobId;
+    const processing = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
+    const display = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
+    const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, "intelligence");
+    this.ledger.refresh();
+    const totals = this.ledger.totals();
+    const budgetAvailable = this.ledger.controls.enabled && totals.day < this.ledger.controls.dailyUsd && totals.month < this.ledger.controls.monthlyUsd;
+    const eligible = stale && processing?.allowed !== false && display?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
+    return {
+      historicalFailure: { jobId: previous.jobId, code: previous.code, reason: previous.reason, at: previous.completedAt || previous.startedAt },
+      stale, eligible,
+      blockerCode: processing?.allowed === false ? processing.code : display?.allowed === false ? display.code
+        : operational?.allowed === false ? "INTELLIGENCE_POLICY_HIGH"
+        : !this.enabled || !this.configured ? "SERVER_UNAVAILABLE"
+        : !budgetAvailable ? "BUDGET_LIMIT" : null,
+      reason: processing?.allowed === false ? processing.reason : display?.allowed === false ? display.reason
+        : operational?.allowed === false ? "New intelligence processing is paused by policy."
+        : !this.enabled || !this.configured ? "Episode analysis is temporarily unavailable."
+        : !budgetAvailable ? "The intelligence budget is unavailable or exhausted."
+        : stale ? "The historical duration refusal predates transcript discovery. Recheck authorised transcripts without paid audio."
+        : previous.reason || "Audio transcription exceeds the current duration limit.",
+      sources: { canonicalOrMatchingAudioCache: cacheFound ? "FOUND" : "UNAVAILABLE", publisherTranscript: publisherReference ? "REFERENCE_FOUND" : "UNAVAILABLE", publisherTranscriptFetched: "NOT_CHECKED", audioFallback: "NOT_REQUESTED" },
+    };
+  }
+  async request(input) {
+    const key = episodeKey(input.feedUrl, input.episodeId);
+    if (this.requesting.has(key)) return this.requesting.get(key);
+    const pending = this.requestOnce(input);
+    this.requesting.set(key, pending);
+    try { return await pending; }
+    finally { this.requesting.delete(key); }
+  }
+  async requestOnce({
     feedUrl,
     episodeId,
     allowAudio = false,
@@ -390,6 +447,11 @@ export class EpisodePipeline {
     }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
+    let recovery = null;
+    if (previous?.code === "DURATION_LIMIT" && ["FAILED", "BLOCKED"].includes(previous.state)) {
+      recovery = this.transcriptRecovery(feedUrl, episodeId, await this.resolveEpisode(feedUrl, episodeId));
+      if (recovery?.eligible) allowAudio = false;
+    }
     // A source-refresh job can fail before it starts (for example after an
     // SQS visibility lease expires). Retry from the preserved completed
     // record so the next worker rechecks the publisher source without
@@ -404,10 +466,10 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state)
+      ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state) && !recovery?.eligible
     )
       return publicIntelligence(previous);
-    if (!completed(previous) && previous?.attempts >= 2)
+    if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)
       return publicIntelligence(previous);
     if (completed(previous)) {
       const episode = await this.resolveEpisode(feedUrl, episodeId);
@@ -439,7 +501,7 @@ export class EpisodePipeline {
       };
     if (
       previous?.state === "FAILED" &&
-      (!retry || previous.attempts >= 2 || !previous.retryable)
+      (!retry || previous.attempts >= 2 || !previous.retryable) && !recovery?.eligible
     )
       return publicIntelligence(previous);
     if (!this.enabled || !this.configured)
@@ -480,6 +542,7 @@ export class EpisodePipeline {
       allowAudio,
       feedUrl,
       episodeId,
+      reassessedFromJobId: recovery?.eligible ? previous.jobId : undefined,
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
       refreshBaseJobId: forcePublisherRefresh && completed(previous) ? null : undefined,
     };

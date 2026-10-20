@@ -3,6 +3,8 @@ import { createStarCastServer } from "./server.mjs";
 import { LocalStore } from "./persistence.mjs";
 import { RightsClassification } from "./rights-registry.mjs";
 import { assessTranscript } from "./transcripts.mjs";
+import { episodeKey } from "./episode-pipeline.mjs";
+import { PROCESSING_VERSION } from "./openai-intelligence.mjs";
 
 const feedUrl = "https://publisher.example/operations.xml";
 const feed = `<?xml version="1.0"?><rss><channel><title>Research &amp; Practice</title><itunes:author>Fixture Publisher</itunes:author><itunes:image href="https://images.example/research.png"/><item><guid>authorised-episode</guid><title>Authorised &amp; grounded</title><pubDate>Tue, 20 Oct 2026 10:00:00 GMT</pubDate><itunes:duration>02:00</itunes:duration><enclosure url="https://publisher.example/authorised.mp3"/></item><item><guid>restricted-episode</guid><title>Needs assessment</title><pubDate>Mon, 19 Oct 2026 10:00:00 GMT</pubDate><itunes:duration>03:00</itunes:duration><enclosure url="https://publisher.example/restricted.mp3"/></item></channel></rss>`;
@@ -58,12 +60,23 @@ try {
   assert.equal((await preview.json()).impacts.length, 2, "policy impact previews are bounded and do not queue work");
   assert.equal(app.pipeline.status(feedUrl, "authorised-episode"), null);
 
+  app.store.set("intelligence", episodeKey(feedUrl, "authorised-episode"), {
+    state: "BLOCKED", code: "DURATION_LIMIT", reason: "Legacy duration gate", attempts: 2,
+    jobId: "historical-duration", processingVersion: PROCESSING_VERSION, feedUrl, episodeId: "authorised-episode",
+    startedAt: "2026-01-01T00:00:00.000Z", completedAt: "2026-01-01T00:00:01.000Z",
+  });
+  const historical = await (await get(`/api/admin/episodes/detail?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=authorised-episode`)).json();
+  assert.equal(historical.episode.action.type, "REASSESS");
+  assert.equal(historical.episode.recovery.historicalFailure.code, "DURATION_LIMIT");
+  assert.equal(historical.processing.elapsedMs, 1000, "terminal duration does not grow with the clock");
+
   const prepared = await post("/api/admin/episodes/prepare", { feedUrl, episodeId: "authorised-episode" });
   assert.equal(prepared.status, 202, "an eligible, explicitly requested episode enters the existing pipeline");
   assert.equal((await prepared.json()).audioTranscription, "NOT_REQUESTED", "routine admin preparation does not opt into paid audio transcription");
   await Promise.all(app.pipeline.inflight.values());
   const episode = await (await get(`/api/admin/episodes/detail?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=authorised-episode`)).json();
   assert.equal(episode.episode.state, "READY");
+  assert.equal(episode.processingHistory.length, 2, "previous failure is retained after preparation");
   assert.equal(episode.episode.features.find((feature) => feature.name === "Episode brief").state, "READY");
   assert.ok(episode.timeline.some((item) => item.type === "PROCESSING_COMPLETED"), "timeline contains only recorded lifecycle events");
   assert.equal(episode.episode.transcript.sourceUri, transcript.sourceUri, "operations users may inspect transcript provenance without receiving transcript text");

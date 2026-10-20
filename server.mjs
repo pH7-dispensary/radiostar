@@ -605,7 +605,7 @@ export function createStarCastServer({
     return [...feeds.values()];
   };
   const followedCount = (feedUrl) => store.all("follow").filter(([, value]) => value.feedUrl === feedUrl).length;
-  const jobsForEpisode = (feedUrl, episodeId) => store.all("intelligence")
+  const jobsForEpisode = (feedUrl, episodeId) => [...store.all("intelligence-history"), ...store.all("intelligence")]
     .map(([, job]) => job)
     .filter((job) => job.feedUrl === feedUrl && (job.episodeId === episodeId || job.episode?.id === episodeId));
   const failureCategory = (code) => {
@@ -703,6 +703,7 @@ export function createStarCastServer({
     const permissions = rights.resolve(feedUrl, episode.id);
     const policy = intelligencePolicy.effective(feedUrl, episode.id);
     const operational = intelligencePolicy.features(feedUrl, episode.id);
+    const recovery = pipeline.transcriptRecovery(feedUrl, episode.id, episode);
     const active = new Set(["QUEUED", "DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING", "PROCESSING", "PARTIAL_READY"]);
     let state = "NOT_PREPARED", reason = "This episode has not been prepared yet.", code = "NOT_PREPARED";
     if (!processing.allowed || !display.allowed) [state, reason, code] = ["UNAVAILABLE", !processing.allowed ? processing.reason : display.reason, !processing.allowed ? processing.code : display.code];
@@ -711,6 +712,8 @@ export function createStarCastServer({
     // visible without changing the underlying rights decision.
     else if (publicJob?.state === "READY") [state, reason, code] = ["READY", "Authorised intelligence is ready.", "READY"];
     else if (!operational.intelligence) [state, reason, code] = ["PAUSED", "New intelligence processing is paused by the podcast intelligence policy.", "INTELLIGENCE_POLICY_HIGH"];
+    else if (recovery?.eligible) [state, reason, code] = ["NOT_PREPARED", recovery.reason, "TRANSCRIPT_REASSESSMENT_AVAILABLE"];
+    else if (recovery?.stale && recovery.blockerCode) [state, reason, code] = ["UNAVAILABLE", recovery.reason, recovery.blockerCode];
     else if (publicJob?.state === "FAILED") [state, reason, code] = ["FAILED", publicJob.reason || "The latest preparation attempt failed.", publicJob.code || "ANALYSIS_FAILED"];
     else if (publicJob?.state === "BLOCKED") [state, reason, code] = ["UNAVAILABLE", publicJob.reason || "Preparation is currently unavailable.", publicJob.code || "PROCESSING_BLOCKED"];
     else if (publicJob?.state === "QUEUED") [state, reason, code] = ["QUEUED", "Preparation is waiting for the processing worker.", "QUEUED"];
@@ -775,6 +778,7 @@ export function createStarCastServer({
     ].map(([name, featureState, detail]) => ({ name, state: featureState, reason: detail || (featureState === "READY" ? "Available from the authorised processing record." : null) }));
     const action = ready ? { type: "VIEW_RESULTS", label: "View intelligence" }
       : preparing ? { type: "VIEW_PROCESSING", label: "View processing" }
+      : recovery?.eligible ? { type: "REASSESS", label: "Recheck transcripts & prepare" }
       : failed && publicJob?.retryable && processing.allowed && display.allowed ? { type: "RETRY", label: "Retry eligible failure" }
       : state === "NOT_PREPARED" ? { type: "PREPARE", label: "Prepare intelligence" }
       : state === "PAUSED" ? { type: "RESUME", label: "Resume processing" }
@@ -783,7 +787,7 @@ export function createStarCastServer({
       !processing.allowed ? { code: processing.code, reason: processing.reason, type: "RIGHTS" } : null,
       !display.allowed ? { code: display.code, reason: display.reason, type: "RIGHTS" } : null,
       !operational.intelligence && !ready ? { code: "INTELLIGENCE_POLICY_HIGH", reason: "New intelligence processing is paused by the selected policy.", type: "POLICY" } : null,
-      failed ? { code, reason, type: "PROCESSING" } : null,
+      (failed || state === "UNAVAILABLE") && processing.allowed && display.allowed ? { code, reason, type: "PROCESSING" } : null,
     ].filter(Boolean);
     const expectedProcessing = ready ? "Permitted cached intelligence remains available."
       : state === "PAUSED" ? "No new work will start until an administrator changes the intelligence level."
@@ -794,6 +798,7 @@ export function createStarCastServer({
       ...episode,
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episode.id),
       state, code, reason, action, job: publicJob, policy: { ...policy, level: intelligenceLevel(policy.tier) }, rights: permissions,
+      recovery,
       processingStatus: listenerStatus(feedUrl, episode.id),
       rightsDecisions: { processing, display, search, brief: briefDecision, chapters: chapterDecision, topics: topicsDecision, moments: momentDecision, adDetection: adDetectionDecision }, features,
       effectivePolicy: { level: intelligenceLevel(policy.tier), source: policy.source, version: policy.version, availability: state, eligible: state === "NOT_PREPARED", blockers, expectedProcessing },
@@ -888,16 +893,17 @@ export function createStarCastServer({
           jobId: event.jobId,
           code: event.code,
         });
-    } else {
+    }
+    {
       // Pre-instrumentation jobs retain only their persisted timestamps. Label
       // them as such rather than inventing detailed stages retroactively.
-      for (const job of history) {
+      for (const job of history.filter((job) => !recordedEvents.some((event) => event.jobId === job.jobId))) {
         if (job.startedAt) timeline.push({ at: job.startedAt, type: "LEGACY_PROCESSING_REQUEST", label: "Recorded processing request from a pre-timeline job.", state: job.state, jobId: job.jobId });
         if (job.completedAt) timeline.push({ at: job.completedAt, type: "LEGACY_PROCESSING_COMPLETION", label: "Recorded completion from a pre-timeline job.", state: job.state, jobId: job.jobId });
       }
     }
     const status = listenerStatus(feedUrl, episodeId);
-    const workerStarted = recordedEvents.find((event) => event.type === "WORKER_STARTED")?.at || null;
+    const workerStarted = recordedEvents.find((event) => event.type === "WORKER_STARTED" && event.jobId === status.jobId)?.at || null;
     const queuedAt = Date.parse(status.startedAt || "");
     const workerAt = Date.parse(workerStarted || "");
     const jobCost = status.jobId ? ledger.usage.filter((row) => row.id.startsWith(`${status.jobId}:`)).reduce((sum, row) => sum + row.usd, 0) : 0;
@@ -915,7 +921,7 @@ export function createStarCastServer({
         startedAt: status.startedAt,
         lastUpdatedAt: status.lastUpdatedAt,
         completedAt: status.completedAt,
-        elapsedMs: queuedAt ? Math.max(0, Date.now() - queuedAt) : null,
+        elapsedMs: queuedAt ? Math.max(0, (Date.parse(status.completedAt || "") || Date.now()) - queuedAt) : null,
         queueWaitMs: queuedAt && workerAt ? Math.max(0, workerAt - queuedAt) : null,
         failureCategory: status.failureCategory,
         failureCode: status.availabilityCode || status.code || null,
@@ -1023,7 +1029,7 @@ export function createStarCastServer({
     await assessEpisodeRights(input.feedUrl, input.episodeId);
     const detail = await episodeDetail(input.feedUrl, input.episodeId);
     const current = detail.episode;
-    if (!["PREPARE", "RETRY"].includes(current.action.type)) throw Error(current.reason || "This episode is not eligible for preparation.");
+    if (!["PREPARE", "RETRY", "REASSESS"].includes(current.action.type)) throw Error(current.reason || "This episode is not eligible for preparation.");
     const requested = await pipeline.request({ feedUrl: input.feedUrl, episodeId: input.episodeId, retry: current.action.type === "RETRY", allowAudio: false, trigger: "admin" });
     const status = listenerStatus(input.feedUrl, input.episodeId);
     rights.audit("admin-episode-processing-requested", `${input.feedUrl}:${input.episodeId}`, actor.id, { jobId: requested.jobId || null, state: status.state, audio: false });
@@ -1806,7 +1812,7 @@ export function createStarCastServer({
         const record = rights.set({ ...input,
           ...Object.fromEntries(corePermissions.map((key) => [key, input[key] === undefined ? prior[key] === true : input[key]])),
           assessmentSource: "super-admin-technical-review", assessmentEvidence: [
-          ...(prior.assessmentEvidence || []), { type: "INDEPENDENT_FEATURE_AUTHORISATION", source: input.evidenceIssuer, scope: input.episodeId ? "episode" : "podcast", value: input.evidenceReference },
+          ...(prior.assessmentEvidence || []), { type: input.assessmentStatus === "REJECTED" ? "EVIDENCE_REVIEW_NO_BASIS" : "INDEPENDENT_FEATURE_AUTHORISATION", source: input.evidenceIssuer, scope: input.episodeId ? "episode" : "podcast", value: input.evidenceReference },
         ] }, { actor: actor.id });
         rights.audit("rights-assessment", record.id, actor.id);
         adminService.appendAudit({ actor, action: "independent-rights-assessment", resource: record.id, previousState: prior, newState: record, reason: input.legalBasis, outcome: "ALLOWED" });
