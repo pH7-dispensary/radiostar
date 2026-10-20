@@ -1,6 +1,6 @@
 const root = document.querySelector("#app");
 let state = { view: "overview" };
-const navigation = [["overview", "Overview"], ["features", "Feature flags"], ["rights", "Rights"], ["intelligence", "Intelligence"], ["translate", "Translate"], ["costs", "Costs"], ["audit", "Audit log"], ["settings", "Settings"]];
+const navigation = [["overview", "Overview"], ["features", "Feature flags"], ["rights", "Rights"], ["blocked", "Blocked content"], ["intelligence", "Intelligence"], ["translate", "Translate"], ["costs", "Costs"], ["audit", "Audit log"], ["settings", "Settings"]];
 const html = (value) => String(value ?? "—").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const when = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not recorded";
 const csrf = () => document.cookie.split("; ").find((item) => item.startsWith("starcast_admin_csrf="))?.slice("starcast_admin_csrf=".length) || "";
@@ -29,7 +29,7 @@ function login(error = "") {
 }
 
 async function load(view = state.view) {
-  const paths = { overview: "/api/admin/overview", features: "/api/admin/features", rights: "/api/admin/rights/control-centre", intelligence: "/api/admin/intelligence", translate: "/api/admin/translation/status", costs: "/api/admin/intelligence", audit: "/api/admin/audit?limit=100", settings: "/api/admin/configuration" };
+  const paths = { overview: "/api/admin/overview", features: "/api/admin/features", rights: "/api/admin/rights/control-centre", blocked: "/api/admin/rights/blocked-content", intelligence: "/api/admin/intelligence", translate: "/api/admin/translation/status", costs: "/api/admin/intelligence", audit: "/api/admin/audit?limit=100", settings: "/api/admin/configuration" };
   state[view] = await api(paths[view]);
 }
 async function initialise() {
@@ -71,6 +71,26 @@ function rights() {
   if (testMode) testMode.onsubmit = async (event) => { event.preventDefault(); const input = Object.fromEntries(new FormData(testMode)); try { await api("/api/admin/rights/super-admin-test-mode", { method: "POST", body: JSON.stringify({ ...input, enabled: input.enabled === "true" }) }); notify("Protected test mode changed and audited."); await load("rights"); render(); } catch (err) { notify(err.message); } };
 }
 
+function blocked() {
+  const d = state.blocked, superAdmin = state.session.actor.role === "SUPER_ADMIN";
+  const rows = [];
+  for (const group of d.groups) {
+    rows.push({ scope: "podcast", feedUrl: group.feedUrl, podcast: group.podcast, publisher: group.publisher, episodeId: null, episodeTitle: null, status: group.status, currentRestriction: group.channelRestriction || "UNASSESSED", refusalReason: group.channelRestriction ? "Channel-level rights assessment is required." : "No channel-level restriction recorded.", processingEligibility: group.channelRestriction ? "REQUIRES_APPROVED_BASIS" : "ELIGIBLE", canApprove: group.channelCanApprove !== false });
+    for (const episode of group.episodes) rows.push({ ...episode, scope: "episode", feedUrl: group.feedUrl, podcast: episode.podcast || group.podcast, publisher: episode.publisher || group.publisher });
+  }
+  state.blockedActions = rows;
+  const table = rows.length ? `<div class="table-wrap"><table class="blocked-table"><thead><tr><th>Podcast / episode</th><th>Restriction</th><th>Processing</th><th>Attempts</th><th>Estimated audio cost</th><th></th></tr></thead><tbody>${rows.map((item, index) => `<tr><td><strong>${html(item.podcast || "Podcast")}</strong><br>${item.episodeTitle ? html(item.episodeTitle) : "Channel approval · future eligible episodes"}<br><span class="muted small">${html(item.feedUrl)}</span></td><td>${badge(item.currentRestriction)}<br><span class="muted small">${html(item.refusalReason)}</span></td><td>${badge(item.status)}<br><span class="muted small">${html(item.processingEligibility)}</span></td><td>${html(item.previousAttempts || 0)}</td><td>${item.estimatedAudioCostUsd == null ? "Not measurable" : `$${html(item.estimatedAudioCostUsd.toFixed(4))}`}</td><td>${superAdmin && item.canApprove ? `<button class="primary" data-approve="${index}">Approve &amp; Process</button>` : item.retryable && superAdmin ? `<button class="secondary" data-retry="${index}">Retry eligible failure</button>` : `<span class="muted small">${item.canApprove ? "Super Admin required" : "Mandatory restriction"}</span>`}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No currently blocked content has been recorded. New blocked requests will appear here.</div>`;
+  page("Blocked Content", "Approve a documented processing basis, then enqueue the existing bounded pipeline. Mandatory restrictions cannot be overridden.", `<div class="grid">${card("Channels", d.groups.length, "Grouped by RSS source")}${card("Blocked items", rows.length, "Recorded rights or processing blocks")}${card("Measured median", d.measuredMedianProcessingMs ? `${Math.round(d.measuredMedianProcessingMs / 1000)}s` : "Unavailable", "Completed authorised jobs only")}</div><section class="panel"><h3>Podcast channels and individual episodes</h3><p>Costs are only shown where duration and an approved audio-transcription permission make them measurable. Processing still checks cache, permissions, deduplication and hard budgets.</p>${table}</section><section id="processing-editor" class="panel" hidden></section>`);
+  document.querySelectorAll("[data-approve]").forEach((button) => button.onclick = () => approvalEditor(state.blockedActions[Number(button.dataset.approve)]));
+  document.querySelectorAll("[data-retry]").forEach((button) => button.onclick = () => retryBlocked(state.blockedActions[Number(button.dataset.retry)]));
+}
+function approvalEditor(item) {
+  const editor = document.querySelector("#processing-editor"); editor.hidden = false;
+  editor.innerHTML = `<h3>Approve &amp; Process</h3><p><strong>${html(item.podcast || "Podcast")}</strong>${item.episodeTitle ? ` · ${html(item.episodeTitle)}` : " · latest episode now; future eligible episodes remain covered"}</p><p>Approval records a processing basis. It does not authorise captions, dubbing, translation, voice replication, reservations, disputes or takedowns.</p><form id="approval-form"><label>Processing basis<select name="classification"><option value="LICENSED">Explicit licence / authorisation</option><option value="TDM_ELIGIBLE">Documented qualifying TDM basis</option></select></label><label>Approved legal basis<textarea name="legalBasis" required placeholder="Reference the approved assessment or licence basis"></textarea></label><label>Approval reason<textarea name="reason" required></textarea></label><label class="check"><input type="checkbox" name="canTranscribeAudio"> Audio transcription is specifically authorised if no suitable publisher transcript exists</label><label>Confirmation<input name="confirmation" placeholder="Type APPROVE & PROCESS" required></label><div class="actions"><button class="primary">Approve &amp; queue intelligence</button></div></form>`;
+  document.querySelector("#approval-form").onsubmit = async (event) => { event.preventDefault(); const form = Object.fromEntries(new FormData(event.currentTarget)); try { const result = await api("/api/admin/rights/approve-process", { method: "POST", body: JSON.stringify({ ...form, scope: item.scope, feedUrl: item.feedUrl, episodeId: item.episodeId || undefined, podcast: item.podcast, episodeTitle: item.episodeTitle, canTranscribeAudio: form.canTranscribeAudio === "on" }) }); notify(`Approved. Processing is ${label(result.status.state)}.`); await load("blocked"); render(); } catch (err) { notify(err.message); } };
+}
+async function retryBlocked(item) { try { const result = await api("/api/admin/rights/retry-processing", { method: "POST", body: JSON.stringify({ feedUrl: item.feedUrl, episodeId: item.episodeId }) }); notify(`Retry is ${label(result.status.state)}.`); await load("blocked"); render(); } catch (err) { notify(err.message); } }
+
 function intelligence() {
   const d = state.intelligence;
   const body = `<div class="grid">${card("Jobs", d.jobs.length, "Persisted intelligence jobs")}${card("Daily cap", `$${d.controls.dailyUsd}`, "Hard server limit")}${card("Monthly cap", `$${d.controls.monthlyUsd}`, "Hard server limit")}${card("Audio analysis", d.controls.audioAnalysisEnabled ? "Enabled" : "Disabled", "Consent still required")}</div><section class="panel"><h3>Processing queue</h3><p>Only recorded jobs are shown. Retry and invalidation are withheld until their rights and cost revalidation path is complete.</p>${d.jobs.length ? `<div class="table-wrap"><table><thead><tr><th>Episode</th><th>State</th><th>Transcript</th><th>Updated</th></tr></thead><tbody>${d.jobs.slice(0, 50).map((job) => `<tr><td>${html(job.episodeId)}</td><td>${badge(job.state)}</td><td>${html(job.transcript?.provenance || "Not recorded")}</td><td>${when(job.updatedAt)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No processing jobs have been recorded.</div>`}</section>`;
@@ -85,5 +105,5 @@ function settings() {
   page("Settings", "Global configuration with confirmation and audit history.", body);
   document.querySelector("#configuration").onsubmit = async (event) => { event.preventDefault(); const form = Object.fromEntries(new FormData(event.currentTarget)); const input = { expectedVersion: c.version, reason: form.reason, confirmation: form.confirmation, values: { processing: { automaticFollowPreparation: form.automaticFollowPreparation === "true" } } }; try { await api("/api/admin/configuration", { method: "POST", body: JSON.stringify(input) }); notify("Configuration saved and audited."); await load("settings"); render(); } catch (err) { notify(err.message); } };
 }
-function render() { ({ overview, features, rights, intelligence, translate, costs, audit, settings }[state.view] || overview)(); }
+function render() { ({ overview, features, rights, blocked, intelligence, translate, costs, audit, settings }[state.view] || overview)(); }
 initialise();

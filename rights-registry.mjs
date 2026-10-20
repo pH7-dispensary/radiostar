@@ -172,6 +172,71 @@ export class RightsRegistry {
     });
     return record;
   }
+  approveProcessing(input = {}, { actor = "admin" } = {}) {
+    if (typeof input.feedUrl !== "string" || !input.feedUrl)
+      throw Error("A publisher feed is required.");
+    if (input.episodeId !== undefined && typeof input.episodeId !== "string")
+      throw Error("Episode identity is invalid.");
+    if (![RightsClassification.LICENSED, RightsClassification.TDM_ELIGIBLE].includes(input.classification))
+      throw Error("Choose the documented processing basis for this approval.");
+    const legalBasis = String(input.legalBasis || "").trim().slice(0, 1000);
+    const reason = String(input.reason || "").trim().slice(0, 1000);
+    if (!legalBasis || !reason) throw Error("A legal basis and approval reason are required.");
+    if (input.confirmation !== "APPROVE & PROCESS")
+      throw Error("Type APPROVE & PROCESS before approving content.");
+    const prior = this.resolve(input.feedUrl, input.episodeId || "");
+    // An administrator records a documented basis; they do not override a
+    // publisher reservation, dispute, suspension, or takedown.
+    if (prior.id && (prior.suspendedAt || prior.deletedAt || prior.rightsReserved || prior.classification === RightsClassification.DISPUTED))
+      throw Error("This content has a mandatory rights restriction and cannot be approved here.");
+    const record = this.set({
+      feedUrl: input.feedUrl,
+      episodeId: input.episodeId || undefined,
+      publisher: input.publisher,
+      podcast: input.podcast,
+      episodeTitle: input.episodeTitle,
+      classification: input.classification,
+      legalBasis,
+      restrictions: "Approved for bounded Radio Star intelligence only.",
+      assessmentStatus: RightsAssessmentStatus.APPROVED,
+      explicitAuthorisation: input.classification === RightsClassification.LICENSED,
+      rightsReserved: false,
+      canAcquireTranscript: true,
+      canProcessForAi: true,
+      canTranscribeAudio: input.canTranscribeAudio === true,
+      canDisplayDerivedIntelligence: true,
+      canRetain: true,
+      canRegenerate: true,
+      // These remain independent product and rights decisions.
+      canDisplayCaptions: false,
+      canTranslateText: false,
+      canGenerateDubbedAudio: false,
+      canCacheTranslatedAudio: false,
+      canDistributeTranslation: false,
+      canCloneSpeakerVoice: false,
+    }, { actor });
+    // A documented TDM basis can relax only the optional STRONG workflow for
+    // this scope. It never disables mandatory checks or other feature gates.
+    const override = this.setOverride({
+      feedUrl: input.feedUrl,
+      episodeId: input.episodeId || undefined,
+      mode: input.classification === RightsClassification.TDM_ELIGIBLE ? RightsEnforcementMode.LITE : undefined,
+      features: {
+        intelligenceProcessing: true,
+        intelligenceDisplay: true,
+        conversationSearch: true,
+      },
+      reason: `Super Admin approval: ${reason}`,
+    }, { actor });
+    this.audit("super-admin-processing-approved", record.id, actor, {
+      scope: record.episodeId ? "episode" : "podcast",
+      classification: record.classification,
+      legalBasis,
+      audioTranscriptionApproved: record.canTranscribeAudio,
+      reason,
+    });
+    return { record, override, reason };
+  }
   setOverride(input = {}, { actor = "admin" } = {}) {
     if (typeof input.feedUrl !== "string" || !input.feedUrl) throw Error("A publisher feed is required.");
     if (input.episodeId !== undefined && typeof input.episodeId !== "string") throw Error("Episode identity is invalid.");
@@ -199,7 +264,10 @@ export class RightsRegistry {
   resolve(feedUrl, episodeId = "") {
     const episode = this.store.get("rights", key(feedUrl, episodeId));
     const podcast = this.store.get("rights", key(feedUrl));
-    const selected = episode?.suspendedAt || episode?.deletedAt ? episode : podcast?.suspendedAt || podcast?.deletedAt ? podcast : episode || podcast;
+    const mandatory = (record) => record && (record.suspendedAt || record.deletedAt || record.rightsReserved || record.classification === RightsClassification.DISPUTED);
+    // A channel-level reservation/dispute always constrains an episode. An
+    // episode record cannot be used to sidestep the publisher's mandatory hold.
+    const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast : episode || podcast;
     return (
       normaliseRecord(selected) || {
         id: null,
@@ -331,6 +399,7 @@ export class RightsRegistry {
       episodeId: input.episodeId || null,
       publisher: typeof input.publisher === "string" ? input.publisher.slice(0, 300) : prior?.publisher || null,
       podcast: typeof input.podcast === "string" ? input.podcast.slice(0, 300) : prior?.podcast || null,
+      episodeTitle: typeof input.episodeTitle === "string" ? input.episodeTitle.slice(0, 500) : prior?.episodeTitle || null,
       classification: input.classification,
       licence: typeof input.licence === "string" ? input.licence.slice(0, 1000) : prior?.licence || null,
       restrictions: typeof input.restrictions === "string" ? input.restrictions.slice(0, 2000) : prior?.restrictions || null,

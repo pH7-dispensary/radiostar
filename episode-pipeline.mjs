@@ -102,6 +102,7 @@ export class EpisodePipeline {
     audioFactory = prepareAudio,
     rights = null,
     queue = null,
+    onCompleted = null,
     jobTimeoutMs = 15 * 60 * 1000,
   }) {
     Object.assign(this, {
@@ -116,6 +117,7 @@ export class EpisodePipeline {
       audioFactory,
       rights,
       queue,
+      onCompleted,
       jobTimeoutMs,
     });
     this.inflight = new Map();
@@ -253,6 +255,8 @@ export class EpisodePipeline {
       startedAt: new Date().toISOString(),
       cacheHit: false,
       trigger,
+      feedUrl,
+      episodeId,
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
     };
     this.store.set("intelligence", key, initial);
@@ -580,6 +584,14 @@ export class EpisodePipeline {
         completedAt: new Date().toISOString(),
         processingMs: Date.now() - Date.parse(value.startedAt),
       });
+      // Candidate creation is conservative and persisted separately. It never
+      // enables automatic skipping; the callback may only inspect grounded,
+      // completed transcript material.
+      try {
+        this.onCompleted?.({ feedUrl, episodeId, intelligence: value });
+      } catch (error) {
+        console.error(JSON.stringify({ event: "post-processing-candidate-inspection-failed", code: error?.name || "INSPECTION_FAILED" }));
+      }
     } catch (error) {
       const detail = failure(error);
       const blocked = [
