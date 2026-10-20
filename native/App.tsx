@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -57,6 +58,7 @@ import { feedback } from "./src/feedback";
 import { motion, themes, type StarTheme } from "./src/design";
 import { useEpisodeIntelligence } from "./src/useEpisodeIntelligence";
 import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
+import { PlayerIntelligenceAccordion } from "./src/PlayerIntelligenceAccordion";
 import { SearchScreen } from "./src/SearchScreen";
 import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
 import { ListenerSync } from "./src/ListenerSync";
@@ -1120,8 +1122,10 @@ function PlayerSheet({
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [notice, setNotice] = useState(""),
     [panel, setPanel] = useState<"brief" | "explore" | "ads" | null>(null),
-    [intelligenceOpen, setIntelligenceOpen] = useState(false),
+    [titleExpanded, setTitleExpanded] = useState(false),
     [progressWidth, setProgressWidth] = useState(1);
+  const { width: viewportWidth, height: viewportHeight, fontScale } =
+    useWindowDimensions();
   const intelligence = useEpisodeIntelligence(
     source?.feedUrl,
     source?.episodeId,
@@ -1131,6 +1135,7 @@ function PlayerSheet({
   useEffect(() => {
     setPanel(null);
     setNotice("");
+    setTitleExpanded(false);
   }, [source?.episodeId, source?.feedUrl]);
   useEffect(() => {
     if (!visible) setPanel(null);
@@ -1185,23 +1190,12 @@ function PlayerSheet({
   let percent = snapshot.durationMs
     ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
     : 0;
-  const intelligenceLabel = (() => {
-    switch (intelligence.status?.state) {
-      case "READY": return "Ready";
-      case "PARTIAL_READY": return "Partly ready";
-      case "QUEUED": return "Queued";
-      case "CHECKING": return "Checking";
-      case "ACQUIRING_TRANSCRIPT": return "Preparing";
-      case "TRANSCRIBING": return "Preparing audio";
-      case "ANALYSING": return "Finding moments";
-      case "INDEXING": return "Making searchable";
-      case "PROCESSING": case "DISCOVERING": case "UNDERSTANDING": case "ORGANISING": return "Preparing";
-      case "BUDGET_PAUSED": return "Paused";
-      case "UNAVAILABLE": case "BLOCKED": case "CANCELLED": return "Unavailable";
-      case "FAILED": return "Needs attention";
-      default: return enabled ? "Preparing" : "Available when enabled";
-    }
-  })();
+  const artworkSize = Math.min(
+    296,
+    Math.max(208, viewportWidth - (viewportWidth <= 340 ? 100 : 92)),
+  );
+  const artworkInset = artworkSize - 24;
+  const compactPlayer = viewportHeight < 690 || fontScale > 1.2;
   let setTimer = (minutes: number) => {
     timer.current?.start({ kind: "minutes", minutes });
     setNotice(`Sleep Timer set for ${minutes} minutes.`);
@@ -1302,19 +1296,54 @@ function PlayerSheet({
             </View>
             <ScrollView
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.playerSheet}
+              contentContainerStyle={[
+                styles.playerSheet,
+                compactPlayer && styles.playerSheetCompact,
+              ]}
             >
-              <View style={[styles.playerArtwork, { backgroundColor: p.wash }]}>
-                <Art url={source.artworkUrl} size={240} radius={28} />
-              </View>
-              <Text
-                numberOfLines={2}
-                style={[styles.playerTitle, { color: p.text }]}
+              <View
+                style={[
+                  styles.playerArtwork,
+                  {
+                    backgroundColor: p.wash,
+                    width: artworkSize,
+                    height: artworkSize,
+                    borderRadius: Math.round(artworkSize * 0.12),
+                  },
+                ]}
               >
-                {source.title}
-              </Text>
+                <Art
+                  url={source.artworkUrl}
+                  size={artworkInset}
+                  radius={Math.round(artworkInset * 0.112)}
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={source.title}
+                accessibilityHint={
+                  titleExpanded
+                    ? "Double tap to collapse the full episode title"
+                    : "Double tap to show the full episode title"
+                }
+                onPress={() => {
+                  feedback.selection();
+                  setTitleExpanded((expanded) => !expanded);
+                }}
+                style={styles.playerTitlePressable}
+              >
+                <Text
+                  numberOfLines={titleExpanded ? undefined : 2}
+                  style={[styles.playerTitle, { color: p.text }]}
+                >
+                  {source.title}
+                </Text>
+                <Text style={[styles.playerTitleToggle, { color: p.accent2 }]}>
+                  {titleExpanded ? "Show less" : "Show full title"}
+                </Text>
+              </Pressable>
               <Text
-                numberOfLines={1}
+                numberOfLines={titleExpanded ? 2 : 1}
                 style={[styles.playerShow, { color: p.muted }]}
               >
                 {source.show}
@@ -1357,14 +1386,16 @@ function PlayerSheet({
                       : snapshot.positionMs,
                   )
                 }
-                style={[styles.progressTouch, { backgroundColor: p.line }]}
+                style={styles.progressTouch}
               >
-                <View
-                  style={[
-                    styles.progressFill,
-                    { backgroundColor: p.accent2, width: `${percent}%` },
-                  ]}
-                />
+                <View style={[styles.progressTrack, { backgroundColor: p.line }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { backgroundColor: p.accent2, width: `${percent}%` },
+                    ]}
+                  />
+                </View>
               </Pressable>
               <View style={styles.timeRow}>
                 <Text style={[styles.small, { color: p.muted }]}>
@@ -1421,48 +1452,15 @@ function PlayerSheet({
                 ))}
               </View>
               <CaptionWindow p={p} />
-              <View style={[styles.playerTools, { borderColor: p.line }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Episode intelligence"
-                  accessibilityState={{ expanded: intelligenceOpen }}
-                  onPress={() => { feedback.light(); setIntelligenceOpen((open) => !open); }}
-                  style={styles.intelligenceHeader}
-                >
-                  <View style={styles.intelligenceHeaderCopy}>
-                    <Text style={[styles.eyebrow, { color: p.accent, marginTop: 0 }]}>EPISODE INTELLIGENCE</Text>
-                    <Text style={[styles.intelligenceStatus, { color: p.text }]}>{intelligenceLabel}</Text>
-                  </View>
-                  <Ionicons name={intelligenceOpen ? "chevron-up" : "chevron-down"} size={20} color={p.muted} />
-                </Pressable>
-                {intelligenceOpen && (
-                  <>
-                    <Text style={[styles.intelligenceCopy, { color: p.muted }]}>Getting this conversation ready never interrupts your listening.</Text>
-                    {(
-                      [
-                        ["AI Episode Brief", "A grounded overview from authorised transcript evidence.", "brief", "sparkles"],
-                        ["Explore Episode", "Chapters, topics and verified moments.", "explore", "compass-outline"],
-                        ["Ad Skip", "Only verified, audio-matched intervals are eligible.", "ads", "shield-checkmark-outline"],
-                      ] as const
-                    ).map(([label, detail, target, icon]) => (
-                      <Pressable
-                        key={target}
-                        accessibilityRole="button"
-                        accessibilityLabel={label}
-                        onPress={() => { feedback.light(); setPanel(target); }}
-                        style={[styles.intelligenceRow, { borderColor: p.line }]}
-                      >
-                        <Ionicons name={icon} size={19} color={p.accent2} />
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[styles.toolText, { color: p.text }]}>{label}</Text>
-                          <Text numberOfLines={1} style={[styles.intelligenceDetail, { color: p.muted }]}>{detail}</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={17} color={p.muted} />
-                      </Pressable>
-                    ))}
-                  </>
-                )}
-              </View>
+              <PlayerIntelligenceAccordion
+                source={source}
+                p={p}
+                enabled={enabled}
+                onEnable={onEnable}
+                intelligence={intelligence}
+                onPlay={(ms) => play({ ...source, startPositionMs: ms })}
+                onOpenPanel={setPanel}
+              />
               <ProblemReport p={p} compact />
               <Pressable
                 accessibilityRole="button"
@@ -3209,9 +3207,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 87,
-    minHeight: 53,
-    borderRadius: 16,
+    bottom: 90,
+    minHeight: 60,
+    borderRadius: 19,
     borderWidth: 1,
     overflow: "hidden",
     shadowOffset: { width: 0, height: 10 },
@@ -3220,8 +3218,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   miniInner: {
-    minHeight: 53,
-    padding: 6,
+    minHeight: 60,
+    padding: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -3264,7 +3262,15 @@ const styles = StyleSheet.create({
   tabIcon: { fontSize: 17, lineHeight: 19 },
   tabLabel: { fontSize: 10, fontWeight: "700" },
   modalSafe: { flex: 1 },
-  playerSheet: { padding: 21, paddingBottom: 50 },
+  playerSheet: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 72,
+  },
+  playerSheetCompact: { paddingTop: 4 },
   sheetHeader: {
     height: 42,
     flexDirection: "row",
@@ -3281,39 +3287,45 @@ const styles = StyleSheet.create({
   },
   playerArtwork: {
     alignSelf: "center",
-    width: 266,
-    height: 266,
-    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 13,
+    marginTop: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 4,
   },
+  playerTitlePressable: { marginTop: 20, minHeight: 44, alignItems: "center" },
   playerTitle: {
-    fontSize: 25,
+    fontSize: 24,
     lineHeight: 30,
     fontWeight: "800",
     letterSpacing: -0.7,
-    marginTop: 25,
     textAlign: "center",
   },
-  playerShow: { fontSize: 15, marginTop: 5, textAlign: "center" },
+  playerTitleToggle: { fontSize: 12, lineHeight: 18, fontWeight: "800", marginTop: 2 },
+  playerShow: { fontSize: 15, lineHeight: 21, marginTop: 4, textAlign: "center" },
   progressTouch: {
-    height: 5,
-    borderRadius: 3,
-    overflow: "hidden",
-    marginTop: 28,
+    height: 42,
+    justifyContent: "center",
+    marginTop: 17,
   },
-  progressFill: { height: "100%", borderRadius: 3 },
+  progressTrack: {
+    height: 6,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressFill: { height: "100%", borderRadius: 999 },
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 6,
+    marginTop: 0,
   },
   transport: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 19,
+    marginTop: 12,
   },
   transportSide: {
     minWidth: 72,
@@ -3332,7 +3344,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: 7,
-    marginTop: 18,
+    marginTop: 12,
   },
   playerTools: {
     marginTop: 24,

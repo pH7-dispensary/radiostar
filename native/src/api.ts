@@ -247,6 +247,8 @@ export const isProcessing = (status: IntelligenceStatus | null) =>
     "CHECKING",
     "QUEUED",
     "ACQUIRING_TRANSCRIPT",
+    "ANALYSING",
+    "INDEXING",
     "PROCESSING",
     "PARTIAL_READY",
     "DISCOVERING",
@@ -265,6 +267,8 @@ const processingLabels: Record<string, string> = {
   UNDERSTANDING: "Finding the interesting moments.",
   ORGANISING: "Making everything searchable.",
   READY: "Ready to explore",
+  BUDGET_PAUSED: "AI insights are paused for this episode.",
+  CANCELLED: "AI insights aren't available for this episode.",
   UNAVAILABLE: "AI insights aren't available for this episode.",
   FAILED: "We couldn't prepare this episode.",
 };

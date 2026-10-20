@@ -24,10 +24,12 @@ export function AdSkipPanel({
   source,
   p,
   onPlay,
+  showMasterToggle = true,
 }: {
   source: Source;
   p: StarTheme;
   onPlay(ms: number): Promise<unknown>;
+  showMasterToggle?: boolean;
 }) {
   const { snapshot, seek } = usePlayback();
   const [status, setStatus] = useState<SkipStatus | null>(null),
@@ -99,33 +101,35 @@ export function AdSkipPanel({
         Skip verified adverts
       </Text>
       <Text style={copy}>Keep conversations uninterrupted.</Text>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 56, borderBottomWidth: 0.5, borderColor: p.line }}
-      >
-        <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text style={{ color: p.text, fontSize: 16, fontWeight: "600" }}>Ad Skip</Text>
-          <Text style={[copy, { fontSize: 12, lineHeight: 17 }]}>Only independently verified, audio-matched intervals can ever be skipped.</Text>
+      {showMasterToggle && (
+        <View
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 56, borderBottomWidth: 0.5, borderColor: p.line }}
+        >
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={{ color: p.text, fontSize: 16, fontWeight: "600" }}>Ad Skip</Text>
+            <Text style={[copy, { fontSize: 12, lineHeight: 17 }]}>Only independently verified, audio-matched intervals can ever be skipped.</Text>
+          </View>
+          <Switch
+            accessibilityLabel="Enable Ad Skip"
+            disabled={busy || !status}
+            value={preferences.adSkipEnabled === true}
+            trackColor={{ true: p.accent2 }}
+            onValueChange={(value) => {
+              setBusy(true);
+              void listenerRequest("/api/listener/preferences", { adSkipEnabled: value })
+                .then((result) => {
+                  if (alive.current) {
+                    setPreferences(result.preferences);
+                    setMessage(value ? "Ad Skip is armed for future verified intervals." : "Ad Skip is turned off.");
+                    feedback.selection();
+                  }
+                })
+                .catch(() => alive.current && setMessage("Could not save Ad Skip. Please try again."))
+                .finally(() => alive.current && setBusy(false));
+            }}
+          />
         </View>
-        <Switch
-          accessibilityLabel="Enable Ad Skip"
-          disabled={busy || !status}
-          value={preferences.adSkipEnabled === true}
-          trackColor={{ true: p.accent2 }}
-          onValueChange={(value) => {
-            setBusy(true);
-            void listenerRequest("/api/listener/preferences", { adSkipEnabled: value })
-              .then((result) => {
-                if (alive.current) {
-                  setPreferences(result.preferences);
-                  setMessage(value ? "Ad Skip is armed for future verified intervals." : "Ad Skip is turned off.");
-                  feedback.selection();
-                }
-              })
-              .catch(() => alive.current && setMessage("Could not save Ad Skip. Please try again."))
-              .finally(() => alive.current && setBusy(false));
-          }}
-        />
-      </View>
+      )}
       <Text style={copy}>Choose which verified segment categories you would want to skip. No interval is skipped until independent evidence and a matching audio variant are available.</Text>
       {busy && (
         <LoadingState compact p={p} label="Updating your skip preferences…" />
