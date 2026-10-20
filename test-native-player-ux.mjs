@@ -9,6 +9,10 @@ const adSkip = read("native/src/AdSkipPanel.tsx");
 const adSkipRuntime = read("native/src/AdSkipRuntime.tsx");
 
 assert.match(api, /"ANALYSING",\s*\n\s*"INDEXING",\s*\n\s*"PROCESSING"/);
+assert.match(api, /availabilityCode/);
+assert.match(api, /This episode exceeds the current audio transcription limit\./);
+assert.match(api, /We couldn't find a usable transcript for this episode\./);
+assert.match(api, /Preparation was interrupted\./);
 assert.match(player, /IntelligencePreparation/);
 assert.match(player, /findEpisodeMoment/);
 assert.match(player, /Play from \{stamp\(moment\.startMs\)\}/);

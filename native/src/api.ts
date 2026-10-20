@@ -62,6 +62,22 @@ export type IntelligenceStatus = {
   deadlineAt?: string;
   reason?: string;
   code?: string;
+  // Additive listener-facing classification. `code` remains the durable
+  // server code for installed clients and operations history.
+  availabilityCode?:
+    | "RIGHTS_RESTRICTED"
+    | "LEGAL_BASIS_NOT_ESTABLISHED"
+    | "DURATION_LIMIT"
+    | "TRANSCRIPT_UNAVAILABLE"
+    | "TRANSCRIPT_TOO_LARGE"
+    | "AUDIO_TRANSCRIPTION_NOT_AUTHORISED"
+    | "BUDGET_LIMIT"
+    | "PROCESSING_TIMEOUT"
+    | "PROVIDER_FAILURE"
+    | "SOURCE_VALIDATION_FAILED"
+    | "FEATURE_DISABLED"
+    | string
+    | null;
   rightsCode?: string | null;
   failureCategory?: "UNAVAILABLE" | "BUDGET" | "PROVIDER" | "WORKER" | "PROCESSING" | null;
   retryEligible?: boolean;
@@ -258,7 +274,7 @@ export const isProcessing = (status: IntelligenceStatus | null) =>
   ].includes(status.state);
 const processingLabels: Record<string, string> = {
   CHECKING: "Checking this conversation.",
-  QUEUED: "Your episode is getting ready.",
+  QUEUED: "Your episode is queued for preparation.",
   ACQUIRING_TRANSCRIPT: "Preparing the conversation.",
   TRANSCRIBING: "Preparing the conversation.",
   ANALYSING: "Finding the interesting moments.",
@@ -266,13 +282,32 @@ const processingLabels: Record<string, string> = {
   DISCOVERING: "Checking this conversation.",
   UNDERSTANDING: "Finding the interesting moments.",
   ORGANISING: "Making everything searchable.",
-  READY: "Ready to explore",
+  READY: "Your conversation is ready.",
   BUDGET_PAUSED: "AI insights are paused for this episode.",
   CANCELLED: "AI insights aren't available for this episode.",
   UNAVAILABLE: "AI insights aren't available for this episode.",
   FAILED: "We couldn't prepare this episode.",
 };
+const availabilityLabels: Record<string, string> = {
+  RIGHTS_RESTRICTED: "AI preparation isn't currently available for this episode.",
+  LEGAL_BASIS_NOT_ESTABLISHED:
+    "AI preparation isn't currently available for this episode.",
+  DURATION_LIMIT: "This episode exceeds the current audio transcription limit.",
+  TRANSCRIPT_UNAVAILABLE: "We couldn't find a usable transcript for this episode.",
+  TRANSCRIPT_TOO_LARGE:
+    "The available transcript is too large for the current grounded analysis limit.",
+  AUDIO_TRANSCRIPTION_NOT_AUTHORISED:
+    "Audio transcription isn't authorised for this episode.",
+  BUDGET_LIMIT: "Preparation is temporarily paused.",
+  PROCESSING_TIMEOUT: "Preparation was interrupted.",
+  PROVIDER_FAILURE:
+    "Preparation is temporarily unavailable. Your listening can continue.",
+  SOURCE_VALIDATION_FAILED:
+    "We couldn't validate the available source for this episode. Please retry once.",
+  FEATURE_DISABLED: "AI preparation is currently disabled for this episode.",
+};
 export const processingLabel = (status: IntelligenceStatus | null) =>
+  availabilityLabels[status?.availabilityCode || status?.code || ""] ||
   processingLabels[status?.state || ""] ||
   status?.reason ||
   "Discover this episode";

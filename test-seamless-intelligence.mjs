@@ -172,14 +172,14 @@ assert.equal(
 );
 await p.request({ feedUrl: feed, episodeId: "long", trigger: "automatic" });
 await Promise.all(p.inflight.values());
-assert.equal(p.status(feed, "long").code, "DURATION_LIMIT");
-assert.equal(calls, 1);
+assert.equal(p.status(feed, "long").state, "READY", "long publisher transcripts do not need paid audio");
+assert.equal(calls, 2);
 p.ledger.reserve({ id: "exhaust-budget", usd: 4.999 });
 await p.request({ feedUrl: feed, episodeId: "budget", trigger: "automatic" });
 await Promise.all(p.inflight.values());
 assert.equal(p.status(feed, "budget").state, "BLOCKED");
 assert.equal(p.status(feed, "budget").code, "BUDGET_LIMIT");
-assert.equal(calls, 1);
+assert.equal(calls, 2);
 p.store.close();
 
 const partial = make({

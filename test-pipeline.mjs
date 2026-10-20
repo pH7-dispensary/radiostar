@@ -71,9 +71,9 @@ const resolveEpisode = async (_feed, id) => ({
   id,
   title: "Science discussion",
   showName: "Science",
-  duration: id === "long" ? "168:00" : "2:00",
+  duration: id.startsWith("long") ? "168:00" : "2:00",
   audioUrl: "https://publisher.example/audio.mp3",
-  refs: [{ url: transcript.sourceUri, type: "text/vtt" }],
+  refs: id === "long-audio" ? [] : [{ url: transcript.sourceUri, type: "text/vtt" }],
 });
 const make = () =>
   createStarCastServer({
@@ -153,8 +153,25 @@ try {
   assert.equal(app.pipeline.search("compute").matches.length, 2);
   await post("/api/intelligence/request", { ...input, episodeId: "long" });
   await Promise.all(app.pipeline.inflight.values());
-  assert.equal(app.pipeline.status(feedUrl, "long").code, "DURATION_LIMIT");
-  assert.equal(calls, 1);
+  assert.equal(app.pipeline.status(feedUrl, "long").state, "READY", "a long episode may use an authorised publisher transcript without audio");
+  assert.equal(calls, 2);
+  await post("/api/intelligence/request", {
+    ...input,
+    episodeId: "long-audio",
+    allowAudio: true,
+  });
+  await Promise.all(app.pipeline.inflight.values());
+  const longAudioStatus = (await (await fetch(
+    `${base}/api/intelligence/status?${new URLSearchParams({
+      feedUrl,
+      episodeId: "long-audio",
+    })}`,
+    { headers: { "x-star-cast-dev-token": "test-token" } },
+  )).json()).status;
+  assert.equal(longAudioStatus.code, "DURATION_LIMIT");
+  assert.equal(longAudioStatus.availabilityCode, "DURATION_LIMIT");
+  assert.equal(longAudioStatus.reason, "This episode exceeds the current audio transcription limit.");
+  assert.equal(calls, 2, "a long episode without text never starts provider work");
   app.rights.set({
     feedUrl,
     classification: "LICENSED",
@@ -165,7 +182,7 @@ try {
   });
   const rightsBlocked = await post("/api/intelligence/request", input);
   assert.equal((await rightsBlocked.json()).status.code, "FEATURE_NOT_AUTHORISED", "the listener receives the specific independently gated display restriction");
-  assert.equal(calls, 1, "display-restricted episodes never enter paid preparation");
+  assert.equal(calls, 2, "display-restricted episodes never enter paid preparation");
   app.rights.set({
     feedUrl,
     classification: "LICENSED",
@@ -181,7 +198,7 @@ try {
   app.store.close();
   app = make();
   assert.equal(app.pipeline.status(feedUrl, episodeId).state, "READY");
-  assert.equal(app.ledger.usage.length, 1);
+  assert.equal(app.ledger.usage.length, 2);
   assert.equal((await app.pipeline.request(input)).cacheHit, true);
 
   const ledgerA = new BudgetLedger(

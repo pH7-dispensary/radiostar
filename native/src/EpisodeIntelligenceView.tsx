@@ -19,6 +19,7 @@ import {
   findEpisodeMoment,
   isProcessing,
   preflightEpisode,
+  processingLabel,
   type AnalysisPreflight,
   type EpisodeMoment,
 } from "./api";
@@ -176,12 +177,27 @@ export function EpisodeIntelligenceView({
     }
   };
   const processing = isProcessing(status) && !paused;
-  const rightsRestricted = status?.code === "RIGHTS_RESTRICTED";
+  const availabilityCode = status?.availabilityCode || status?.code || "";
+  const rightsRestricted = [
+    "RIGHTS_RESTRICTED",
+    "LEGAL_BASIS_NOT_ESTABLISHED",
+  ].includes(availabilityCode);
+  const terminalMessage = processingLabel(status);
+  const terminalHeading: Record<string, string> = {
+    DURATION_LIMIT: "This episode needs a transcript.",
+    TRANSCRIPT_UNAVAILABLE: "No usable transcript found.",
+    AUDIO_TRANSCRIPTION_NOT_AUTHORISED:
+      "Audio transcription isn’t available.",
+    BUDGET_LIMIT: "Preparation is paused.",
+    PROCESSING_TIMEOUT: "Preparation was interrupted.",
+  };
   const emptyHeading = !source.feedUrl
     ? "Open this from its podcast."
     : rightsRestricted
       ? "Intelligence isn’t available for this episode."
-      : status?.requiresAudioConsent
+      : terminalHeading[availabilityCode]
+        ? terminalHeading[availabilityCode]
+        : status?.requiresAudioConsent
         ? "Listen a little deeper."
         : status?.state === "BUDGET_PAUSED"
           ? "AI insights are paused for this episode."
@@ -193,8 +209,10 @@ export function EpisodeIntelligenceView({
   const emptyCopy = !source.feedUrl
     ? "Open this episode from its podcast in Search so Radio Star can find its publisher feed."
     : rightsRestricted
-      ? "The publisher’s permissions do not cover displayed AI notes for this episode. You can keep listening, or explore another episode."
-      : status?.reason || "This episode has not been prepared yet.";
+      ? terminalMessage
+      : availabilityCode
+        ? terminalMessage
+        : status?.reason || "This episode has not been prepared yet.";
   const scrollSelectedTab = () => {
     const index = ["Chapters", "Topics", "Find a Moment"].indexOf(
       tab,

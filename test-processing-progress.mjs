@@ -99,13 +99,18 @@ try {
   assert.equal(ready.transcript, undefined, "the status API never exposes full transcript text");
 
   const events = app.pipeline.eventsFor(feedUrl, episodeId);
-  assert.deepEqual(events.map((event) => event.type), ["JOB_QUEUED", "WORKER_STARTED", "TRANSCRIPT_ACQUISITION", "AI_ANALYSIS", "SEARCH_INDEX", "INTELLIGENCE_READY"]);
+  assert.deepEqual(events.map((event) => event.type), ["JOB_QUEUED", "WORKER_STARTED", "TRANSCRIPT_CACHE_CHECK", "TRANSCRIPT_ACQUISITION", "AI_ANALYSIS", "SEARCH_INDEX", "INTELLIGENCE_READY"]);
   assert.equal(events.some((event) => event.type === "AUDIO_TRANSCRIPTION"), false, "publisher transcripts never claim audio transcription");
   assert.ok(events.every((event) => event.previousState !== undefined && event.state && event.at && event.processingVersion), "each transition is attributable and versioned");
 
   const detail = await (await fetch(base + `/api/admin/episodes/detail?${new URLSearchParams({ feedUrl, episodeId })}`, { headers: adminHeaders })).json();
   assert.equal(detail.episode.canonicalEpisodeId, ready.canonicalEpisodeId, "admin and listener resolve one canonical episode identity");
   assert.equal(detail.processing.state, ready.state, "admin and listener share the status projection");
+  assert.equal(detail.processing.failureCode, null, "admin keeps the durable terminal code separate from a READY record");
+  assert.equal(detail.processing.audioTranscriptionRequired, false, "admin records that a publisher transcript avoided audio fallback");
+  assert.equal(detail.processing.transcriptChecks.cacheChecked, true);
+  assert.equal(detail.processing.transcriptChecks.publisherTranscriptChecked, true);
+  assert.equal(detail.processing.transcriptChecks.publisherTranscriptFound, true);
   assert.ok(detail.timeline.some((event) => event.eventType === "AI_ANALYSIS"), "admin timeline is sourced from durable lifecycle events");
   assert.ok(detail.timeline.some((event) => event.type === "PROCESSING_COMPLETED"), "existing Admin completion compatibility remains tied to the READY event");
 

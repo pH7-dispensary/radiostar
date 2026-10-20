@@ -42,7 +42,12 @@ function unavailableCopy(
 ) {
   if (!enabled)
     return "Turn on episode intelligence to prepare authorised conversations while you listen.";
-  if (state.status?.code === "RIGHTS_RESTRICTED")
+  if (
+    state.status?.availabilityCode === "RIGHTS_RESTRICTED" ||
+    state.status?.availabilityCode === "LEGAL_BASIS_NOT_ESTABLISHED" ||
+    state.status?.code === "RIGHTS_RESTRICTED" ||
+    state.status?.code === "LEGAL_BASIS_NOT_ESTABLISHED"
+  )
     return "AI notes aren’t available for this episode. You can keep listening or try another episode.";
   if (state.status?.state === "BUDGET_PAUSED")
     return "AI insights are paused for this episode while the listening service reaches its allowance.";

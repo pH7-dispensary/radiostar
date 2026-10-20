@@ -137,6 +137,21 @@ export function publicIntelligence(value) {
       : undefined,
   };
 }
+
+// Keep the durable codes stable for installed clients and operational history,
+// while giving newer clients one precise availability classification. Some
+// older codes describe the mechanism (for example AUDIO_CONSENT_REQUIRED),
+// not the listener-visible result (no usable transcript is available yet).
+export function availabilityCode(code) {
+  if (!code) return null;
+  if (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_UNKNOWN"].includes(code))
+    return "TRANSCRIPT_UNAVAILABLE";
+  if (["TIMEOUT", "QUEUE_TIMEOUT"].includes(code)) return "PROCESSING_TIMEOUT";
+  if (["PROVIDER_UNAVAILABLE", "PROVIDER_TIMEOUT"].includes(code))
+    return "PROVIDER_FAILURE";
+  return code;
+}
+
 function failure(error) {
   const message = String(error?.message || "");
   if (/incomplete|JSON|source validation/.test(message))
@@ -145,18 +160,24 @@ function failure(error) {
       reason: "Analysis could not be completed reliably. Please retry once.",
       retryable: true,
     };
-  if (/two-hour|duration limit|processing limit/.test(message))
+  if (/transcript exceeds the current processing limit/i.test(message))
+    return {
+      code: "TRANSCRIPT_TOO_LARGE",
+      reason:
+        "The available transcript is too large for the current grounded analysis limit.",
+      retryable: false,
+    };
+  if (/two-hour|audio transcription.*duration|episode is longer/i.test(message))
     return {
       code: "DURATION_LIMIT",
       reason:
-        "This episode exceeds the current processing limit. Try a shorter episode.",
+        "This episode exceeds the current audio transcription limit.",
       retryable: false,
     };
   if (/budget/.test(message))
     return {
       code: "BUDGET_LIMIT",
-      reason:
-        "The analysis allowance has been reached. Please try another day.",
+      reason: "Preparation is temporarily paused.",
       retryable: false,
     };
   if (/rights|permission|authoris/i.test(message))
@@ -168,14 +189,13 @@ function failure(error) {
   if (/401|403|key|quota|billing/.test(message))
     return {
       code: "PROVIDER_UNAVAILABLE",
-      reason:
-        "Analysis is temporarily unavailable. Your listening can continue.",
+      reason: "Preparation is temporarily unavailable. Your listening can continue.",
       retryable: true,
     };
   if (/timeout|timed out|abort/i.test(message))
     return {
       code: "PROVIDER_TIMEOUT",
-      reason: "Preparation timed out. You can retry once while your listening continues.",
+      reason: "Preparation was interrupted. You can retry once while your listening continues.",
       retryable: true,
     };
   if (/format|ffmpeg|decode|unsupported audio/i.test(message))
@@ -535,7 +555,7 @@ export class EpisodePipeline {
           code: queued ? "QUEUE_TIMEOUT" : "PROCESSING_TIMEOUT",
           reason: queued
             ? "The processing worker did not start before its queue deadline. You can retry once."
-            : "Processing did not finish before its deadline. You can retry once.",
+            : "Preparation was interrupted. You can retry once.",
           retryable: status.attempts < 2,
         });
         this.store.delete("processing-outbox", status.jobId);
@@ -659,7 +679,7 @@ export class EpisodePipeline {
         state: "FAILED",
         code: "TIMEOUT",
         reason:
-          "This analysis took too long. Check back before retrying; any uncertain provider cost remains counted.",
+          "Preparation was interrupted. Check back before retrying; any uncertain provider cost remains counted.",
         retryable: value.attempts < 2,
       });
       expired = true;
@@ -680,18 +700,40 @@ export class EpisodePipeline {
       if (!rightsAllowed())
         throw Error("Rights permission does not allow AI processing for this episode.");
       controller.signal.throwIfAborted();
-      if (duration && duration > this.ledger.controls.maxEpisodeSeconds * 1000)
-        throw Error(
-          "This episode is longer than the current two-hour processing limit.",
-        );
+      // The two-hour cap protects paid audio acquisition and transcription. It
+      // is not a limit on an authorised cached or publisher-provided text
+      // transcript: those paths do not download or transcribe the episode.
       let transcript = forcePublisherRefresh
         ? null
         : this.store.get("transcript", key + ":" + variant);
+      let transcriptChecks = {
+        cacheChecked: true,
+        cacheHit: Boolean(transcript),
+        publisherTranscriptChecked: false,
+        publisherTranscriptReferenceCount: Array.isArray(episode.refs)
+          ? episode.refs.length
+          : 0,
+        publisherTranscriptFound: false,
+        audioTranscriptionRequired: false,
+      };
+      update({
+        state: "DISCOVERING",
+        processingStage: "CHECKING",
+        transcriptChecks,
+      });
       if (!transcript) {
-        update({ state: "DISCOVERING", processingStage: "ACQUIRING_TRANSCRIPT" });
+        transcriptChecks = {
+          ...transcriptChecks,
+          publisherTranscriptChecked: true,
+        };
+        update({
+          state: "DISCOVERING",
+          processingStage: "ACQUIRING_TRANSCRIPT",
+          transcriptChecks,
+        });
         if (rights && !rights.canAcquireTranscript)
           throw Error("Rights permission does not allow transcript acquisition for this episode.");
-        for (const ref of episode.refs) {
+        for (const ref of episode.refs || []) {
           controller.signal.throwIfAborted();
           try {
             const candidate = await this.fetchTranscript(ref, {
@@ -708,10 +750,18 @@ export class EpisodePipeline {
             /* Try the next publisher reference before considering audio. */
           }
         }
+        transcriptChecks = {
+          ...transcriptChecks,
+          publisherTranscriptFound: Boolean(transcript),
+        };
       }
       if (!transcript) transcript = this.store.get("audio-transcript", variant);
       controller.signal.throwIfAborted();
       if (!transcript) {
+        transcriptChecks = {
+          ...transcriptChecks,
+          audioTranscriptionRequired: true,
+        };
         if (!this.audioEnabled || !allowAudio) {
           update({
             state: "BLOCKED",
@@ -719,16 +769,27 @@ export class EpisodePipeline {
             code: this.audioEnabled
               ? "AUDIO_CONSENT_REQUIRED"
               : "AUDIO_DISABLED",
+            availabilityCode: "TRANSCRIPT_UNAVAILABLE",
             reason: this.audioEnabled
-              ? "No usable publisher transcript was found. Analyse the audio to continue."
-              : "No usable publisher transcript was found. Audio analysis is unavailable.",
+              ? "We couldn't find a usable transcript for this episode. Audio transcription needs explicit approval."
+              : "We couldn't find a usable transcript for this episode.",
             requiresAudioConsent: this.audioEnabled,
+            transcriptChecks,
             retryable: false,
           });
           return;
         }
-        if (rights && !rights.canTranscribeAudio)
-          throw Error("Rights permission does not allow audio transcription for this episode.");
+        if (rights && !rights.canTranscribeAudio) {
+          update({
+            state: "BLOCKED",
+            attempts: Math.max(0, value.attempts - 1),
+            code: "AUDIO_TRANSCRIPTION_NOT_AUTHORISED",
+            reason: "Audio transcription isn't authorised for this episode.",
+            transcriptChecks,
+            retryable: false,
+          });
+          return;
+        }
         if (!duration) {
           update({
             state: "BLOCKED",
@@ -736,6 +797,18 @@ export class EpisodePipeline {
             code: "DURATION_UNKNOWN",
             reason:
               "The publisher has not supplied a duration. This episode cannot be analysed safely yet.",
+            transcriptChecks,
+            retryable: false,
+          });
+          return;
+        }
+        if (duration > this.ledger.controls.maxEpisodeSeconds * 1000) {
+          update({
+            state: "BLOCKED",
+            attempts: Math.max(0, value.attempts - 1),
+            code: "DURATION_LIMIT",
+            reason: "This episode exceeds the current audio transcription limit.",
+            transcriptChecks,
             retryable: false,
           });
           return;
@@ -829,6 +902,7 @@ export class EpisodePipeline {
         state: "UNDERSTANDING",
         processingStage: "ANALYSING",
         transcript,
+        transcriptChecks,
         episode: { ...episode, feedUrl, id: episodeId },
         readiness: transcript.quality.readiness,
         quality: transcript.quality,

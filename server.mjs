@@ -11,7 +11,7 @@ import {
   openAIStatus,
 } from "./openai-intelligence.mjs";
 import { LocalStore } from "./persistence.mjs";
-import { EpisodePipeline, canonicalEpisodeId, durationMs, episodeKey, listenerProcessingStatus, publicIntelligence } from "./episode-pipeline.mjs";
+import { EpisodePipeline, availabilityCode as availabilityCodeFor, canonicalEpisodeId, durationMs, episodeKey, listenerProcessingStatus, publicIntelligence } from "./episode-pipeline.mjs";
 import { publicUrl, fetchPublicText } from "./safe-network.mjs";
 import { projectRoot, loadCredentials } from "./config.mjs";
 import { acquireServerLock } from "./server-lock.mjs";
@@ -643,9 +643,9 @@ export function createStarCastServer({
     .filter((job) => job.feedUrl === feedUrl && (job.episodeId === episodeId || job.episode?.id === episodeId));
   const failureCategory = (code) => {
     if (!code) return null;
-    if (["RIGHTS_RESTRICTED", "AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT", "DURATION_UNKNOWN", "AUDIO_FORMAT_UNSUPPORTED", "TRANSCRIPT_INVALID"].includes(code)) return "UNAVAILABLE";
+    if (["RIGHTS_RESTRICTED", "LEGAL_BASIS_NOT_ESTABLISHED", "AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "AUDIO_TRANSCRIPTION_NOT_AUTHORISED", "DURATION_LIMIT", "DURATION_UNKNOWN", "AUDIO_FORMAT_UNSUPPORTED", "TRANSCRIPT_INVALID", "TRANSCRIPT_UNAVAILABLE", "TRANSCRIPT_TOO_LARGE", "FEATURE_DISABLED"].includes(code)) return "UNAVAILABLE";
     if (code === "BUDGET_LIMIT") return "BUDGET";
-    if (["PROVIDER_TIMEOUT", "TIMEOUT", "PROVIDER_UNAVAILABLE"].includes(code)) return "PROVIDER";
+    if (["PROVIDER_TIMEOUT", "TIMEOUT", "PROVIDER_UNAVAILABLE", "PROVIDER_FAILURE"].includes(code)) return "PROVIDER";
     if (["QUEUE_TIMEOUT", "PROCESSING_TIMEOUT", "INTERRUPTED"].includes(code)) return "WORKER";
     return "PROCESSING";
   };
@@ -665,22 +665,26 @@ export function createStarCastServer({
     };
     let projected = listenerProcessingStatus(job);
     let code = job?.code || null;
+    let availabilityCode = job?.availabilityCode || availabilityCodeFor(code);
     let reason = job?.reason || null;
     let rightsCode = null;
     if (!display.allowed || !processing.allowed) {
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       rightsCode = !processing.allowed ? processing.code : display.code;
       code = rightsCode;
+      availabilityCode = availabilityCodeFor(code);
       reason = !processing.allowed ? processing.reason : display.reason;
     } else if (!operational.allowed && projected.state !== "READY") {
       // An operational hold stops new work but never revokes intelligence that
       // was already lawfully prepared and persisted.
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       code = operational.code || "INTELLIGENCE_POLICY_HIGH";
+      availabilityCode = availabilityCodeFor(code);
       reason = operational.reason || "New intelligence processing is paused by the podcast intelligence policy.";
     } else if (!flags.episodeBriefs) {
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       code = "FEATURE_DISABLED";
+      availabilityCode = availabilityCodeFor(code);
       reason = "AI insights are not available for this episode.";
     }
     const eta = projected.processing ? processingEstimateFor(job) : null;
@@ -700,10 +704,11 @@ export function createStarCastServer({
       startedAt: job?.startedAt || null,
       lastUpdatedAt: job?.updatedAt || job?.completedAt || job?.startedAt || null,
       completedAt: job?.completedAt || null,
-      failureCategory: failureCategory(code),
+      failureCategory: failureCategory(availabilityCode || code),
       retryEligible: job?.retryable === true,
       retryable: job?.retryable === true,
       code,
+      availabilityCode,
       rightsCode,
       reason,
       availableFeatures,
@@ -941,7 +946,23 @@ export function createStarCastServer({
         elapsedMs: queuedAt ? Math.max(0, Date.now() - queuedAt) : null,
         queueWaitMs: queuedAt && workerAt ? Math.max(0, workerAt - queuedAt) : null,
         failureCategory: status.failureCategory,
+        failureCode: status.availabilityCode || status.code || null,
+        failureReason: status.reason || null,
         retryEligible: status.retryEligible,
+        audioTranscriptionRequired: status.transcriptChecks?.audioTranscriptionRequired === true,
+        transcriptChecks: status.transcriptChecks
+          ? {
+              cacheChecked: status.transcriptChecks.cacheChecked === true,
+              cacheHit: status.transcriptChecks.cacheHit === true,
+              publisherTranscriptChecked:
+                status.transcriptChecks.publisherTranscriptChecked === true,
+              publisherTranscriptFound:
+                status.transcriptChecks.publisherTranscriptFound === true,
+              publisherTranscriptReferenceCount: Number(
+                status.transcriptChecks.publisherTranscriptReferenceCount || 0,
+              ),
+            }
+          : null,
         actualCostUsd: Number(jobCost.toFixed(6)),
         estimatedCompletion: status.estimatedCompletion,
       },
