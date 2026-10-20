@@ -29,6 +29,9 @@ export class ProcessingQueue {
         feedUrl: job.feedUrl,
         episodeId: job.episodeId,
         allowAudio: job.allowAudio === true,
+        // Preserve a cache-safety recheck across the durable queue boundary.
+        // Omitted on older messages remains false for backward compatibility.
+        forcePublisherRefresh: job.forcePublisherRefresh === true,
         queuedAt: job.queuedAt,
       }),
     }));

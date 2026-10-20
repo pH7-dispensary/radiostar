@@ -23,9 +23,10 @@ const client = {
   },
 };
 const queue = new ProcessingQueue({ queueUrl, client, pollWaitSeconds: 1 });
-await queue.enqueue({ jobId: "job-1", key: "key-1", feedUrl: "https://publisher.example/feed", episodeId: "episode-1", queuedAt: "2026-10-15T00:00:00.000Z" });
+await queue.enqueue({ jobId: "job-1", key: "key-1", feedUrl: "https://publisher.example/feed", episodeId: "episode-1", forcePublisherRefresh: true, queuedAt: "2026-10-15T00:00:00.000Z" });
 assert.equal(sent.length, 1);
 assert.equal(JSON.parse(sent[0].MessageBody).jobId, "job-1");
+assert.equal(JSON.parse(sent[0].MessageBody).forcePublisherRefresh, true);
 assert.equal(processingQueueFromEnv({}), null);
 assert.throws(() => new ProcessingQueue({ queueUrl: "https://example.com/queue" }), /dedicated/);
 const received = await queue.receive();
@@ -41,8 +42,10 @@ const transcript = {
 };
 transcript.quality = assessTranscript({ segments: transcript.segments });
 const queuedJobs = [];
+const store = new LocalStore(":memory:");
+let transcriptFetches = 0;
 const pipeline = new EpisodePipeline({
-  store: new LocalStore(":memory:"),
+  store,
   ledger: new BudgetLedger({ ...defaultControls, enabled: true }),
   queue: { enqueue: async (job) => queuedJobs.push(job) },
   enabled: true,
@@ -54,7 +57,10 @@ const pipeline = new EpisodePipeline({
     audioUrl: "https://publisher.example/audio.mp3",
     refs: [{ url: transcript.sourceUri, type: "text/vtt" }],
   }),
-  fetchTranscript: async () => transcript,
+  fetchTranscript: async () => {
+    transcriptFetches++;
+    return transcript;
+  },
   client: { responses: { create: async () => ({
     output_text: JSON.stringify({ overview: "A durable queue is discussed.", themes: ["Queue"], detail: "The episode explains durable dispatch.", sourceSegmentIndexes: [1], chapters: [{ title: "Dispatch", description: "The durable dispatch discussion.", sourceSegmentIndexes: [1] }] }),
     usage: { input_tokens: 1, output_tokens: 1 },
@@ -63,7 +69,17 @@ const pipeline = new EpisodePipeline({
 const queued = await pipeline.request({ feedUrl: "https://publisher.example/feed", episodeId: "queue-episode" });
 assert.equal(queued.state, "QUEUED");
 assert.equal(queuedJobs.length, 1);
+assert.equal(queuedJobs[0].forcePublisherRefresh, false);
 assert.equal((await pipeline.request({ feedUrl: "https://publisher.example/feed", episodeId: "queue-episode" })).jobId, queued.jobId, "duplicate requests retain one queued job");
 await pipeline.executeQueued(queuedJobs[0]);
 assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").state, "READY");
+assert.equal(transcriptFetches, 1);
+const [storedKey, stored] = store.all("intelligence")[0];
+store.set("intelligence", storedKey, { ...stored, sourceSignature: "outdated", sourceCheckedAt: "2020-01-01T00:00:00.000Z" });
+const refresh = await pipeline.request({ feedUrl: "https://publisher.example/feed", episodeId: "queue-episode" });
+assert.equal(refresh.state, "QUEUED");
+assert.equal(queuedJobs.at(-1).forcePublisherRefresh, true);
+await pipeline.executeQueued(queuedJobs.at(-1));
+assert.equal(transcriptFetches, 2, "a queued source recheck must reach the publisher parser");
+assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").cacheHit, true);
 console.log("Dedicated SQS processing queue contract passed");

@@ -284,6 +284,12 @@ export class EpisodePipeline {
       episodeId,
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
     };
+    // The queue message stays deliberately small. A completed result is kept
+    // locally by the refresh job id so the worker can restore it when a
+    // publisher source recheck yields the identical transcript, rather than
+    // spending on duplicate generation.
+    if (forcePublisherRefresh && completed(previous))
+      this.store.set("intelligence-refresh", initial.jobId, previous);
     this.store.set("intelligence", key, initial);
     if (this.queue) {
       const queued = {
@@ -292,6 +298,10 @@ export class EpisodePipeline {
         feedUrl,
         episodeId,
         allowAudio,
+        // A completed cache entry can request a source recheck (for example,
+        // after a parser safety upgrade). This must survive SQS dispatch; the
+        // worker is the authority that fetches the transcript.
+        forcePublisherRefresh,
         queuedAt: initial.startedAt,
       };
       // The SQLite outbox is persisted before attempting SQS. If AWS is
@@ -343,15 +353,19 @@ export class EpisodePipeline {
     if (this.inflight.has(queued.key)) return;
     const initial = this.store.get("intelligence", queued.key);
     if (initial?.jobId !== queued.jobId || initial.state !== "QUEUED") return;
+    const previous = this.store.get("intelligence-refresh", queued.jobId) || null;
     const task = this.run({
       key: queued.key,
       feedUrl: queued.feedUrl,
       episodeId: queued.episodeId,
       allowAudio: queued.allowAudio === true,
       initial,
-      previous: null,
-      forcePublisherRefresh: false,
-    }).finally(() => this.inflight.delete(queued.key));
+      previous,
+      forcePublisherRefresh: queued.forcePublisherRefresh === true,
+    }).finally(() => {
+      this.store.delete("intelligence-refresh", queued.jobId);
+      this.inflight.delete(queued.key);
+    });
     this.inflight.set(queued.key, task);
     await task;
   }

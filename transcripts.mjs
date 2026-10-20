@@ -4,7 +4,9 @@ const MAX_TRANSCRIPT_BYTES = 2_000_000;
 // Changes to publisher parsing must cause an explicit source recheck before a
 // completed cache entry is reused. This version is part of the pipeline cache
 // signature, not a listener-facing format guarantee.
-export const PUBLISHER_TRANSCRIPT_PARSER_VERSION = "2";
+// v3 also invalidates a short-lived v2 cache entry whose requested refresh was
+// dispatched through SQS before the refresh flag was included in the message.
+export const PUBLISHER_TRANSCRIPT_PARSER_VERSION = "3";
 export const TranscriptReadiness = Object.freeze({
   FULLY_READY: "FULLY_READY",
   TEXT_ONLY: "TEXT_ONLY",
