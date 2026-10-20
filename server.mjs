@@ -378,9 +378,9 @@ export function createStarCastServer({
         podcast: rightsRecord.podcast || job?.episode?.showName || null,
         publisher: rightsRecord.publisher || job?.episode?.publisher || null,
         episodeTitle: rightsRecord.episodeTitle || job?.episode?.title || null,
-        currentRestriction: rightsRecord.classification,
+        currentRestriction: rightsRecord.id ? rightsRecord.classification : "UNASSESSED",
         refusalReason: state?.reason || (!processing.allowed ? processing.reason : display.reason),
-        processingEligibility: mandatory ? "MANDATORY_RESTRICTION" : processing.allowed && display.allowed ? "ELIGIBLE" : "REQUIRES_APPROVED_BASIS",
+        processingEligibility: mandatory ? "MANDATORY_RESTRICTION" : !rightsRecord.id ? "REQUIRES_ASSESSMENT" : processing.allowed && display.allowed ? "ELIGIBLE" : "REQUIRES_APPROVED_BASIS",
         canApprove: !mandatory,
         previousAttempts: job?.attempts || 0,
         status: state?.state || "BLOCKED",
@@ -986,7 +986,17 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/approve-process" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
-        return send(res, 202, await approveAndProcess(await body(req), actor));
+        try {
+          return send(res, 202, await approveAndProcess(await body(req), actor));
+        } catch (error) {
+          // These are expected, administrator-supplied approval validation
+          // failures. Return a useful, non-sensitive explanation instead of
+          // collapsing them into the generic server-error response.
+          const message = String(error?.message || "");
+          if (/^(A publisher feed|Episode identity|Choose the documented processing basis|A legal basis|Type APPROVE & PROCESS|This content has a mandatory rights restriction)/.test(message))
+            return send(res, 400, { error: message, code: "APPROVAL_INVALID" });
+          throw error;
+        }
       }
       if (url.pathname === "/api/admin/rights/retry-processing" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });
@@ -1112,6 +1122,7 @@ export function createStarCastServer({
             status: {
               state: "BLOCKED",
               code: "RIGHTS_RESTRICTED",
+              rightsCode: decision.code,
               reason: decision.reason,
               transcriptAvailable: false,
             },
@@ -1166,7 +1177,7 @@ export function createStarCastServer({
           });
         const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         if (!decision.allowed)
-          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: decision.reason, retryable: false } });
+          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", rightsCode: decision.code, reason: decision.reason, retryable: false } });
         const featureForCapability = { brief: "episodeBrief", chapters: "smartChapters", moment: "findMoment" };
         if (!featureEnabled(featureForCapability[input.capability]))
           return send(res, 200, { status: { state: "BLOCKED", code: "FEATURE_DISABLED", reason: "This feature is currently unavailable.", retryable: false } });

@@ -56,11 +56,21 @@ const headers = {
 const post = (path, input) => fetch(base + path, { method: "POST", headers, body: JSON.stringify(input) });
 try {
   const denied = await post("/api/intelligence/request", { feedUrl, episodeId, capability: "brief" });
-  assert.equal((await denied.json()).status.code, "RIGHTS_RESTRICTED", "unassessed content is blocked before Super Admin approval");
+  const deniedBody = await denied.json();
+  assert.equal(deniedBody.status.code, "RIGHTS_RESTRICTED", "unassessed content remains blocked before Super Admin approval");
+  assert.equal(deniedBody.status.rightsCode, "RIGHTS_ASSESSMENT_REQUIRED", "the listener contract distinguishes an absent assessment from a reservation");
   const blocked = await fetch(base + "/api/admin/rights/blocked-content", { headers });
   const blockedBody = await blocked.json();
   assert.equal(blocked.status, 200);
   assert.equal(blockedBody.groups.some((group) => group.feedUrl === feedUrl), true, "blocked operational work is visible to administration");
+  const missingConfirmation = await post("/api/admin/rights/approve-process", {
+    scope: "episode", feedUrl, episodeId, classification: "LICENSED",
+    legalBasis: "Fixture publisher authorisation.", reason: "Validation coverage.",
+  });
+  const missingConfirmationBody = await missingConfirmation.json();
+  assert.equal(missingConfirmation.status, 400, "an incomplete approval is rejected");
+  assert.equal(missingConfirmationBody.code, "APPROVAL_INVALID", "approval validation is visible to the administrator");
+  assert.match(missingConfirmationBody.error, /APPROVE & PROCESS/);
   app.rights.set({
     feedUrl, episodeId, classification: RightsClassification.RESTRICTED,
     rightsReserved: false, podcast: "Authorised fixture show",

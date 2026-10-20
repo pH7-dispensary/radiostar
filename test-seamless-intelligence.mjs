@@ -131,6 +131,11 @@ assert.equal(
   publicIntelligence(p.status(feed, "publisher")).transcript,
   undefined,
 );
+assert.equal(
+  publicIntelligence(p.status(feed, "publisher")).episode.audioUrl,
+  undefined,
+  "public job state exposes safe episode identity but never an enclosure URL",
+);
 assert.equal(p.internalTranscriptPage(feed, "publisher").segments.length, 60);
 assert.equal(p.internalTranscriptPage(feed, "publisher", 60).segments.length, 5);
 assert.ok(p.moments(feed, "publisher", "science").length);

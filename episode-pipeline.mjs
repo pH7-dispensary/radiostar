@@ -38,6 +38,20 @@ export function publicIntelligence(value) {
   const { transcript, episode, refs, ...safe } = value;
   return {
     ...safe,
+    // Job identity is safe and necessary for operations.  Do not leak the
+    // enclosure URL, publisher transcript references, or transcript body.
+    episode: episode
+      ? {
+          id: episode.id,
+          title: episode.title,
+          showName: episode.showName,
+          publisher: episode.publisher,
+          publishedAt: episode.publishedAt,
+          duration: episode.duration,
+          artworkUrl: episode.artworkUrl,
+          feedUrl: episode.feedUrl,
+        }
+      : undefined,
     state:
       activeStates.has(safe.state) && safe.state !== "QUEUED"
           ? transcript

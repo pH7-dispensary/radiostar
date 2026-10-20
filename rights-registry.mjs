@@ -294,8 +294,10 @@ export class RightsRegistry {
     const features = { ...policy.features, ...(override?.features || {}) };
     const optionalFeature = optionalFeatureFor[feature];
     let allowed = true, code = "ALLOWED", reason = "Rights requirements are satisfied.", outputProfile = "standard";
-    if (rights.suspendedAt || rights.deletedAt) [allowed, code, reason] = [false, "TAKEDOWN_OR_SUSPENSION", "This content is suspended or subject to a takedown."];
-    else if (rights.rightsReserved || [RightsClassification.RESTRICTED, RightsClassification.DISPUTED].includes(rights.classification)) [allowed, code, reason] = [false, "RIGHTS_RESERVED", "The rights record does not permit this feature."];
+    if (!rights.id) [allowed, code, reason] = [false, "RIGHTS_ASSESSMENT_REQUIRED", "No documented rights assessment authorises this feature yet."];
+    else if (rights.suspendedAt || rights.deletedAt) [allowed, code, reason] = [false, "TAKEDOWN_OR_SUSPENSION", "This content is suspended or subject to a takedown."];
+    else if (rights.rightsReserved || rights.classification === RightsClassification.DISPUTED) [allowed, code, reason] = [false, "RIGHTS_RESERVED", "The rights record reserves this feature or is under dispute."];
+    else if (rights.classification === RightsClassification.RESTRICTED) [allowed, code, reason] = [false, "RIGHTS_RESTRICTED", "The rights assessment does not permit this feature."];
     else if (!featurePermission[feature].every((name) => rights[name] === true)) [allowed, code, reason] = [false, "FEATURE_NOT_AUTHORISED", "This feature is not authorised by the rights record."];
     else if (optionalFeature && features[optionalFeature] === false) [allowed, code, reason] = [false, "POLICY_FEATURE_DISABLED", "This optional intelligence feature is disabled by policy."];
     // This is deliberately not a rights bypass. It is only available for an
