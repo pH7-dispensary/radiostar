@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Alert,
   AppState,
   Animated,
@@ -71,6 +72,8 @@ type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
 type Theme = StarTheme;
 const dark = themes.night;
 const light = themes.day;
+const launchHistoryKey = "radio-star-launch-v1";
+const appearancePreferenceKey = "radio-star-appearance-v1";
 const format = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
 const episodeDurationMs = (value?: string) =>
@@ -427,6 +430,236 @@ function useReducedMotion() {
     return () => subscription?.remove();
   }, []);
   return reduced;
+}
+
+function LaunchRestoring({ p }: { p: Theme }) {
+  return (
+    <SafeAreaView
+      accessibilityLabel="Opening Radio Star"
+      style={[styles.launchSurface, { backgroundColor: p.bg }]}
+    >
+      <LinearGradient
+        colors={[p.bg, p.wash, p.bg]}
+        locations={[0, 0.48, 1]}
+        style={styles.launchGradient}
+      >
+        <View style={styles.launchRestoringContent}>
+          <Image
+            accessible={false}
+            source={require("./assets/radio-star-icon.png")}
+            style={styles.launchRestoringMark}
+          />
+          <ActivityIndicator color={p.accent2} size="small" />
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
+  );
+}
+
+function LaunchExperience({
+  p,
+  full,
+  onComplete,
+}: {
+  p: Theme;
+  full: boolean;
+  onComplete: () => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  const completeRef = useRef(onComplete);
+  completeRef.current = onComplete;
+  const exit = useRef(new Animated.Value(1)).current;
+  const starOpacity = useRef(new Animated.Value(full ? 0 : 1)).current;
+  const starScale = useRef(new Animated.Value(full ? 0.76 : 1)).current;
+  const ringOneOpacity = useRef(new Animated.Value(full ? 0 : 0.22)).current;
+  const ringTwoOpacity = useRef(new Animated.Value(full ? 0 : 0.18)).current;
+  const ringThreeOpacity = useRef(new Animated.Value(full ? 0 : 0.14)).current;
+  const ringOneScale = useRef(new Animated.Value(full ? 0.7 : 1)).current;
+  const ringTwoScale = useRef(new Animated.Value(full ? 0.7 : 1)).current;
+  const ringThreeScale = useRef(new Animated.Value(full ? 0.7 : 1)).current;
+  const wordOpacity = useRef(new Animated.Value(full ? 0 : 1)).current;
+  const wordOffset = useRef(new Animated.Value(full ? 12 : 0)).current;
+  const statusOpacity = useRef(new Animated.Value(full ? 0 : 1)).current;
+
+  useEffect(() => {
+    const finish = () => {
+      Animated.timing(exit, {
+        toValue: 0,
+        duration: reducedMotion ? 120 : full ? 420 : 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) completeRef.current();
+      });
+    };
+    if (reducedMotion) {
+      [
+        starOpacity,
+        ringOneOpacity,
+        ringTwoOpacity,
+        ringThreeOpacity,
+        wordOpacity,
+        statusOpacity,
+      ].forEach((value) => value.setValue(1));
+      [starScale, ringOneScale, ringTwoScale, ringThreeScale].forEach(
+        (value) => value.setValue(1),
+      );
+      wordOffset.setValue(0);
+      const timeout = setTimeout(finish, 80);
+      return () => clearTimeout(timeout);
+    }
+    if (!full) {
+      const timeout = setTimeout(finish, 180);
+      return () => clearTimeout(timeout);
+    }
+    const softOut = Easing.bezier(0.16, 1, 0.3, 1);
+    const ring = (
+      opacity: Animated.Value,
+      scale: Animated.Value,
+      delay: number,
+      targetOpacity: number,
+    ) =>
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: targetOpacity,
+          duration: 1260,
+          delay,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 1260,
+          delay,
+          easing: softOut,
+          useNativeDriver: true,
+        }),
+      ]);
+    const animation = Animated.parallel([
+      Animated.parallel([
+        Animated.timing(starOpacity, {
+          toValue: 1,
+          duration: 520,
+          delay: 60,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(starScale, {
+          toValue: 1,
+          duration: 680,
+          delay: 60,
+          easing: softOut,
+          useNativeDriver: true,
+        }),
+      ]),
+      ring(ringOneOpacity, ringOneScale, 460, 0.26),
+      ring(ringTwoOpacity, ringTwoScale, 610, 0.21),
+      ring(ringThreeOpacity, ringThreeScale, 760, 0.16),
+      Animated.parallel([
+        Animated.timing(wordOpacity, {
+          toValue: 1,
+          duration: 720,
+          delay: 1480,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(wordOffset, {
+          toValue: 0,
+          duration: 840,
+          delay: 1480,
+          easing: softOut,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(statusOpacity, {
+        toValue: 1,
+        duration: 520,
+        delay: 1880,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    const timeout = setTimeout(finish, 2_800);
+    return () => {
+      animation.stop();
+      clearTimeout(timeout);
+    };
+  }, [
+    exit,
+    full,
+    reducedMotion,
+    ringOneOpacity,
+    ringOneScale,
+    ringThreeOpacity,
+    ringThreeScale,
+    ringTwoOpacity,
+    ringTwoScale,
+    starOpacity,
+    starScale,
+    statusOpacity,
+    wordOffset,
+    wordOpacity,
+  ]);
+
+  return (
+    <Animated.View
+      accessibilityViewIsModal
+      style={[styles.launchOverlay, { opacity: exit, backgroundColor: p.bg }]}
+    >
+      <LinearGradient
+        colors={[p.bg, p.wash, p.bg]}
+        locations={[0, 0.48, 1]}
+        style={styles.launchGradient}
+      >
+        <View style={styles.launchHalo}>
+          <View style={[styles.launchAura, { backgroundColor: p.accent2 }]} />
+          <Animated.View
+            style={[
+              styles.launchRing,
+              styles.launchRingThree,
+              { borderColor: p.accent2, opacity: ringThreeOpacity, transform: [{ scale: ringThreeScale }] },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.launchRing,
+              styles.launchRingTwo,
+              { borderColor: p.accent2, opacity: ringTwoOpacity, transform: [{ scale: ringTwoScale }] },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.launchRing,
+              styles.launchRingOne,
+              { borderColor: p.accent2, opacity: ringOneOpacity, transform: [{ scale: ringOneScale }] },
+            ]}
+          />
+          <Animated.View
+            style={{ opacity: starOpacity, transform: [{ scale: starScale }] }}
+          >
+            <Image
+              accessibilityLabel="Radio Star"
+              source={require("./assets/radio-star-icon.png")}
+              style={styles.launchMark}
+            />
+          </Animated.View>
+        </View>
+        <Animated.View
+          style={{ opacity: wordOpacity, transform: [{ translateY: wordOffset }] }}
+        >
+          <Text style={[styles.launchWordmark, { color: p.text }]}>radio star</Text>
+          <Text style={[styles.launchTagline, { color: p.muted }]}>NOISE INTO SIGNAL</Text>
+        </Animated.View>
+        <Animated.View style={[styles.launchStatus, { opacity: statusOpacity }]}>
+          <View style={[styles.launchStatusLine, { backgroundColor: p.line }]}>
+            <View style={[styles.launchStatusAccent, { backgroundColor: p.accent2 }]} />
+          </View>
+          <Text style={[styles.launchStatusText, { color: p.muted }]}>Finding your signal</Text>
+        </Animated.View>
+      </LinearGradient>
+    </Animated.View>
+  );
 }
 function SwipeBack({
   onBack,
@@ -2145,6 +2378,8 @@ function AppShell() {
     [installation, setInstallation] = useState<string>(),
     [state, setState] = useState<ListenerState>(emptyListenerState()),
     [hydrated, setHydrated] = useState(false),
+    [launchMode, setLaunchMode] = useState<"full" | "warm" | "complete" | null>(null),
+    [launchTheme, setLaunchTheme] = useState<Theme>(light),
     [playerOpen, setPlayerOpen] = useState(false);
   let p = state.nightMode ? dark : light;
   useEffect(() => {
@@ -2154,14 +2389,32 @@ function AppShell() {
         value = Crypto.randomUUID();
         await setIdentity("star-cast-installation-credential", value);
       }
+      const [listenerState, launchHistory, appearance] = await Promise.all([
+        loadListenerState(),
+        getIdentity(launchHistoryKey),
+        getIdentity(appearancePreferenceKey),
+      ]);
       setInstallation(value);
-      setState(await loadListenerState());
+      setLaunchTheme(
+        appearance === "night" || (!appearance && listenerState.nightMode)
+          ? dark
+          : light,
+      );
+      setState(listenerState);
+      setLaunchMode(launchHistory ? "warm" : "full");
       setHydrated(true);
     })();
   }, []);
   useEffect(() => {
     if (hydrated) void saveListenerState(state);
   }, [hydrated, state]);
+  useEffect(() => {
+    if (hydrated)
+      void setIdentity(
+        appearancePreferenceKey,
+        state.nightMode ? "night" : "day",
+      );
+  }, [hydrated, state.nightMode]);
   useEffect(() => {
     if (!hydrated) return;
     let live = true;
@@ -2215,23 +2468,36 @@ function AppShell() {
     setPlayerOpen(true);
     return source;
   };
+  if (!hydrated || launchMode === null) return <LaunchRestoring p={launchTheme} />;
   return (
-    <AppContent
-      page={page}
-      setPage={setPage}
-      backPage={backPage}
-      setBackPage={setBackPage}
-      selectedShow={selectedShow}
-      setSelectedShow={setSelectedShow}
-      state={state}
-      setState={setState}
-      hydrated={hydrated}
-      installation={installation}
-      p={p}
-      playerOpen={playerOpen}
-      setPlayerOpen={setPlayerOpen}
-      playStored={playStored}
-    />
+    <View style={styles.launchHost}>
+      <AppContent
+        page={page}
+        setPage={setPage}
+        backPage={backPage}
+        setBackPage={setBackPage}
+        selectedShow={selectedShow}
+        setSelectedShow={setSelectedShow}
+        state={state}
+        setState={setState}
+        hydrated={hydrated}
+        installation={installation}
+        p={p}
+        playerOpen={playerOpen}
+        setPlayerOpen={setPlayerOpen}
+        playStored={playStored}
+      />
+      {launchMode !== "complete" ? (
+        <LaunchExperience
+          p={p}
+          full={launchMode === "full"}
+          onComplete={() => {
+            void setIdentity(launchHistoryKey, "seen");
+            setLaunchMode("complete");
+          }}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -2553,9 +2819,7 @@ export default function App() {
   return (
     <PlaybackProvider key={enrolled ? "listener" : "enrollment"}>
       {checkingPilot ? (
-        <SafeAreaView style={[styles.safe, { backgroundColor: dark.bg }]}>
-          <LoadingState p={dark} label="Connecting to Radio Star…" />
-        </SafeAreaView>
+        <LaunchRestoring p={light} />
       ) : enrolled ? <AppShell /> : <PilotEnrollment onEnrolled={() => { resetListenerConnection(); setEnrolled(true); }} />}
     </PlaybackProvider>
   );
@@ -2563,6 +2827,85 @@ export default function App() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  launchHost: { flex: 1 },
+  launchSurface: { flex: 1 },
+  launchOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 20,
+  },
+  launchGradient: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchRestoringContent: {
+    alignItems: "center",
+    gap: 24,
+  },
+  launchRestoringMark: {
+    width: 92,
+    height: 92,
+    borderRadius: 25,
+  },
+  launchHalo: {
+    width: 280,
+    height: 280,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchAura: {
+    position: "absolute",
+    width: 238,
+    height: 238,
+    borderRadius: 119,
+    opacity: 0.15,
+  },
+  launchRing: {
+    position: "absolute",
+    borderWidth: 1.5,
+    borderRadius: 999,
+  },
+  launchRingOne: { width: 164, height: 164 },
+  launchRingTwo: { width: 222, height: 222 },
+  launchRingThree: { width: 275, height: 275 },
+  launchMark: {
+    width: 104,
+    height: 104,
+    borderRadius: 29,
+  },
+  launchWordmark: {
+    fontSize: 31,
+    lineHeight: 36,
+    letterSpacing: -2,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  launchTagline: {
+    marginTop: 9,
+    fontSize: 11,
+    lineHeight: 15,
+    letterSpacing: 2.2,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  launchStatus: {
+    position: "absolute",
+    bottom: 54,
+    alignItems: "center",
+    gap: 15,
+  },
+  launchStatusLine: {
+    width: 70,
+    height: 2,
+    borderRadius: 99,
+    overflow: "hidden",
+  },
+  launchStatusAccent: { width: 31, height: 2, borderRadius: 99 },
+  launchStatusText: { fontSize: 11, letterSpacing: 0.35 },
   root: { flex: 1, maxWidth: 760, width: "100%", alignSelf: "center" },
   pilotEnrollment: { flex: 1, paddingHorizontal: 25, justifyContent: "center", gap: 26 },
   pilotCard: { borderWidth: 1, borderRadius: 28, padding: 24, gap: 16 },
