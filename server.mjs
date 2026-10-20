@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
@@ -182,6 +183,7 @@ export function createStarCastServer({
 } = {}) {
   const cache = new Map(),
     windows = new Map();
+  const serverStartedAt = new Date().toISOString();
   store ||= new LocalStore(
     env.STARCAST_DATA_FILE ||
       join(projectRoot, ".starcast", "development.sqlite"),
@@ -303,6 +305,45 @@ export function createStarCastServer({
     };
   }
   const queue = processingQueueFromEnv(env);
+  const releaseMetadata = () => {
+    try {
+      const value = JSON.parse(readFileSync(env.STARCAST_RELEASE_METADATA_FILE || "/var/lib/starcast/release.json", "utf8"));
+      return {
+        status: /^[a-f0-9]{64}$/i.test(value.releaseSha || "") ? "HEALTHY" : "UNKNOWN",
+        releaseSha: /^[a-f0-9]{64}$/i.test(value.releaseSha || "") ? value.releaseSha : null,
+        deployedAt: Number.isFinite(Date.parse(value.deployedAt || "")) ? value.deployedAt : null,
+        previousReleaseSha: /^[a-f0-9]{64}$/i.test(value.previousReleaseSha || "") ? value.previousReleaseSha : null,
+        rollbackAvailable: value.rollbackAvailable === true,
+        reason: /^[a-f0-9]{64}$/i.test(value.releaseSha || "") ? "Release metadata was read from the protected server record." : "Release metadata is not recorded for this server.",
+      };
+    } catch {
+      return { status: "UNKNOWN", releaseSha: null, deployedAt: null, previousReleaseSha: null, rollbackAvailable: null, reason: "Release metadata is not recorded for this server." };
+    }
+  };
+  const infrastructureStatus = async () => cached("admin-infrastructure", async () => {
+    let database;
+    try {
+      const check = store.db.prepare("PRAGMA quick_check").get();
+      database = { name: "Durable database", status: Object.values(check)[0] === "ok" ? "HEALTHY" : "UNAVAILABLE", reason: Object.values(check)[0] === "ok" ? "SQLite quick check passed for the active server store." : "SQLite quick check did not pass." };
+    } catch {
+      database = { name: "Durable database", status: "UNAVAILABLE", reason: "The active server store could not be verified." };
+    }
+    const observedQueue = queue ? await queue.metrics() : null;
+    const release = releaseMetadata();
+    const components = [
+      { name: "Backend API", status: "HEALTHY", reason: "This authenticated operations request reached the active backend.", observedAt: new Date().toISOString() },
+      database,
+      queue ? { name: "Processing queue", status: observedQueue.status, reason: observedQueue.reason, observedAt: observedQueue.observedAt, detail: observedQueue.processing } : { name: "Processing queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
+      queue ? { name: "Dead-letter queue", status: observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : observedQueue.deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY", reason: observedQueue.status === "UNAVAILABLE" ? observedQueue.reason : observedQueue.deadLetter.visible > 0 ? "Messages require operator investigation." : "No messages are waiting in the dead-letter queue.", observedAt: observedQueue.observedAt, detail: observedQueue.deadLetter } : { name: "Dead-letter queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
+      { name: "Processing worker", status: queue ? (observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : queue.running ? "HEALTHY" : "DEGRADED") : "UNKNOWN", reason: queue ? (queue.running ? "The single durable queue consumer is running." : "The queue consumer is not running.") : "No queue worker is configured for this server release." },
+      { name: "CloudWatch logs", status: "UNKNOWN", reason: "Log delivery is not queried by the application; no browser credentials are exposed." },
+      { name: "S3 backups", status: "UNKNOWN", reason: "Backup object freshness is not queried by the application; no browser credentials are exposed." },
+      { name: "Deployment", status: release.status, reason: release.reason, observedAt: release.deployedAt, detail: { releaseSha: release.releaseSha, previousReleaseSha: release.previousReleaseSha, rollbackAvailable: release.rollbackAvailable } },
+    ];
+    const statuses = components.map((component) => component.status);
+    const status = statuses.includes("UNAVAILABLE") ? "UNAVAILABLE" : statuses.includes("DEGRADED") || statuses.includes("UNKNOWN") ? "DEGRADED" : "HEALTHY";
+    return { status, generatedAt: new Date().toISOString(), serverStartedAt, components, release };
+  }, 15_000);
   const intelligencePolicy = new IntelligencePolicyRegistry(store);
   const pipeline = new EpisodePipeline({
     store,
@@ -1451,7 +1492,25 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/overview" && req.method === "GET") {
         if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
         ledger.refresh();
-        return send(res, 200, adminService.overview({ ledger, pipeline, rights, translation }));
+        return send(res, 200, await adminService.overview({ ledger, pipeline, rights, translation, skips, infrastructure: infrastructureStatus }));
+      }
+      if (url.pathname === "/api/admin/operations" && req.method === "GET") {
+        if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }));
+      }
+      if (url.pathname === "/api/admin/costs" && req.method === "GET") {
+        if (!adminActor(req, "finance:read")) return send(res, 403, { error: "Finance administrator access is required." });
+        const operations = await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus });
+        return send(res, 200, { generatedAt: operations.generatedAt, cost: operations.cost, processing: operations.processing.performance, infrastructure: operations.infrastructure });
+      }
+      if (url.pathname === "/api/admin/search" && req.method === "GET") {
+        const actor = adminActor(req, "overview:read");
+        if (!actor) return send(res, 403, { error: "Administrator access is required." });
+        try {
+          return send(res, 200, adminService.globalSearch(url.searchParams.get("q") || "", actor, { jobs: store.all("intelligence").map(([, value]) => value), rightsRecords: rights.list() }));
+        } catch (error) {
+          return send(res, 400, { error: String(error?.message || "The operations search could not be completed.") });
+        }
       }
       if (url.pathname === "/api/admin/configuration" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "configuration:read" : "configuration:write", { write: req.method === "POST" });
@@ -1547,6 +1606,19 @@ export function createStarCastServer({
             processingStatus: v.feedUrl && v.episodeId ? listenerStatus(v.feedUrl, v.episodeId) : null,
           })),
         });
+      }
+      if (url.pathname === "/api/admin/intelligence/cancel" && req.method === "POST") {
+        const actor = adminActor(req, "intelligence:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
+        const input = await body(req);
+        if (!valid(input)) return send(res, 400, { error: "A valid publisher episode is required." });
+        try {
+          const status = pipeline.cancelQueued(input.feedUrl, input.episodeId);
+          adminService.appendAudit({ actor, action: "processing-job-cancelled", resource: `${input.feedUrl}:${input.episodeId}`, newState: { state: status.state, jobId: status.jobId || null }, reason: String(input.reason || "").trim().slice(0, 1000) || null, outcome: "ALLOWED" });
+          return send(res, 200, { status });
+        } catch (error) {
+          return send(res, 409, { error: String(error?.message || "The queued job could not be cancelled.") });
+        }
       }
       if (url.pathname === "/api/admin/intelligence/policies" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "rights:read" : "intelligence:write", { write: req.method === "POST" });
@@ -1704,6 +1776,16 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/reports" && req.method === "GET") {
         if (!adminActor(req, "support:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, { reports: store.all("problem-report").map(([, value]) => value) });
+      }
+      const reportMatch = url.pathname.match(/^\/api\/admin\/reports\/([a-f0-9]{64})$/i);
+      if (reportMatch && req.method === "PATCH") {
+        const actor = adminActor(req, "support:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Support administrator access and CSRF validation are required." });
+        try {
+          return send(res, 200, { report: adminService.updateReport({ ...(await body(req)), id: reportMatch[1] }, actor) });
+        } catch (error) {
+          return send(res, 409, { error: String(error?.message || "The listener report could not be updated.") });
+        }
       }
       if (["/api/admin/transcripts/suspend", "/api/admin/transcripts/delete"].includes(url.pathname) && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });

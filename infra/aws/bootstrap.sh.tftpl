@@ -22,6 +22,8 @@ if [ ! -f /var/lib/starcast/backend.sqlite ]; then
   aws s3 cp s3://${bucket}/seed/initial.sqlite /var/lib/starcast/backend.sqlite --region eu-west-2 --only-show-errors
 fi
 chown -R starcast:starcast /var/lib/starcast /var/log/starcast
+STARCAST_RELEASE_SHA="${release_sha}" node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("/var/lib/starcast/release.json", JSON.stringify({releaseSha:process.env.STARCAST_RELEASE_SHA,previousReleaseSha:null,deployedAt:new Date().toISOString(),rollbackAvailable:false})+"\\n",{mode:0o600});'
+chown starcast:starcast /var/lib/starcast/release.json
 chmod 755 /opt/starcast /opt/starcast/app
 chmod -R a+rX /opt/starcast/app /opt/starcast/node-v24.22.0-linux-x64
 cat >/etc/systemd/system/starcast.service <<'UNIT'

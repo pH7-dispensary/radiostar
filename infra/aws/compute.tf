@@ -84,7 +84,10 @@ resource "aws_iam_role_policy" "backend" {
       { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/translation-cache/*"] },
       { Effect = "Allow", Action = ["polly:SynthesizeSpeech", "translate:TranslateText"], Resource = "*" },
       { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.backend.arn },
-      { Effect = "Allow", Action = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes"], Resource = aws_sqs_queue.processing.arn },
+      # The backend consumes only the processing queue. It can read (not
+      # mutate) the DLQ depth for its authenticated operations surface.
+      { Effect = "Allow", Action = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility"], Resource = aws_sqs_queue.processing.arn },
+      { Effect = "Allow", Action = ["sqs:GetQueueAttributes"], Resource = [aws_sqs_queue.processing.arn, aws_sqs_queue.dead_letter.arn] },
       { Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.backend.arn}:*" }
     ]
   })

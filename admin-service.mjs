@@ -49,6 +49,44 @@ const digest = (value) => createHash("sha256").update(String(value)).digest("hex
 const safeText = (value, limit = 400) => typeof value === "string" ? value.trim().slice(0, limit) : "";
 const memberId = () => randomBytes(18).toString("base64url");
 const sessionId = () => randomBytes(32).toString("base64url");
+const activeJobStates = new Set(["QUEUED", "DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING", "PROCESSING", "PARTIAL_READY"]);
+const openReportStates = new Set(["OPEN", "NEW", "TRIAGED", "INVESTIGATING", "WAITING", "UNDER_REVIEW"]);
+const reportStates = new Set(["OPEN", "UNDER_REVIEW", "RESOLVED", "DISMISSED"]);
+const asArray = (store, kind) => store.all(kind).map(([, value]) => value);
+const numeric = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
+const dateMs = (value) => {
+  const parsed = Date.parse(value || "");
+  return Number.isFinite(parsed) ? parsed : null;
+};
+const median = (values) => {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
+};
+const percentile = (values, ratio) => {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * ratio) - 1))];
+};
+const average = (values) => {
+  const filtered = values.filter(Number.isFinite);
+  return filtered.length ? Math.round(filtered.reduce((sum, value) => sum + value, 0) / filtered.length) : null;
+};
+const ratio = (numerator, denominator) => denominator ? Number((numerator / denominator).toFixed(4)) : null;
+const reportState = (value) => String(value || "OPEN").trim().toUpperCase().replaceAll(" ", "_");
+const jobRoute = (job) => {
+  if (job.cacheHit === true) return "CACHED_INTELLIGENCE";
+  if (/publisher|rss/i.test(String(job.provenance?.sourceType || job.transcript?.sourceType || ""))) return "PUBLISHER_TRANSCRIPT";
+  if (job.allowAudio === true || /audio|transcrib/i.test(String(job.processingStage || job.phase || ""))) return "AUDIO_TRANSCRIPTION";
+  return "UNCLASSIFIED";
+};
+const jobState = (job) => {
+  if (job.state === "BLOCKED" && job.code === "BUDGET_LIMIT") return "BUDGET_PAUSED";
+  if (activeJobStates.has(job.state) && job.state !== "QUEUED") return "PROCESSING";
+  return job.state || "NOT_RECORDED";
+};
+const severityRank = Object.freeze({ CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 });
 
 export class AdminService {
   constructor(store, { now = Date.now, sessionTtlMs = 8 * 60 * 60 * 1000 } = {}) {
@@ -141,10 +179,149 @@ export class AdminService {
     this.store.set("admin-audit-head", "global", { id: entry.id, hash, at });
     return { ...entry, hash };
   }
-  audit({ limit = 100 } = {}) { return this.store.all("admin-audit").map(([, entry]) => entry).sort((a, b) => b.at - a.at).slice(0, Math.max(1, Math.min(500, Number(limit) || 100))); }
-  overview({ ledger, pipeline, rights, translation } = {}) {
+  audit({ limit = 100, actor = "", action = "", from = "", to = "" } = {}) {
+    const fromAt = dateMs(from), toAt = dateMs(to);
+    const actorQuery = safeText(actor, 120).toLowerCase(), actionQuery = safeText(action, 120).toLowerCase();
+    return this.store.all("admin-audit").map(([, entry]) => entry)
+      .filter((entry) => !actorQuery || `${entry.actor?.id || ""} ${entry.actor?.name || ""}`.toLowerCase().includes(actorQuery))
+      .filter((entry) => !actionQuery || String(entry.action || "").toLowerCase().includes(actionQuery))
+      .filter((entry) => !Number.isFinite(fromAt) || entry.at >= fromAt)
+      .filter((entry) => !Number.isFinite(toAt) || entry.at <= toAt)
+      .sort((a, b) => b.at - a.at)
+      .slice(0, Math.max(1, Math.min(500, Number(limit) || 100)));
+  }
+  async overview({ ledger, pipeline, rights, translation, skips, infrastructure = null } = {}) {
     const jobs = this.store.all("intelligence").map(([, value]) => value), jobCounts = Object.fromEntries(["QUEUED", "PROCESSING", "READY", "FAILED", "BLOCKED"].map((state) => [state, jobs.filter((job) => job.state === state).length]));
     const reports = this.store.all("problem-report").map(([, value]) => value), listeners = this.store.all("installation").length || this.store.all("listener").length || this.store.all("listener-profile").length;
-    return { generatedAt: this.now(), dataStatus: "MEASURED", listeners: { total: listeners, follows: this.store.all("follow").length, pilotDevices: this.store.all("pilot-device").length, reportsOpen: reports.filter((report) => !["RESOLVED", "CLOSED"].includes(report.status)).length }, intelligence: { ...jobCounts, total: jobs.length, budget: ledger ? { controls: ledger.controls, totals: ledger.totals() } : null }, rights: { policy: rights?.policy() || null, records: rights?.list().length || 0, reservations: rights?.controlCentre().reservations.length || 0, takedowns: rights?.controlCentre().takedowns.length || 0 }, translation: translation ? translation.status() : null, operations: { transcriptRecords: this.store.all("transcript").length, auditEvents: this.store.all("admin-audit").length }, infrastructure: { status: "UNAVAILABLE", reason: "Live AWS metrics require a scoped server-side CloudWatch integration; no browser credentials are exposed." } };
+    const observedInfrastructure = infrastructure ? await infrastructure() : { status: "UNKNOWN", reason: "Infrastructure telemetry is not configured for this server." };
+    return { generatedAt: this.now(), dataStatus: "MEASURED", listeners: { total: listeners, follows: this.store.all("follow").length, pilotDevices: this.store.all("pilot-device").length, reportsOpen: reports.filter((report) => openReportStates.has(reportState(report.status))).length }, intelligence: { ...jobCounts, total: jobs.length, budget: ledger ? { controls: ledger.controls, totals: ledger.totals() } : null }, rights: { policy: rights?.policy() || null, records: rights?.list().length || 0, reservations: rights?.controlCentre().reservations.length || 0, takedowns: rights?.controlCentre().takedowns.length || 0 }, translation: translation ? translation.status() : null, operations: { transcriptRecords: this.store.all("transcript").length, auditEvents: this.store.all("admin-audit").length }, infrastructure: observedInfrastructure };
+  }
+  async operations({ ledger, rights, translation, skips, infrastructure = null } = {}) {
+    ledger?.refresh();
+    const now = this.now();
+    const jobs = asArray(this.store, "intelligence");
+    const reports = asArray(this.store, "problem-report");
+    const follows = asArray(this.store, "follow");
+    const rightsRecords = rights?.list?.() || [];
+    const projectedJobs = jobs.map((job) => {
+      const startedAt = dateMs(job.startedAt || job.queuedAt);
+      const completedAt = dateMs(job.completedAt);
+      const measuredDurationMs = numeric(job.processingMs) ?? (startedAt && completedAt ? Math.max(0, completedAt - startedAt) : null);
+      const queuedAt = dateMs(job.queuedAt || job.startedAt);
+      const lifecycle = Array.isArray(job.lifecycle) ? job.lifecycle : [];
+      const workerStartedAt = dateMs(lifecycle.find((event) => event.type === "WORKER_STARTED")?.at);
+      const queueWaitMs = queuedAt && workerStartedAt ? Math.max(0, workerStartedAt - queuedAt) : null;
+      return {
+        jobId: job.jobId || null,
+        feedUrl: job.feedUrl || job.episode?.feedUrl || null,
+        episodeId: job.episodeId || job.episode?.id || null,
+        episodeTitle: job.episode?.title || job.episodeId || "Episode not recorded",
+        podcast: job.episode?.showName || job.episode?.publisher || "Podcast not recorded",
+        state: jobState(job), rawState: job.state || null, stage: job.processingStage || job.phase || null,
+        code: job.code || null, reason: job.reason || null, route: jobRoute(job),
+        queuedAt: job.queuedAt || null, startedAt: job.startedAt || null, updatedAt: job.updatedAt || job.completedAt || job.startedAt || null,
+        completedAt: job.completedAt || null, deadlineAt: job.deadlineAt || null,
+        elapsedMs: startedAt ? Math.max(0, (completedAt || now) - startedAt) : null,
+        processingMs: measuredDurationMs, queueWaitMs, retryEligible: job.retryable === true && (job.attempts || 0) < 2,
+        attempts: Number(job.attempts || 0), cacheHit: job.cacheHit === true,
+        followerImpact: follows.filter((follow) => follow.feedUrl === (job.feedUrl || job.episode?.feedUrl)).length,
+      };
+    });
+    const ready = projectedJobs.filter((job) => job.state === "READY");
+    const failures = projectedJobs.filter((job) => job.state === "FAILED");
+    const completed = projectedJobs.filter((job) => job.completedAt && ["READY", "FAILED", "CANCELLED", "BUDGET_PAUSED", "BLOCKED"].includes(job.state));
+    const routeMetrics = Object.fromEntries(["PUBLISHER_TRANSCRIPT", "AUDIO_TRANSCRIPTION", "CACHED_INTELLIGENCE"].map((route) => {
+      const routeJobs = projectedJobs.filter((job) => job.route === route);
+      const complete = routeJobs.filter((job) => job.completedAt);
+      return [route, {
+        jobs: routeJobs.length,
+        completed: complete.length,
+        averageProcessingMs: average(complete.map((job) => job.processingMs)),
+        medianProcessingMs: median(complete.map((job) => job.processingMs)),
+        p95ProcessingMs: percentile(complete.map((job) => job.processingMs), 0.95),
+        failureRate: ratio(routeJobs.filter((job) => job.state === "FAILED").length, routeJobs.length),
+      }];
+    }));
+    const totals = ledger ? ledger.totals(now) : null;
+    const controls = ledger?.controls || null;
+    const freeAiUsage = ledger ? ledger.usage.filter((row) => row.kind !== "transcription") : [];
+    const audioUsage = ledger ? ledger.usage.filter((row) => row.kind === "transcription") : [];
+    const reservations = ledger ? [...ledger.reservations.values()] : [];
+    const cost = {
+      freeAi: { actualUsd: Number(freeAiUsage.reduce((sum, row) => sum + Number(row.usd || 0), 0).toFixed(6)), reservationsUsd: Number(reservations.filter((row) => row.kind !== "transcription").reduce((sum, row) => sum + Number(row.usd || 0), 0).toFixed(6)) },
+      audioTranscription: { actualUsd: Number(audioUsage.reduce((sum, row) => sum + Number(row.usd || 0), 0).toFixed(6)), seconds: audioUsage.reduce((sum, row) => sum + Number(row.seconds || 0), 0), reservationsUsd: Number(reservations.filter((row) => row.kind === "transcription").reduce((sum, row) => sum + Number(row.usd || 0), 0).toFixed(6)) },
+      translation: translation ? translation.status() : { status: "NOT_AVAILABLE" },
+      aws: { status: "NOT_AVAILABLE", reason: "AWS billing is not available from the application ledger; Cost Explorer remains an operator-only delayed billing source." },
+    };
+    const observedInfrastructure = infrastructure ? await infrastructure() : { status: "UNKNOWN", reason: "Infrastructure telemetry is not configured for this server." };
+    const attention = [];
+    const addAttention = (item) => attention.push({ id: digest(JSON.stringify([item.kind, item.resource, item.reason])), ...item });
+    for (const job of failures) addAttention({ kind: "PROCESSING_FAILURE", severity: job.followerImpact ? "HIGH" : "MEDIUM", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: job.reason || "Processing failed without a listener-facing reason.", detectedAt: job.updatedAt, listenerImpact: job.followerImpact, action: job.retryEligible ? "Review and retry the eligible job." : "Inspect the recorded blocker before any new request.", destination: "processing" });
+    for (const job of projectedJobs.filter((job) => activeJobStates.has(job.rawState) && dateMs(job.deadlineAt) && dateMs(job.deadlineAt) < now)) addAttention({ kind: "STALLED_PROCESSING", severity: "CRITICAL", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: "The recorded processing deadline has passed.", detectedAt: job.deadlineAt, listenerImpact: job.followerImpact, action: "Open the job and verify its lifecycle before retrying.", destination: "processing" });
+    for (const job of projectedJobs.filter((job) => job.state === "BUDGET_PAUSED")) addAttention({ kind: "BUDGET_PAUSED", severity: "HIGH", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: job.reason || "The paid intelligence allowance prevented this request.", detectedAt: job.updatedAt, listenerImpact: job.followerImpact, action: "Inspect current allowance; do not raise a cap without approval.", destination: "costs" });
+    for (const report of reports.filter((report) => openReportStates.has(reportState(report.status)))) addAttention({ kind: "LISTENER_REPORT", severity: ["incorrect_skip", "missed_advert"].includes(report.category) ? "HIGH" : "MEDIUM", resource: report.category?.replaceAll("_", " ") || "Listener report", feedUrl: report.feedUrl || null, episodeId: report.episodeId || null, reason: "A listener report is awaiting an operational response.", detectedAt: report.createdAt, listenerImpact: 1, action: "Review diagnostic context and record the outcome.", destination: "listeners" });
+    for (const record of rightsRecords.filter((record) => /PENDING|REVIEW|UNASSESSED/i.test(String(record.assessmentStatus || "")))) addAttention({ kind: "RIGHTS_REVIEW", severity: "HIGH", resource: record.podcast || record.feedUrl, feedUrl: record.feedUrl, episodeId: record.episodeId || null, reason: "A rights assessment requires an administrator decision.", detectedAt: record.updatedAt || record.createdAt || null, listenerImpact: follows.filter((follow) => follow.feedUrl === record.feedUrl).length, action: "Review the rights record; policy controls do not substitute for permission.", destination: "rights" });
+    if (controls && totals && totals.day >= controls.dailyUsd) addAttention({ kind: "AI_BUDGET", severity: "CRITICAL", resource: "Daily AI allowance", reason: "The server-side daily AI allowance is exhausted.", detectedAt: now, listenerImpact: null, action: "Wait for the reset or investigate recorded provider usage.", destination: "costs" });
+    else if (controls && totals && totals.day / controls.dailyUsd >= 0.8) addAttention({ kind: "AI_BUDGET", severity: "HIGH", resource: "Daily AI allowance", reason: "The server-side daily AI allowance has reached 80%.", detectedAt: now, listenerImpact: null, action: "Review new requests and cache reuse before spending more.", destination: "costs" });
+    if (skips?.operations) {
+      const skip = skips.operations();
+      if (skip.counts?.disputed) addAttention({ kind: "AD_SKIP_DISPUTE", severity: "HIGH", resource: "Ad Skip evidence", reason: `${skip.counts.disputed} disputed interval${skip.counts.disputed === 1 ? "" : "s"} will never be automatically skipped.`, detectedAt: now, listenerImpact: null, action: "Inspect the safety evidence and listener reports.", destination: "adSkip" });
+      if (skip.counts?.missedAdvertReports) addAttention({ kind: "MISSED_ADVERT", severity: "MEDIUM", resource: "Ad Skip reports", reason: `${skip.counts.missedAdvertReports} missed-advert report${skip.counts.missedAdvertReports === 1 ? "" : "s"} require review.`, detectedAt: now, listenerImpact: null, action: "Review reports; a listener report cannot verify an interval.", destination: "adSkip" });
+    }
+    for (const component of observedInfrastructure.components || []) if (["UNAVAILABLE", "DEGRADED"].includes(component.status)) addAttention({ kind: "INFRASTRUCTURE", severity: component.status === "UNAVAILABLE" ? "CRITICAL" : "HIGH", resource: component.name, reason: component.reason || "A measured infrastructure component needs attention.", detectedAt: observedInfrastructure.generatedAt || now, listenerImpact: null, action: "Open Operations and inspect the component evidence.", destination: "operations" });
+    attention.sort((a, b) => severityRank[b.severity] - severityRank[a.severity] || (b.listenerImpact || 0) - (a.listenerImpact || 0) || (dateMs(a.detectedAt) || now) - (dateMs(b.detectedAt) || now));
+    const knownEpisodeIds = new Set(projectedJobs.map((job) => `${job.feedUrl || ""}:${job.episodeId || ""}`).filter((value) => value !== ":"));
+    return {
+      generatedAt: now,
+      dataStatus: "MEASURED",
+      summary: {
+        listeners: asArray(this.store, "installation").length || asArray(this.store, "listener").length || asArray(this.store, "listener-profile").length,
+        follows: follows.length,
+        jobs: projectedJobs.length,
+        ready: ready.length,
+        preparing: projectedJobs.filter((job) => ["QUEUED", "PROCESSING"].includes(job.state)).length,
+        unavailable: projectedJobs.filter((job) => ["BLOCKED", "BUDGET_PAUSED"].includes(job.state)).length,
+        failed: failures.length,
+        openReports: reports.filter((report) => openReportStates.has(reportState(report.status))).length,
+      },
+      coverage: { scope: "Persisted operations records", knownEpisodes: knownEpisodeIds.size, ready: ready.length, preparing: projectedJobs.filter((job) => ["QUEUED", "PROCESSING"].includes(job.state)).length, unavailable: projectedJobs.filter((job) => ["BLOCKED", "BUDGET_PAUSED"].includes(job.state)).length, failed: failures.length, notYetProcessed: null, denominatorNote: "The global RSS catalogue is not enumerated here; coverage is limited to persisted operations records." },
+      processing: { jobs: projectedJobs.sort((a, b) => (dateMs(b.updatedAt) || 0) - (dateMs(a.updatedAt) || 0)), counts: Object.fromEntries(["QUEUED", "PROCESSING", "READY", "FAILED", "CANCELLED", "BLOCKED", "BUDGET_PAUSED"].map((state) => [state, projectedJobs.filter((job) => job.state === state).length])), performance: { averageQueueWaitMs: average(completed.map((job) => job.queueWaitMs)), medianProcessingMs: median(completed.map((job) => job.processingMs)), p95ProcessingMs: percentile(completed.map((job) => job.processingMs), 0.95), successRate: ratio(ready.length, completed.length), failureRate: ratio(failures.length, projectedJobs.length), cacheHitRate: ratio(projectedJobs.filter((job) => job.cacheHit).length, projectedJobs.length), retryRate: ratio(projectedJobs.filter((job) => job.attempts > 1).length, projectedJobs.length), routes: routeMetrics } },
+      listeners: { total: asArray(this.store, "installation").length || asArray(this.store, "listener").length || asArray(this.store, "listener-profile").length, follows: follows.length, pilotDevices: asArray(this.store, "pilot-device").filter((device) => !device.revokedAt).length, reports: reports.map((report) => ({ id: report.id, category: report.category, status: reportState(report.status), feedUrl: report.feedUrl || null, episodeId: report.episodeId || null, feature: report.feature || null, createdAt: report.createdAt || null, resolutionNote: report.resolutionNote || null, updatedAt: report.updatedAt || null })), experience: { episodeOpened: null, playbackStarted: null, intelligenceRequested: null, intelligenceReady: ready.length, intelligenceUnavailable: projectedJobs.filter((job) => ["BLOCKED", "BUDGET_PAUSED"].includes(job.state)).length, adSkipExecuted: asArray(this.store, "skip-execution").filter((entry) => entry.kind === "automatic_skip").length } },
+      cost: { controls, totals, ...cost },
+      attention,
+      infrastructure: observedInfrastructure,
+    };
+  }
+  updateReport(input, actor) {
+    const id = safeText(input?.id, 160);
+    const existing = this.store.get("problem-report", id);
+    const status = reportState(input?.status);
+    const resolutionNote = safeText(input?.resolutionNote, 1000);
+    if (!existing) throw Error("The listener report could not be found.");
+    if (!reportStates.has(status)) throw Error("Choose a valid report status.");
+    if (["RESOLVED", "DISMISSED"].includes(status) && !resolutionNote) throw Error("A resolution note is required when closing a listener report.");
+    const next = { ...existing, status, resolutionNote: resolutionNote || existing.resolutionNote || null, updatedAt: this.now(), updatedBy: actor.id };
+    this.store.transaction(() => {
+      this.store.set("problem-report", id, next);
+      this.appendAudit({ actor, action: "listener-report-updated", resource: id, previousState: { status: reportState(existing.status) }, newState: { status }, reason: resolutionNote || null, outcome: "ALLOWED" });
+    });
+    return next;
+  }
+  globalSearch(query, actor, { jobs = [], rightsRecords = [] } = {}) {
+    const needle = safeText(query, 120).toLowerCase();
+    if (needle.length < 2) throw Error("Enter at least two characters to search operations records.");
+    const includes = (...values) => values.some((value) => String(value || "").toLowerCase().includes(needle));
+    const groups = [];
+    if (this.can(actor, "rights:read")) {
+      const podcasts = new Map();
+      for (const record of rightsRecords) if (includes(record.feedUrl, record.podcast, record.publisher)) podcasts.set(record.feedUrl, { type: "PODCAST", title: record.podcast || "Podcast record", subtitle: record.publisher || "Rights record", feedUrl: record.feedUrl });
+      for (const job of jobs) if (includes(job.feedUrl, job.episode?.showName, job.episode?.publisher)) podcasts.set(job.feedUrl, { type: "PODCAST", title: job.episode?.showName || job.episode?.publisher || "Podcast record", subtitle: "Processing record", feedUrl: job.feedUrl });
+      groups.push({ type: "PODCASTS", items: [...podcasts.values()].slice(0, 12) });
+    }
+    if (this.can(actor, "intelligence:read")) groups.push({ type: "EPISODES", items: jobs.filter((job) => includes(job.episode?.title, job.episodeId, job.feedUrl)).slice(0, 12).map((job) => ({ type: "EPISODE", title: job.episode?.title || job.episodeId || "Episode record", subtitle: `${job.state || "NOT_RECORDED"} · ${job.episode?.showName || "Podcast not recorded"}`, feedUrl: job.feedUrl, episodeId: job.episodeId || job.episode?.id || null })) });
+    if (this.can(actor, "support:read")) groups.push({ type: "REPORTS", items: asArray(this.store, "problem-report").filter((report) => includes(report.category, report.feedUrl, report.episodeId, report.feature)).slice(0, 12).map((report) => ({ type: "REPORT", title: String(report.category || "Listener report").replaceAll("_", " "), subtitle: `${reportState(report.status)} · ${report.feature || "General support"}`, reportId: report.id })) });
+    if (this.can(actor, "listeners:read")) groups.push({ type: "LISTENERS", items: asArray(this.store, "installation").filter((listener) => includes(listener.id)).slice(0, 12).map((listener) => ({ type: "LISTENER", title: `Anonymous listener · ${String(listener.id).slice(-8)}`, subtitle: listener.onboardedAt ? "Onboarded installation" : "Installation not onboarded", listenerId: listener.id })) });
+    if (this.can(actor, "rights:read")) groups.push({ type: "RIGHTS", items: rightsRecords.filter((record) => includes(record.feedUrl, record.podcast, record.publisher, record.classification, record.assessmentStatus)).slice(0, 12).map((record) => ({ type: "RIGHTS", title: record.podcast || "Rights record", subtitle: `${record.classification || "UNASSESSED"} · ${record.assessmentStatus || "Not assessed"}`, feedUrl: record.feedUrl, episodeId: record.episodeId || null })) });
+    return { query: needle, groups: groups.filter((group) => group.items.length) };
   }
 }

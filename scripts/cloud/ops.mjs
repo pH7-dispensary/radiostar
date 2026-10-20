@@ -65,18 +65,25 @@ cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast
 chmod -R a+rX ${staged}
 previous=/opt/starcast/previous-$(date +%s)
+metadata_backup=/var/lib/starcast/release-before-update.json
+if test -f /var/lib/starcast/release.json; then cp /var/lib/starcast/release.json "$metadata_backup"; else rm -f "$metadata_backup"; fi
 ${idleCheck}
 systemctl stop starcast
 mv /opt/starcast/app "$previous"
 mv ${staged} /opt/starcast/app
+previous_sha=$(node -e "try{const value=JSON.parse(require('node:fs').readFileSync('$metadata_backup','utf8'));process.stdout.write(/^[a-f0-9]{64}$/i.test(value.releaseSha||'')?value.releaseSha:'')}catch{}")
+STARCAST_RELEASE_SHA='${sha}' STARCAST_PREVIOUS_RELEASE_SHA="$previous_sha" node --input-type=module -e "import {writeFileSync} from 'node:fs'; writeFileSync('/var/lib/starcast/release.json', JSON.stringify({releaseSha:process.env.STARCAST_RELEASE_SHA,previousReleaseSha:process.env.STARCAST_PREVIOUS_RELEASE_SHA||null,deployedAt:new Date().toISOString(),rollbackAvailable:true})+'\\n',{mode:0o600});"
+chown starcast:starcast /var/lib/starcast/release.json
 systemctl start starcast
 if ! curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4173/api/health; then
   systemctl stop starcast
   mv /opt/starcast/app ${staged}
   mv "$previous" /opt/starcast/app
+  if test -f "$metadata_backup"; then mv "$metadata_backup" /var/lib/starcast/release.json; else rm -f /var/lib/starcast/release.json; fi
   systemctl start starcast
   exit 1
 fi
+rm -f "$metadata_backup"
 echo 'Release ${sha} healthy; previous source retained for rollback.'`];
 } else throw Error("Use status, check-idle, verify-store, verify-runtime, restart, connect, deploy or poll <command-id>");
 if (commands) {

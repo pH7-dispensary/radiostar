@@ -1,5 +1,6 @@
 import {
   DeleteMessageCommand,
+  GetQueueAttributesCommand,
   ReceiveMessageCommand,
   SendMessageCommand,
   SQSClient,
@@ -13,6 +14,7 @@ export class ProcessingQueue {
   constructor({ queueUrl, region = "eu-west-2", client, pollWaitSeconds = 20 } = {}) {
     if (!validQueueUrl(queueUrl)) throw Error("A dedicated Star Cast processing queue is required.");
     this.queueUrl = queueUrl;
+    this.deadLetterQueueUrl = queueUrl.replace(/processing$/, "processing-dlq");
     this.client = client || new SQSClient({ region, maxAttempts: 3 });
     this.pollWaitSeconds = Math.max(1, Math.min(20, Number(pollWaitSeconds) || 20));
     this.running = false;
@@ -54,6 +56,52 @@ export class ProcessingQueue {
       QueueUrl: this.queueUrl,
       ReceiptHandle: receiptHandle,
     }));
+  }
+
+  // This is deliberately a small, bounded read. The administrative surface
+  // needs queue evidence, not browser credentials or an unbounded AWS proxy.
+  async metrics() {
+    const attributesFor = async (queueUrl) => {
+      const result = await this.client.send(new GetQueueAttributesCommand({
+        QueueUrl: queueUrl,
+        AttributeNames: [
+          "ApproximateNumberOfMessages",
+          "ApproximateNumberOfMessagesNotVisible",
+          "ApproximateNumberOfMessagesDelayed",
+        ],
+      }));
+      const values = result.Attributes || {};
+      return {
+        visible: Number(values.ApproximateNumberOfMessages || 0),
+        inFlight: Number(values.ApproximateNumberOfMessagesNotVisible || 0),
+        delayed: Number(values.ApproximateNumberOfMessagesDelayed || 0),
+      };
+    };
+    try {
+      const [processing, deadLetter] = await Promise.all([
+        attributesFor(this.queueUrl),
+        attributesFor(this.deadLetterQueueUrl),
+      ]);
+      return {
+        status: deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY",
+        processing,
+        deadLetter,
+        workerRunning: this.running,
+        observedAt: new Date().toISOString(),
+        reason: deadLetter.visible > 0
+          ? "Messages are waiting in the processing dead-letter queue."
+          : "SQS queue attributes were read successfully.",
+      };
+    } catch (error) {
+      return {
+        status: "UNAVAILABLE",
+        processing: null,
+        deadLetter: null,
+        workerRunning: this.running,
+        observedAt: new Date().toISOString(),
+        reason: `Queue attributes could not be read (${String(error?.name || "QUEUE_READ_FAILED").slice(0, 80)}).`,
+      };
+    }
   }
 
   async run({ execute, recover }) {

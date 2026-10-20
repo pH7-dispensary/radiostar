@@ -502,6 +502,23 @@ export class EpisodePipeline {
     this.inflight.set(key, task);
     return publicIntelligence(durableInitial);
   }
+  cancelQueued(feedUrl, episodeId) {
+    const key = episodeKey(feedUrl, episodeId);
+    const current = this.store.get("intelligence", key);
+    // A cancellation is intentionally limited to the durable waiting state.
+    // Once a worker has started, a paid provider outcome may be uncertain and
+    // must follow the existing bounded recovery path instead of being hidden.
+    if (!current || current.state !== "QUEUED" || current.completedAt)
+      throw Error("Only a queued processing job can be cancelled.");
+    const cancelled = this.transition(key, current, {
+      state: "CANCELLED",
+      code: "CANCELLED_BY_ADMINISTRATOR",
+      reason: "This queued processing request was cancelled by an administrator before a worker started.",
+      retryable: false,
+    });
+    this.store.delete("processing-outbox", current.jobId);
+    return publicIntelligence(cancelled);
+  }
   async recoverQueued() {
     if (!this.queue) return;
     const now = Date.now();
