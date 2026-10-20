@@ -83,6 +83,10 @@ export class SkipService {
   }
   verification(key) { return this.store.get("skip-audio-verification", key) || null; }
   inspect(feed, episode) {
+    const rights = this.pipeline.rights;
+    if (rights && (!rights.evaluate({ feature: "ad-detection", feedUrl: feed, episodeId: episode }).allowed ||
+        !rights.evaluate({ feature: "intelligence-processing", feedUrl: feed, episodeId: episode }).allowed))
+      return { state: "UNAVAILABLE", reason: "Advert detection is not authorised by the current assessment.", intervals: [], activeIntervals: [], verifiedCount: 0, candidateCount: 0, automaticSkipping: false };
     const value = this.pipeline.status(feed, episode), key = episodeKey(feed, episode), transcript = value?.transcript;
     const all = this.store.all("skip-interval").map(([, item]) => item);
     const prior = all.filter((item) => item.episodeKey === key);

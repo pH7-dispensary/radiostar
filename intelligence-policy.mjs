@@ -66,9 +66,10 @@ export class IntelligencePolicyRegistry {
     const record = {
       id, feedUrl: input.feedUrl, episodeId: episodeId || null, tier: input.tier,
       version: (previous?.version || 0) + 1, applyToExisting: bool(input.applyToExisting), applyToFuture: input.applyToFuture !== false,
+      automaticPreparation: input.automaticPreparation === undefined ? previous?.automaticPreparation === true : input.automaticPreparation === true,
       selectedFeatures: Array.isArray(input.selectedFeatures) ? input.selectedFeatures.filter((x) => typeof x === "string").slice(0, 20) : ["core"],
       updatedAt: at, updatedBy: actor, reason,
-      history: [...(previous?.history || []), { at, actor, tier: previous?.tier || null, version: previous?.version || 0, reason: previous?.reason || null }].slice(-50),
+      history: [...(previous?.history || []), { at, actor, tier: previous?.tier || null, version: previous?.version || 0, reason: previous?.reason || null, applyToFuture: previous?.applyToFuture, selectedFeatures: previous?.selectedFeatures }].slice(-50),
     };
     this.store.transaction(() => {
       this.store.set("intelligence-policy", id, record);
@@ -86,12 +87,12 @@ export class IntelligencePolicyRegistry {
     this.store.transaction(() => { this.store.set("intelligence-policy", "global", record); this.store.set("intelligence-policy-audit", randomUUID(), { at, actor, action: "global-policy-set", previousTier: previous.tier, tier: record.tier, version: record.version, reason }); });
     return record;
   }
-  rollback(feedUrl, episodeId, version, { actor = "admin", reason = "" } = {}) {
+  rollback(feedUrl, episodeId, version, { actor = "admin", reason = "", expectedVersion } = {}) {
     const current = this.scope(feedUrl, episodeId || "");
     if (!current) throw Error("No scoped policy exists to roll back.");
     const target = current.history.find((entry) => entry.version === Number(version));
     if (!target?.tier) throw Error("The requested policy version is unavailable.");
-    return this.set({ feedUrl, episodeId: episodeId || undefined, tier: target.tier, applyToExisting: false, applyToFuture: current.applyToFuture, selectedFeatures: current.selectedFeatures, reason: reason || `Rollback to version ${target.version}.` }, { actor });
+    return this.set({ feedUrl, episodeId: episodeId || undefined, tier: target.tier, expectedVersion, applyToExisting: false, applyToFuture: target.applyToFuture ?? current.applyToFuture, automaticPreparation: false, selectedFeatures: target.selectedFeatures || current.selectedFeatures, reason: reason || `Rollback to version ${target.version}.` }, { actor });
   }
   clear(feedUrl, episodeId = "", { actor = "admin", expectedVersion, reason = "" } = {}) {
     if (typeof feedUrl !== "string" || !feedUrl) throw Error("A podcast RSS URL is required.");

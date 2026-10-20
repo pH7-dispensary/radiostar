@@ -942,6 +942,8 @@ export class EpisodePipeline {
       });
       if (!rightsAllowed())
         throw Error("Rights permission no longer allows AI processing for this episode.");
+      // Keep canonical internal analysis for reuse; listener responses enforce
+      // each output permission independently, including after a rights change.
       update({ state: "ORGANISING", processingStage: "INDEXING", ...generated });
       update({
         state: generated.partialResult ? "PARTIAL_READY" : "READY",
@@ -1074,6 +1076,7 @@ export class EpisodePipeline {
     const decision = this.rights?.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: id });
     if (decision && !decision.allowed)
       return [];
+    if (this.rights && !this.rights.evaluate({ feature: "find-moment", feedUrl: feed, episodeId: id }).allowed) return [];
     return value?.transcript
       ? hybridRetrieve(value.transcript, query, 5)
           .filter((m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs))
@@ -1098,6 +1101,7 @@ export class EpisodePipeline {
           completed(v) &&
           v.processingVersion === PROCESSING_VERSION &&
           (!this.rights || this.rights.evaluate({ feature: "conversation-search", feedUrl: v.episode.feedUrl, episodeId: v.episode.id }).allowed) &&
+          (!momentsOnly || !this.rights || this.rights.evaluate({ feature: "find-moment", feedUrl: v.episode.feedUrl, episodeId: v.episode.id }).allowed) &&
           (!feedUrls || feedUrls.includes(v.episode.feedUrl)),
       );
     const matches = corpus

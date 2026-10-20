@@ -1,0 +1,18 @@
+#rights-workspace { scroll-margin-top: 24px; }
+#rights-workspace .evidence-reference { overflow-wrap: anywhere; max-width: 520px; }
+#rights-workspace details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+#rights-workspace summary { cursor: pointer; color: var(--purple-deep); font-weight: 650; padding: 10px 0; min-height: 44px; }
+#rights-workspace form { margin-top: 12px; display: grid; gap: 14px; }
+#rights-workspace .assessment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+#rights-workspace .assessment-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+#rights-workspace fieldset { margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+#rights-workspace legend { font-weight: 650; padding: 0 6px; font-size: 13px; }
+#rights-workspace input, #rights-workspace select, #rights-workspace textarea { min-width: 0; max-width: 100%; }
+#rights-workspace .check { min-height: 40px; }
+#rights-workspace .notice { background: var(--lavender); padding: 12px; border-radius: 10px; line-height: 1.5; }
+#rights-workspace button { justify-self: start; min-height: 44px; }
+#rights-workspace :focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+@media (max-width: 620px) {
+  #rights-workspace .assessment-grid, #rights-workspace .assessment-features { grid-template-columns: 1fr; }
+  #rights-workspace button { width: 100%; }
+}

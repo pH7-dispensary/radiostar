@@ -51,6 +51,8 @@ try {
   assert.equal(denied.status, 200);
   assert.equal((await denied.json()).available, false, "unassessed content cannot expose captions");
   const adminHeaders = { ...device, "x-star-cast-admin-token": "admin-test-token" };
+  // Core permission is fixture setup, not an unstructured API permission grant.
+  app.rights.set({ feedUrl, episodeId, classification: "LICENSED", canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true });
   const rights = await post("/api/admin/rights", {
     feedUrl,
     episodeId,
@@ -62,6 +64,9 @@ try {
     canDisplayDerivedIntelligence: true,
     canRetain: true,
     canRegenerate: true,
+    expectedAssessmentRevision: app.rights.assessmentRevision(feedUrl, episodeId),
+    confirmation: "RECORD RIGHTS", legalBasis: "Owned fixture caption rights.",
+    evidenceReference: "fixture:caption-authorisation", evidenceIssuer: "Fixture owner",
   }, adminHeaders);
   assert.equal(rights.status, 200);
   const report = await post("/api/reports", {

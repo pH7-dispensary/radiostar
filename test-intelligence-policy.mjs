@@ -50,7 +50,10 @@ try {
   assert.equal(catalogue.status, 200);
   assert.equal(body.podcasts.some((podcast) => podcast.feedUrl === feedUrl && podcast.policy.tier === "LOW"), true, "catalogue reports effective podcast policy");
   assert.ok(body.audit.length >= 3, "policy history is persisted");
-  const rollback = await post("/api/admin/intelligence/policies/rollback", { feedUrl, episodeId: secondEpisode, version: 1, reason: "Restore episode hold." });
+  const rollbackInput = { feedUrl, episodeId: secondEpisode, version: 1, reason: "Restore episode hold.", confirmation: "ROLLBACK POLICY", expectedVersion: app.intelligencePolicy.effective(feedUrl, secondEpisode).version };
+  assert.equal((await post("/api/admin/intelligence/policies/rollback", { ...rollbackInput, confirmation: "" })).status, 400);
+  assert.equal((await post("/api/admin/intelligence/policies/rollback", { ...rollbackInput, expectedVersion: 0 })).status, 409);
+  const rollback = await post("/api/admin/intelligence/policies/rollback", rollbackInput);
   assert.equal(rollback.status, 200, "Super Admin can roll back an operational episode policy");
   assert.equal(app.intelligencePolicy.effective(feedUrl, secondEpisode).tier, "HIGH");
   const restrictedEpisode = "episode-three";

@@ -86,15 +86,27 @@ try {
     body: JSON.stringify({ scope: "episode", feedUrl, episodeId }),
   });
   assert.equal(nonSuper.status, 403, "rights administrators cannot exercise the Super Admin processing override");
-  const approval = await post("/api/admin/rights/approve-process", {
+  const preview = await post("/api/admin/rights/approval-preview", {
     scope: "episode", feedUrl, episodeId, podcast: "Authorised fixture show",
     episodeTitle: "Authorised fixture episode", classification: "LICENSED",
     legalBasis: "Fixture publisher authorisation for bounded intelligence.",
     reason: "Verify the approved processing workflow.",
     canTranscribeAudio: false,
     confirmation: "APPROVE & PROCESS",
+    basisType: "PUBLISHER_LICENCE", evidenceReference: "fixture:publisher-authorisation-v1", evidenceIssuer: "Fixture publisher",
+    authorityConfirmed: true, selectedFeatures: ["brief", "chapters", "topics", "moments", "search", "advertisements"], territories: ["WORLDWIDE"],
+    expectedAssessmentRevision: app.rights.assessmentRevision(feedUrl, episodeId),
   });
+  const previewBody = await preview.json();
+  assert.equal(preview.status, 200, JSON.stringify(previewBody));
+  assert.equal(previewBody.summary.expectedNewJobs, 1);
+  assert.equal(app.pipeline.status(feedUrl, episodeId), null, "preview creates no processing job");
+  const approval = await post("/api/admin/rights/approve-process", { previewId: previewBody.previewId, confirmation: "APPROVE & PROCESS" });
   assert.equal(approval.status, 202);
+  const approved = await approval.json();
+  assert.ok(approved.jobs[0].jobId);
+  const replay = await (await post("/api/admin/rights/approve-process", { previewId: previewBody.previewId, confirmation: "APPROVE & PROCESS" })).json();
+  assert.equal(replay.jobs[0].jobId, approved.jobs[0].jobId, "replaying a confirmed preview is idempotent");
   await Promise.all(app.pipeline.inflight.values());
   const ready = app.pipeline.status(feedUrl, episodeId);
   assert.equal(ready.state, "READY", "approval starts the existing complete intelligence pipeline");
@@ -111,7 +123,7 @@ try {
     feedUrl: restrictedFeed, episodeId: "reserved-episode", classification: RightsClassification.LICENSED,
     canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true,
   });
-  const rejected = await post("/api/admin/rights/approve-process", {
+  const rejected = await post("/api/admin/rights/approval-preview", {
     scope: "episode", feedUrl: restrictedFeed, episodeId: "reserved-episode",
     classification: "LICENSED", legalBasis: "Not applicable", reason: "Must fail", confirmation: "APPROVE & PROCESS",
   });

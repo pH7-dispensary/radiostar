@@ -5,6 +5,7 @@ import { dirname } from "node:path";
 // Local adapter for the existing transcript/job/intelligence relationships.
 // Production PostgreSQL migrations remain the deployment contract.
 export class LocalStore {
+  transactionDepth = 0;
   constructor(path) {
     if (path !== ":memory:")
       mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -36,14 +37,19 @@ export class LocalStore {
     this.db.prepare("DELETE FROM records WHERE kind=? AND id=?").run(kind, id);
   }
   transaction(fn) {
-    this.db.exec("BEGIN IMMEDIATE");
+    const depth = this.transactionDepth, savepoint = `starcast_${depth}`;
+    this.db.exec(depth ? `SAVEPOINT ${savepoint}` : "BEGIN IMMEDIATE");
+    this.transactionDepth++;
     try {
       const result = fn();
-      this.db.exec("COMMIT");
+      if (result && typeof result.then === "function") throw Error("Store transactions must be synchronous.");
+      this.db.exec(depth ? `RELEASE SAVEPOINT ${savepoint}` : "COMMIT");
       return result;
     } catch (error) {
-      this.db.exec("ROLLBACK");
+      this.db.exec(depth ? `ROLLBACK TO SAVEPOINT ${savepoint}; RELEASE SAVEPOINT ${savepoint}` : "ROLLBACK");
       throw error;
+    } finally {
+      this.transactionDepth--;
     }
   }
   close() {

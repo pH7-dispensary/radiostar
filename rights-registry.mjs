@@ -29,6 +29,7 @@ const permissions = [
   "canGenerateChapters",
   "canGenerateTopics",
   "canSearchMoments",
+  "canSearchConversations",
   "canDetectAdvertisements",
   "canRetain",
   "canRegenerate",
@@ -54,7 +55,7 @@ const optionalFeatures = Object.freeze({
 const featurePermission = Object.freeze({
   "intelligence-processing": ["canProcessForAi", "canRetain"],
   "intelligence-display": ["canDisplayDerivedIntelligence"],
-  "conversation-search": ["canDisplayDerivedIntelligence"],
+  "conversation-search": ["canDisplayDerivedIntelligence", "canSearchConversations"],
   "episode-brief": ["canGenerateBrief"],
   "smart-chapters": ["canGenerateChapters"],
   topics: ["canGenerateTopics"],
@@ -105,6 +106,7 @@ const normaliseRecord = (record) => record && (() => {
   canGenerateChapters: record.canGenerateChapters === undefined ? legacyDerived : record.canGenerateChapters === true,
   canGenerateTopics: record.canGenerateTopics === undefined ? legacyDerived : record.canGenerateTopics === true,
   canSearchMoments: record.canSearchMoments === undefined ? legacyDerived : record.canSearchMoments === true,
+  canSearchConversations: record.canSearchConversations === undefined ? record.canDisplayDerivedIntelligence === true : record.canSearchConversations === true,
   canDetectAdvertisements: record.canDetectAdvertisements === undefined ? legacyDerived : record.canDetectAdvertisements === true,
   assessmentStatus: assessmentValues.has(record.assessmentStatus) ? record.assessmentStatus : record.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED,
   explicitAuthorisation: record.explicitAuthorisation === true || (record.classification === RightsClassification.LICENSED && record.canProcessForAi === true && record.canDisplayDerivedIntelligence === true),
@@ -118,6 +120,20 @@ const normaliseRecord = (record) => record && (() => {
   assessmentEvidence: normaliseEvidence(record.assessmentEvidence),
   };
 })();
+
+export const processingApprovalFeatures = Object.freeze({
+  transcription: "canTranscribeAudio",
+  brief: "canGenerateBrief",
+  chapters: "canGenerateChapters",
+  topics: "canGenerateTopics",
+  moments: "canSearchMoments",
+  search: "canSearchConversations",
+  advertisements: "canDetectAdvertisements",
+});
+const mandatoryRestriction = (record) => record && (record.suspendedAt || record.deletedAt || record.rightsReserved ||
+  record.classification === RightsClassification.DISPUTED ||
+  ["PUBLISHER_RESTRICTION", "RIGHTS_RESERVED", "LEGAL_PROHIBITION"].includes(record.blockerCode));
+const approvalError = (message) => Object.assign(Error(message), { code: "APPROVAL_INVALID" });
 
 /**
  * Server-owned rights records deliberately default to no permission. A publisher
@@ -208,7 +224,17 @@ export class RightsRegistry {
     });
     return record;
   }
-  approveProcessing(input = {}, { actor = "admin" } = {}) {
+  assessmentRevision(feedUrl, episodeId = "") {
+    // Include inherited records and enforcement policy: a preview cannot outlive
+    // a new publisher reservation, expiry edit, or concurrent reviewer decision.
+    return createHash("sha256").update(JSON.stringify([
+      this.store.get("rights", key(feedUrl)), episodeId ? this.store.get("rights", key(feedUrl, episodeId)) : null,
+      this.store.get("rights-policy", policyKey),
+      this.store.get("rights-policy-override", key(feedUrl)),
+      episodeId ? this.store.get("rights-policy-override", key(feedUrl, episodeId)) : null,
+    ])).digest("hex");
+  }
+  validateProcessingApproval(input = {}) {
     if (typeof input.feedUrl !== "string" || !input.feedUrl)
       throw Error("A publisher feed is required.");
     if (input.episodeId !== undefined && typeof input.episodeId !== "string")
@@ -223,9 +249,56 @@ export class RightsRegistry {
     const prior = this.resolve(input.feedUrl, input.episodeId || "");
     // An administrator records a documented basis; they do not override a
     // publisher reservation, dispute, suspension, or takedown.
-    if (prior.id && (prior.suspendedAt || prior.deletedAt || prior.rightsReserved || prior.classification === RightsClassification.DISPUTED))
+    if (mandatoryRestriction(prior))
       throw Error("This content has a mandatory rights restriction and cannot be approved here.");
-    const record = this.set({
+    const basisType = input.basisType;
+    if (!["OWNED", "PUBLISHER_LICENCE", "CREATOR_AUTHORISATION", "APPLICABLE_EXCEPTION", "INDEPENDENT_REVIEW"].includes(basisType))
+      throw approvalError("Choose a structured processing basis.");
+    if ((basisType === "APPLICABLE_EXCEPTION") !== (input.classification === RightsClassification.TDM_ELIGIBLE))
+      throw approvalError("The processing basis and rights classification must agree.");
+    const evidenceReference = String(input.evidenceReference || "").trim();
+    const evidenceIssuer = String(input.evidenceIssuer || "").trim();
+    if (evidenceReference.length < 8 || evidenceReference.length > 2000 || evidenceIssuer.length < 3 || evidenceIssuer.length > 300)
+      throw approvalError("Provide an evidence reference and the rights-holder or independent reviewer who issued it.");
+    if (input.authorityConfirmed !== true) throw approvalError("Confirm that the evidence covers these rights and this scope.");
+    if (!Array.isArray(input.selectedFeatures)) throw approvalError("Choose supported intelligence capabilities.");
+    const selectedFeatures = [...new Set(input.selectedFeatures)];
+    if (!selectedFeatures.length || selectedFeatures.some((feature) => !processingApprovalFeatures[feature]))
+      throw approvalError("Choose supported intelligence capabilities. Captions, dubbing and voice permissions remain separate.");
+    if (!selectedFeatures.some((feature) => feature !== "transcription")) throw approvalError("Choose at least one intelligence capability.");
+    const dates = {};
+    for (const field of ["expiresAt", "reviewAt"]) {
+      if (input[field]) {
+        const time = Date.parse(input[field]);
+        if (!Number.isFinite(time) || time <= this.now()) throw approvalError("Review and expiry dates must be valid future dates.");
+        dates[field] = new Date(time).toISOString();
+      } else dates[field] = null;
+    }
+    if (!Array.isArray(input.territories)) throw approvalError("Record the territories covered by the evidence.");
+    const territories = [...new Set(input.territories)];
+    if (!territories.length || territories.length > 50 ||
+        territories.some((territory) => !/^(WORLDWIDE|[A-Z]{2})$/.test(territory)) ||
+        (territories.includes("WORLDWIDE") && territories.length !== 1))
+      throw approvalError("Record WORLDWIDE or explicit two-letter territories, without mixing them.");
+    if (input.expectedAssessmentRevision !== this.assessmentRevision(input.feedUrl, input.episodeId || ""))
+      throw approvalError("The rights assessment changed. Refresh and preview it before approving.");
+    const episodeIds = input.episodeId ? [input.episodeId] : input.coveredEpisodeIds;
+    if (!Array.isArray(episodeIds) || !episodeIds.length || episodeIds.length > 500 ||
+        episodeIds.some((id) => typeof id !== "string" || !id || id.length > 2000))
+      throw approvalError("Record the exact existing episodes covered by this assessment.");
+    return {
+      legalBasis, reason, prior, basisType, evidenceReference, evidenceIssuer, selectedFeatures,
+      coverage: { episodeIds: [...new Set(episodeIds)], futureEpisodes: !input.episodeId && input.applyToFuture === true },
+      territories, ...dates,
+    };
+  }
+  approveProcessing(input = {}, { actor = "admin" } = {}) {
+    const validated = this.validateProcessingApproval(input);
+    const { legalBasis, reason, prior } = validated;
+    const selected = new Set(validated.selectedFeatures);
+    let record, override;
+    this.store.transaction(() => {
+    record = this.set({
       feedUrl: input.feedUrl,
       episodeId: input.episodeId || undefined,
       publisher: input.publisher,
@@ -233,32 +306,34 @@ export class RightsRegistry {
       episodeTitle: input.episodeTitle,
       classification: input.classification,
       legalBasis,
+      approvalAssessment: { schemaVersion: 1, ...validated, prior: undefined, reviewedBy: actor, decidedAt: new Date(this.now()).toISOString() },
+      assessmentSource: "super-admin-evidence-review",
+      assessmentReason: reason,
+      assessmentEvidence: [...(prior.assessmentEvidence || []), { type: validated.basisType, source: validated.evidenceIssuer, scope: input.episodeId ? "episode" : "podcast", value: validated.evidenceReference }],
+      blockerCode: null,
       restrictions: "Approved for bounded Radio Star intelligence only.",
       assessmentStatus: RightsAssessmentStatus.APPROVED,
       explicitAuthorisation: input.classification === RightsClassification.LICENSED,
       rightsReserved: false,
       canAcquireTranscript: true,
       canProcessForAi: true,
-      canTranscribeAudio: input.canTranscribeAudio === true,
+      canTranscribeAudio: selected.has("transcription"),
       canDisplayDerivedIntelligence: true,
-      canGenerateBrief: true,
-      canGenerateChapters: true,
-      canGenerateTopics: true,
-      canSearchMoments: true,
-      canDetectAdvertisements: true,
+      ...Object.fromEntries(Object.entries(processingApprovalFeatures).map(([feature, permission]) => [permission, selected.has(feature)])),
       canRetain: true,
       canRegenerate: true,
-      // These remain independent product and rights decisions.
-      canDisplayCaptions: false,
-      canTranslateText: false,
-      canGenerateDubbedAudio: false,
-      canCacheTranslatedAudio: false,
-      canDistributeTranslation: false,
-      canCloneSpeakerVoice: false,
+      // Core approval cannot expand independent permissions. Preserve only
+      // active grants already recorded at this exact scope, with their evidence.
+      ...Object.fromEntries([
+        ["canDisplayCaptions", "captions"], ["canTranslateText", "translation-text"],
+        ["canGenerateDubbedAudio", "dubbing-audio"], ["canCacheTranslatedAudio", "dubbing-audio"],
+        ["canDistributeTranslation", "dubbing-audio"], ["canCloneSpeakerVoice", "voice-cloning"],
+      ].map(([permission, feature]) => [permission, (prior.episodeId || "") === (input.episodeId || "") &&
+        prior[permission] === true && this.evaluate({ feature, feedUrl: input.feedUrl, episodeId: input.episodeId || "" }).allowed])),
     }, { actor });
     // A documented TDM basis can relax only the optional STRONG workflow for
     // this scope. It never disables mandatory checks or other feature gates.
-    const override = this.setOverride({
+    override = this.setOverride({
       feedUrl: input.feedUrl,
       episodeId: input.episodeId || undefined,
       mode: input.classification === RightsClassification.TDM_ELIGIBLE ? RightsEnforcementMode.LITE : undefined,
@@ -276,7 +351,37 @@ export class RightsRegistry {
       audioTranscriptionApproved: record.canTranscribeAudio,
       reason,
     });
+    this.store.set("rights-review-history", randomUUID(), {
+      at: this.now(), actor, target: record.id, previous: prior, next: record, reason,
+    });
+    });
     return { record, override, reason };
+  }
+  previewProcessingApproval(input) {
+    const staged = new Map();
+    const preview = new RightsRegistry({
+      get: (kind, id) => staged.has(`${kind}:${id}`) ? staged.get(`${kind}:${id}`) : this.store.get(kind, id),
+      set: (kind, id, value) => staged.set(`${kind}:${id}`, value),
+      transaction: (operation) => operation(),
+    }, { now: this.now });
+    const { record } = preview.approveProcessing(input, { actor: "preview" });
+    return { record, evaluate: (query) => preview.evaluate(query) };
+  }
+  revokeApproval(input, { actor = "admin" } = {}) {
+    if (input.confirmation !== "REVOKE APPROVAL" || !String(input.reason || "").trim())
+      throw approvalError("Provide a reason and type REVOKE APPROVAL.");
+    if (input.expectedAssessmentRevision !== this.assessmentRevision(input.feedUrl, input.episodeId || ""))
+      throw approvalError("The rights assessment changed. Refresh before revoking.");
+    const id = key(input.feedUrl, input.episodeId || ""), previous = this.store.get("rights", id);
+    if (!previous?.approvalAssessment) throw approvalError("This scope has no structured approval to revoke.");
+    const record = { ...previous, version: (previous.version || 0) + 1, updatedAt: this.now(), updatedBy: actor,
+      approvalAssessment: { ...previous.approvalAssessment, revokedAt: new Date(this.now()).toISOString(), revokedBy: actor, revocationReason: String(input.reason).slice(0, 1000) } };
+    this.store.transaction(() => {
+      this.store.set("rights", id, record);
+      this.store.set("rights-review-history", randomUUID(), { at: this.now(), actor, target: id, previous, next: record, reason: input.reason });
+      this.audit("processing-approval-revoked", id, actor, { reason: input.reason });
+    });
+    return record;
   }
   setOverride(input = {}, { actor = "admin" } = {}) {
     if (typeof input.feedUrl !== "string" || !input.feedUrl) throw Error("A publisher feed is required.");
@@ -305,10 +410,16 @@ export class RightsRegistry {
   resolve(feedUrl, episodeId = "") {
     const episode = this.store.get("rights", key(feedUrl, episodeId));
     const podcast = this.store.get("rights", key(feedUrl));
-    const mandatory = (record) => record && (record.suspendedAt || record.deletedAt || record.rightsReserved || record.classification === RightsClassification.DISPUTED);
+    const mandatory = mandatoryRestriction;
     // A channel-level reservation/dispute always constrains an episode. An
     // episode record cannot be used to sidestep the publisher's mandatory hold.
-    const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast : episode || podcast;
+    const covered = !podcast?.approvalAssessment || !episodeId || podcast.approvalAssessment.coverage.futureEpisodes ||
+      podcast.approvalAssessment.coverage.episodeIds.includes(episodeId);
+    // A documented channel approval supersedes an automatic missing-basis
+    // assessment, never an explicit episode restriction or human assessment.
+    const automaticMissing = episode?.assessmentSource?.startsWith("publisher-rss-") && episode?.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED";
+    const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast
+      : covered && podcast?.approvalAssessment && automaticMissing ? podcast : episode || (covered ? podcast : null);
     return (
       normaliseRecord(selected) || {
         id: null,
@@ -338,6 +449,10 @@ export class RightsRegistry {
     if (!rights.id) [allowed, code, reason] = [false, "LEGAL_BASIS_NOT_ESTABLISHED", "No rights assessment has been completed for this episode yet."];
     else if (rights.suspendedAt || rights.deletedAt) [allowed, code, reason] = [false, "TAKEDOWN_OR_SUSPENSION", "This content is suspended or subject to a takedown."];
     else if (rights.rightsReserved || rights.classification === RightsClassification.DISPUTED) [allowed, code, reason] = [false, rights.blockerCode || "RIGHTS_RESERVED", rights.assessmentReason || "The rights record reserves this feature or is under dispute."];
+    else if (mandatoryRestriction(rights)) [allowed, code, reason] = [false, rights.blockerCode, rights.assessmentReason || "A recorded mandatory restriction applies to this content."];
+    else if (rights.approvalAssessment?.revokedAt) [allowed, code, reason] = [false, "APPROVAL_REVOKED", "The documented approval has been revoked. Review new evidence before processing."];
+    else if (rights.approvalAssessment?.expiresAt && Date.parse(rights.approvalAssessment.expiresAt) <= this.now()) [allowed, code, reason] = [false, "APPROVAL_EXPIRED", "The documented approval has expired."];
+    else if (rights.approvalAssessment?.territories?.some((territory) => territory !== "WORLDWIDE")) [allowed, code, reason] = [false, "TERRITORY_REVIEW_REQUIRED", "This approval has territory limits. Processing and delivery are held until those limits can be enforced."];
     else if (rights.classification === RightsClassification.RESTRICTED) [allowed, code, reason] = [false, rights.blockerCode || "RIGHTS_RESTRICTED", rights.assessmentReason || "The rights assessment does not permit this feature."];
     else if (!featurePermission[feature].every((name) => rights[name] === true)) [allowed, code, reason] = [false, "FEATURE_NOT_AUTHORISED", "This feature is not authorised by the rights record."];
     else if (optionalFeature && features[optionalFeature] === false) [allowed, code, reason] = [false, "POLICY_FEATURE_DISABLED", "This optional intelligence feature is disabled by policy."];
@@ -459,6 +574,8 @@ export class RightsRegistry {
       assessmentVersion: typeof input.assessmentVersion === "string" ? input.assessmentVersion.slice(0, 120) : input.assessmentVersion === null ? null : prior?.assessmentVersion || null,
       evidenceFingerprint: typeof input.evidenceFingerprint === "string" ? input.evidenceFingerprint.slice(0, 128) : input.evidenceFingerprint === null ? null : prior?.evidenceFingerprint || null,
       assessmentEvidence: input.assessmentEvidence === undefined ? normaliseEvidence(prior?.assessmentEvidence) : normaliseEvidence(input.assessmentEvidence),
+      approvalAssessment: input.approvalAssessment === undefined ? prior?.approvalAssessment || null : input.approvalAssessment,
+      version: (prior?.version || 0) + 1,
       assessmentDate: input.assessmentDate || new Date(this.now()).toISOString(),
       ...bools({ ...prior, ...input }),
       // Preserve pre-feature-granularity authorised records. New assessments
@@ -468,6 +585,7 @@ export class RightsRegistry {
       canGenerateChapters: input.canGenerateChapters === undefined ? (prior?.canGenerateChapters === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canGenerateChapters,
       canGenerateTopics: input.canGenerateTopics === undefined ? (prior?.canGenerateTopics === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canGenerateTopics,
       canSearchMoments: input.canSearchMoments === undefined ? (prior?.canSearchMoments === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canSearchMoments,
+      canSearchConversations: input.canSearchConversations === undefined ? (prior?.canSearchConversations ?? (input.canDisplayDerivedIntelligence === true)) : input.canSearchConversations,
       canDetectAdvertisements: input.canDetectAdvertisements === undefined ? (prior?.canDetectAdvertisements === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canDetectAdvertisements,
       suspendedAt: input.suspendedAt || null,
       deletedAt: input.deletedAt || null,
