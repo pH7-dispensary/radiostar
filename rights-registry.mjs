@@ -602,7 +602,7 @@ export class RightsRegistry {
     if (!input || typeof input.feedUrl !== "string" || !input.feedUrl || typeof input.episodeId !== "string" || !input.episodeId)
       throw Error("A publisher feed and episode are required for an automatic rights assessment.");
     const prior = this.resolve(input.feedUrl, input.episodeId);
-    const mandatory = prior.id && (prior.suspendedAt || prior.deletedAt || prior.rightsReserved || prior.classification === RightsClassification.DISPUTED);
+    const mandatory = prior.id && mandatoryRestriction(prior);
     if (mandatory) return { record: prior, reused: true, mandatory: true };
     // Human-entered rights records remain authoritative. Automatic evidence may
     // refresh only a prior automatic assessment for the same episode.

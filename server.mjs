@@ -1795,7 +1795,7 @@ export function createStarCastServer({
         if (prior.suspendedAt || prior.deletedAt || prior.rightsReserved || prior.classification === "DISPUTED" || ["PUBLISHER_RESTRICTION", "RIGHTS_RESERVED", "LEGAL_PROHIBITION"].includes(prior.blockerCode) || prior.approvalAssessment ||
             input.approvalAssessment || actor.role !== "SUPER_ADMIN")
           return send(res, 409, { error: "Use the Super Admin evidence review. Mandatory restrictions cannot be cleared here." });
-        const corePermissions = ["canAcquireTranscript", "canProcessForAi", "canTranscribeAudio", "canDisplayDerivedIntelligence", "canGenerateBrief", "canGenerateChapters", "canGenerateTopics", "canSearchMoments", "canSearchConversations", "canDetectAdvertisements"];
+        const corePermissions = ["canAcquireTranscript", "canProcessForAi", "canTranscribeAudio", "canDisplayDerivedIntelligence", "canGenerateBrief", "canGenerateChapters", "canGenerateTopics", "canSearchMoments", "canSearchConversations", "canDetectAdvertisements", "canRetain", "canRegenerate"];
         if (!prior.id || corePermissions.some((key) => input[key] === true && prior[key] !== true))
           return send(res, 409, { error: "New core permissions require the structured approval preview." });
         if (input.expectedAssessmentRevision !== rights.assessmentRevision(input.feedUrl, input.episodeId || "") ||
@@ -1803,7 +1803,9 @@ export function createStarCastServer({
             String(input.evidenceIssuer || "").trim().length < 3 || !String(input.legalBasis || "").trim())
           return send(res, 400, { error: "Provide current assessment revision, legal basis, evidence reference and issuer, and confirm RECORD RIGHTS." });
         const record = store.transaction(() => {
-        const record = rights.set({ ...input, assessmentSource: "super-admin-technical-review", assessmentEvidence: [
+        const record = rights.set({ ...input,
+          ...Object.fromEntries(corePermissions.map((key) => [key, input[key] === undefined ? prior[key] === true : input[key]])),
+          assessmentSource: "super-admin-technical-review", assessmentEvidence: [
           ...(prior.assessmentEvidence || []), { type: "INDEPENDENT_FEATURE_AUTHORISATION", source: input.evidenceIssuer, scope: input.episodeId ? "episode" : "podcast", value: input.evidenceReference },
         ] }, { actor: actor.id });
         rights.audit("rights-assessment", record.id, actor.id);
