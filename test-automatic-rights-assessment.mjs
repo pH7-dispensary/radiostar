@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createStarCastServer } from "./server.mjs";
 import { LocalStore } from "./persistence.mjs";
 import { assessTranscript } from "./transcripts.mjs";
+import { publisherRightsEvidence } from "./rights-assessment.mjs";
 
 const feedUrl = "https://publisher.example/licensed.xml";
 const restrictedFeedUrl = "https://publisher.example/restricted.xml";
@@ -45,6 +46,12 @@ const base = `http://127.0.0.1:${app.server.address().port}`;
 const headers = { "content-type": "application/json", "x-star-cast-dev-token": "device-token", "x-star-cast-admin-token": "admin-token" };
 const post = (path, body) => fetch(base + path, { method: "POST", headers, body: JSON.stringify(body) });
 try {
+  const copyrightEvidence = publisherRightsEvidence({
+    feedUrl,
+    channelXml: "<channel><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright></channel>",
+  });
+  assert.equal(copyrightEvidence.licences[0]?.kind, "CC-BY", "an explicit publisher copyright licence is recognised without trusting incidental episode text");
+
   // A pre-existing, owned record is never overwritten by automatic evidence.
   app.rights.set({ feedUrl: "https://owned.example/feed.xml", episodeId: "owned", classification: "LICENSED", explicitAuthorisation: true, legalBasis: "Owned fixture authorisation.", canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true });
   const owned = app.rights.assessAutomatic({ feedUrl: "https://owned.example/feed.xml", episodeId: "owned", assessmentSource: "publisher-rss-v1", evidenceFingerprint: "different", classification: "RESTRICTED" });

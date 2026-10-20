@@ -29,6 +29,7 @@ const attrValues = (xml, name) => [...String(xml || "").matchAll(new RegExp(
 ))].map((match) => compact(match[1]));
 const linkLicences = (xml) => [...String(xml || "").matchAll(/<link\b[^>]*\brel=["']license["'][^>]*\bhref=["']([^"']+)["'][^>]*\/?>/gi)]
   .map((match) => compact(match[1]));
+const urls = (value) => [...String(value || "").matchAll(/https?:\/\/[^\s<>'"]+/gi)].map((match) => match[0].replace(/[.,;:!?)\]]+$/, ""));
 
 const canonicalLicence = (value) => {
   try {
@@ -73,6 +74,19 @@ export function publisherRightsEvidence({ channelXml = "", itemXml = "", feedUrl
       if (!licence) continue;
       licences.push({ ...licence, scope });
       evidence.push({ type: "PUBLISHER_LICENSE", source: "publisher-rss", scope, value: licence.kind, url: licence.url });
+    }
+    // RSS copyright text is normally human-readable, but a direct statement
+    // that the work is licensed under a canonical CC URL is an explicit
+    // publisher permission. Do not mistake a third-party music credit or an
+    // arbitrary URL in an episode description for a show/episode licence.
+    for (const value of elementValues(xml, "copyright")) {
+      if (!/\b(?:this\s+(?:work|podcast|episode)|the\s+(?:work|podcast|episode))\b[\s\S]{0,140}\b(?:is\s+)?licen[cs]ed\b[\s\S]{0,140}\bcreative\s+commons\b/i.test(value)) continue;
+      for (const candidate of urls(value)) {
+        const licence = canonicalLicence(candidate);
+        if (!licence) continue;
+        licences.push({ ...licence, scope });
+        evidence.push({ type: "PUBLISHER_LICENSE", source: "publisher-rss-copyright", scope, value: licence.kind, url: licence.url });
+      }
     }
     const rightsText = unique([
       ...elementValues(xml, "rights"),
