@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { fetchPublisherTranscript, assessTranscript } from "./transcripts.mjs";
+import { fetchPublisherTranscript, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
 import {
   generateEpisodeIntelligence,
   createOpenAIClient,
@@ -215,8 +215,8 @@ export class EpisodePipeline {
       return publicIntelligence(previous);
     if (completed(previous)) {
       const episode = await this.resolveEpisode(feedUrl, episodeId);
-      const signature = hash(JSON.stringify([episode.audioUrl, episode.refs]));
-      const priorSignature = hash(
+      const signature = hash(JSON.stringify([episode.audioUrl, episode.refs, PUBLISHER_TRANSCRIPT_PARSER_VERSION]));
+      const priorSignature = previous.sourceSignature || hash(
         JSON.stringify([previous.episode.audioUrl, previous.episode.refs]),
       );
       if (
@@ -587,7 +587,9 @@ export class EpisodePipeline {
           acquiredAt: transcript.acquiredAt,
           transcriptVersion: transcript.transcriptVersion,
           audioVariant: variant,
+          parserVersion: transcript.parserVersion || null,
         },
+        sourceSignature: hash(JSON.stringify([episode.audioUrl, episode.refs, PUBLISHER_TRANSCRIPT_PARSER_VERSION])),
       });
       const generated = await generateEpisodeIntelligence({
         transcript,

@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { publicUrl, fetchPublicText } from "./safe-network.mjs";
 const MAX_TRANSCRIPT_BYTES = 2_000_000;
+// Changes to publisher parsing must cause an explicit source recheck before a
+// completed cache entry is reused. This version is part of the pipeline cache
+// signature, not a listener-facing format guarantee.
+export const PUBLISHER_TRANSCRIPT_PARSER_VERSION = "2";
 export const TranscriptReadiness = Object.freeze({
   FULLY_READY: "FULLY_READY",
   TEXT_ONLY: "TEXT_ONLY",
@@ -139,8 +143,9 @@ const htmlText = (value) =>
 
 // Captivate's publisher transcript pages express each cue as a nearby
 // <cite>, <time>, <p> sequence. Preserve only timestamps that the publisher
-// supplied and derive each cue end from the next source cue (or the declared
-// episode duration). This is intentionally not a speech-to-text alignment.
+// supplied and derive a cue end only from the next source cue. The final cue
+// has no publisher end boundary, so it is intentionally excluded rather than
+// extended to the RSS duration. This is not speech-to-text alignment.
 export function parseHtmlTranscript(source, { durationMs = null } = {}) {
   const body = String(source || "");
   const events = [...body.matchAll(/<(cite|time|p)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi)];
@@ -170,9 +175,10 @@ export function parseHtmlTranscript(source, { durationMs = null } = {}) {
     }
   }
   const timed = cues
+    .slice(0, -1)
     .map((cue, index) => ({
       ...cue,
-      endMs: cues[index + 1]?.startMs ?? durationMs,
+      endMs: cues[index + 1].startMs,
     }))
     .filter((cue) => Number.isFinite(cue.startMs) && Number.isFinite(cue.endMs) && cue.endMs > cue.startMs);
   return timed;
@@ -299,6 +305,7 @@ export async function fetchPublisherTranscript(
     id: "transcript-" + transcriptVersion,
     transcriptVersion,
     sourceType: "publisher_rss",
+    parserVersion: PUBLISHER_TRANSCRIPT_PARSER_VERSION,
     sourceUri: url,
     originalFormat: type,
     language: ref.language || "und",
