@@ -51,6 +51,9 @@ const unknown = { ...audioOptions(), checkpointPrefix: "unknown:source", duratio
 await assert.rejects(transcribeOnDemand(unknown), (error) => error.code === "PROVIDER_OUTCOME_UNKNOWN");
 await assert.rejects(transcribeOnDemand(unknown), (error) => error.code === "PROVIDER_OUTCOME_UNKNOWN");
 assert.equal(unknownCalls, 1);
+let retain = true;
+await assert.rejects(transcribeOnDemand({ ...audioOptions(), durationMs: 60_000, checkpointPrefix: "removed:source", canPersist: () => retain, client: { audio: { transcriptions: { create: async () => { retain = false; return { segments: [{ start: 0, end: 10, text: "Response delivered after a rights-holder removal." }] }; } } } } }), /Rights permission/);
+assert.equal(store.all("transcription-checkpoint").some(([key]) => key.startsWith("removed:")), false, "late responses cannot resurrect removed transcript checkpoints");
 
 let textCalls = 0, stopAfterMap = true;
 const textClient = { responses: { create: async ({ input }) => {
@@ -69,6 +72,8 @@ assert(result.chapters.length > 10);
 assert(result.chapters.at(-1).endMs <= long.durationMs);
 await generateLongFormIntelligence(textOptions()); assert.equal(textCalls, paidTextCalls);
 assert.equal(ledger.reservations.size, 0);
+await assert.rejects(generateLongFormIntelligence({ ...textOptions(), requestId: "removed-analysis", checkpointPrefix: "removed-analysis", canPersist: () => false }), /Rights permission/);
+assert.equal(store.all("analysis-checkpoint").some(([key]) => key.startsWith("removed-analysis:")), false);
 
 let renewals = 0, acknowledgements = 0;
 const queue = new ProcessingQueue({ queueUrl: "https://sqs.eu-west-2.amazonaws.com/208096650030/starcast-phase1-processing", renewalMs: 5, client: { send: async (command) => {

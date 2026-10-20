@@ -488,7 +488,7 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(testingContext && ["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code))
+      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(testingContext && (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code) || (previous.code === "TESTING_EXPIRED" && previous.testingContext?.version !== testingContext.version)))
     )
       return publicIntelligence(previous);
     if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)
@@ -979,6 +979,7 @@ export class EpisodePipeline {
                 authorised: true,
                 signal: controller.signal,
                 checkpointStore: this.store,
+                canPersist: rightsAllowed,
                 checkpointPrefix: audio.contentHash ? `${key}:${audio.contentHash}` : null,
                 beforePaid: () => {
                   if (!rightsAllowed() || (this.rights && !this.rights.resolve(feedUrl, episodeId).canTranscribeAudio)) throw Error("Rights permission no longer allows audio transcription.");
@@ -986,6 +987,7 @@ export class EpisodePipeline {
                 },
                 onProgress: recordWork,
               });
+              if (!rightsAllowed()) throw Error("Rights permission no longer allows audio transcript retention.");
               this.store.set("audio-transcript", variant, acquired);
               return acquired;
             } finally {
@@ -1062,6 +1064,7 @@ export class EpisodePipeline {
         signal: controller.signal,
         outputProfile: policyDecision?.outputProfile || "standard",
         checkpointStore: this.store,
+        canPersist: rightsAllowed,
         checkpointPrefix: key,
         beforePaid: () => {
           if (!rightsAllowed()) throw Error("Rights permission no longer allows AI analysis.");
@@ -1099,12 +1102,13 @@ export class EpisodePipeline {
         "BUDGET_LIMIT",
         "PROVIDER_UNAVAILABLE",
         "RIGHTS_RESTRICTED",
+        "TESTING_EXPIRED",
       ].includes(detail.code);
       update({
         state: blocked ? "BLOCKED" : "FAILED",
         ...detail,
         ...(detail.code === "BUDGET_LIMIT" ? { resumeAfter: new Date(Date.now() + 3600000).toISOString() } : {}),
-        ...(["DURATION_LIMIT", "BUDGET_LIMIT"].includes(detail.code)
+        ...(["DURATION_LIMIT", "BUDGET_LIMIT", "TESTING_EXPIRED"].includes(detail.code)
           ? { attempts: Math.max(0, value.attempts - 1) }
           : {}),
         retryable: detail.retryable && value.attempts < 2,
@@ -1167,10 +1171,15 @@ export class EpisodePipeline {
       for (const [checkpoint] of this.store.all(bucket)) if (checkpoint.startsWith(key + ":")) { this.store.delete(bucket, checkpoint); removed.providerResults++; }
     const jobs = new Set([intelligence?.jobId, ...this.store.all("intelligence-history").filter(([, job]) => job.feedUrl === feed && job.episodeId === id).map(([, job]) => job.jobId)]);
     for (const jobId of jobs) if (jobId) {
+      if (this.store.get("provider-result", jobId)) removed.providerResults++;
       this.store.delete("provider-result", jobId);
       this.store.delete("intelligence-refresh", jobId);
     }
-    if (intelligence?.episode?.audioUrl) this.store.delete("audio-transcript", hash(intelligence.episode.audioUrl));
+    if (intelligence?.episode?.audioUrl) {
+      const audioKey = hash(intelligence.episode.audioUrl);
+      if (this.store.get("audio-transcript", audioKey)) removed.transcripts++;
+      this.store.delete("audio-transcript", audioKey);
+    }
     if (intelligence) {
       this.store.delete("intelligence", key);
       removed.intelligence++;

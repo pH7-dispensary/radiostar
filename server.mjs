@@ -946,7 +946,7 @@ export function createStarCastServer({
     const workerStarted = recordedEvents.find((event) => event.type === "WORKER_STARTED" && event.jobId === status.jobId)?.at || null;
     const queuedAt = Date.parse(status.startedAt || "");
     const workerAt = Date.parse(workerStarted || "");
-    const jobCost = status.jobId ? ledger.usage.filter((row) => row.id.startsWith(`${status.jobId}:`)).reduce((sum, row) => sum + row.usd, 0) : 0;
+    const jobCost = status.jobId ? ledger.usage.filter((row) => row.jobId === status.jobId || row.id.startsWith(`${status.jobId}:`) || (!row.jobId && row.kind === "transcription" && row.id.startsWith(`${episodeKey(feedUrl, episodeId)}:`))).reduce((sum, row) => sum + row.usd, 0) : 0;
     return {
       podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId },
       episode: { ...episode, processingStatus: status },

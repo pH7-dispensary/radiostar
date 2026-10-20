@@ -67,7 +67,7 @@ export class BudgetLedger {
         .reduce((n, x) => n + (x.seconds || 0), 0),
     };
   }
-  reserve({ id, usd, kind = "text", seconds = 0, sourceSeconds = seconds }) {
+  reserve({ id, usd, kind = "text", seconds = 0, sourceSeconds = seconds, jobId = null, episodeKey = null }) {
     return this.mutate(() => {
       if (!this.controls.enabled) throw Error("Paid intelligence is disabled.");
       if (
@@ -98,8 +98,8 @@ export class BudgetLedger {
           totals.transcriptionSeconds + seconds >
             this.controls.dailyTranscriptionSeconds)
       )
-        throw Error("The transcription duration limit has been reached.");
-      const row = { id, usd, kind, seconds, at: new Date().toISOString() };
+        throw Error(sourceSeconds > this.controls.maxEpisodeSeconds ? "This episode is longer than the current audio transcription duration limit." : "The daily transcription duration budget has been reached.");
+      const row = { id, usd, kind, seconds, at: new Date().toISOString(), ...(jobId ? { jobId: String(jobId).slice(0, 100) } : {}), ...(episodeKey ? { episodeKey: String(episodeKey).slice(0, 100) } : {}) };
       this.reservations.set(id, row);
       return row;
     });
@@ -206,6 +206,7 @@ export async function generateEpisodeIntelligence({
   checkpointStore = null,
   checkpointKey = null,
   beforePaid = () => {},
+  canPersist = () => true,
 }) {
   signal?.throwIfAborted();
   if (
@@ -269,7 +270,7 @@ export async function generateEpisodeIntelligence({
   if (saved?.state === "SENDING") throw Object.assign(Error("The analysis provider outcome is unknown; automatic replay is blocked."), { code: "PROVIDER_OUTCOME_UNKNOWN" });
   if (!saved?.response) {
     beforePaid();
-    ledger.reserve({ id: requestId, usd: ceiling });
+    ledger.reserve({ id: requestId, usd: ceiling, jobId: requestId.split(":text")[0], episodeKey: checkpointKey?.split(":")[0] });
   }
   let accounted = Boolean(saved?.response);
   try {
@@ -302,7 +303,8 @@ export async function generateEpisodeIntelligence({
       inputTokens = usage?.input_tokens,
       outputTokens = usage?.output_tokens;
     const save = () => {
-      if (checkpointKey && !saved?.response) checkpointStore?.set("analysis-checkpoint", checkpointKey, { state: "READY", response, completedAt: new Date().toISOString() });
+      if (checkpointKey && !saved?.response && canPersist()) checkpointStore?.set("analysis-checkpoint", checkpointKey, { state: "READY", response, completedAt: new Date().toISOString() });
+      else if (checkpointKey && !canPersist()) checkpointStore?.delete("analysis-checkpoint", checkpointKey);
       if (!saved?.response) ledger.reconcile(requestId, {
       usd: usage ? inputTokens * 0.0000004 + outputTokens * 0.0000016 : ceiling,
       inputTokens: inputTokens || 0,
@@ -312,6 +314,7 @@ export async function generateEpisodeIntelligence({
     };
     if (checkpointStore) checkpointStore.transaction(save); else save();
     accounted = true;
+    if (!canPersist()) throw Error("Rights permission no longer allows retaining this intelligence.");
     onProviderResponse({
       id: response.id,
       status: response.status,

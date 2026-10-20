@@ -153,6 +153,7 @@ export async function transcribeOnDemand({
   checkpointStore = null,
   checkpointPrefix = null,
   beforePaid = () => {},
+  canPersist = () => true,
   onProgress = () => {},
 }) {
   signal?.throwIfAborted();
@@ -185,12 +186,13 @@ export async function transcribeOnDemand({
         if (durationMs > ledger.controls.maxEpisodeSeconds * 1000) throw Error("This episode is longer than the current audio processing limit.");
         const seconds = Math.ceil((part.endMs - part.startMs) / 1000);
         const id = key || `${requestId}:${part.index}`;
-        ledger.reserve({ id, usd: seconds * 0.0001, kind: "transcription", seconds });
+        ledger.reserve({ id, usd: seconds * 0.0001, kind: "transcription", seconds, jobId: requestId.split(":audio")[0], episodeKey: checkpointPrefix?.split(":")[0] });
         try {
           if (key) checkpointStore?.set("transcription-checkpoint", key, { state: "SENDING", requestId: id });
           response = await client.audio.transcriptions.create({ file, model, response_format: "verbose_json", timestamp_granularities: ["segment"] }, { signal });
           const save = () => {
-            if (key) checkpointStore?.set("transcription-checkpoint", key, { state: "READY", response, completedAt: new Date().toISOString() });
+            if (key && canPersist()) checkpointStore?.set("transcription-checkpoint", key, { state: "READY", response, completedAt: new Date().toISOString() });
+            else if (key) checkpointStore?.delete("transcription-checkpoint", key);
             ledger.reconcile(id, { usd: seconds * 0.0001, seconds });
           };
           if (checkpointStore) checkpointStore.transaction(save); else save();
@@ -199,6 +201,7 @@ export async function transcribeOnDemand({
           throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked.", { cause: error }), { code: "PROVIDER_OUTCOME_UNKNOWN" });
         }
       }
+      if (!canPersist()) throw Error("Rights permission no longer allows retaining this transcript.");
       if (!response.segments?.length)
         throw Error("Transcription returned no usable timestamped speech.");
       for (const [i, s] of response.segments.entries()) {
