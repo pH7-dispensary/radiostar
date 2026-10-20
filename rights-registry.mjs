@@ -65,6 +65,12 @@ const defaultPolicy = () => ({
   version: 1,
   mode: RightsEnforcementMode.STRONG,
   features: { ...optionalFeatures },
+  testMode: {
+    enabled: false,
+    updatedAt: null,
+    updatedBy: null,
+    reason: null,
+  },
   updatedAt: Date.now(),
   updatedBy: "system",
   history: [],
@@ -74,6 +80,7 @@ const normaliseRecord = (record) => record && ({
   assessmentStatus: assessmentValues.has(record.assessmentStatus) ? record.assessmentStatus : record.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED,
   explicitAuthorisation: record.explicitAuthorisation === true || (record.classification === RightsClassification.LICENSED && record.canProcessForAi === true && record.canDisplayDerivedIntelligence === true),
   rightsReserved: record.rightsReserved === true,
+  testContentEligible: record.testContentEligible === true,
 });
 
 /**
@@ -93,6 +100,11 @@ export class RightsRegistry {
       ...stored,
       mode: modeValues.has(stored.mode) ? stored.mode : RightsEnforcementMode.STRONG,
       features: { ...optionalFeatures, ...(stored.features || {}) },
+      testMode: {
+        ...defaultPolicy().testMode,
+        ...(stored.testMode || {}),
+        enabled: stored.testMode?.enabled === true,
+      },
       history: Array.isArray(stored.history) ? stored.history : [],
     };
   }
@@ -114,6 +126,50 @@ export class RightsRegistry {
     };
     this.store.set("rights-policy", policyKey, record);
     this.store.set("rights-policy-history", randomUUID(), { at, actor, policyVersion: record.version, mode: record.mode, features: record.features });
+    return record;
+  }
+  setSuperAdminTestMode(input = {}, { actor = "admin" } = {}) {
+    if (typeof input.enabled !== "boolean")
+      throw Error("Choose whether Super Admin test mode is enabled.");
+    const reason = String(input.reason || "").trim().slice(0, 1000);
+    if (!reason) throw Error("A reason is required for Super Admin test mode.");
+    if (input.confirmation !== "SUPER ADMIN")
+      throw Error("Type SUPER ADMIN before changing test mode.");
+    const prior = this.policy(), at = this.now();
+    const testMode = {
+      enabled: input.enabled,
+      updatedAt: at,
+      updatedBy: actor,
+      reason,
+    };
+    const record = {
+      ...prior,
+      version: prior.version + 1,
+      testMode,
+      updatedAt: at,
+      updatedBy: actor,
+      history: [
+        ...prior.history,
+        {
+          at,
+          actor,
+          action: "super-admin-test-mode-changed",
+          enabled: input.enabled,
+          reason,
+        },
+      ].slice(-100),
+    };
+    this.store.transaction(() => {
+      this.store.set("rights-policy", policyKey, record);
+      this.store.set("rights-policy-history", randomUUID(), {
+        at,
+        actor,
+        action: "super-admin-test-mode-changed",
+        policyVersion: record.version,
+        enabled: input.enabled,
+        reason,
+      });
+    });
     return record;
   }
   setOverride(input = {}, { actor = "admin" } = {}) {
@@ -163,9 +219,9 @@ export class RightsRegistry {
       }
     );
   }
-  evaluate({ feature, feedUrl, episodeId = "", audit = false } = {}) {
+  evaluate({ feature, feedUrl, episodeId = "", audit = false, policy: policyOverride } = {}) {
     if (!featurePermission[feature]) throw Error("A valid rights feature is required.");
-    const rights = this.resolve(feedUrl, episodeId), policy = this.policy(), override = this.override(feedUrl, episodeId);
+    const rights = this.resolve(feedUrl, episodeId), policy = policyOverride || this.policy(), override = this.override(feedUrl, episodeId);
     const mode = override?.mode || policy.mode;
     const features = { ...policy.features, ...(override?.features || {}) };
     const optionalFeature = optionalFeatureFor[feature];
@@ -174,15 +230,77 @@ export class RightsRegistry {
     else if (rights.rightsReserved || [RightsClassification.RESTRICTED, RightsClassification.DISPUTED].includes(rights.classification)) [allowed, code, reason] = [false, "RIGHTS_RESERVED", "The rights record does not permit this feature."];
     else if (!featurePermission[feature].every((name) => rights[name] === true)) [allowed, code, reason] = [false, "FEATURE_NOT_AUTHORISED", "This feature is not authorised by the rights record."];
     else if (optionalFeature && features[optionalFeature] === false) [allowed, code, reason] = [false, "POLICY_FEATURE_DISABLED", "This optional intelligence feature is disabled by policy."];
+    // This is deliberately not a rights bypass. It is only available for an
+    // explicit, server-owned authorised test record and never changes the
+    // independent caption, dubbing, translation, or voice-consent gates.
+    else if (optionalFeature && policy.testMode?.enabled && rights.testContentEligible === true) {
+      outputProfile = "short-grounded";
+      reason = "Allowed for explicitly authorised Super Admin test content with short, grounded intelligence.";
+    }
     else if (optionalFeature && mode === RightsEnforcementMode.MEDIUM && rights.assessmentStatus !== RightsAssessmentStatus.APPROVED) [allowed, code, reason] = [false, "ASSESSMENT_REQUIRED", "An approved rights assessment is required by the current policy."];
     else if (optionalFeature && mode === RightsEnforcementMode.STRONG && !(rights.classification === RightsClassification.LICENSED && (rights.explicitAuthorisation === true || rights.assessmentStatus === RightsAssessmentStatus.APPROVED))) [allowed, code, reason] = [false, "EXPLICIT_AUTHORISATION_REQUIRED", "Explicit authorisation is required by the current policy."];
     else if (optionalFeature && mode === RightsEnforcementMode.LITE) {
       outputProfile = "short-grounded";
       reason = "Allowed with short, grounded, non-substitutive intelligence.";
     }
-    const decision = { allowed, code, reason, feature, mode, policyVersion: policy.version, outputProfile, classification: rights.classification, rights, override: override ? { id: override.id, scope: override.episodeId ? "episode" : "publisher" } : null };
+    const decision = { allowed, code, reason, feature, mode, policyVersion: policy.version, outputProfile, classification: rights.classification, testMode: policy.testMode?.enabled === true, rights, override: override ? { id: override.id, scope: override.episodeId ? "episode" : "publisher" } : null };
     if (audit) this.auditDecision(decision, { feedUrl, episodeId });
     return decision;
+  }
+  previewPolicy(input = {}) {
+    const current = this.policy();
+    if (input.mode !== undefined && !modeValues.has(input.mode))
+      throw Error("Choose a valid rights enforcement mode.");
+    if (input.features !== undefined && (!input.features || typeof input.features !== "object"))
+      throw Error("Feature controls are invalid.");
+    for (const [name, value] of Object.entries(input.features || {}))
+      if (!(name in optionalFeatures) || typeof value !== "boolean")
+        throw Error("Feature controls are invalid.");
+    const candidate = {
+      ...current,
+      mode: input.mode || current.mode,
+      features: { ...current.features, ...(input.features || {}) },
+    };
+    const features = ["intelligence-processing", "intelligence-display", "conversation-search"];
+    const records = this.list();
+    const changes = records.flatMap((record) =>
+      features.map((feature) => {
+        const currentDecision = this.evaluate({
+          feature,
+          feedUrl: record.feedUrl,
+          episodeId: record.episodeId || "",
+        });
+        const nextDecision = this.evaluate({
+          feature,
+          feedUrl: record.feedUrl,
+          episodeId: record.episodeId || "",
+          policy: candidate,
+        });
+        return {
+          feature,
+          feedUrl: record.feedUrl,
+          episodeId: record.episodeId || null,
+          publisher: record.publisher || null,
+          previous: currentDecision.allowed ? "ALLOWED" : "BLOCKED",
+          next: nextDecision.allowed ? "ALLOWED" : "BLOCKED",
+          reason: nextDecision.code,
+        };
+      }),
+    );
+    return {
+      policy: {
+        mode: candidate.mode,
+        features: candidate.features,
+        version: current.version,
+      },
+      affected: {
+        previouslyAllowed: changes.filter((change) => change.previous === "ALLOWED").length,
+        newlyAllowed: changes.filter((change) => change.previous === "BLOCKED" && change.next === "ALLOWED").length,
+        newlyRestricted: changes.filter((change) => change.previous === "ALLOWED" && change.next === "BLOCKED").length,
+        stillRestricted: changes.filter((change) => change.previous === "BLOCKED" && change.next === "BLOCKED").length,
+      },
+      changes,
+    };
   }
   auditDecision(decision, { feedUrl, episodeId = "" } = {}) {
     const at = this.now(), publisher = String(decision.rights.publisher || "").slice(0, 300) || null;
@@ -200,7 +318,7 @@ export class RightsRegistry {
     if (input.episodeId !== undefined && typeof input.episodeId !== "string")
       throw Error("Episode identity is invalid.");
     if (input.assessmentStatus !== undefined && !assessmentValues.has(input.assessmentStatus)) throw Error("Rights assessment status is invalid.");
-    for (const name of ["explicitAuthorisation", "rightsReserved"])
+    for (const name of ["explicitAuthorisation", "rightsReserved", "testContentEligible"])
       if (input[name] !== undefined && typeof input[name] !== "boolean") throw Error("Rights assessment controls must be true or false.");
     for (const name of permissions)
       if (input[name] !== undefined && typeof input[name] !== "boolean")
@@ -220,6 +338,7 @@ export class RightsRegistry {
       assessmentStatus: input.assessmentStatus || prior?.assessmentStatus || (input.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED),
       explicitAuthorisation: input.explicitAuthorisation === undefined ? prior?.explicitAuthorisation === true || (input.classification === RightsClassification.LICENSED && input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true) : input.explicitAuthorisation,
       rightsReserved: input.rightsReserved === undefined ? prior?.rightsReserved === true : input.rightsReserved,
+      testContentEligible: input.testContentEligible === undefined ? prior?.testContentEligible === true : input.testContentEligible,
       assessmentDate: input.assessmentDate || new Date(this.now()).toISOString(),
       ...bools({ ...prior, ...input }),
       suspendedAt: input.suspendedAt || null,

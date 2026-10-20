@@ -5,6 +5,10 @@ const eventKey = (owner, event) => digest(`${owner}:${event}`);
 const validEvent = (s) =>
   typeof s === "string" && /^[a-zA-Z0-9_-]{8,120}$/.test(s);
 const categories = ["advert", "intro", "title_sequence", "preview", "outro"];
+const defaultSkipPreferences = () => ({
+  adSkipEnabled: false,
+  ...Object.fromEntries(categories.map((category) => [category, false])),
+});
 export class ListenerError extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -50,7 +54,7 @@ export class ListenerService {
         code: randomBytes(9).toString("base64url"),
         createdAt: this.now(),
         onboardedAt: null,
-        preferences: Object.fromEntries(categories.map((c) => [c, false])),
+        preferences: defaultSkipPreferences(),
         languagePreferences: { listeningLanguage: null, listenInMyLanguage: false, naturalVoices: true },
       };
       this.store.set("installation", hash, listener);
@@ -155,6 +159,7 @@ export class ListenerService {
   preferences(listener, input) {
     if (
       !input ||
+      (input.adSkipEnabled !== undefined && typeof input.adSkipEnabled !== "boolean") ||
       categories.some(
         (c) => input[c] !== undefined && typeof input[c] !== "boolean",
       )
@@ -163,7 +168,9 @@ export class ListenerService {
     return this.store.transaction(() => {
       const fresh = this.store.get("installation", listener.credentialHash);
       const preferences = {
+        ...defaultSkipPreferences(),
         ...fresh.preferences,
+        ...(input.adSkipEnabled === undefined ? {} : { adSkipEnabled: input.adSkipEnabled }),
         ...Object.fromEntries(
           categories
             .filter((c) => input[c] !== undefined)
@@ -284,7 +291,7 @@ export class ListenerService {
       qualificationMinutes: 30,
       referralProgressMinutes: Math.min(30, listenedMs / 60000),
       referralStatus: ownReferral?.status || null,
-      preferences: fresh.preferences,
+      preferences: { ...defaultSkipPreferences(), ...(fresh.preferences || {}) },
       friendBonusMinutes: this.friendBonusMinutes,
       enforcement: false,
       verificationAvailable: false,

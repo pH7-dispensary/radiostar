@@ -18,7 +18,7 @@ export type ListenerSummary = {
   referralProgressMinutes: number;
   referralStatus: string | null;
   qualificationMinutes: number;
-  preferences: Record<SkipCategory, boolean>;
+  preferences: Record<SkipCategory, boolean> & { adSkipEnabled: boolean };
   friendBonusMinutes: number;
   enforcement: boolean;
   verificationAvailable: boolean;
@@ -81,6 +81,7 @@ export const reportProblem = (input: Record<string, unknown>) =>
   listenerRequest("/api/reports", input);
 export type SkipStatus = {
   automaticSkipping: false;
+  preferenceEnabled?: boolean;
   transcriptAvailable: boolean;
   verifiedCount: number;
   intervals: {

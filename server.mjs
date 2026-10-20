@@ -192,7 +192,12 @@ export function createStarCastServer({
   );
   const rights = new RightsRegistry(store);
   const adminService = new AdminService(store);
-  const featureEnabled = (id) => adminService.featureFlags().find((feature) => feature.id === id)?.state !== "DISABLED";
+  // A zero-percent rollout is an actual server-side off switch. Client UI must
+  // never make a disabled rollout available by itself.
+  const featureEnabled = (id) => {
+    const feature = adminService.featureFlags().find((candidate) => candidate.id === id);
+    return Boolean(feature && feature.state !== "DISABLED" && feature.rolloutPercent > 0);
+  };
   const listenerFeatures = () => ({
     episodeBriefs: featureEnabled("episodeBrief"),
     exploreEpisode: featureEnabled("smartChapters"),
@@ -318,6 +323,8 @@ export function createStarCastServer({
       voiceProfile: "polly-neural-pt-PT-Ines", translationVersion: "aws-v1", rightsVersion: "owned-fixture-v1" };
   };
   const scheduleFollowedFeed = async (feedUrl) => {
+    if (adminService.configuration().values.processing?.automaticFollowPreparation === false)
+      return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "Automatic preparation is currently paused by an administrator." };
     if (!featureEnabled("automaticProcessing")) return { state: "DISABLED", code: "FEATURE_DISABLED" };
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
@@ -694,8 +701,16 @@ export function createStarCastServer({
           return send(res, 400, {
             error: "A valid publisher episode is required.",
           });
-        if (url.pathname === "/api/skips/status")
-          return send(res, 200, skips.inspect(input.feedUrl, input.episodeId));
+        if (url.pathname === "/api/skips/status") {
+          const inspection = skips.inspect(input.feedUrl, input.episodeId);
+          return send(res, 200, {
+            ...inspection,
+            preferenceEnabled: listeners.summary(listener).preferences?.adSkipEnabled === true,
+            // Kept false until verified intervals are safely applied by the
+            // native player for the exact matching audio variant.
+            automaticSkipping: false,
+          });
+        }
         if (url.pathname === "/api/skips/feedback")
           return send(
             res,
@@ -788,9 +803,24 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/policy" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
-        const policy = rights.setPolicy(await body(req), { actor: actor.id });
+        const input = await body(req);
+        const reason = String(input.reason || "").trim().slice(0, 1000);
+        if (!reason || input.confirmation !== "CONFIRM") return send(res, 400, { error: "Provide a reason and type CONFIRM before changing the global rights policy." });
+        const policy = rights.setPolicy(input, { actor: actor.id });
         rights.audit("rights-policy-changed", "global", actor.id, { policyVersion: policy.version, mode: policy.mode });
-        adminService.appendAudit({ actor, action: "rights-policy-changed", resource: "global", newState: { mode: policy.mode, version: policy.version }, outcome: "ALLOWED" });
+        adminService.appendAudit({ actor, action: "rights-policy-changed", resource: "global", newState: { mode: policy.mode, version: policy.version }, reason, outcome: "ALLOWED" });
+        return send(res, 200, { policy });
+      }
+      if (url.pathname === "/api/admin/rights/policy/preview" && req.method === "POST") {
+        if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Rights administrator access is required." });
+        return send(res, 200, rights.previewPolicy(await body(req)));
+      }
+      if (url.pathname === "/api/admin/rights/super-admin-test-mode" && req.method === "POST") {
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
+        const policy = rights.setSuperAdminTestMode(await body(req), { actor: actor.id });
+        rights.audit("super-admin-test-mode-changed", "global", actor.id, { enabled: policy.testMode.enabled, policyVersion: policy.version });
+        adminService.appendAudit({ actor, action: "super-admin-test-mode-changed", resource: "global", newState: { enabled: policy.testMode.enabled, version: policy.version }, reason: policy.testMode.reason, outcome: "ALLOWED" });
         return send(res, 200, { policy });
       }
       if (url.pathname === "/api/admin/rights/override" && req.method === "POST") {
@@ -989,7 +1019,7 @@ export function createStarCastServer({
       code: error?.name || "QUEUE_STOPPED",
     })));
   }
-  return { server, store, ledger, pipeline, listeners, skips, rights, subscriptions, translation, queue };
+  return { server, store, ledger, pipeline, listeners, skips, rights, adminService, subscriptions, translation, queue };
 }
 if (
   process.argv[1] &&

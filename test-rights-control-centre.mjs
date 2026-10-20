@@ -12,9 +12,17 @@ const admin = { "content-type": "application/json", "x-star-cast-dev-token": "de
 const post = (path, body) => fetch(base + path, { method: "POST", headers: admin, body: JSON.stringify(body) });
 try {
   assert.equal((await fetch(base + "/api/admin/rights/control-centre")).status, 403, "control centre requires the separate administrator token");
-  const policy = await post("/api/admin/rights/policy", { mode: "LITE", features: { intelligenceDisplay: true } });
+  const policy = await post("/api/admin/rights/policy", { mode: "LITE", features: { intelligenceDisplay: true }, reason: "Controlled test policy", confirmation: "CONFIRM" });
   assert.equal(policy.status, 200);
   assert.equal((await policy.json()).policy.mode, "LITE");
+  const preview = await post("/api/admin/rights/policy/preview", { mode: "STRONG" });
+  assert.equal(preview.status, 200, "policy impact preview is available without changing policy");
+  assert.equal((await preview.json()).policy.mode, "STRONG");
+  const testMode = await post("/api/admin/rights/super-admin-test-mode", { enabled: true, reason: "Owned fixture verification", confirmation: "SUPER ADMIN" });
+  assert.equal(testMode.status, 200, "master credential maps to Super Administrator for test mode");
+  assert.equal((await testMode.json()).policy.testMode.enabled, true);
+  const badTestMode = await post("/api/admin/rights/super-admin-test-mode", { enabled: false, reason: "Missing confirmation" });
+  assert.equal(badTestMode.status, 400, "test mode requires its explicit confirmation phrase");
   const feedUrl = "https://publisher.example/control-centre.xml";
   const override = await post("/api/admin/rights/override", { feedUrl, mode: "MEDIUM", features: { intelligenceProcessing: false }, reason: "Publisher review" });
   assert.equal(override.status, 200);
@@ -22,6 +30,7 @@ try {
   const body = await centre.json();
   assert.equal(centre.status, 200);
   assert.equal(body.policy.mode, "LITE");
+  assert.equal(body.policy.testMode.enabled, true);
   assert.equal(body.overrides[0].mode, "MEDIUM");
   assert.deepEqual(body.reservations, []);
   assert.equal(Array.isArray(body.auditHistory), true);

@@ -1120,6 +1120,7 @@ function PlayerSheet({
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [notice, setNotice] = useState(""),
     [panel, setPanel] = useState<"brief" | "explore" | "ads" | null>(null),
+    [intelligenceOpen, setIntelligenceOpen] = useState(false),
     [progressWidth, setProgressWidth] = useState(1);
   const intelligence = useEpisodeIntelligence(
     source?.feedUrl,
@@ -1184,6 +1185,17 @@ function PlayerSheet({
   let percent = snapshot.durationMs
     ? Math.min(100, (snapshot.positionMs / snapshot.durationMs) * 100)
     : 0;
+  const intelligenceLabel = (() => {
+    switch (intelligence.status?.state) {
+      case "READY": return "Ready";
+      case "PARTIAL_READY": return "Partly ready";
+      case "QUEUED": return "Queued";
+      case "PROCESSING": case "DISCOVERING": case "TRANSCRIBING": case "UNDERSTANDING": case "ORGANISING": return "Preparing";
+      case "UNAVAILABLE": case "BLOCKED": return "Unavailable";
+      case "FAILED": return "Needs attention";
+      default: return enabled ? "Preparing" : "Available when enabled";
+    }
+  })();
   let setTimer = (minutes: number) => {
     timer.current?.start({ kind: "minutes", minutes });
     setNotice(`Sleep Timer set for ${minutes} minutes.`);
@@ -1403,30 +1415,47 @@ function PlayerSheet({
                 ))}
               </View>
               <CaptionWindow p={p} />
-              <View style={styles.playerTools}>
-                {(
-                  [
-                    ["AI Episode Brief", "brief", "sparkles"],
-                    ["Explore Episode", "explore", "compass-outline"],
-                    ["Ad Skip", "ads", "shield-checkmark-outline"],
-                  ] as const
-                ).map(([label, target, icon]) => (
-                  <Pressable
-                    key={target}
-                    accessibilityRole="button"
-                    accessibilityLabel={label}
-                    onPress={() => {
-                      feedback.light();
-                      setPanel(target);
-                    }}
-                    style={[styles.tool, { borderColor: p.line }]}
-                  >
-                    <Ionicons name={icon} size={20} color={p.accent2} />
-                    <Text style={[styles.toolText, { color: p.text }]}>
-                      {label}
-                    </Text>
-                  </Pressable>
-                ))}
+              <View style={[styles.playerTools, { borderColor: p.line }]}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Episode intelligence"
+                  accessibilityState={{ expanded: intelligenceOpen }}
+                  onPress={() => { feedback.light(); setIntelligenceOpen((open) => !open); }}
+                  style={styles.intelligenceHeader}
+                >
+                  <View style={styles.intelligenceHeaderCopy}>
+                    <Text style={[styles.eyebrow, { color: p.accent, marginTop: 0 }]}>EPISODE INTELLIGENCE</Text>
+                    <Text style={[styles.intelligenceStatus, { color: p.text }]}>{intelligenceLabel}</Text>
+                  </View>
+                  <Ionicons name={intelligenceOpen ? "chevron-up" : "chevron-down"} size={20} color={p.muted} />
+                </Pressable>
+                {intelligenceOpen && (
+                  <>
+                    <Text style={[styles.intelligenceCopy, { color: p.muted }]}>Getting this conversation ready never interrupts your listening.</Text>
+                    {(
+                      [
+                        ["AI Episode Brief", "A grounded overview from authorised transcript evidence.", "brief", "sparkles"],
+                        ["Explore Episode", "Chapters, topics and verified moments.", "explore", "compass-outline"],
+                        ["Ad Skip", "Only verified, audio-matched intervals are eligible.", "ads", "shield-checkmark-outline"],
+                      ] as const
+                    ).map(([label, detail, target, icon]) => (
+                      <Pressable
+                        key={target}
+                        accessibilityRole="button"
+                        accessibilityLabel={label}
+                        onPress={() => { feedback.light(); setPanel(target); }}
+                        style={[styles.intelligenceRow, { borderColor: p.line }]}
+                      >
+                        <Ionicons name={icon} size={19} color={p.accent2} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.toolText, { color: p.text }]}>{label}</Text>
+                          <Text numberOfLines={1} style={[styles.intelligenceDetail, { color: p.muted }]}>{detail}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={17} color={p.muted} />
+                      </Pressable>
+                    ))}
+                  </>
+                )}
               </View>
               <ProblemReport p={p} compact />
               <Pressable
@@ -2665,22 +2694,36 @@ function AppContent({
               RADIO <Text style={{ color: p.accent }}>✦</Text> STAR
             </Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open profile"
-            onPress={() => {
-              profileReturn.current =
-                page === "Profile" ? profileReturn.current : page;
-              setBackPage(currentTab);
-              setPage("Profile");
-            }}
-            style={[
-              styles.avatar,
-              { backgroundColor: p.wash, borderColor: p.line },
-            ]}
-          >
-            <Text style={{ color: p.accent2, fontWeight: "800" }}>O</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityLabel="Toggle day and night appearance"
+              accessibilityState={{ checked: state.nightMode }}
+              onPress={() => {
+                feedback.selection();
+                setState((current) => ({ ...current, nightMode: !current.nightMode }));
+              }}
+              style={[styles.appearanceButton, { backgroundColor: p.wash, borderColor: p.line }]}
+            >
+              <Ionicons name={state.nightMode ? "sunny-outline" : "moon-outline"} size={19} color={p.text} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open profile"
+              onPress={() => {
+                profileReturn.current =
+                  page === "Profile" ? profileReturn.current : page;
+                setBackPage(currentTab);
+                setPage("Profile");
+              }}
+              style={[
+                styles.avatar,
+                { backgroundColor: p.wash, borderColor: p.line },
+              ]}
+            >
+              <Text style={{ color: p.accent2, fontWeight: "800" }}>O</Text>
+            </Pressable>
+          </View>
         </View>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -2940,6 +2983,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 9 },
+  appearanceButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   wordmark: { fontSize: 18, fontWeight: "800", letterSpacing: -0.8 },
   avatar: {
@@ -3279,7 +3331,30 @@ const styles = StyleSheet.create({
   playerTools: {
     marginTop: 24,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(128,128,128,.25)",
+  },
+  intelligenceHeader: {
+    minHeight: 66,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  intelligenceHeaderCopy: { flex: 1, minWidth: 0 },
+  intelligenceStatus: { fontSize: 16, fontWeight: "700", marginTop: 3 },
+  intelligenceCopy: { fontSize: 13, lineHeight: 18, paddingBottom: 8 },
+  intelligenceRow: {
+    minHeight: 64,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  intelligenceDetail: { fontSize: 12, lineHeight: 16, marginTop: 2 },
+  tool: {
+    minHeight: 59,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   briefCard: { marginTop: 14, gap: 8 },
   briefOverview: { fontSize: 16, lineHeight: 22, fontWeight: "700" },
@@ -3306,13 +3381,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-  },
-  tool: {
-    minHeight: 59,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
   },
   toolIcon: { fontSize: 18 },
   toolText: { fontSize: 15, fontWeight: "700", flex: 1 },

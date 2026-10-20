@@ -33,6 +33,16 @@ try {
 
   rights.setPolicy({ mode: RightsEnforcementMode.STRONG });
   assert.equal(rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId }).code, "EXPLICIT_AUTHORISATION_REQUIRED", "strong does not treat TDM as explicit authorisation");
+  rights.set({ ...tdm, testContentEligible: true });
+  rights.setSuperAdminTestMode({ enabled: true, reason: "Authorised owned test corpus", confirmation: "SUPER ADMIN" }, { actor: "super-admin" });
+  const testDecision = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
+  assert.equal(testDecision.allowed, true, "explicitly authorised test content can exercise the optional workflow");
+  assert.equal(testDecision.outputProfile, "short-grounded", "test mode stays bounded and non-substitutive");
+  assert.equal(rights.evaluate({ feature: "captions", feedUrl, episodeId }).code, "FEATURE_NOT_AUTHORISED", "test mode cannot bypass independently gated captions");
+  const preview = rights.previewPolicy({ mode: RightsEnforcementMode.LITE });
+  assert.equal(preview.policy.mode, RightsEnforcementMode.LITE, "policy preview never writes a policy change");
+  rights.setSuperAdminTestMode({ enabled: false, reason: "Test complete", confirmation: "SUPER ADMIN" }, { actor: "super-admin" });
+  assert.equal(rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId }).code, "EXPLICIT_AUTHORISATION_REQUIRED", "disabling test mode restores strong policy enforcement");
   rights.set({ ...tdm, classification: RightsClassification.LICENSED, assessmentStatus: RightsAssessmentStatus.APPROVED, explicitAuthorisation: true, rightsReserved: false });
   assert.equal(rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId }).allowed, true, "explicit licensed authorisation satisfies strong");
 
