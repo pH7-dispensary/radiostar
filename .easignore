@@ -9,6 +9,10 @@ continue
 .starcast/
 native/dist/
 native/web-dist/
+native/dist-testflight/
+native/google-cloud-sdk/
+native/google-cloud-cli-darwin-arm.tar.gz
+native/*.ipa
 infra/
 *.log
 *.p8

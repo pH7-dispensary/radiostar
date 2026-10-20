@@ -6,11 +6,15 @@ const browser = await chromium.launch({ headless: true });
 await mkdir(".starcast/qa", { recursive: true });
 const errors = [];
 try {
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 375, 390, 430, 1440]) {
     const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
     page.on("pageerror", error => errors.push(error.message));
     await page.route("https://d3ri12f40b85i3.cloudfront.net/**", route => {
       const path = new URL(route.request().url()).pathname;
+      // Ordinary listeners cannot see the private Translate configuration.
+      // Returning an allowance summary here creates an invalid 200 contract.
+      if (path.startsWith("/api/listener/translation"))
+        return route.fulfill({status:404,contentType:"application/json",body:JSON.stringify({error:"Not found."})});
       const payload = path === "/api/listener/subscriptions" ? {enabled:false, reason:"Subscriptions are not available in this beta."}
         : path.includes("catalogue") ? {results:[],feed:{episodes:[]}}
         : {monthlyMinutes:600,earnedMinutes:0,consumedMinutes:0,remainingMinutes:600,pendingMinutes:0,
@@ -26,8 +30,14 @@ try {
     await page.evaluate(() => {
       localStorage.setItem("star-cast-pilot-token","local-browser-test-not-a-real-token");
       localStorage.setItem("star-cast-installation-credential","local-test-credential-aaaaaaaaaaaaaaaaaaaa");
-      localStorage.setItem("star-cast-listener-state-v1",JSON.stringify({onboardingComplete:true,intelligencePreferenceVersion:2,intelligenceEnabled:false}));
+      localStorage.setItem("star-cast-listener-state-v1",JSON.stringify({onboardingComplete:false,intelligencePreferenceVersion:2,intelligenceEnabled:false}));
     });
+    await page.reload();
+    await page.getByText("WELCOME TO RADIO STAR", {exact:true}).waitFor();
+    await page.screenshot({path:`.starcast/qa/onboarding-web-${width}.png`,fullPage:true});
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
+    await page.getByRole("button",{name:"Start listening",exact:true}).click();
+    await page.getByText("WELCOME TO RADIO STAR", {exact:true}).waitFor({state:"hidden"});
     await page.reload();
     await page.getByLabel("Open profile").click();
     await page.getByText("Subscriptions are not available in this beta.",{exact:true}).waitFor();
