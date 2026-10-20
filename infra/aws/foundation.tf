@@ -136,6 +136,18 @@ resource "aws_budgets_budget" "monthly" {
       subscriber_email_addresses = [var.alert_email]
     }
   }
+  # Additional internal-test alert; retain the ordinary early warnings. This
+  # observes AWS charges only, not the independent OpenAI application ledger.
+  dynamic "notification" {
+    for_each = var.alert_email == "" ? [] : [125]
+    content {
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = notification.value
+      threshold_type             = "ABSOLUTE_VALUE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = [var.alert_email]
+    }
+  }
 }
 output "artifact_bucket" { value = aws_s3_bucket.objects.id }
 output "processing_queue_url" { value = aws_sqs_queue.processing.url }

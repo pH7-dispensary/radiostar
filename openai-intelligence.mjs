@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createHash } from "node:crypto";
 import { groundResult } from "./grounded-result.mjs";
 
 const dollars = (value) => Number(value.toFixed(6));
@@ -14,16 +15,17 @@ export const defaultControls = Object.freeze({
   audioAnalysisEnabled: false,
 });
 export class BudgetLedger {
-  constructor(controls = defaultControls, store = null) {
-    this.controls = { ...defaultControls, ...controls };
+  constructor(controls = defaultControls, store = null, controlsProvider = null) {
+    this.baseControls = { ...defaultControls, ...controls };
+    this.controlsProvider = controlsProvider;
     for (const key of [
       "dailyUsd",
       "monthlyUsd",
       "dailyTranscriptionSeconds",
       "maxEpisodeSeconds",
     ]) {
-      this.controls[key] = Math.min(defaultControls[key], this.controls[key]);
-      if (!Number.isFinite(this.controls[key]) || this.controls[key] <= 0)
+      this.baseControls[key] = Math.min(defaultControls[key], this.baseControls[key]);
+      if (!Number.isFinite(this.baseControls[key]) || this.baseControls[key] <= 0)
         throw Error("Invalid budget control.");
     }
     this.store = store;
@@ -31,6 +33,7 @@ export class BudgetLedger {
     this.usage = [];
     this.refresh();
   }
+  get controls() { return { ...this.baseControls, ...(this.controlsProvider?.() || {}) }; }
   refresh() {
     const saved = this.store?.get("budget", "ledger");
     if (saved) {
@@ -200,6 +203,9 @@ export async function generateEpisodeIntelligence({
   outputProfile = "standard",
   onProviderResponse = () => {},
   signal,
+  checkpointStore = null,
+  checkpointKey = null,
+  beforePaid = () => {},
 }) {
   signal?.throwIfAborted();
   if (
@@ -259,10 +265,16 @@ export async function generateEpisodeIntelligence({
       0.0000004 +
       maxOutput * 0.0000016,
   );
-  ledger.reserve({ id: requestId, usd: ceiling });
-  let accounted = false;
+  const saved = checkpointKey && checkpointStore?.get("analysis-checkpoint", checkpointKey);
+  if (saved?.state === "SENDING") throw Object.assign(Error("The analysis provider outcome is unknown; automatic replay is blocked."), { code: "PROVIDER_OUTCOME_UNKNOWN" });
+  if (!saved?.response) {
+    beforePaid();
+    ledger.reserve({ id: requestId, usd: ceiling });
+  }
+  let accounted = Boolean(saved?.response);
   try {
-    const response = await (client || createOpenAIClient()).responses.create(
+    if (!saved?.response && checkpointKey) checkpointStore?.set("analysis-checkpoint", checkpointKey, { state: "SENDING", requestId });
+    const response = saved?.response || await (client || createOpenAIClient()).responses.create(
       {
         model,
         max_output_tokens: maxOutput,
@@ -289,12 +301,16 @@ export async function generateEpisodeIntelligence({
     const usage = response.usage,
       inputTokens = usage?.input_tokens,
       outputTokens = usage?.output_tokens;
-    ledger.reconcile(requestId, {
+    const save = () => {
+      if (checkpointKey && !saved?.response) checkpointStore?.set("analysis-checkpoint", checkpointKey, { state: "READY", response, completedAt: new Date().toISOString() });
+      if (!saved?.response) ledger.reconcile(requestId, {
       usd: usage ? inputTokens * 0.0000004 + outputTokens * 0.0000016 : ceiling,
       inputTokens: inputTokens || 0,
       outputTokens: outputTokens || 0,
       uncertain: !usage,
-    });
+      });
+    };
+    if (checkpointStore) checkpointStore.transaction(save); else save();
     accounted = true;
     onProviderResponse({
       id: response.id,
@@ -391,8 +407,40 @@ export async function generateEpisodeIntelligence({
         failed: true,
         uncertain: true,
       });
+    if (!accounted && checkpointKey) throw Object.assign(Error("The analysis provider outcome is unknown; automatic replay is blocked.", { cause: error }), { code: "PROVIDER_OUTCOME_UNKNOWN" });
     throw error;
   }
+}
+// Each bounded map stage cites canonical segments. The reduce stage cites map
+// summaries; its references are resolved back to the original transcript before
+// publication. No synthetic timestamps from a summary are ever published.
+export async function generateLongFormIntelligence(options) {
+  const { transcript, checkpointPrefix, onProgress = () => {} } = options;
+  const batches = [];
+  let batch = [], bytes = 0;
+  for (const segment of transcript.segments) {
+    const size = Buffer.byteLength(transcriptPrompt({ segments: [segment] })) + 16;
+    if (size > 60_000) throw Error("This transcript exceeds the current processing limit: one source segment is too large.");
+    if (bytes + size > 60_000 || batch.length >= 500) { batches.push(batch); batch = []; bytes = 0; }
+    batch.push(segment); bytes += size;
+  }
+  if (batch.length) batches.push(batch);
+  if (batches.length > 64) throw Error("This transcript exceeds the current processing limit.");
+  const signature = createHash("sha256").update(JSON.stringify([transcript.segments, options.model || defaultControls.textModel, options.outputProfile, PROCESSING_VERSION])).digest("hex");
+  const generate = (source, stage) => generateEpisodeIntelligence({ ...options, transcript: source, requestId: `${options.requestId}:${stage}`, checkpointKey: checkpointPrefix ? `${checkpointPrefix}:${signature}:${stage}` : null });
+  const results = [];
+  for (const [index, segments] of batches.entries()) {
+    results.push(await generate({ ...transcript, segments }, `map-${index}`));
+    onProgress({ completedBatches: index + 1, totalBatches: batches.length, synthesisPending: batches.length > 1 });
+  }
+  if (results.length === 1) return results[0];
+  const summaries = results.map((result, index) => ({ id: `map-${index}`, text: `${result.brief.overview}\n${result.brief.detail}\nThemes: ${result.brief.themes.join(", ")}` }));
+  const reduced = await generate({ ...transcript, segments: summaries }, "reduce");
+  reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?.brief.sourceSegmentIds || []))];
+  reduced.chapters = validateChapters(results.flatMap((result) => result.chapters), transcript);
+  delete reduced.groundingVersion;
+  onProgress({ completedBatches: batches.length, totalBatches: batches.length, synthesisPending: false });
+  return groundResult(reduced, transcript);
 }
 export async function generateEpisodeBrief(options) {
   return (await generateEpisodeIntelligence(options)).brief;

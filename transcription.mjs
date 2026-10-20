@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import ffmpeg from "ffmpeg-static";
 import ffprobe from "ffprobe-static";
 import { toFile } from "openai";
@@ -88,10 +89,13 @@ export async function prepareAudio(audioUrl, maxSeconds) {
       throw Error("Audio duration could not be verified.");
     if (durationMs > maxSeconds * 1000)
       throw Error(
-        "This episode is longer than the current two-hour processing limit.",
+        "This episode is longer than the current audio processing limit.",
       );
+    const digest = createHash("sha256");
+    for await (const chunk of createReadStream(path)) digest.update(chunk);
     return {
       durationMs,
+      contentHash: digest.digest("hex"),
       // These values are intentionally private to server-side processors.  A
       // caller may use them to verify an authorised audio variant, never to
       // disclose or distribute the source audio.
@@ -146,6 +150,10 @@ export async function transcribeOnDemand({
   model = "whisper-1",
   authorised = false,
   signal,
+  checkpointStore = null,
+  checkpointPrefix = null,
+  beforePaid = () => {},
+  onProgress = () => {},
 }) {
   signal?.throwIfAborted();
   if (!authorised)
@@ -157,41 +165,40 @@ export async function transcribeOnDemand({
       "A timestamp-capable, priced transcription adapter is required.",
     );
   const plan = planAudioSegments({ durationMs });
-  // Include chunk overlap and round each provider request up to a whole second.
-  const seconds = plan.reduce(
-    (n, p) => n + Math.ceil((p.endMs - p.startMs) / 1000),
-    0,
-  );
   if (durationMs > ledger.controls.maxEpisodeSeconds * 1000)
     throw Error(
-      "This episode is longer than the current two-hour processing limit.",
+      "This episode is longer than the current audio processing limit.",
     );
-  // Episode cap applies to source duration; overlap still consumes the daily allowance.
-  ledger.reserve({
-    id: requestId,
-    usd: seconds * 0.0001,
-    kind: "transcription",
-    seconds,
-    sourceSeconds: Math.ceil(durationMs / 1000),
-  });
-  let sent = false,
-    complete = false;
-  try {
     const responses = [];
     for (const part of plan) {
       signal?.throwIfAborted();
-      const file = await chunkFactory(part);
-      signal?.throwIfAborted();
-      sent = true;
-      const response = await client.audio.transcriptions.create(
-        {
-          file,
-          model,
-          response_format: "verbose_json",
-          timestamp_granularities: ["segment"],
-        },
-        { signal },
-      );
+      const key = checkpointPrefix && `${checkpointPrefix}:${model}:${durationMs}:${part.index}`;
+      const saved = key && checkpointStore?.get("transcription-checkpoint", key);
+      if (saved?.state === "SENDING") throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked."), { code: "PROVIDER_OUTCOME_UNKNOWN" });
+      let response = saved?.response;
+      if (!response) {
+        const file = await chunkFactory(part);
+        signal?.throwIfAborted();
+        beforePaid();
+        // Re-evaluate expiring controls before every paid chunk. The source
+        // cap applies to the full episode; daily usage includes chunk overlap.
+        if (durationMs > ledger.controls.maxEpisodeSeconds * 1000) throw Error("This episode is longer than the current audio processing limit.");
+        const seconds = Math.ceil((part.endMs - part.startMs) / 1000);
+        const id = key || `${requestId}:${part.index}`;
+        ledger.reserve({ id, usd: seconds * 0.0001, kind: "transcription", seconds });
+        try {
+          if (key) checkpointStore?.set("transcription-checkpoint", key, { state: "SENDING", requestId: id });
+          response = await client.audio.transcriptions.create({ file, model, response_format: "verbose_json", timestamp_granularities: ["segment"] }, { signal });
+          const save = () => {
+            if (key) checkpointStore?.set("transcription-checkpoint", key, { state: "READY", response, completedAt: new Date().toISOString() });
+            ledger.reconcile(id, { usd: seconds * 0.0001, seconds });
+          };
+          if (checkpointStore) checkpointStore.transaction(save); else save();
+        } catch (error) {
+          ledger.reconcile(id, { usd: seconds * 0.0001, seconds, failed: true, uncertain: true });
+          throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked.", { cause: error }), { code: "PROVIDER_OUTCOME_UNKNOWN" });
+        }
+      }
       if (!response.segments?.length)
         throw Error("Transcription returned no usable timestamped speech.");
       for (const [i, s] of response.segments.entries()) {
@@ -208,6 +215,7 @@ export async function transcribeOnDemand({
           contentType: "conversation",
         });
       }
+      onProgress({ completedChunks: part.index + 1, totalChunks: plan.length, completedSourceMs: part.endMs, sourceDurationMs: durationMs });
     }
     const segments = mergeTranscriptSegments(responses),
       quality = assessTranscript({ segments, durationMs });
@@ -219,7 +227,6 @@ export async function transcribeOnDemand({
     const transcriptVersion = createHash("sha256")
       .update(JSON.stringify(segments))
       .digest("hex");
-    complete = true;
     return {
       id: "transcript-" + transcriptVersion,
       transcriptVersion,
@@ -236,18 +243,4 @@ export async function transcribeOnDemand({
       acquiredAt: new Date().toISOString(),
       processingVersion: "2.0.0",
     };
-  } finally {
-    for (const id of [requestId]) {
-      const reserved = ledger.reservations.get(id);
-      if (!reserved) continue;
-      if (sent)
-        ledger.reconcile(id, {
-          usd: reserved.usd,
-          seconds: reserved.seconds,
-          failed: !complete,
-          uncertain: !complete,
-        });
-      else ledger.cancel(id);
-    }
-  }
 }

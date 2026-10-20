@@ -1,5 +1,6 @@
 import {
   DeleteMessageCommand,
+  ChangeMessageVisibilityCommand,
   GetQueueAttributesCommand,
   ReceiveMessageCommand,
   SendMessageCommand,
@@ -11,13 +12,14 @@ const validQueueUrl = (value) =>
   /^https:\/\/sqs\.eu-west-2\.amazonaws\.com\/208096650030\/starcast-phase1-processing$/.test(value);
 
 export class ProcessingQueue {
-  constructor({ queueUrl, region = "eu-west-2", client, pollWaitSeconds = 20 } = {}) {
+  constructor({ queueUrl, region = "eu-west-2", client, pollWaitSeconds = 20, renewalMs = 60_000 } = {}) {
     if (!validQueueUrl(queueUrl)) throw Error("A dedicated Star Cast processing queue is required.");
     this.queueUrl = queueUrl;
     this.deadLetterQueueUrl = queueUrl.replace(/processing$/, "processing-dlq");
     this.client = client || new SQSClient({ region, maxAttempts: 3 });
     this.pollWaitSeconds = Math.max(1, Math.min(20, Number(pollWaitSeconds) || 20));
     this.running = false;
+    this.renewalMs = renewalMs;
   }
 
   async enqueue(job) {
@@ -113,9 +115,22 @@ export class ProcessingQueue {
         const messages = await this.receive();
         for (const message of messages) {
           let job;
+          const controller = new AbortController();
+          let renewal = null;
+          let renewing = false;
           try {
             job = JSON.parse(message.Body || "{}");
-            await execute(job);
+            renewal = setInterval(async () => {
+              if (renewing || controller.signal.aborted) return;
+              renewing = true;
+              try {
+                await this.client.send(new ChangeMessageVisibilityCommand({ QueueUrl: this.queueUrl, ReceiptHandle: message.ReceiptHandle, VisibilityTimeout: 900 }));
+              } catch { controller.abort(Error("Processing queue lease renewal failed.")); }
+              finally { renewing = false; }
+            }, this.renewalMs);
+            renewal.unref?.();
+            await execute(job, controller.signal);
+            controller.signal.throwIfAborted();
             await this.acknowledge(message.ReceiptHandle);
           } catch (error) {
             console.error(JSON.stringify({
@@ -123,6 +138,8 @@ export class ProcessingQueue {
               jobId: job?.jobId || null,
               code: error?.name || "QUEUE_MESSAGE_FAILED",
             }));
+          } finally {
+            clearInterval(renewal);
           }
         }
       }

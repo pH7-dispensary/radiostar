@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { fetchPublisherTranscript, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
 import {
-  generateEpisodeIntelligence,
+  generateLongFormIntelligence,
+  BudgetLedger,
   createOpenAIClient,
   PROCESSING_VERSION,
 } from "./openai-intelligence.mjs";
@@ -108,7 +109,7 @@ export function durationMs(value) {
 }
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
-  const { transcript, episode, refs, lifecycle, estimateHistory, timing, ...safe } = value;
+  const { transcript, episode, refs, lifecycle, estimateHistory, timing, testingContext, ...safe } = value;
   return {
     ...safe,
     // Job identity is safe and necessary for operations.  Do not leak the
@@ -154,6 +155,8 @@ export function availabilityCode(code) {
 }
 
 function failure(error) {
+  if (error?.code === "TESTING_EXPIRED") return { code: error.code, reason: "Internal testing has ended or been disabled. Cached intelligence remains available.", retryable: false };
+  if (error?.code === "PROVIDER_OUTCOME_UNKNOWN") return { code: error.code, reason: "A provider request has an unknown outcome. An administrator must review it before another paid attempt.", retryable: false };
   const message = String(error?.message || "");
   if (/incomplete|JSON|source validation/.test(message))
     return {
@@ -232,6 +235,7 @@ export class EpisodePipeline {
     intelligencePolicy = null,
     queue = null,
     onCompleted = null,
+    testingMode = null,
     jobTimeoutMs = 15 * 60 * 1000,
   }) {
     Object.assign(this, {
@@ -248,6 +252,7 @@ export class EpisodePipeline {
       intelligencePolicy,
       queue,
       onCompleted,
+      testingMode,
       jobTimeoutMs,
     });
     this.inflight = new Map();
@@ -258,7 +263,10 @@ export class EpisodePipeline {
         // A durable queued job has not started and can be recovered by the
         // single consumer. In-progress work remains failed on restart because
         // its provider outcome may be unknown and must not be retried blindly.
-        if (!(this.queue && value.state === "QUEUED"))
+        if (this.queue && value.testingContext && this.testingMode?.limits(value.testingContext).dailyUsd && (value.recoveries || 0) < 2 && value.state !== "QUEUED") {
+          const recovered = this.transition(key, value, { state: "QUEUED", processingStage: "QUEUED", recoveries: (value.recoveries || 0) + 1, deadlineAt: new Date(Date.now() + 2 * 3600000).toISOString() }, { force: true });
+          this.store.set("processing-outbox", value.jobId, { key, ...recovered });
+        } else if (!(this.queue && value.state === "QUEUED"))
           this.transition(key, value, {
             state: "FAILED",
             code: "INTERRUPTED",
@@ -447,11 +455,14 @@ export class EpisodePipeline {
     allowAudio = false,
     retry = false,
     trigger = "manual",
+    testingContext = null,
+    priority = 0,
   }) {
     const key = episodeKey(feedUrl, episodeId);
+    if (!this.testingMode?.limits(testingContext).dailyUsd) testingContext = null;
     // Global activation is never consent to pay for audio or retry failed work.
     if (trigger === "automatic") {
-      allowAudio = false;
+      allowAudio = Boolean(testingContext);
       retry = false;
     }
     let previous = this.status(feedUrl, episodeId),
@@ -477,7 +488,7 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible
+      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(testingContext && ["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code))
     )
       return publicIntelligence(previous);
     if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)
@@ -551,10 +562,12 @@ export class EpisodePipeline {
       cacheHit: false,
       trigger,
       allowAudio,
+      testingContext,
+      priority: testingContext ? Math.max(0, Math.min(100, Number(priority) || 0)) : 0,
       feedUrl,
       episodeId,
       reassessedFromJobId: recovery?.eligible ? previous.jobId : undefined,
-      deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
+      deadlineAt: new Date(Date.now() + (testingContext ? 2 * 3600000 : this.jobTimeoutMs)).toISOString(),
       refreshBaseJobId: forcePublisherRefresh && completed(previous) ? null : undefined,
     };
     // The queue message stays deliberately small. A completed result is kept
@@ -627,6 +640,16 @@ export class EpisodePipeline {
     if (!this.queue) return;
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
+      const limits = status.testingContext && this.testingMode?.limits(status.testingContext);
+      const safeRetry = status.state === "FAILED" && ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT"].includes(status.code) && (status.recoveries || 0) < 2;
+      if (limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry)) {
+        this.ledger.refresh();
+        const totals = this.ledger.totals();
+        if (totals.day < limits.dailyUsd && totals.month < limits.monthlyUsd && totals.transcriptionSeconds < limits.dailyTranscriptionSeconds) {
+          const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
+          this.store.set("processing-outbox", status.jobId, { key, ...resumed });
+        } else this.store.set("intelligence", key, { ...status, resumeAfter: new Date(now + 3600000).toISOString() });
+      }
       if (
         activeStates.has(status?.state) &&
         !completed(status) &&
@@ -664,7 +687,7 @@ export class EpisodePipeline {
       }
     }
   }
-  async executeQueued(queued) {
+  async executeQueued(queued, signal) {
     if (!queued?.jobId || !queued?.key || !queued?.feedUrl || !queued?.episodeId)
       throw Error("Invalid processing queue message.");
     if (this.inflight.has(queued.key)) {
@@ -684,6 +707,14 @@ export class EpisodePipeline {
       }));
       return;
     }
+    // Standard SQS ordering is not a priority guarantee. Choose only among
+    // already-authorised persisted jobs; put the displaced receipt back into
+    // the outbox before acknowledging it. Never interrupt active paid work.
+    const preferred = this.store.all("intelligence").filter(([, job]) => job.state === "QUEUED" && !job.completedAt && (job.priority || 0) > (initial.priority || 0)).sort((a, b) => (b[1].priority || 0) - (a[1].priority || 0))[0];
+    if (preferred) {
+      this.store.set("processing-outbox", queued.jobId, queued);
+      return this.executeQueued({ key: preferred[0], ...preferred[1] }, signal);
+    }
     const previous = this.store.get("intelligence-refresh", queued.jobId) || null;
     console.log(JSON.stringify({
       event: "processing-queue-job-started",
@@ -695,7 +726,8 @@ export class EpisodePipeline {
       key: queued.key,
       feedUrl: queued.feedUrl,
       episodeId: queued.episodeId,
-      allowAudio: queued.allowAudio === true,
+      allowAudio: initial.allowAudio === true,
+      signal,
       initial,
       previous,
       forcePublisherRefresh: queued.forcePublisherRefresh === true,
@@ -715,10 +747,22 @@ export class EpisodePipeline {
     initial,
     previous,
     forcePublisherRefresh,
+    signal,
   }) {
     let value = { ...initial };
+    const ledger = initial.testingContext ? new BudgetLedger(this.ledger.baseControls, this.store, () => this.testingMode?.limits(initial.testingContext) || {}) : this.ledger;
     let expired = false;
     const controller = new AbortController();
+    const recordWork = (work) => {
+      const current = this.store.get("intelligence", key);
+      if (!expired && current?.jobId === value.jobId && !current.completedAt) {
+        value = { ...current, work, updatedAt: new Date().toISOString() };
+        this.store.set("intelligence", key, value);
+      }
+    };
+    const abort = () => controller.abort(signal.reason);
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
     const update = (patch) => {
       if (expired) return;
       if (value.episode && this.rights) {
@@ -768,7 +812,7 @@ export class EpisodePipeline {
       });
       expired = true;
       controller.abort();
-    }, this.jobTimeoutMs);
+    }, initial.testingContext ? 2 * 3600000 : this.jobTimeoutMs);
     timeout.unref?.();
     try {
       update({ state: "DISCOVERING", processingStage: "CHECKING" });
@@ -887,7 +931,7 @@ export class EpisodePipeline {
           });
           return;
         }
-        if (duration > this.ledger.controls.maxEpisodeSeconds * 1000) {
+        if (duration > ledger.controls.maxEpisodeSeconds * 1000) {
           update({
             state: "BLOCKED",
             attempts: Math.max(0, value.attempts - 1),
@@ -899,15 +943,15 @@ export class EpisodePipeline {
           return;
         }
         // Check budget before downloading; actual measured duration is reserved before provider calls.
-        this.ledger.refresh();
-        const totals = this.ledger.totals();
+        ledger.refresh();
+        const totals = ledger.totals();
         if (
           totals.day + (duration / 1000) * 0.0001 >
-            this.ledger.controls.dailyUsd ||
+            ledger.controls.dailyUsd ||
           totals.month + (duration / 1000) * 0.0001 >
-            this.ledger.controls.monthlyUsd ||
+            ledger.controls.monthlyUsd ||
           totals.transcriptionSeconds + duration / 1000 >
-            this.ledger.controls.dailyTranscriptionSeconds
+            ledger.controls.dailyTranscriptionSeconds
         )
           throw Error("The intelligence budget has been reached.");
         // Downloading/chunking may take time but is not yet a provider
@@ -919,7 +963,7 @@ export class EpisodePipeline {
           audioTask = (async () => {
             const audio = await this.audioFactory(
               episode.audioUrl,
-              this.ledger.controls.maxEpisodeSeconds,
+              ledger.controls.maxEpisodeSeconds,
             );
             try {
               controller.signal.throwIfAborted();
@@ -930,10 +974,17 @@ export class EpisodePipeline {
                 durationMs: audio.durationMs,
                 chunkFactory: audio.chunkFactory,
                 client: this.client || createOpenAIClient(),
-                ledger: this.ledger,
+                ledger,
                 requestId: value.jobId + ":audio",
                 authorised: true,
                 signal: controller.signal,
+                checkpointStore: this.store,
+                checkpointPrefix: audio.contentHash ? `${key}:${audio.contentHash}` : null,
+                beforePaid: () => {
+                  if (!rightsAllowed() || (this.rights && !this.rights.resolve(feedUrl, episodeId).canTranscribeAudio)) throw Error("Rights permission no longer allows audio transcription.");
+                  if (initial.testingContext && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
+                },
+                onProgress: recordWork,
               });
               this.store.set("audio-transcript", variant, acquired);
               return acquired;
@@ -1003,17 +1054,25 @@ export class EpisodePipeline {
         },
         sourceSignature: hash(JSON.stringify([episode.audioUrl, episode.refs, PUBLISHER_TRANSCRIPT_PARSER_VERSION])),
       });
-      const generated = await generateEpisodeIntelligence({
+      const generated = await generateLongFormIntelligence({
         transcript,
-        ledger: this.ledger,
+        ledger,
         requestId: value.jobId + ":text",
         client: this.client,
         signal: controller.signal,
         outputProfile: policyDecision?.outputProfile || "standard",
+        checkpointStore: this.store,
+        checkpointPrefix: key,
+        beforePaid: () => {
+          if (!rightsAllowed()) throw Error("Rights permission no longer allows AI analysis.");
+          if (initial.testingContext && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
+        },
+        onProgress: recordWork,
         onProviderResponse: (response) => {
           if (rightsAllowed()) this.store.set("provider-result", value.jobId, response);
         },
       });
+      controller.signal.throwIfAborted();
       if (!rightsAllowed())
         throw Error("Rights permission no longer allows AI processing for this episode.");
       // Keep canonical internal analysis for reuse; listener responses enforce
@@ -1029,7 +1088,7 @@ export class EpisodePipeline {
       // enables automatic skipping; the callback may only inspect grounded,
       // completed transcript material.
       try {
-        this.onCompleted?.({ feedUrl, episodeId, intelligence: value });
+        await this.onCompleted?.({ feedUrl, episodeId, intelligence: value });
       } catch (error) {
         console.error(JSON.stringify({ event: "post-processing-candidate-inspection-failed", code: error?.name || "INSPECTION_FAILED" }));
       }
@@ -1044,6 +1103,7 @@ export class EpisodePipeline {
       update({
         state: blocked ? "BLOCKED" : "FAILED",
         ...detail,
+        ...(detail.code === "BUDGET_LIMIT" ? { resumeAfter: new Date(Date.now() + 3600000).toISOString() } : {}),
         ...(["DURATION_LIMIT", "BUDGET_LIMIT"].includes(detail.code)
           ? { attempts: Math.max(0, value.attempts - 1) }
           : {}),
@@ -1066,6 +1126,7 @@ export class EpisodePipeline {
       );
     } finally {
       clearTimeout(timeout);
+      signal?.removeEventListener("abort", abort);
     }
   }
   internalTranscriptPage(feed, id, offset = 0, query = "") {
@@ -1102,6 +1163,14 @@ export class EpisodePipeline {
     const key = episodeKey(feed, id);
     const intelligence = this.store.get("intelligence", key);
     const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
+    for (const bucket of ["transcription-checkpoint", "analysis-checkpoint"])
+      for (const [checkpoint] of this.store.all(bucket)) if (checkpoint.startsWith(key + ":")) { this.store.delete(bucket, checkpoint); removed.providerResults++; }
+    const jobs = new Set([intelligence?.jobId, ...this.store.all("intelligence-history").filter(([, job]) => job.feedUrl === feed && job.episodeId === id).map(([, job]) => job.jobId)]);
+    for (const jobId of jobs) if (jobId) {
+      this.store.delete("provider-result", jobId);
+      this.store.delete("intelligence-refresh", jobId);
+    }
+    if (intelligence?.episode?.audioUrl) this.store.delete("audio-transcript", hash(intelligence.episode.audioUrl));
     if (intelligence) {
       this.store.delete("intelligence", key);
       removed.intelligence++;
