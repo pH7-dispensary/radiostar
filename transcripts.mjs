@@ -128,22 +128,67 @@ export function parseJsonTranscript(source) {
     }))
     .filter((x) => x.text);
 }
-export function parseTranscript(source, type = "text/plain") {
+const htmlText = (value) =>
+  decode(
+    String(value || "")
+      .replace(/<(script|style|nav|header|footer)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " "),
+  );
+
+// Captivate's publisher transcript pages express each cue as a nearby
+// <cite>, <time>, <p> sequence. Preserve only timestamps that the publisher
+// supplied and derive each cue end from the next source cue (or the declared
+// episode duration). This is intentionally not a speech-to-text alignment.
+export function parseHtmlTranscript(source, { durationMs = null } = {}) {
+  const body = String(source || "");
+  const events = [...body.matchAll(/<(cite|time|p)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi)];
+  let speaker = null;
+  let startMs = null;
+  const cues = [];
+  for (const match of events) {
+    const tag = match[1].toLowerCase();
+    const text = htmlText(match[2]);
+    if (tag === "cite") {
+      speaker = text || null;
+      continue;
+    }
+    if (tag === "time") {
+      startMs = parseClock(text);
+      continue;
+    }
+    if (startMs !== null && text) {
+      cues.push({
+        id: `seg-${cues.length + 1}`,
+        startMs,
+        endMs: null,
+        text,
+        speaker,
+      });
+      startMs = null;
+    }
+  }
+  const timed = cues
+    .map((cue, index) => ({
+      ...cue,
+      endMs: cues[index + 1]?.startMs ?? durationMs,
+    }))
+    .filter((cue) => Number.isFinite(cue.startMs) && Number.isFinite(cue.endMs) && cue.endMs > cue.startMs);
+  return timed;
+}
+
+export function parseTranscript(source, type = "text/plain", options = {}) {
   let kind = type.toLowerCase(),
     body = String(source);
   if (kind.includes("vtt")) return parseVtt(body);
   if (kind.includes("subrip") || kind.includes("srt")) return parseSrt(body);
   if (kind.includes("json")) return parseJsonTranscript(body);
-  let text = kind.includes("html")
-    ? decode(
-        body
-          .replace(
-            /<(script|style|nav|header|footer)\b[^>]*>[\s\S]*?<\/\1>/gi,
-            "",
-          )
-          .replace(/<[^>]+>/g, " "),
-      )
-    : body.trim();
+  if (kind.includes("html")) {
+    const timed = parseHtmlTranscript(body, options);
+    if (timed.length) return timed;
+  }
+  let text = kind.includes("html") ? htmlText(body) : body.trim();
   return text
     ? [{ id: "seg-1", startMs: null, endMs: null, text: decode(text) }]
     : [];
@@ -241,7 +286,7 @@ export async function fetchPublisherTranscript(
   if (Buffer.byteLength(source) > MAX_TRANSCRIPT_BYTES)
     throw Error("Publisher transcript exceeds the size limit.");
   type = (type || "text/plain").split(";")[0];
-  const segments = parseTranscript(source, type).map((segment) => ({
+  const segments = parseTranscript(source, type, { durationMs }).map((segment) => ({
     ...segment,
     topics: [],
     entities: [],
