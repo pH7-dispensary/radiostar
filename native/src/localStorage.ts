@@ -13,7 +13,7 @@ export async function eraseLocalListenerData() {
   const documents = ["star-cast-listener-state-v1", "star-cast-native-playback-v1",
     "star-cast-native-playback-v1-positions", "star-cast-offline-reports",
     "star-cast-invite-message", "star-cast-listener-summary", "star-cast-sleep-learning-v1",
-    "star-cast-intelligence-introduction-v1"];
+    "star-cast-intelligence-introduction-v1", "star-cast-sleep-session-v1"];
   for (const key of documents) {
     if (Platform.OS === "web") globalThis.localStorage?.removeItem(key);
     else {

@@ -305,7 +305,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       for (let step = steps; step > 0; step--) {
         if (token !== fadeOperation.current) {
           player.volume = 1;
-          return player.currentTime * 1000;
+          throw Object.assign(Error("Sleep fade was interrupted."), { code: "SLEEP_FADE_CANCELLED" });
         }
         player.volume = step / steps;
         await new Promise<void>((resolve) =>
@@ -314,7 +314,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
       if (token !== fadeOperation.current) {
         player.volume = 1;
-        return player.currentTime * 1000;
+        throw Object.assign(Error("Sleep fade was interrupted."), { code: "SLEEP_FADE_CANCELLED" });
       }
       player.pause();
       player.volume = 1;

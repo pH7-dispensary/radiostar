@@ -26,6 +26,7 @@ import { getIdentity, setIdentity } from "./src/localStorage";
 import * as Crypto from "expo-crypto";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFonts } from "expo-font";
 import {
   PlaybackProvider,
   usePlayback,
@@ -61,6 +62,7 @@ import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { PlayerIntelligenceAccordion } from "./src/PlayerIntelligenceAccordion";
 import { AudioPlaybackFeedback, AudioWaitingRing } from "./src/AudioPlaybackFeedback";
 import { SearchScreen } from "./src/SearchScreen";
+import { AiSleepScreen, manualTimerMinutes, type SleepViewState } from "./src/SleepExperience";
 import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
 import { ListenerSync } from "./src/ListenerSync";
 import { updateFollow, deleteListenerProfile, resetListenerConnection, listenerRequest } from "./src/listenerApi";
@@ -767,88 +769,6 @@ function EpisodeRow({
   );
 }
 
-function LivingSleep({ p, active }: { p: Theme; active: boolean }) {
-  let phase = useRef(new Animated.Value(0)).current;
-  let reducedMotion = useReducedMotion();
-  useEffect(() => {
-    if (!active || reducedMotion) {
-      phase.stopAnimation();
-      return;
-    }
-    let loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(phase, {
-          toValue: 1,
-          duration: motion.major * 6,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(phase, {
-          toValue: 0,
-          duration: motion.major * 6,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [active, phase, reducedMotion]);
-  let points = Array.from({ length: 48 }, (_, i) => {
-    let a = i * 2.39996,
-      r = 15 + Math.sqrt(i / 48) * 80;
-    let drift = phase.interpolate({
-      inputRange: [0, 1],
-      outputRange: [-5 + (i % 3) * 2, 5 - (i % 4)],
-    });
-    return (
-      <Animated.View
-        key={i}
-        style={[
-          styles.sleepPoint,
-          {
-            backgroundColor: i % 4 === 0 ? p.accent2 : p.text,
-            opacity: i % 4 === 0 ? 0.85 : 0.5,
-            transform: [
-              {
-                translateX: Animated.add(
-                  new Animated.Value(Math.cos(a) * r),
-                  drift,
-                ),
-              },
-              { translateY: new Animated.Value(Math.sin(a) * r) },
-            ],
-          },
-        ]}
-      />
-    );
-  });
-  return (
-    <View
-      accessibilityLabel="AI Sleep animation"
-      style={[styles.organism, { backgroundColor: "transparent" }]}
-    >
-      {Array.from({ length: 13 }, (_, i) => (
-        <Animated.View
-          key={`trace-${i}`}
-          style={{
-            position: "absolute",
-            height: 1,
-            width: 28 + (i % 4) * 9,
-            backgroundColor: p.accent2,
-            opacity: 0.18,
-            transform: [
-              { translateX: Math.sin(i * 2.3) * 55 },
-              { translateY: Math.cos(i * 1.7) * 64 },
-              { rotate: `${i * 37}deg` },
-            ],
-          }}
-        />
-      ))}
-      {points}
-    </View>
-  );
-}
 
 function AmbientBackdrop({ p }: { p: Theme }) {
   let drift = useRef(new Animated.Value(0)).current;
@@ -898,17 +818,22 @@ function TimerSheet({
   onClose,
   onSet,
   p,
+  remaining,
+  onCancel,
 }: {
   visible: boolean;
   onClose: () => void;
   onSet: (minutes: number | "end") => void;
   p: Theme;
+  remaining: string | null;
+  onCancel: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType={reducedMotion ? "none" : "slide"}
       onRequestClose={onClose}
     >
       <View style={styles.timerShade}>
@@ -918,6 +843,7 @@ function TimerSheet({
             { backgroundColor: p.bg, borderColor: p.line },
           ]}
         >
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 21, paddingBottom: 28 }}>
           <View style={styles.timerSheetHeader}>
             <Text style={[styles.sectionTitle, { color: p.text }]}>
               Sleep Timer
@@ -925,18 +851,23 @@ function TimerSheet({
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
+              accessibilityLabel="Close sleep timer"
               style={[styles.roundButton, { borderColor: p.line }]}
             >
               <Text style={{ color: p.text, fontSize: 18 }}>×</Text>
             </Pressable>
           </View>
           <Text style={[styles.emptyCopy, { color: p.muted }]}>
-            Pause playback when you’re ready.
+            {remaining || "Pause playback when you’re ready."}
+          </Text>
+          <Text style={[styles.small, { color: p.muted }]}>
+            Keep the app active for reliable timer timing in this beta.
           </Text>
           <View style={styles.timerOptionGrid}>
-            {[10, 15, 20, 30, 45, 60].map((minutes) => (
+            {manualTimerMinutes.map((minutes) => (
               <Pressable
                 key={minutes}
+                accessibilityRole="button"
                 onPress={() => {
                   onSet(minutes);
                   onClose();
@@ -952,7 +883,9 @@ function TimerSheet({
               </Pressable>
             ))}
           </View>
+          {remaining && <Pressable accessibilityRole="button" onPress={onCancel} style={styles.endEpisode}><Text style={[styles.link, { color: p.accent2 }]}>Cancel timer</Text></Pressable>}
           <Pressable
+            accessibilityRole="button"
             onPress={() => {
               onSet("end");
               onClose();
@@ -963,132 +896,9 @@ function TimerSheet({
               End of episode
             </Text>
           </Pressable>
+          </ScrollView>
         </SafeAreaView>
       </View>
-    </Modal>
-  );
-}
-function AiSleepScreen({
-  visible,
-  onClose,
-  active,
-  earliestPauseAt,
-  onStart,
-  onStop,
-  onExtend,
-  p,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  active: boolean;
-  earliestPauseAt: number | null;
-  onStart: () => void;
-  onStop: () => void;
-  onExtend: (minutes: number) => void;
-  p: Theme;
-}) {
-  let earliest = earliestPauseAt
-    ? new Date(earliestPauseAt).toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : null;
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={[styles.aiSafe, { backgroundColor: p.bg }]}>
-        <View
-          pointerEvents="none"
-          style={[styles.aiAmbient, { backgroundColor: p.wash }]}
-        />
-        <View style={styles.aiHeader}>
-          <Pressable
-            onPress={onClose}
-            accessibilityRole="button"
-            style={[styles.aiBack, { borderColor: p.line }]}
-          >
-            <Text style={[styles.link, { color: p.text }]}>‹ Back</Text>
-          </Pressable>
-          {active ? (
-            <Pressable
-              onPress={onStop}
-              accessibilityRole="button"
-              style={[styles.stopButton, { borderColor: p.line }]}
-            >
-              <Text style={[styles.stopText, { color: p.text }]}>
-                Stop AI Sleep
-              </Text>
-            </Pressable>
-          ) : (
-            <View style={styles.stopButton} />
-          )}
-        </View>
-        <View style={styles.aiScreenContent}>
-          <Text style={[styles.eyebrow, { color: p.accent }]}>AI SLEEP</Text>
-          <Text style={[styles.aiScreenTitle, { color: p.text }]}>
-            {active ? "AI Sleep active" : "Sleep, beautifully."}
-          </Text>
-          <Text style={[styles.aiScreenCopy, { color: p.muted }]}>
-            {active
-              ? "Listening quietly. You can keep adding time whenever you need it."
-              : "One tap starts your private listening companion."}
-          </Text>
-          <LivingSleep p={p} active={active && visible} />
-          {active && earliest ? (
-            <Glass p={p} style={styles.earliestCard}>
-              <Text style={[styles.eyebrow, { color: p.accent }]}>
-                EARLIEST PAUSE
-              </Text>
-              <Text style={[styles.earliestTime, { color: p.text }]}>
-                {earliest}
-              </Text>
-              <Text style={[styles.small, { color: p.muted }]}>
-                AI Sleep will never pause before this time.
-              </Text>
-            </Glass>
-          ) : null}
-          {active ? (
-            <View style={styles.aiExtensions}>
-              {[5, 15, 30].map((minutes) => (
-                <Pressable
-                  key={minutes}
-                  accessibilityRole="button"
-                  onPress={() => onExtend(minutes)}
-                  style={[
-                    styles.aiExtension,
-                    { backgroundColor: p.surface, borderColor: p.line },
-                  ]}
-                >
-                  <Text style={[styles.aiExtensionText, { color: p.text }]}>
-                    +{minutes}
-                  </Text>
-                  <Text style={[styles.small, { color: p.muted }]}>
-                    minutes
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <Pressable
-              onPress={onStart}
-              accessibilityRole="button"
-              style={[styles.aiStart, { backgroundColor: p.accent2 }]}
-            >
-              <Text style={[styles.primaryText, { color: p.onAccent }]}>
-                Start AI Sleep
-              </Text>
-            </Pressable>
-          )}
-          <Text style={[styles.aiPrivacy, { color: p.muted }]}>
-            Personalised on this device. No physiological sleep detection or
-            continuous motion recording.
-          </Text>
-        </View>
-      </SafeAreaView>
     </Modal>
   );
 }
@@ -1119,12 +929,15 @@ function PlayerSheet({
       cancelFade,
       audio,
       retry,
+      manualSeekRevision,
     } = usePlayback(),
     timer = useRef<NativeSleepTimer | null>(null),
     ai = useRef<NativeAiSleepBridge | null>(null),
     [timerOpen, setTimerOpen] = useState(false),
     [aiScreenOpen, setAiScreenOpen] = useState(false),
     [aiActive, setAiActive] = useState(false),
+    [sleepView, setSleepView] = useState<SleepViewState>("READY"),
+    [timerRemaining, setTimerRemaining] = useState<string | null>(null),
     [earliestPauseAt, setEarliestPauseAt] = useState<number | null>(null),
     [notice, setNotice] = useState(""),
     [panel, setPanel] = useState<"brief" | "explore" | "ads" | null>(null),
@@ -1132,6 +945,7 @@ function PlayerSheet({
     [progressWidth, setProgressWidth] = useState(1);
   const { width: viewportWidth, height: viewportHeight, fontScale } =
     useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const intelligence = useEpisodeIntelligence(
     source?.feedUrl,
     source?.episodeId,
@@ -1155,12 +969,43 @@ function PlayerSheet({
   const playbackActions = useRef({ pause, fadeAndPause });
   playbackActions.current = { pause, fadeAndPause };
   useEffect(() => {
-    timer.current = new NativeSleepTimer(() => playbackActions.current.pause());
+    timer.current = new NativeSleepTimer(() => playbackActions.current.pause(), () => setNotice("The timer could not pause playback. Please pause manually."));
     ai.current = new NativeAiSleepBridge((ms) =>
       playbackActions.current.fadeAndPause(ms),
     );
-    return () => timer.current?.cancel();
+    return () => { timer.current?.cancel(); cancelFade(); };
   }, []);
+  const sleepSource = source ? JSON.stringify([source.feedUrl || "", source.episodeId, source.url]) : "";
+  const previousSleepSource = useRef(sleepSource);
+  useEffect(() => {
+    if (previousSleepSource.current && previousSleepSource.current !== sleepSource) {
+      timer.current?.cancel(); cancelFade(); ai.current?.stop();
+      setAiActive(false); setSleepView("STOPPED"); setSleepRecovery(null); setTimerRemaining(null);
+    }
+    previousSleepSource.current = sleepSource;
+  }, [sleepSource]);
+  useEffect(() => {
+    let recovered = false;
+    const update = () => {
+      const timerEnd = timer.current?.endAt;
+      const left = timerEnd ? Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000)) : 0;
+      setTimerRemaining(timerEnd ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")} remaining` : timer.current?.endOfEpisode ? "Until the end of this episode" : null);
+      void timer.current?.check().catch(() => setNotice("The timer could not pause playback. Please pause manually."));
+      if (!recovered && ai.current?.ready && sleepSource) {
+        recovered = true;
+        if (ai.current.recovered?.sourceKey === sleepSource) { setSleepRecovery(ai.current.recovered); setSleepView("PAUSED"); }
+        else if (ai.current.interrupted) { setSleepView("STOPPED"); setNotice("The previous AI Sleep session ended when the app closed. Start a new session when ready."); }
+      }
+    };
+    const interval = setInterval(update, 1000);
+    const sub = AppState.addEventListener("change", (next) => {
+      // A suspended interval is not evidence of sleep. Re-entry resets idle
+      // observation before the next inference tick.
+      ai.current?.interact(latestSnapshot.current.positionMs, latestSnapshot.current.playing);
+      if (next === "active") update();
+    });
+    return () => { clearInterval(interval); sub.remove(); };
+  }, [sleepSource]);
   useEffect(() => {
     if (!aiActive) return;
     const interval = setInterval(() => {
@@ -1174,16 +1019,24 @@ function PlayerSheet({
         .then((state) => {
           if (state === "PAUSED") {
             setAiActive(false);
+            setSleepView("PAUSED");
             setSleepRecovery({
               lastHeard: ai.current?.session?.recoveryPositionMs || 0,
               pausedAt: latestSnapshot.current.positionMs,
             });
           }
-          if (state === "OFF") setAiActive(false);
-        });
+          if (state === "OFF") { setAiActive(false); setSleepView("STOPPED"); ai.current?.stop(); }
+        }).catch(() => { cancelFade(); ai.current?.stop(); setAiActive(false); setSleepView("ERROR"); setNotice("The sleep fade was interrupted. Playback remains under your control."); });
     }, 15000);
     return () => clearInterval(interval);
   }, [aiActive]);
+  useEffect(() => {
+    if (!aiActive || !ai.current) return;
+    if (snapshot.playing) ai.current.interact(snapshot.positionMs, true);
+    else if (!["FADING", "PAUSED"].includes(ai.current.engine.state)) {
+      ai.current.stop(); cancelFade(); setAiActive(false); setSleepView("STOPPED");
+    }
+  }, [snapshot.playing, manualSeekRevision]);
   useEffect(() => {
     if (
       snapshot.durationMs &&
@@ -1203,6 +1056,8 @@ function PlayerSheet({
   const artworkInset = artworkSize - 24;
   const compactPlayer = viewportHeight < 690 || fontScale > 1.2;
   let setTimer = (minutes: number) => {
+    cancelFade(); ai.current?.stop(); setAiActive(false); setSleepView("STOPPED");
+    setSleepRecovery(null);
     timer.current?.start({ kind: "minutes", minutes });
     setNotice(`Sleep Timer set for ${minutes} minutes.`);
   };
@@ -1220,16 +1075,20 @@ function PlayerSheet({
   let startAi = () => {
     if (!snapshot.playing) {
       setNotice("Start playback before activating AI Sleep.");
+      setSleepView("ERROR");
       return;
     }
     let session;
     try {
-      session = ai.current?.start(snapshot.positionMs);
+      timer.current?.cancel(); setTimerRemaining(null);
+      session = ai.current?.start(snapshot.positionMs, sleepSource);
     } catch {
       setNotice("Sleep preferences are loading. Please try again.");
+      setSleepView("ERROR");
       return;
     }
     setAiActive(true);
+    setSleepView("SETTLING"); setSleepRecovery(null);
     setEarliestPauseAt(session?.earliestPauseAt || null);
     setNotice("AI Sleep active. Listening continues.");
     feedback.success();
@@ -1237,7 +1096,9 @@ function PlayerSheet({
   let stopAi = () => {
     cancelFade();
     ai.current?.stop();
+    setSleepRecovery(null);
     setAiActive(false);
+    setSleepView("STOPPED");
     setEarliestPauseAt(null);
     setNotice("AI Sleep stopped. Playback continues.");
     feedback.light();
@@ -1245,7 +1106,7 @@ function PlayerSheet({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={reducedMotion ? "none" : "slide"}
       presentationStyle="pageSheet"
       onRequestClose={() => (panel ? setPanel(null) : onClose())}
     >
@@ -1298,7 +1159,7 @@ function PlayerSheet({
               <Text style={[styles.eyebrow, { color: p.accent }]}>
                 NOW PLAYING
               </Text>
-              <View style={styles.roundButton} />
+              <View accessible={false} style={{ width: 44, height: 44 }} />
             </View>
             <ScrollView
               keyboardShouldPersistTaps="handled"
@@ -1487,7 +1348,7 @@ function PlayerSheet({
               >
                 <Text style={[styles.sleepEntryTitle, { color: p.text }]}>
                   <Ionicons name="moon-outline" size={18} color={p.text} />{" "}
-                  Sleep Timer
+                  Sleep Timer{timerRemaining ? ` · ${timerRemaining}` : ""}
                 </Text>
                 <Text style={[styles.small, { color: p.muted }]}>
                   Set a pause
@@ -1538,6 +1399,8 @@ function PlayerSheet({
                             "Your timing preference is saved on this device.",
                           );
                           setSleepRecovery(null);
+                          ai.current?.stop();
+                          setSleepView("STOPPED");
                         }}
                       />
                     ))}
@@ -1556,10 +1419,10 @@ function PlayerSheet({
                 <Text style={[styles.aiSleepEntryCopy, { color: p.onAccent }]}>
                   {aiActive
                     ? "Keep listening"
-                    : "Fall asleep. We’ll take care of the rest."}
+                    : "A gentler end to your listening."}
                 </Text>
               </Pressable>
-              {notice ? (
+              {notice && !aiScreenOpen ? (
                 <Text style={[styles.notice, { color: p.muted }]}>
                   {notice}
                 </Text>
@@ -1570,9 +1433,12 @@ function PlayerSheet({
         <TimerSheet
           visible={timerOpen}
           p={p}
+          remaining={timerRemaining}
+          onCancel={() => { timer.current?.cancel(); setTimerRemaining(null); setNotice("Sleep Timer cancelled."); }}
           onClose={() => setTimerOpen(false)}
           onSet={(value) => {
             if (value === "end") {
+              stopAi();
               timer.current?.start({ kind: "end_of_episode" });
               setNotice("Sleep Timer will pause at the end of this episode.");
             } else setTimer(value);
@@ -1582,8 +1448,10 @@ function PlayerSheet({
           visible={aiScreenOpen}
           p={p}
           onClose={() => setAiScreenOpen(false)}
-          active={aiActive}
-          earliestPauseAt={earliestPauseAt}
+          state={sleepView}
+          session={ai.current?.session || null}
+          message={notice}
+          onResume={() => { stopAi(); void play(source); }}
           onStart={startAi}
           onStop={stopAi}
           onExtend={extend}
@@ -2725,6 +2593,8 @@ function AppContent({
           <Pressable
             onPress={() => selectTab("Listen")}
             accessibilityRole="button"
+            accessibilityLabel="Radio Star home"
+            style={{ flex: 1, minHeight: 44, justifyContent: "center", marginRight: 10 }}
           >
             <Text style={[styles.wordmark, { color: p.text }]}>
               RADIO <Text style={{ color: p.accent }}>✦</Text> STAR
@@ -2735,13 +2605,14 @@ function AppContent({
               accessibilityRole="switch"
               accessibilityLabel="Toggle day and night appearance"
               accessibilityState={{ checked: state.nightMode }}
+              aria-checked={state.nightMode}
               onPress={() => {
                 feedback.selection();
                 setState((current) => ({ ...current, nightMode: !current.nightMode }));
               }}
               style={[styles.appearanceButton, { backgroundColor: p.wash, borderColor: p.line }]}
             >
-              <Ionicons name={state.nightMode ? "sunny-outline" : "moon-outline"} size={19} color={p.text} />
+              <AppearanceIcon night={state.nightMode} color={p.text} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -2835,14 +2706,16 @@ function AppContent({
               [
                 { key: "Listen", icon: "headset-outline" },
                 { key: "Following", icon: "heart-outline" },
-                { key: "Search", icon: "search-outline" },
+                { key: "Search", icon: "compass-outline" },
                 { key: "Library", icon: "bookmark-outline" },
               ] as const
             ).map((tab) => (
               <Pressable
                 key={tab.key}
                 accessibilityRole="tab"
+                accessibilityLabel={tab.key === "Search" ? "Discover" : tab.key}
                 accessibilityState={{ selected: currentTab === tab.key }}
+                aria-selected={currentTab === tab.key}
                 onPress={() => {
                   feedback.selection();
                   selectTab(tab.key);
@@ -2863,7 +2736,7 @@ function AppContent({
                     { color: currentTab === tab.key ? p.text : p.muted },
                   ]}
                 >
-                  {tab.key}
+                  {tab.key === "Search" ? "Discover" : tab.key}
                 </Text>
               </Pressable>
             ))}
@@ -2888,6 +2761,12 @@ function AppContent({
       ) : null}
     </SafeAreaView>
   );
+}
+function AppearanceIcon({ night, color }: { night: boolean; color: string }) {
+  const [ready] = useFonts(Ionicons.font);
+  return ready
+    ? <Ionicons name={night ? "sunny-outline" : "moon-outline"} size={19} color={color} />
+    : <Text style={{ color, fontSize: 20 }}>{night ? "☀" : "☾"}</Text>;
 }
 export default function App() {
   const [checkingPilot, setCheckingPilot] = useState(true),
@@ -3015,7 +2894,8 @@ const styles = StyleSheet.create({
     opacity: 0.12,
   },
   topbar: {
-    height: 62,
+    minHeight: 62,
+    paddingVertical: 8,
     paddingHorizontal: 21,
     flexDirection: "row",
     alignItems: "center",
@@ -3023,18 +2903,18 @@ const styles = StyleSheet.create({
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 9 },
   appearanceButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   wordmark: { fontSize: 18, fontWeight: "800", letterSpacing: -0.8 },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -3522,10 +3402,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   timerSheet: {
+    maxHeight: "90%",
     borderTopWidth: 1,
     borderRadius: 28,
-    padding: 21,
-    paddingBottom: 28,
     width: "100%",
     maxWidth: 760,
     alignSelf: "center",

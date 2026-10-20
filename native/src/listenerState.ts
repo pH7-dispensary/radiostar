@@ -22,6 +22,7 @@ export type ListenerState = {
   saved: StoredEpisode[];
   history: StoredEpisode[];
   historyEnabled: boolean;
+  recentSearches?: string[];
   feedEpisodes: Record<string, StoredEpisode[]>;
   followIntelligence: Record<string, FollowPreparation>;
   nightMode: boolean;
@@ -35,6 +36,7 @@ export const emptyListenerState = (): ListenerState => ({
   saved: [],
   history: [],
   historyEnabled: true,
+  recentSearches: [],
   feedEpisodes: {},
   followIntelligence: {},
   // Light is the intentional first-run appearance. A persisted boolean remains
@@ -56,6 +58,7 @@ export async function loadListenerState(): Promise<ListenerState> {
       following: Array.isArray(value.following) ? value.following : [],
       saved: Array.isArray(value.saved) ? value.saved : [],
       history: Array.isArray(value.history) ? value.history : [],
+      recentSearches: value.historyEnabled !== false && Array.isArray(value.recentSearches) ? value.recentSearches.filter((item: unknown) => typeof item === "string").slice(0, 6) : [],
       moments: Array.isArray(value.moments) ? value.moments : [],
       feedEpisodes:
         value.feedEpisodes && typeof value.feedEpisodes === "object"

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingState } from "./LoadingState";
 import {
   AccessibilityInfo,
@@ -28,6 +28,12 @@ import {
 } from "./listenerState";
 import type { StarTheme } from "./design";
 import { updateFollow } from "./listenerApi";
+import { PodcastArtwork } from "./PodcastArtwork";
+import {
+  catalogueCategories,
+  recentFollowedEpisodes,
+  rememberSearch,
+} from "./discoverData.mjs";
 
 function Segments({
   items,
@@ -73,6 +79,7 @@ function Segments({
           key={item}
           accessibilityRole="tab"
           accessibilityState={{ selected: value === item }}
+          aria-selected={value === item}
           onPress={() => {
             feedback.selection();
             onChange(item);
@@ -142,7 +149,32 @@ export function SearchScreen({
     [error, setError] = useState(""),
     [submitted, setSubmitted] = useState(false),
     [focused, setFocused] = useState(false),
-    [reduced, setReduced] = useState(false);
+    [reduced, setReduced] = useState(true);
+  const [category, setCategory] = useState<string | null>(null);
+  const allDiscovery = useMemo(
+    () => [
+      ...new Map(
+        [...state.following, ...discovery].map((show) => [show.id, show]),
+      ).values(),
+    ],
+    [state.following, discovery],
+  );
+  const categories = catalogueCategories(allDiscovery);
+  useEffect(() => {
+    if (category && !categories.includes(category)) setCategory(null);
+  }, [category, categories.join("|")]);
+  const recentEpisodes = useMemo(
+    () => recentFollowedEpisodes(state),
+    [state.following, state.feedEpisodes],
+  );
+  const episodeMatches =
+    mode === "Podcasts" && submitted
+      ? recentEpisodes.filter((episode) =>
+          `${episode.title} ${episode.showName}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+        )
+      : [];
   const requestId = useRef(0),
     input = useRef<TextInput>(null),
     reveal = useRef(new Animated.Value(1)).current;
@@ -188,7 +220,20 @@ export function SearchScreen({
     setAnswer(null);
     setError("");
   };
-  const submit = async (text = query, nextMode = mode) => {
+  useEffect(() => {
+    if (!active || !focused || mode !== "Podcasts" || query.trim().length < 2)
+      return;
+    const timeout = setTimeout(
+      () => void submit(query, "Podcasts", false),
+      400,
+    );
+    return () => clearTimeout(timeout);
+  }, [query, mode, active, scope, focused]);
+  useEffect(() => {
+    if (!state.historyEnabled && state.recentSearches?.length)
+      setState((current) => ({ ...current, recentSearches: [] }));
+  }, [state.historyEnabled, state.recentSearches?.length]);
+  const submit = async (text = query, nextMode = mode, explicit = true) => {
     if (text.trim().length < 2) return;
     const id = ++requestId.current;
     setQuery(text);
@@ -198,7 +243,17 @@ export function SearchScreen({
     setSubmitted(true);
     setAnswer(null);
     setShows([]);
-    input.current?.blur();
+    if (explicit) {
+      input.current?.blur();
+      setState((current) => ({
+        ...current,
+        recentSearches: rememberSearch(
+          current.recentSearches || [],
+          text,
+          current.historyEnabled,
+        ),
+      }));
+    }
     try {
       if (nextMode === "Podcasts") {
         const result =
@@ -209,7 +264,7 @@ export function SearchScreen({
                   .includes(text.toLowerCase()),
               )
             : (await searchCatalogue(text)).results;
-        if (id === requestId.current) setShows(result);
+        if (id === requestId.current) setShows(result.slice(0, 20));
       } else {
         const result = await searchConversations(
           text,
@@ -248,15 +303,11 @@ export function SearchScreen({
         accessibilityLabel={`Open ${show.name}`}
         onPress={() => onOpen(show)}
       >
-        {show.art ? (
-          <Image
-            source={{ uri: show.art }}
-            accessibilityLabel={`${show.name} artwork`}
-            style={s.art}
-          />
-        ) : (
-          <View style={[s.art, { backgroundColor: p.wash }]} />
-        )}
+        <PodcastArtwork
+          uri={show.art}
+          label={`${show.name} artwork`}
+          style={s.art}
+        />
         <Text numberOfLines={2} style={[s.showTitle, { color: p.text }]}>
           {show.name}
         </Text>
@@ -274,12 +325,18 @@ export function SearchScreen({
           feedback.selection();
           const following = state.following.some((item) => item.id === show.id);
           setState((v) => ({ ...v, following: toggleById(v.following, show) }));
-          if (show.feedUrl) void updateFollow(show.feedUrl, !following)
-            .then((result) => setState((v) => ({ ...v, followIntelligence: {
-              ...v.followIntelligence,
-              [show.feedUrl!]: result.processing || { state: "DISABLED" },
-            } })))
-            .catch(() => {});
+          if (show.feedUrl)
+            void updateFollow(show.feedUrl, !following)
+              .then((result) =>
+                setState((v) => ({
+                  ...v,
+                  followIntelligence: {
+                    ...v.followIntelligence,
+                    [show.feedUrl!]: result.processing || { state: "DISABLED" },
+                  },
+                })),
+              )
+              .catch(() => {});
         }}
         style={[s.follow, { borderColor: p.line }]}
       >
@@ -295,33 +352,18 @@ export function SearchScreen({
     <View style={s.container}>
       <View style={s.hero}>
         <Text style={[s.eyebrow, { color: p.accent2 }]}>
-          A WORLD OF CONVERSATIONS
+          YOUR NEXT GOOD LISTEN
         </Text>
         <Text
           accessibilityRole="header"
           style={[s.heroTitle, { color: p.text }]}
         >
-          Search anything{`\n`}ever said
-          <Text style={{ color: p.accent2 }}>.</Text>
+          Discover
         </Text>
         <Text style={[s.heroCopy, { color: p.muted }]}>
-          Find ideas, opinions and moments hidden inside the world's
-          conversations.
+          Find a new favourite. Follow an idea.
         </Text>
       </View>
-      <Segments
-        items={["My Podcasts", "All Podcasts"]}
-        value={scope}
-        onChange={(v) => {
-          setScope(v);
-          requestId.current++;
-          setSubmitted(false);
-          setAnswer(null);
-          setBusy(false);
-        }}
-        p={p}
-        reduced={reduced}
-      />
       <View
         style={[
           s.inputFrame,
@@ -345,7 +387,14 @@ export function SearchScreen({
                 : "Ask about your podcasts"
             }
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              requestId.current++;
+              setQuery(text);
+              setBusy(false);
+              setSubmitted(false);
+              setAnswer(null);
+              setError("");
+            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onSubmitEditing={() => void submit()}
@@ -372,13 +421,27 @@ export function SearchScreen({
             ]}
           >
             {busy ? (
-              <ActivityIndicator color={p.bg} />
+              <ActivityIndicator color={p.onAccent} />
             ) : (
-              <Ionicons name="arrow-up" size={20} color={p.bg} />
+              <Ionicons name="arrow-up" size={20} color={p.onAccent} />
             )}
           </Pressable>
         </LinearGradient>
       </View>
+      <Segments
+        items={["My Podcasts", "All Podcasts"]}
+        value={scope}
+        onChange={(value) => {
+          requestId.current++;
+          setScope(value);
+          setSubmitted(false);
+          setAnswer(null);
+          setBusy(false);
+          setError("");
+        }}
+        p={p}
+        reduced={reduced}
+      />
       <Segments
         items={["Conversations", "Podcasts", "Moments"]}
         value={mode}
@@ -386,34 +449,6 @@ export function SearchScreen({
         p={p}
         reduced={reduced}
       />
-      <View style={s.promises}>
-        {[
-          ["ASK", "Compare what people actually said.", "Conversations"],
-          ["DISCOVER", "Find any podcast or episode.", "Podcasts"],
-          ["JUMP", "Go straight to the exact moment.", "Moments"],
-        ].map(([title, copy, target]) => (
-          <Pressable
-            key={title}
-            accessibilityRole="button"
-            accessibilityLabel={`${title}. ${copy}`}
-            onPress={() => changeMode(target)}
-            style={[
-              s.promise,
-              { borderTopColor: mode === target ? p.accent2 : p.line },
-            ]}
-          >
-            <Text
-              style={[
-                s.eyebrow,
-                { color: mode === target ? p.accent2 : p.muted },
-              ]}
-            >
-              {title}
-            </Text>
-            <Text style={[s.promiseCopy, { color: p.muted }]}>{copy}</Text>
-          </Pressable>
-        ))}
-      </View>
       {mode !== "Podcasts" && (
         <Text style={[s.coverage, { color: p.muted }]}>
           Conversation search covers analysed episodes only. Catalogue discovery
@@ -516,6 +551,7 @@ export function SearchScreen({
                 <View style={{ gap: 8 }}>
                   <Pressable
                     accessibilityRole="button"
+                    accessibilityLabel={`Play from ${Math.floor(match.startMs / 60000)}:${String(Math.floor(match.startMs / 1000) % 60).padStart(2, "0")}`}
                     onPress={() =>
                       onPlay({
                         ...match.episode,
@@ -598,30 +634,185 @@ export function SearchScreen({
           >
             {shows.map(showCard)}
           </ScrollView>
+          {episodeMatches.length > 0 && (
+            <View style={{ gap: 12 }}>
+              <Text style={[s.sectionTitle, { color: p.text }]}>
+                Episodes from followed shows
+              </Text>
+              {episodeMatches.map((episode) => (
+                <Pressable
+                  key={`${episode.feedUrl}:${episode.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play ${episode.title}`}
+                  onPress={() => onPlay(episode)}
+                  style={[s.episode, { borderColor: p.line }]}
+                >
+                  <PodcastArtwork
+                    uri={episode.artworkUrl}
+                    style={s.sourceArt}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.showTitle, { color: p.text }]}>
+                      {episode.title}
+                    </Text>
+                    <Text style={[s.caption, { color: p.muted }]}>
+                      {episode.showName}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="play-circle-outline"
+                    size={28}
+                    color={p.accent2}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
       )}
       {!busy && !submitted && (
         <>
-          <View style={s.sectionHeading}>
-            <Text style={[s.sectionTitle, { color: p.text }]}>
-              Search the whole podcast world
-            </Text>
-            <Text style={[s.caption, { color: p.muted }]}>
-              Shows · guests · episodes · topics
-            </Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.showStrip}
-          >
-            {discovery.map(showCard)}
-          </ScrollView>
-          {!discovery.length && (
+          {state.historyEnabled && Boolean(state.recentSearches?.length) && (
+            <View style={{ gap: 8 }}>
+              <View style={s.historyHeading}>
+                <Text style={[s.sectionTitle, { color: p.text, flex: 1 }]}>
+                  Continue exploring
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear recent searches"
+                  onPress={() =>
+                    setState((current) => ({ ...current, recentSearches: [] }))
+                  }
+                  style={[s.retry, { minWidth: 44 }]}
+                >
+                  <Text style={{ color: p.accent2 }}>Clear</Text>
+                </Pressable>
+              </View>
+              {state.recentSearches!.slice(0, 3).map((text) => (
+                <Pressable
+                  key={text}
+                  accessibilityRole="button"
+                  onPress={() => void submit(text)}
+                  style={[s.episode, { borderColor: p.line }]}
+                >
+                  <Ionicons name="time-outline" size={18} color={p.muted} />
+                  <Text style={[s.body, { color: p.text, flex: 1 }]}>
+                    {text}
+                  </Text>
+                  <Ionicons
+                    name="arrow-up-outline"
+                    size={16}
+                    color={p.accent2}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
+          {categories.length > 0 && (
+            <View style={{ gap: 12 }}>
+              <Text style={[s.sectionTitle, { color: p.text }]}>
+                Categories in this collection
+              </Text>
+              <View style={s.categoryGrid}>
+                {categories.map((item) => (
+                  <Pressable
+                    key={item}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: category === item }}
+                    onPress={() => setCategory(category === item ? null : item)}
+                    style={[
+                      s.categoryChip,
+                      {
+                        backgroundColor: category === item ? p.wash : p.surface,
+                        borderColor: p.line,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.followText, { color: p.text }]}>
+                      {item}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+          {allDiscovery.length > 0 && (
+            <>
+              <View style={s.sectionHeading}>
+                <Text style={[s.sectionTitle, { color: p.text }]}>
+                  {category || "Explore podcasts"}
+                </Text>
+                <Text style={[s.caption, { color: p.muted }]}>
+                  From the catalogue · not a popularity ranking
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.showStrip}
+              >
+                {(category
+                  ? allDiscovery.filter(
+                      (show) => show.topic?.trim() === category,
+                    )
+                  : allDiscovery
+                )
+                  .slice(0, 12)
+                  .map(showCard)}
+              </ScrollView>
+            </>
+          )}
+          {!allDiscovery.length && (
             <Text style={[s.coverage, { color: p.muted }]}>
               Search for a favourite show to start exploring.
             </Text>
           )}
+          {recentEpisodes.length > 0 && (
+            <View style={{ gap: 12 }}>
+              <Text style={[s.sectionTitle, { color: p.text }]}>
+                New from your follows
+              </Text>
+              {recentEpisodes.slice(0, 5).map((episode) => (
+                <Pressable
+                  key={`${episode.feedUrl}:${episode.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play ${episode.title}`}
+                  onPress={() => onPlay(episode)}
+                  style={[s.episode, { borderColor: p.line }]}
+                >
+                  <PodcastArtwork
+                    uri={episode.artworkUrl}
+                    label={`${episode.showName} artwork`}
+                    style={s.sourceArt}
+                  />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.showTitle, { color: p.text }]}
+                    >
+                      {episode.title}
+                    </Text>
+                    <Text style={[s.caption, { color: p.muted }]}>
+                      {episode.showName} ·{" "}
+                      {new Date(episode.publishedAt!).toLocaleDateString(
+                        undefined,
+                        { month: "short", day: "numeric" },
+                      )}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="play-circle-outline"
+                    size={28}
+                    color={p.accent2}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <Text style={[s.sectionTitle, { color: p.text }]}>
+            Explore conversations
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -718,13 +909,29 @@ const s = StyleSheet.create({
   hero: { paddingTop: 8, paddingBottom: 8 },
   eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5 },
   heroTitle: {
-    fontSize: 39,
-    lineHeight: 43,
-    fontWeight: "800",
-    letterSpacing: -1.6,
-    marginTop: 16,
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: "700",
+    letterSpacing: -1,
+    marginTop: 8,
   },
-  heroCopy: { fontSize: 14, lineHeight: 21, marginTop: 13, maxWidth: 335 },
+  heroCopy: { fontSize: 14, lineHeight: 21, marginTop: 6, maxWidth: 335 },
+  episode: {
+    minHeight: 60,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  categoryChip: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
   segment: {
     flexDirection: "row",
     position: "relative",
@@ -777,6 +984,12 @@ const s = StyleSheet.create({
   promiseCopy: { fontSize: 11, lineHeight: 16, marginTop: 7 },
   coverage: { fontSize: 11, lineHeight: 17 },
   sectionHeading: { gap: 5, marginTop: 17 },
+  historyHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 8,
+  },
   sectionTitle: { fontSize: 19, fontWeight: "700", letterSpacing: -0.4 },
   caption: { fontSize: 11, lineHeight: 17 },
   showStrip: { gap: 12, paddingVertical: 3, paddingRight: 12 },

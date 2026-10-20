@@ -39,7 +39,7 @@ try {
     await page.screenshot({path:`.starcast/qa/profile-web-${width}.png`,fullPage:true});
     await page.getByRole("switch",{name:"Night mode"}).click();
     await page.screenshot({path:`.starcast/qa/profile-light-web-${width}.png`,fullPage:true});
-    for (const name of ["Listen", "Following", "Search", "Library"]) {
+    for (const name of ["Listen", "Following", "Discover", "Library"]) {
       await page.getByRole("tab",{name}).click();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
       await page.screenshot({path:`.starcast/qa/${name.toLowerCase()}-web-${width}.png`,fullPage:true});

@@ -5,8 +5,8 @@ import { createServer } from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 const { chromium } = await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || "playwright");
-const root = resolve(".starcast/phase4-final-export");
-const output = resolve(".starcast/phase4-visual");
+const root = resolve(process.env.RADIOSTAR_EXPORT_DIR || ".starcast/phase4-final-export");
+const output = resolve(process.env.RADIOSTAR_VISUAL_DIR || ".starcast/phase4-visual");
 await mkdir(output, { recursive: true });
 const server = createServer(async (req, res) => {
   const path = resolve(root, "." + new URL(req.url, "http://localhost").pathname);
