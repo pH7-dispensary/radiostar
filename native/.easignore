@@ -1,0 +1,11 @@
+# Native build inputs are source and approved assets only. Keep local tooling,
+# developer credentials and generated exports out of the EAS upload archive.
+node_modules/
+.expo/
+.env
+dist/
+dist-testflight/
+web-dist/
+google-cloud-sdk/
+google-cloud-cli-darwin-arm.tar.gz
+*.ipa

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { LocalStore } from "./persistence.mjs";
 import { ListenerService } from "./listener-service.mjs";
 
@@ -37,4 +38,7 @@ const env = { PATH: process.env.PATH, EAS_BUILD_PROFILE: "testflight" };
 assert.equal(spawnSync(process.execPath, ["native/scripts/assert-release-env.mjs"], { env }).status, 0);
 for (const key of ["EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN", "EXPO_PUBLIC_ALLOW_LEGACY_TOKEN", "EXPO_PUBLIC_ALLOW_INSECURE_LOCAL_API", "EXPO_PUBLIC_API_BASE_URL"])
   assert.notEqual(spawnSync(process.execPath, ["native/scripts/assert-release-env.mjs"], { env: { ...env, [key]: "unsafe-test-value" } }).status, 0, key);
+const easIgnore = readFileSync("native/.easignore", "utf8");
+for (const entry of [".env", "node_modules/", "google-cloud-sdk/", "google-cloud-cli-darwin-arm.tar.gz", "dist-testflight/"])
+  assert.match(easIgnore, new RegExp(`^${entry.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"), `${entry} must stay out of the EAS upload archive`);
 console.log("Deletion, revocation, reward preservation and release environment checks passed.");
