@@ -176,6 +176,7 @@ export function createStarCastServer({
   resolveEpisode,
   client,
   fetchTranscript,
+  fetchFeed,
   audioFactory,
 } = {}) {
   const cache = new Map(),
@@ -258,7 +259,12 @@ export function createStarCastServer({
       throw Error("A public HTTPS publisher feed is required.");
     return cached(
       "feed:" + feed,
-      async () => (await fetchPublicText(feed, 8_000_000)).text,
+      async () => {
+        const value = fetchFeed
+          ? await fetchFeed(feed)
+          : (await fetchPublicText(feed, 8_000_000)).text;
+        return String(value || "");
+      },
       600_000,
     );
   }
@@ -439,6 +445,158 @@ export function createStarCastServer({
         return { ...channel, episodeCount: channel.episodes.length, rights: rights.resolve(channel.feedUrl), policy: intelligencePolicy.effective(channel.feedUrl), effectivePermissions: intelligencePolicy.features(channel.feedUrl), processingHistory: history, episodes: channel.episodes.map((episode) => ({ ...episode, rights: rights.resolve(channel.feedUrl, episode.episodeId), policy: intelligencePolicy.effective(channel.feedUrl, episode.episodeId), effectivePermissions: intelligencePolicy.features(channel.feedUrl, episode.episodeId) })) };
       }).sort((a, b) => a.podcast.localeCompare(b.podcast)),
     };
+  };
+  // The operational catalogue deliberately starts with records that Radio Star
+  // already knows: follows, rights work, processing, and scoped policies.  RSS
+  // remains the source for display metadata; no third-party catalogue claim is
+  // presented as a listener's collection.
+  const canonicalFeedId = (feedUrl) =>
+    createHash("sha256").update(String(feedUrl)).digest("hex").slice(0, 16);
+  const knownPodcastFeeds = () => {
+    const feeds = new Map();
+    const add = (feedUrl, metadata = {}) => {
+      if (!publicUrl(feedUrl)) return;
+      const current = feeds.get(feedUrl) || { feedUrl, metadata: {} };
+      feeds.set(feedUrl, { ...current, metadata: { ...current.metadata, ...Object.fromEntries(Object.entries(metadata).filter(([, value]) => value != null && value !== "")) } });
+    };
+    for (const [, follow] of store.all("follow")) add(follow.feedUrl, { source: "listener-follow" });
+    for (const record of rights.list()) add(record.feedUrl, { title: record.podcast, publisher: record.publisher, source: "rights" });
+    for (const [, job] of store.all("intelligence")) add(job.feedUrl, { title: job.episode?.showName, publisher: job.episode?.publisher, artworkUrl: job.episode?.artworkUrl, source: "processing" });
+    for (const policy of intelligencePolicy.records()) add(policy.feedUrl, { source: "intelligence-policy" });
+    for (const [, approval] of store.all("processing-approval")) add(approval.feedUrl, { title: approval.podcast, source: "processing-approval" });
+    return [...feeds.values()];
+  };
+  const followedCount = (feedUrl) => store.all("follow").filter(([, value]) => value.feedUrl === feedUrl).length;
+  const jobsForEpisode = (feedUrl, episodeId) => store.all("intelligence")
+    .map(([, job]) => job)
+    .filter((job) => job.feedUrl === feedUrl && (job.episodeId === episodeId || job.episode?.id === episodeId));
+  const episodeOperationsState = (feedUrl, episode) => {
+    const job = pipeline.status(feedUrl, episode.id) || jobsForEpisode(feedUrl, episode.id)
+      .sort((a, b) => Date.parse(b.completedAt || b.startedAt || "") - Date.parse(a.completedAt || a.startedAt || ""))[0] || null;
+    const publicJob = job ? publicIntelligence(job) : null;
+    const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id });
+    const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id });
+    const search = rights.evaluate({ feature: "conversation-search", feedUrl, episodeId: episode.id });
+    const permissions = rights.resolve(feedUrl, episode.id);
+    const policy = intelligencePolicy.effective(feedUrl, episode.id);
+    const operational = intelligencePolicy.features(feedUrl, episode.id);
+    const active = new Set(["QUEUED", "DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING", "PROCESSING", "PARTIAL_READY"]);
+    let state = "NOT_PREPARED", reason = "This episode has not been prepared yet.", code = "NOT_PREPARED";
+    if (!processing.allowed || !display.allowed) [state, reason, code] = ["UNAVAILABLE", !processing.allowed ? processing.reason : display.reason, !processing.allowed ? processing.code : display.code];
+    else if (!operational.intelligence) [state, reason, code] = ["UNAVAILABLE", "New intelligence processing is paused by the podcast intelligence policy.", "INTELLIGENCE_POLICY_HIGH"];
+    else if (publicJob?.state === "READY") [state, reason, code] = ["READY", "Authorised intelligence is ready.", "READY"];
+    else if (publicJob?.state === "FAILED") [state, reason, code] = ["FAILED", publicJob.reason || "The latest preparation attempt failed.", publicJob.code || "ANALYSIS_FAILED"];
+    else if (publicJob?.state === "BLOCKED") [state, reason, code] = ["UNAVAILABLE", publicJob.reason || "Preparation is currently unavailable.", publicJob.code || "PROCESSING_BLOCKED"];
+    else if (publicJob?.state === "QUEUED") [state, reason, code] = ["QUEUED", "Preparation is waiting for the processing worker.", "QUEUED"];
+    else if (publicJob && active.has(publicJob.state)) [state, reason, code] = ["PREPARING", "Preparation is in progress.", publicJob.phase || publicJob.state];
+    const ready = state === "READY";
+    const preparing = state === "PREPARING" || state === "QUEUED";
+    const failed = state === "FAILED";
+    const statusFor = (allowed, available) => available ? "READY" : !allowed ? "UNAVAILABLE" : preparing ? state : "NOT_PREPARED";
+    const derivedAvailable = ready && Boolean(job?.brief || job?.chapters || job?.topics || job?.transcript?.segments?.length);
+    const intelligenceReason = !processing.allowed ? processing.reason : !display.allowed ? display.reason : !operational.intelligence ? "Core intelligence is paused by the podcast intelligence policy." : null;
+    const captionDecision = rights.evaluate({ feature: "captions", feedUrl, episodeId: episode.id });
+    const dubbingDecision = rights.evaluate({ feature: "dubbing-audio", feedUrl, episodeId: episode.id });
+    const features = [
+      ["Episode brief", statusFor(processing.allowed && display.allowed && operational.intelligence, Boolean(job?.brief)), intelligenceReason],
+      ["Smart chapters", statusFor(processing.allowed && display.allowed && operational.chapters, Boolean(job?.chapters?.length)), intelligenceReason || (!operational.chapters ? "Chapters are paused by the podcast intelligence policy." : null)],
+      ["Topics", statusFor(processing.allowed && display.allowed && operational.topics, Boolean(job?.topics?.length || job?.brief?.topics?.length)), intelligenceReason || (!operational.topics ? "Topics are paused by the podcast intelligence policy." : null)],
+      ["Find a moment", statusFor(processing.allowed && display.allowed && operational.moments, Boolean(job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs)))), intelligenceReason || (!operational.moments ? "Moment search is paused by the podcast intelligence policy." : null)],
+      ["Conversation search", statusFor(search.allowed && operational.conversationSearch, Boolean(job?.transcript?.segments?.length)), !search.allowed ? search.reason : !operational.conversationSearch ? "Conversation search is paused by the podcast intelligence policy." : null],
+      ["Ad detection", statusFor(processing.allowed && display.allowed && operational.adCandidates, false), intelligenceReason || "Candidate detection never enables automatic skipping."],
+      ["Captions", statusFor(captionDecision.allowed && operational.captions, false), !captionDecision.allowed ? captionDecision.reason : !operational.captions ? "Captions are paused by the podcast intelligence policy." : "Caption delivery has its own rights and policy gate."],
+      ["Private Translate", statusFor(dubbingDecision.allowed && operational.dubbing, false), !dubbingDecision.allowed ? dubbingDecision.reason : !operational.dubbing ? "Private Translate is paused by the podcast intelligence policy." : "Private Translate remains separately authorised and beta-only."],
+    ].map(([name, featureState, detail]) => ({ name, state: featureState, reason: detail || (featureState === "READY" ? "Available from the authorised processing record." : null) }));
+    const action = ready ? { type: "VIEW_RESULTS", label: "View intelligence" }
+      : preparing ? { type: "VIEW_PROCESSING", label: "View processing" }
+      : failed && publicJob?.retryable && processing.allowed && display.allowed ? { type: "RETRY", label: "Retry eligible failure" }
+      : state === "NOT_PREPARED" ? { type: "PREPARE", label: "Prepare intelligence" }
+      : { type: "REVIEW", label: "Review rights and policy" };
+    return {
+      ...episode,
+      canonicalEpisodeId: `${canonicalFeedId(feedUrl)}:${createHash("sha256").update(String(episode.id)).digest("hex").slice(0, 16)}`,
+      state, code, reason, action, job: publicJob, policy, rights: permissions,
+      rightsDecisions: { processing, display, search }, features,
+      transcript: job?.provenance ? { ...job.provenance, readiness: job.readiness || null, quality: job.quality || null } : { publisherReference: episode.hasPublisherTranscript === true, availability: episode.hasPublisherTranscript ? "PUBLISHER_REFERENCE" : "NOT_DISCOVERED" },
+      hasUsableIntelligence: derivedAvailable,
+    };
+  };
+  const readPodcast = async (entry) => {
+    const feedUrl = entry.feedUrl;
+    try {
+      const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
+      const title = parsed.title || entry.metadata.title || "Untitled podcast";
+      const episodes = parsed.episodes.map((episode) => episodeOperationsState(feedUrl, episode));
+      const counts = Object.fromEntries(["READY", "PREPARING", "QUEUED", "UNAVAILABLE", "FAILED", "NOT_PREPARED"].map((state) => [state, episodes.filter((episode) => episode.state === state).length]));
+      return {
+        feedUrl, canonicalFeedId: canonicalFeedId(feedUrl), title, publisher: parsed.publisher || entry.metadata.publisher || "Publisher unavailable", artworkUrl: parsed.art || entry.metadata.artworkUrl || null,
+        metadataStatus: "READY", episodes, counts, followerCount: followedCount(feedUrl), source: entry.metadata.source || "persisted-record",
+      };
+    } catch (error) {
+      const jobs = store.all("intelligence").map(([, job]) => job).filter((job) => job.feedUrl === feedUrl);
+      const metadata = entry.metadata || {};
+      return {
+        feedUrl, canonicalFeedId: canonicalFeedId(feedUrl), title: metadata.title || jobs[0]?.episode?.showName || "Podcast metadata unavailable", publisher: metadata.publisher || jobs[0]?.episode?.publisher || "Publisher unavailable", artworkUrl: metadata.artworkUrl || jobs[0]?.episode?.artworkUrl || null,
+        metadataStatus: "UNAVAILABLE", metadataReason: "The publisher feed could not be read right now.", episodes: [], counts: {}, followerCount: followedCount(feedUrl), source: metadata.source || "persisted-record",
+      };
+    }
+  };
+  const catalogueSort = (items, sort) => {
+    const copy = [...items];
+    if (sort === "latest") return copy.sort((a, b) => Math.max(...b.episodes.map((episode) => Date.parse(episode.publishedAt || "") || 0), 0) - Math.max(...a.episodes.map((episode) => Date.parse(episode.publishedAt || "") || 0), 0));
+    if (sort === "ready") return copy.sort((a, b) => (b.counts.READY || 0) - (a.counts.READY || 0) || a.title.localeCompare(b.title));
+    return copy.sort((a, b) => a.title.localeCompare(b.title));
+  };
+  const podcastCatalogue = async ({ query = "", page = 1, pageSize = 20, sort = "title" } = {}) => {
+    const safePage = Math.max(1, Math.floor(Number(page) || 1));
+    const safeSize = Math.max(1, Math.min(50, Math.floor(Number(pageSize) || 20)));
+    const models = await Promise.all(knownPodcastFeeds().map(readPodcast));
+    const needle = String(query || "").trim().toLowerCase();
+    const filtered = catalogueSort(models.filter((item) => !needle || [item.title, item.publisher, item.feedUrl, item.canonicalFeedId].join(" ").toLowerCase().includes(needle)), sort);
+    const start = (safePage - 1) * safeSize;
+    return { generatedAt: new Date().toISOString(), query: needle, sort, page: safePage, pageSize: safeSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / safeSize)), items: filtered.slice(start, start + safeSize).map(({ episodes, ...item }) => item) };
+  };
+  const podcastDetail = async (feedUrl, { episodeQuery = "", page = 1, pageSize = 20 } = {}) => {
+    const entry = knownPodcastFeeds().find((item) => item.feedUrl === feedUrl);
+    if (!entry) throw Error("This RSS source is not in the Radio Star operations catalogue.");
+    const podcast = await readPodcast(entry);
+    const needle = String(episodeQuery || "").trim().toLowerCase();
+    const matching = podcast.episodes.filter((episode) => !needle || [episode.title, episode.id, episode.canonicalEpisodeId].join(" ").toLowerCase().includes(needle));
+    const safePage = Math.max(1, Math.floor(Number(page) || 1));
+    const safeSize = Math.max(1, Math.min(50, Math.floor(Number(pageSize) || 20)));
+    const start = (safePage - 1) * safeSize;
+    return { ...podcast, futurePolicy: intelligencePolicy.effective(feedUrl), estimatedMedianProcessingMs: processingEstimate(), episodePage: { page: safePage, pageSize: safeSize, total: matching.length, totalPages: Math.max(1, Math.ceil(matching.length / safeSize)), items: matching.slice(start, start + safeSize) } };
+  };
+  const episodeDetail = async (feedUrl, episodeId) => {
+    const detail = await podcastDetail(feedUrl, { pageSize: 50 });
+    const episode = detail.episodes.find((candidate) => candidate.id === episodeId);
+    if (!episode) throw Error("This episode no longer appears in the publisher feed.");
+    const history = jobsForEpisode(feedUrl, episodeId).map((job) => publicIntelligence(job)).sort((a, b) => Date.parse(a.startedAt || "") - Date.parse(b.startedAt || ""));
+    const timeline = [{ at: episode.publishedAt || null, type: "PUBLISHER_METADATA", label: "Published in the current publisher feed." }];
+    for (const job of history) {
+      if (job.startedAt) timeline.push({ at: job.startedAt, type: "PROCESSING_REQUESTED", label: "Processing was requested.", state: job.state, jobId: job.jobId });
+      if (job.provenance?.acquiredAt) timeline.push({ at: job.provenance.acquiredAt, type: "TRANSCRIPT_ACQUIRED", label: "A transcript source was acquired.", state: job.state, jobId: job.jobId });
+      if (job.completedAt) timeline.push({ at: job.completedAt, type: "PROCESSING_COMPLETED", label: "Processing completed.", state: job.state, jobId: job.jobId });
+    }
+    return { podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId }, episode, processingHistory: history, timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)), estimatedMedianProcessingMs: processingEstimate() };
+  };
+  const policyImpact = async (input = {}) => {
+    if (!publicUrl(input.feedUrl)) throw Error("A valid podcast RSS URL is required.");
+    const tier = ["ZERO", "LOW", "MEDIUM", "HIGH"].includes(input.tier) ? input.tier : intelligencePolicy.effective(input.feedUrl, input.episodeId || "").tier;
+    const source = await readPodcast(knownPodcastFeeds().find((item) => item.feedUrl === input.feedUrl) || { feedUrl: input.feedUrl, metadata: {} });
+    const limit = Math.max(1, Math.min(3, Math.floor(Number(input.maxEpisodes) || 1)));
+    const candidates = (input.episodeId ? source.episodes.filter((episode) => episode.id === input.episodeId) : source.episodes).slice(0, limit);
+    return { tier, scope: input.episodeId ? "episode" : "podcast", maximumExistingEpisodes: limit, impacts: candidates.map((episode) => ({ episodeId: episode.id, title: episode.title, currentState: episode.state, wouldBePaused: tier === "HIGH", requiresRights: !episode.rightsDecisions.processing.allowed || !episode.rightsDecisions.display.allowed, estimatedAudioFallbackCostUsd: episode.rights.canTranscribeAudio && durationMs(episode.duration) ? Number((durationMs(episode.duration) / 1000 * 0.0001).toFixed(4)) : null })), note: "This is a policy preview. It does not queue work, grant rights, or reserve budget." };
+  };
+  const prepareEpisode = async (input, actor) => {
+    if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId) throw Error("Choose a valid publisher episode.");
+    const detail = await episodeDetail(input.feedUrl, input.episodeId);
+    const current = detail.episode;
+    if (!["PREPARE", "RETRY"].includes(current.action.type)) throw Error(current.reason || "This episode is not eligible for preparation.");
+    const status = await pipeline.request({ feedUrl: input.feedUrl, episodeId: input.episodeId, retry: current.action.type === "RETRY", allowAudio: false, trigger: "admin" });
+    rights.audit("admin-episode-processing-requested", `${input.feedUrl}:${input.episodeId}`, actor.id, { jobId: status.jobId || null, state: status.state, audio: false });
+    adminService.appendAudit({ actor, action: "admin-episode-processing-requested", resource: `${input.feedUrl}:${input.episodeId}`, newState: { state: status.state, jobId: status.jobId || null }, reason: "Explicit operational request; audio transcription remains off.", outcome: "ALLOWED" });
+    return { status, audioTranscription: "NOT_REQUESTED", estimatedMedianProcessingMs: processingEstimate() };
   };
   const applyIntelligencePolicy = async (input, actor) => {
     const scope = input.scope === "global" ? "global" : input.scope === "episode" ? "episode" : "podcast";
@@ -930,6 +1088,57 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/audit" && req.method === "GET") {
         if (!adminActor(req, "audit:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, { events: adminService.audit({ limit: url.searchParams.get("limit") }) });
+      }
+      if (url.pathname === "/api/admin/podcasts" && req.method === "GET") {
+        if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Administrator access is required." });
+        try {
+          return send(res, 200, await podcastCatalogue({
+            query: url.searchParams.get("q") || "",
+            page: url.searchParams.get("page"),
+            pageSize: url.searchParams.get("pageSize"),
+            sort: url.searchParams.get("sort") || "title",
+          }));
+        } catch (error) {
+          return send(res, 502, { error: "The operations catalogue could not be refreshed from its persisted records and publisher feeds." });
+        }
+      }
+      if (url.pathname === "/api/admin/podcasts/detail" && req.method === "GET") {
+        if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Administrator access is required." });
+        try {
+          return send(res, 200, await podcastDetail(url.searchParams.get("feedUrl"), {
+            episodeQuery: url.searchParams.get("q") || "",
+            page: url.searchParams.get("page"),
+            pageSize: url.searchParams.get("pageSize"),
+          }));
+        } catch (error) {
+          return send(res, 404, { error: String(error?.message || "The podcast could not be opened.") });
+        }
+      }
+      if (url.pathname === "/api/admin/episodes/detail" && req.method === "GET") {
+        if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Administrator access is required." });
+        try {
+          return send(res, 200, await episodeDetail(url.searchParams.get("feedUrl"), url.searchParams.get("episodeId")));
+        } catch (error) {
+          return send(res, 404, { error: String(error?.message || "The episode could not be opened.") });
+        }
+      }
+      if (url.pathname === "/api/admin/intelligence/policy-impact" && req.method === "POST") {
+        const actor = adminActor(req, "rights:read", { write: true });
+        if (!actor) return send(res, 403, { error: "Administrator access and CSRF validation are required." });
+        try {
+          return send(res, 200, await policyImpact(await body(req)));
+        } catch (error) {
+          return send(res, 400, { error: String(error?.message || "The policy impact could not be calculated.") });
+        }
+      }
+      if (url.pathname === "/api/admin/episodes/prepare" && req.method === "POST") {
+        const actor = adminActor(req, "intelligence:write", { write: true });
+        if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
+        try {
+          return send(res, 202, await prepareEpisode(await body(req), actor));
+        } catch (error) {
+          return send(res, 409, { error: String(error?.message || "This episode could not be prepared.") });
+        }
       }
       if (url.pathname === "/api/admin/administrators" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "administrators:read" : "administrators:write", { write: req.method === "POST" });
