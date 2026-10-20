@@ -32,7 +32,7 @@ assert.ok(moments.moments.length);
 const search=await request("/api/search/conversations",{query:"rights review",feedUrls:[feedUrl]});
 assert.ok(search.matches.length);
 const restricted=await request("/api/intelligence/status?"+new URLSearchParams({feedUrl:"https://publisher.example/feed",episodeId:"unapproved"}));
-assert.equal(restricted.status.code,"RIGHTS_RESTRICTED");
+assert.equal(restricted.status.code,"LEGAL_BASIS_NOT_ESTABLISHED");
 const catalogue=await request("/api/catalogue/search?q=Python%20Bytes");
 assert.ok(catalogue.results.length);
 const after=await request("/api/admin/intelligence",null,true);
