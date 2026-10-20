@@ -914,8 +914,11 @@ export function createStarCastServer({
   };
   const episodeDetail = async (feedUrl, episodeId) => {
     const detail = await podcastDetail(feedUrl, { pageSize: 50 });
-    const episode = detail.episodes.find((candidate) => candidate.id === episodeId);
-    if (!episode) throw Error("This episode no longer appears in the publisher feed.");
+    if (detail.metadataStatus === "UNAVAILABLE") throw Object.assign(Error("The publisher feed is temporarily unavailable. Saved intelligence remains available; try the metadata lookup again later."), { code: "PUBLISHER_UNAVAILABLE" });
+    // Explicit episode inspection uses the same bounded history as processing,
+    // not the smaller discovery list. Never interpret pagination as removal.
+    const episode = detail.episodes.find((candidate) => candidate.id === episodeId)
+      || episodeOperationsState(feedUrl, await resolve(feedUrl, episodeId));
     const history = jobsForEpisode(feedUrl, episodeId).map((job) => publicIntelligence(job)).sort((a, b) => Date.parse(a.startedAt || "") - Date.parse(b.startedAt || ""));
     const timeline = [{ at: episode.publishedAt || null, type: "PUBLISHER_METADATA", label: "Published in the current publisher feed." }];
     const recordedEvents = pipeline.eventsFor(feedUrl, episodeId);
@@ -1746,7 +1749,7 @@ export function createStarCastServer({
         try {
           return send(res, 200, await episodeDetail(url.searchParams.get("feedUrl"), url.searchParams.get("episodeId")));
         } catch (error) {
-          return send(res, 404, { error: String(error?.message || "The episode could not be opened.") });
+          return send(res, error?.code === "PUBLISHER_UNAVAILABLE" ? 503 : 404, { error: String(error?.message || "The episode could not be opened.") });
         }
       }
       if (url.pathname === "/api/admin/intelligence/policy-impact" && req.method === "POST") {

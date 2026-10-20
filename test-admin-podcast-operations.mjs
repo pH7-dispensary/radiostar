@@ -90,3 +90,18 @@ try {
   app.store.close();
 }
 console.log("Admin podcast and episode operations catalogue passed");
+
+for (const offline of [false, true]) {
+  const olderFeed = `<rss><channel><title>History fixture</title>${Array.from({ length: 80 }, (_, i) => `<item><guid>history-${i}</guid><title>Episode ${i}</title><enclosure url="https://publisher.example/${i}.mp3"/><itunes:duration>60</itunes:duration></item>`).join("")}</channel></rss>`;
+  const historyApp = createStarCastServer({ store: new LocalStore(":memory:"), env: { STARCAST_ADMIN_TOKEN: "admin-token" }, fetchFeed: async () => { if (offline) throw Error("Publisher request timed out."); return olderFeed; } });
+  historyApp.store.set("follow", "history-follow", { feedUrl, owner: "fixture", intelligenceEnabled: false });
+  await new Promise(resolve => historyApp.server.listen(0, "127.0.0.1", resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${historyApp.server.address().port}/api/admin/episodes/detail?${new URLSearchParams({ feedUrl, episodeId: "history-70" })}`, { headers });
+    const body = await response.json();
+    assert.equal(response.status, offline ? 503 : 200);
+    if (offline) assert.match(body.error, /temporarily unavailable/);
+    else assert.equal(body.episode.id, "history-70", "admin inspection resolves older episodes beyond discovery pagination");
+  } finally { await new Promise(resolve => historyApp.server.close(resolve)); historyApp.store.close(); }
+}
+console.log("Older episode inspection and publisher outage classification passed");

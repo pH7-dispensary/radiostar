@@ -18,8 +18,8 @@ const mode = await api("/api/admin/intelligence/testing");
 assert.equal(mode.configuration.active, true);
 assert.equal(mode.limits.dailyUsd, 25); assert.equal(mode.limits.monthlyUsd, 125);
 assert.equal(mode.configuration.listenerIds.length, 1);
-const preflight = await api("/api/intelligence/preflight", identity);
 if (process.argv.includes("--start")) {
+  const preflight = await api("/api/intelligence/preflight", identity);
   assert.equal(preflight.hasPublisherTranscript, false);
   assert.equal(preflight.hasCachedTranscript, false, "Do not rerun a completed paid verification");
   assert(preflight.estimatedAudioCost <= 0.25);
