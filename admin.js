@@ -121,6 +121,9 @@ function bindPolicyEditor({ id, feedUrl, episodeId, policy, onSaved }) {
   const section = document.querySelector(`#${id}`);
   if (!section || !isSuperAdmin()) return;
   const previewForm = section.querySelector(".policy-preview-form");
+  const future = previewForm.elements.namedItem("applyToFuture");
+  future.checked = (state.policyDraft?.id === id ? state.policyDraft.input.applyToFuture : policy.applyToFuture) !== false;
+  if (episodeId) future.parentElement.lastChild.textContent = " Allow this episode in automatic preparation";
   previewForm.onsubmit = async (event) => {
     event.preventDefault(); const form = new FormData(event.currentTarget);
     const input = { scope: form.get("scope"), feedUrl, episodeId: episodeId || undefined, tier: form.get("tier"), expectedVersion: Number(form.get("expectedVersion")), applyToExisting: form.get("applyToExisting") === "on", includeAuthorisedAudio: form.get("includeAuthorisedAudio") === "on", applyToFuture: form.get("applyToFuture") === "on", maxEpisodes: Number(form.get("maxEpisodes") || 1) };

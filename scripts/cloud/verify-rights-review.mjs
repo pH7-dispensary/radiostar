@@ -60,6 +60,7 @@ assert.ok(moments.moments.length);
 const after = await request("/api/admin/intelligence");
 assert.deepEqual(after.usage, before.usage, "verification must reuse cache without paid processing");
 assert.deepEqual(after.controls, before.controls, "spending controls must not change");
-console.log(JSON.stringify({ passed: true, structuredApprovalPersisted: approved, canonicalCacheReused: true,
+console.log(JSON.stringify({ passed: true, approvalAppliedThisRun: approved,
+  structuredApprovalPersisted: approved || Boolean(review.record.approvalAssessment), canonicalCacheReused: true,
   replayDeduplicated: approved, brief: true, chapters: status.status.chapters.length, topics: true,
   moments: moments.moments.length, newPaidCalls: 0, newLiveJobs: 0, policy: review.policy.tier }, null, 2));

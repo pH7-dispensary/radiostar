@@ -47,8 +47,10 @@ try {
   await Promise.all(app.pipeline.inflight.values());
   assert.equal(app.pipeline.status(feedUrl, "owned-one").state, "READY");
   assert.equal(providerCalls(), 1, "only the bounded mocked job ran");
+  app.intelligencePolicy.set({ feedUrl, episodeId: "owned-one", tier: "LOW", applyToFuture: false, reason: "Verify the saved episode automatic-preparation setting." });
   await page.getByRole("button", { name: "Open episode", exact: true }).first().click();
   await page.locator(".processing-status").getByRole("heading", { name: "READY", exact: true }).waitFor();
+  assert.equal(await page.getByLabel("Allow this episode in automatic preparation", { exact: true }).isChecked(), false);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator(".processing-status").scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/desktop-ready.png` });
