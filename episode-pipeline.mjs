@@ -350,10 +350,30 @@ export class EpisodePipeline {
   async executeQueued(queued) {
     if (!queued?.jobId || !queued?.key || !queued?.feedUrl || !queued?.episodeId)
       throw Error("Invalid processing queue message.");
-    if (this.inflight.has(queued.key)) return;
+    if (this.inflight.has(queued.key)) {
+      console.log(JSON.stringify({
+        event: "processing-queue-job-deferred",
+        jobId: queued.jobId,
+        code: "INFLIGHT",
+      }));
+      return;
+    }
     const initial = this.store.get("intelligence", queued.key);
-    if (initial?.jobId !== queued.jobId || initial.state !== "QUEUED") return;
+    if (initial?.jobId !== queued.jobId || initial.state !== "QUEUED") {
+      console.log(JSON.stringify({
+        event: "processing-queue-job-ignored",
+        jobId: queued.jobId,
+        code: "STALE_OR_SUPERSEDED",
+      }));
+      return;
+    }
     const previous = this.store.get("intelligence-refresh", queued.jobId) || null;
+    console.log(JSON.stringify({
+      event: "processing-queue-job-started",
+      jobId: queued.jobId,
+      forcePublisherRefresh: queued.forcePublisherRefresh === true,
+      restoringCompletedCache: Boolean(previous),
+    }));
     const task = this.run({
       key: queued.key,
       feedUrl: queued.feedUrl,
