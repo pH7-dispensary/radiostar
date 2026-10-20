@@ -41,6 +41,7 @@ changes, budget increases or new infrastructure.
   rights/budget/failure explanations, network recovery, actual audio load failure
   and retry, restart and introduction persistence. All network data is intercepted;
   the fixture WAV runs through the existing Expo player. No paid model requests.
+  Runtime assertions verify animated processing and a static Reduce Motion mark.
 - Screenshots and rerunnable harness: `.starcast/phase4-visual/` and
   `scripts/verify-native-processing.mjs`. Local export:
   `.starcast/phase4-final-export/`. Screenshots are ignored local evidence.
@@ -56,7 +57,27 @@ changes, budget increases or new infrastructure.
 
 ## Deployment
 
-Pending final release verification. Existing deployment script guards account
-208096650030 / eu-west-2, checks for active work before replacement and retains
-the previous application directory with health-check rollback. The changes are
-additive JSON job fields and compatible API estimates; no database migration.
+Deployed and verified on 2026-10-20 in account 208096650030 / eu-west-2, using
+the existing tagged instance `i-08537aa0e84163cb9`. Implementation commit:
+`3bdc803`. Backend release SHA:
+`1142773bef68f48dc5189b03bd87a331741bd8b79ac5a4823214eebed8f33035`.
+
+- Public HTTPS health: ready. `scripts/cloud/verify-release.mjs` passed:
+  authorised cached READY content, moment retrieval, conversation search,
+  catalogue, explicit missing-legal-basis denial, unauthenticated rejection and
+  admin/listener separation. Additional live read confirmed brief, six chapters,
+  five topics and no ETA on a completed episode.
+- Database integrity: `ok`; existing records retained. Paid ledger before/after:
+  15 entries, $0.424216 recorded, zero reservations. No paid processing during
+  this phase. Existing $5/day, $25/month, three transcription hours/day and
+  two-hour audio limits verified unchanged.
+- Deployment checked idle work before replacement and retained the previous
+  application directory with health-check rollback. Additive JSON fields only:
+  no schema migration or new compute/services.
+- Terraform release pointer updated to the deployed archive; no other resource
+  changes. Before replacing the old archive object, its 159,737-byte encrypted
+  rollback copy was verified at
+  `s3://starcast-phase1-208096650030-eu-west-2/releases/rollback-1b543a3174f322702ea2bee26f0a5a148a16dac300f13f781b642974860d9771.tar.gz`.
+- Native code/export is not an installed iPhone release. No TestFlight build,
+  OTA publication or App Store submission was triggered. Device-only checks
+  listed above remain partially verified and require a physical device.
