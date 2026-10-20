@@ -923,7 +923,7 @@ export class EpisodePipeline {
   purgeEpisode(feed, id) {
     const key = episodeKey(feed, id);
     const intelligence = this.store.get("intelligence", key);
-    const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0 };
+    const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
     if (intelligence) {
       this.store.delete("intelligence", key);
       removed.intelligence++;
@@ -942,10 +942,24 @@ export class EpisodePipeline {
         this.store.delete("skip-interval", recordKey);
         removed.skipIntervals++;
       }
+    if (this.store.get("skip-audio-verification", key)) {
+      this.store.delete("skip-audio-verification", key);
+      removed.skipVerification++;
+    }
+    for (const [recordKey, value] of this.store.all("skip-feedback"))
+      if (value.episodeKey === key) {
+        this.store.delete("skip-feedback", recordKey);
+        removed.skipFeedback++;
+      }
+    for (const [recordKey, value] of this.store.all("skip-execution"))
+      if (value.episodeKey === key) {
+        this.store.delete("skip-execution", recordKey);
+        removed.skipExecutions++;
+      }
     return removed;
   }
   purgeFeed(feed) {
-    const totals = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0 };
+    const totals = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
     for (const [, value] of this.store.all("intelligence")) {
       if (value?.episode?.feedUrl !== feed) continue;
       const removed = this.purgeEpisode(feed, value.episode.id);

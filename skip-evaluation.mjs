@@ -58,8 +58,7 @@ export function evaluateSkipCases(cases, { realWorld = false } = {}) {
       controller.onProgress({ ...item, intervals: [item.interval] });
       if (
         controller.undo() &&
-        seeks.at(-1) ===
-          Math.max(0, item.interval.startMs - defaults.boundaryPaddingMs)
+        seeks.at(-1) === Math.max(0, item.positionMs)
       )
         undoPassed++;
     } else if (item.expectedSkip) missed++;

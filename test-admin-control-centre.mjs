@@ -16,6 +16,7 @@ const base = `http://127.0.0.1:${app.server.address().port}`;
 try {
   assert.equal((await fetch(base + "/admin")).status, 200, "admin shell is served without a listener token");
   assert.equal((await fetch(base + "/api/admin/overview")).status, 403, "operational data is not public");
+  assert.equal((await fetch(base + "/api/admin/ad-skip")).status, 403, "Ad Skip evidence is not public");
   const denied = await fetch(base + "/api/admin/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ adminToken: "wrong" }) });
   assert.equal(denied.status, 401);
   const login = await fetch(base + "/api/admin/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ adminToken: "admin-token" }) });
@@ -25,6 +26,9 @@ try {
   assert.equal((await login.json()).actor.role, "SUPER_ADMIN");
   const cookie = cookies.map((value) => value.split(";")[0]).join("; ");
   assert.equal((await fetch(base + "/api/admin/overview", { headers: { cookie } })).status, 200, "session may read permitted operations");
+  const adSkip = await fetch(base + "/api/admin/ad-skip", { headers: { cookie } });
+  assert.equal(adSkip.status, 200, "authorised operations staff can inspect real Ad Skip safety records");
+  assert.equal((await adSkip.json()).release.productionAutomaticSkipping, false, "operations data cannot claim a production release without measured evidence");
   const csrf = cookie.match(/starcast_admin_csrf=([^;]+)/)?.[1];
   const noCsrf = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "PRIVATE_BETA", rolloutPercent: 0, reason: "test" }) });
   assert.equal(noCsrf.status, 403, "state changes require CSRF validation");

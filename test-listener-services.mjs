@@ -38,6 +38,9 @@ assert.equal(service.summary(a).pendingReferrals, 1);
 assert.throws(() => service.attribute(b, c.code));
 service.preferences(a, { title_sequence: true });
 assert.equal(service.summary(a).preferences.title_sequence, true);
+service.preferences(c, { adSkipEnabled: true });
+assert.equal(service.summary(c).preferences.advert, true, "the primary Ad Skip control enables only the conservative advert category on first use");
+assert.equal(service.summary(c).preferences.intro, false);
 assert.throws(() => service.preferences(a, { advert: "on" }));
 assert.equal(
   service.follow(a, { feedUrl: "https://publisher.example/feed.xml", following: true }).following,

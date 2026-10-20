@@ -85,6 +85,8 @@ export class ListenerService {
         if (record.owner === listener.id) { feedback.add(id); this.store.delete("skip-feedback", id); }
       for (const [id, record] of this.store.all("skip-vote"))
         if (feedback.has(record.reportId)) this.store.delete("skip-vote", id);
+      for (const [id, record] of this.store.all("skip-execution"))
+        if (record.owner === listener.id) this.store.delete("skip-execution", id);
       for (const [id, record] of this.store.all("referral"))
         if (record.referrer === listener.id || record.referred === listener.id) {
           // Other listeners keep already-earned recurring allowances, without a link to this person.
@@ -167,10 +169,18 @@ export class ListenerService {
       throw new ListenerError("Choose valid skip preferences.");
     return this.store.transaction(() => {
       const fresh = this.store.get("installation", listener.credentialHash);
+      const existing = { ...defaultSkipPreferences(), ...fresh.preferences };
+      const noCategoryEnabled = categories.every((category) => existing[category] !== true);
       const preferences = {
-        ...defaultSkipPreferences(),
-        ...fresh.preferences,
+        ...existing,
         ...(input.adSkipEnabled === undefined ? {} : { adSkipEnabled: input.adSkipEnabled }),
+        // The main player control should be useful on its own.  A listener
+        // enabling Ad Skip for the first time opts into the conservative
+        // advert category only; advanced categories remain explicitly chosen.
+        ...(input.adSkipEnabled === true && noCategoryEnabled &&
+        categories.every((category) => input[category] === undefined)
+          ? { advert: true }
+          : {}),
         ...Object.fromEntries(
           categories
             .filter((c) => input[c] !== undefined)

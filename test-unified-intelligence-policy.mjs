@@ -35,7 +35,7 @@ try {
   const restricted = detail.episodes.find((episode) => episode.id === "restricted-source");
   assert.equal(detail.policySummary.primaryAction.type, "PREPARE", "unprocessed eligible content has one contextual primary action");
   assert.equal(authorised.effectivePolicy.level.label, "OPEN");
-  assert.equal(authorised.features.find((feature) => feature.name === "Automatic Ad Skip").state, "ELIGIBLE", "automatic skipping is not claimed ready without evidence");
+  assert.equal(authorised.features.find((feature) => feature.name === "Automatic Ad Skip").state, "DISABLED", "automatic skipping stays disabled until an administrator enables the controlled rollout and independent evidence exists");
   assert.equal(restricted.features.find((feature) => feature.name === "Episode brief").state, "RESTRICTED", "the matrix distinguishes a rights restriction from a queue state");
 
   const previewResponse = await post("/api/admin/intelligence/policy-impact", { feedUrl, tier: "HIGH", applyToExisting: true, applyToFuture: true, maxEpisodes: 2 });

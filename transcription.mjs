@@ -65,7 +65,7 @@ export async function prepareAudio(audioUrl, maxSeconds) {
   const directory = await mkdtemp(join(tmpdir(), "starcast-audio-")),
     path = join(directory, "source.audio");
   try {
-    await downloadPublicAudio(audioUrl, path);
+    const delivery = await downloadPublicAudio(audioUrl, path);
     const { stdout } = await exec(
       ffprobe.path,
       [
@@ -92,6 +92,11 @@ export async function prepareAudio(audioUrl, maxSeconds) {
       );
     return {
       durationMs,
+      // These values are intentionally private to server-side processors.  A
+      // caller may use them to verify an authorised audio variant, never to
+      // disclose or distribute the source audio.
+      path,
+      delivery,
       cleanup: () => rm(directory, { recursive: true, force: true }),
       chunkFactory: async (part) => {
         const output = join(directory, "chunk-" + part.index + ".mp3");

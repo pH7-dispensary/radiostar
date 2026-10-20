@@ -22,6 +22,7 @@ const actions = {
   "rights:suspend": { method: "POST", path: "/api/admin/rights/suspend" },
   "reports:list": { method: "GET", path: "/api/admin/reports" },
   "intelligence:status": { method: "GET", path: "/api/admin/intelligence" },
+  "ad-skip:status": { method: "GET", path: "/api/admin/ad-skip" },
   "translation:status": { method: "GET", path: "/api/admin/translation/status" },
   "translation:fixture": { method: "POST", path: "/api/admin/translation/fixture" },
   "rights:apply": { method: "POST", path: "/api/admin/rights" },

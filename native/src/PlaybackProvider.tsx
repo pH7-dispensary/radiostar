@@ -34,6 +34,8 @@ type PlaybackContextValue = {
   play: (source: Source) => Promise<void>;
   pause: () => Promise<void>;
   seek: (ms: number) => Promise<void>;
+  seekAutomatically: (ms: number) => Promise<void>;
+  manualSeekRevision: number;
   setSpeed: (speed: number) => Promise<void>;
   fadeAndPause: (durationMs: number) => Promise<number>;
   cancelFade: () => void;
@@ -61,7 +63,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     status = useAudioPlayerStatus(player),
     lastWrite = useRef(0),
     operation = useRef(0),
-    fadeOperation = useRef(0);
+    fadeOperation = useRef(0),
+    [manualSeekRevision, setManualSeekRevision] = useState(0);
   const positions = useRef<Record<string, number>>({});
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -188,6 +191,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         next.startPositionMs ??
         (switching ? positions.current[next.episodeId] : undefined);
       if (target !== undefined) await player.seekTo(Math.max(0, target) / 1000);
+      if (next.startPositionMs !== undefined)
+        setManualSeekRevision((revision) => revision + 1);
       if (currentOperation !== operation.current) return;
       player.setActiveForLockScreen(
         true,
@@ -221,6 +226,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
     },
     seek: async (ms) => {
+      setManualSeekRevision((revision) => revision + 1);
       fadeOperation.current++;
       player.volume = 1;
       const target = Math.max(
@@ -230,6 +236,17 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       await player.seekTo(target / 1000);
       await persistPosition(target);
     },
+    seekAutomatically: async (ms) => {
+      fadeOperation.current++;
+      player.volume = 1;
+      const target = Math.max(
+        0,
+        Math.min(ms, player.duration > 0 ? player.duration * 1000 : ms),
+      );
+      await player.seekTo(target / 1000);
+      await persistPosition(target);
+    },
+    manualSeekRevision,
     setSpeed: async (speed) => {
       player.setPlaybackRate(speed);
       setSnapshot((s) => ({ ...s, speed }));

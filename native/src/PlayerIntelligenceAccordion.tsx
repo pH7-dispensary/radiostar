@@ -23,6 +23,7 @@ import { IntelligencePreparation } from "./IntelligencePreparation";
 import {
   listenerRequest,
   loadListenerSummary,
+  updateAdSkipPreferences,
   type SkipStatus,
 } from "./listenerApi";
 import { LoadingState, useReducedMotion } from "./LoadingState";
@@ -69,6 +70,7 @@ function useAdSkip(source: Source) {
       listenerRequest("/api/skips/status", {
         feedUrl: source.feedUrl,
         episodeId: source.episodeId,
+        audioUrl: source.url,
       }),
       loadListenerSummary(),
     ])
@@ -84,14 +86,14 @@ function useAdSkip(source: Source) {
     return () => {
       alive.current = false;
     };
-  }, [source.episodeId, source.feedUrl]);
+  }, [source.episodeId, source.feedUrl, source.url]);
 
   const update = (next: boolean) => {
     if (busy) return;
     const currentRevision = revision.current;
     setBusy(true);
     setMessage("");
-    void listenerRequest("/api/listener/preferences", { adSkipEnabled: next })
+    void updateAdSkipPreferences({ adSkipEnabled: next })
       .then((result) => {
         if (!alive.current || currentRevision !== revision.current) return;
         setEnabled(result.preferences.adSkipEnabled === true);
@@ -133,6 +135,7 @@ export function PlayerIntelligenceAccordion({
 }) {
   const reduced = useReducedMotion();
   const [open, setOpen] = useState<Accordion>(null);
+  const [adSettingsOpen, setAdSettingsOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [moments, setMoments] = useState<EpisodeMoment[]>([]);
@@ -337,15 +340,35 @@ export function PlayerIntelligenceAccordion({
       );
     return (
       <View style={styles.body}>
-        <AdSkipPanel source={source} p={p} onPlay={onPlay} showMasterToggle={false} />
+        <Text style={[styles.emptyCopy, { color: p.muted }]}>Only independently verified, audio-matched intervals can be skipped. Candidate evidence never interrupts playback.</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open Ad Skip advanced settings"
+          accessibilityState={{ expanded: adSettingsOpen }}
+          onPress={() => {
+            if (!reduced) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setAdSettingsOpen((value) => !value);
+            feedback.selection();
+          }}
+          style={styles.link}
+        >
+          <Text style={{ color: p.accent2, fontSize: 14, fontWeight: "700" }}>{adSettingsOpen ? "Hide advanced settings" : "Advanced settings"}</Text>
+        </Pressable>
+        {adSettingsOpen ? <AdSkipPanel source={source} p={p} onPlay={onPlay} showMasterToggle={false} /> : null}
       </View>
     );
   };
 
   const adSkipDetail = skip.status
-    ? skip.status.verifiedCount
-      ? `${skip.status.verifiedCount} verified interval${skip.status.verifiedCount === 1 ? "" : "s"} available`
-      : "No verified intervals in this episode"
+    ? skip.status.state === "NO_ADVERTS_DETECTED"
+      ? "No adverts detected after analysis"
+      : skip.status.state === "VERIFYING"
+        ? "Checking verified boundaries"
+        : skip.status.state === "UNAVAILABLE"
+          ? skip.status.reason || "Not available for this episode"
+          : skip.status.verifiedCount
+            ? `${skip.status.verifiedCount} verified interval${skip.status.verifiedCount === 1 ? "" : "s"} available`
+            : "No verified intervals in this episode"
     : skip.message || "Checking verified intervals";
 
   return (
@@ -397,7 +420,7 @@ export function PlayerIntelligenceAccordion({
           />
         </View>
       </View>
-      <Text style={[styles.safety, { color: p.muted }]}>Only independently verified, audio-matched intervals are ever eligible. Automatic skipping remains off in production.</Text>
+      <Text style={[styles.safety, { color: p.muted }]}>Only independently verified, audio-matched intervals are ever eligible. Automatic skipping is limited to controlled rollouts and remains disabled for production release until measured safety criteria are met.</Text>
       {open === "ads" && content("ads")}
     </View>
   );

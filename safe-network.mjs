@@ -120,5 +120,15 @@ export async function downloadPublicAudio(url, path, maxBytes = 300_000_000) {
     limiter(maxBytes),
     createWriteStream(path, { flags: "wx", mode: 0o600 }),
   );
-  return result.url;
+  // The caller may need a delivery validator for a safety decision.  Return
+  // only response metadata; never persist or expose it to listeners.
+  return {
+    url: result.url,
+    headers: {
+      etag: result.response.headers.etag || null,
+      contentLength: result.response.headers["content-length"] || null,
+      contentType: result.response.headers["content-type"] || null,
+      vary: result.response.headers.vary || null,
+    },
+  };
 }

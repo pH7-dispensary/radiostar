@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -68,6 +68,7 @@ import { PodcastArtwork } from "./src/PodcastArtwork";
 import { ProblemReport } from "./src/ProblemReport";
 import { CaptionWindow } from "./src/CaptionWindow";
 import { SubscriptionPanel } from "./src/SubscriptionPanel";
+import { AdSkipRuntime, type AdSkipNotice } from "./src/AdSkipRuntime";
 import { TranslationPanel } from "./src/TranslationPanel";
 
 type Page = "Listen" | "Following" | "Search" | "Library" | "Profile" | "Show";
@@ -1097,12 +1098,14 @@ function PlayerSheet({
   enabled,
   onEnable,
   p,
+  adSkipNotice,
 }: {
   visible: boolean;
   onClose: () => void;
   p: Theme;
   enabled: boolean;
   onEnable: () => void;
+  adSkipNotice: AdSkipNotice | null;
 }) {
   let {
       source,
@@ -1451,6 +1454,14 @@ function PlayerSheet({
                   />
                 ))}
               </View>
+              {adSkipNotice ? (
+                <View style={[styles.adSkipNotice, { backgroundColor: p.wash, borderColor: p.line }]}>
+                  <Text accessibilityLiveRegion="polite" style={[styles.small, { color: p.text }]}>Verified advert skipped · {Math.max(1, Math.round(adSkipNotice.durationMs / 1000))} seconds</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Undo Ad Skip" onPress={() => void adSkipNotice.undo()} style={styles.adSkipUndo}>
+                    <Text style={{ color: p.accent2, fontSize: 13, fontWeight: "800" }}>Undo</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               <CaptionWindow p={p} />
               <PlayerIntelligenceAccordion
                 source={source}
@@ -1578,7 +1589,7 @@ function PlayerSheet({
   );
 }
 
-function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
+function MiniPlayer({ onOpen, p, adSkipNotice }: { onOpen: () => void; p: Theme; adSkipNotice: AdSkipNotice | null }) {
   let { source, snapshot, play, pause } = usePlayback();
   if (!source) return null;
   return (
@@ -1587,6 +1598,14 @@ function MiniPlayer({ onOpen, p }: { onOpen: () => void; p: Theme }) {
       tint={p.blurTint}
       style={[styles.mini, { borderColor: p.line, shadowColor: p.shadow }]}
     >
+      {adSkipNotice ? (
+        <View style={[styles.miniSkipNotice, { backgroundColor: p.wash, borderBottomColor: p.line }]}>
+          <Text accessibilityLiveRegion="polite" numberOfLines={1} style={[styles.small, { color: p.text, flex: 1 }]}>Verified advert skipped · {Math.max(1, Math.round(adSkipNotice.durationMs / 1000))}s</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Undo Ad Skip" onPress={() => void adSkipNotice.undo()} hitSlop={8}>
+            <Text style={{ color: p.accent2, fontSize: 13, fontWeight: "800" }}>Undo</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <View style={styles.miniInner}>
         <Pressable
           accessibilityRole="button"
@@ -2414,6 +2433,7 @@ function AppShell() {
     [launchMode, setLaunchMode] = useState<"full" | "warm" | "complete" | null>(null),
     [launchTheme, setLaunchTheme] = useState<Theme>(light),
     [playerOpen, setPlayerOpen] = useState(false);
+  const [adSkipNotice, setAdSkipNotice] = useState<AdSkipNotice | null>(null);
   let p = state.nightMode ? dark : light;
   useEffect(() => {
     void (async () => {
@@ -2518,6 +2538,8 @@ function AppShell() {
         p={p}
         playerOpen={playerOpen}
         setPlayerOpen={setPlayerOpen}
+        adSkipNotice={adSkipNotice}
+        setAdSkipNotice={setAdSkipNotice}
         playStored={playStored}
       />
       {launchMode !== "complete" ? (
@@ -2611,6 +2633,8 @@ function AppContent({
   p,
   playerOpen,
   setPlayerOpen,
+  adSkipNotice,
+  setAdSkipNotice,
   playStored,
 }: {
   page: Page;
@@ -2626,6 +2650,8 @@ function AppContent({
   p: Theme;
   playerOpen: boolean;
   setPlayerOpen: (v: boolean) => void;
+  adSkipNotice: AdSkipNotice | null;
+  setAdSkipNotice: Dispatch<SetStateAction<AdSkipNotice | null>>;
   playStored: (e: StoredEpisode) => Source;
 }) {
   let { play, snapshot } = usePlayback();
@@ -2687,6 +2713,7 @@ function AppContent({
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
       {hydrated && <ListenerSync onboarded={state.onboardingComplete} intelligenceEnabled={state.intelligenceEnabled} />}
+      <AdSkipRuntime onNotice={setAdSkipNotice} />
       <AmbientBackdrop p={p} />
       <View style={styles.root}>
         <View style={styles.topbar}>
@@ -2784,7 +2811,7 @@ function AppContent({
             )}
           </ScrollView>
         </KeyboardAvoidingView>
-        <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} />
+        <MiniPlayer p={p} onOpen={() => setPlayerOpen(true)} adSkipNotice={adSkipNotice} />
         <BlurView
           intensity={42}
           tint={p.blurTint}
@@ -2846,6 +2873,7 @@ function AppContent({
         visible={playerOpen}
         onClose={() => setPlayerOpen(false)}
         p={p}
+        adSkipNotice={adSkipNotice}
       />
       {hydrated && !state.onboardingComplete ? (
         <Onboarding
@@ -3224,6 +3252,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  miniSkipNotice: {
+    minHeight: 34,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: 0.5,
+  },
+  adSkipNotice: {
+    minHeight: 44,
+    borderWidth: 0.5,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  adSkipUndo: { minHeight: 40, justifyContent: "center" },
   miniCopy: { flex: 1, minWidth: 0 },
   miniTitle: { fontSize: 14, fontWeight: "700" },
   miniPlay: {

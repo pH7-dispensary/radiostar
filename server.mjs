@@ -16,6 +16,7 @@ import { projectRoot, loadCredentials } from "./config.mjs";
 import { acquireServerLock } from "./server-lock.mjs";
 import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
+import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
 import { IntelligencePolicyRegistry, intelligenceLevel } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
@@ -205,7 +206,7 @@ export function createStarCastServer({
     exploreEpisode: featureEnabled("smartChapters"),
     momentSearch: featureEnabled("findMoment"),
     conversationSearch: featureEnabled("conversationSearch"),
-    adSkip: false,
+    adSkip: featureEnabled("adSkip"),
   });
   const trusted = (req) => {
     const expected = env.STARCAST_DEV_INTELLIGENCE_TOKEN,
@@ -322,7 +323,39 @@ export function createStarCastServer({
     inviteOrigin: env.STARCAST_INVITE_ORIGIN,
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
   });
-  const skips = new SkipService(store, pipeline);
+  const skips = new SkipService(store, pipeline, {
+    verifyAudio: verifyAdSkipAudio,
+    automaticEnabled: () => featureEnabled("adSkip"),
+    maxAudioSeconds: ledger.controls.maxEpisodeSeconds,
+    canVerifyAudio: ({ feedUrl, episodeId }) => {
+      if (!featureEnabled("adSkip"))
+        return {
+          allowed: false,
+          reason: "Ad Skip is not enabled for this controlled rollout.",
+        };
+      const permission = rights.resolve(feedUrl, episodeId);
+      const processing = rights.evaluate({
+        feature: "intelligence-processing",
+        feedUrl,
+        episodeId,
+      });
+      const display = rights.evaluate({
+        feature: "intelligence-display",
+        feedUrl,
+        episodeId,
+      });
+      if (!processing.allowed || !display.allowed || !permission.canTranscribeAudio)
+        return {
+          allowed: false,
+          reason: !processing.allowed
+            ? processing.reason
+            : !display.allowed
+              ? display.reason
+              : "Audio verification is not authorised for this episode.",
+        };
+      return { allowed: true };
+    },
+  });
   const subscriptions = subscriptionsFromEnv(store, env);
   const translation = new TranslationService({ rights, subscriptions, intelligencePolicy, env, store });
   const fixtureIdentity = () => {
@@ -647,18 +680,23 @@ export function createStarCastServer({
       .filter((value) => value.episodeKey === episodeKey(feedUrl, episode.id));
     const verifiedSkips = skipIntervals.filter((value) => value.verificationState === "VERIFIED" && value.boundaryVerified && value.audioVariantFingerprint && !value.disputed);
     const adCandidates = skipIntervals.filter((value) => value.verificationState === "CANDIDATE");
+    const skipInspection = skips.inspect(feedUrl, episode.id);
+    const adSkipFeature = featureEnabled("adSkip");
     const autoSkipState = !processing.allowed || !display.allowed ? "RESTRICTED"
+      : !adSkipFeature ? "DISABLED"
       : preparing ? state
-      : ready ? "EVIDENCE_REQUIRED"
+      : verifiedSkips.length ? "PRIVATE_BETA_READY"
+      : ready ? skipInspection.state === "NO_ADVERTS_DETECTED" ? "NO_ADVERTS_DETECTED" : "EVIDENCE_REQUIRED"
       : !operational.adCandidates ? "RESTRICTED"
       : "ELIGIBLE";
     const autoSkipReason = !processing.allowed ? processing.reason
       : !display.allowed ? display.reason
+      : !adSkipFeature ? "Ad Skip is disabled for this controlled rollout."
       : preparing ? "Evidence is being prepared with the active intelligence job."
       : !operational.adCandidates ? "Ad candidate preparation is paused by the intelligence policy."
-      : verifiedSkips.length ? "Verified segments are recorded, but production automatic skipping remains disabled pending independent safety release."
+      : verifiedSkips.length ? "Verified segments can execute only for an exact matching source in the enabled private rollout; production release remains disabled pending measured safety evidence."
       : adCandidates.length ? "Transcript candidates exist; independent audio and boundary evidence is still required."
-      : ready ? "No production automatic skip is enabled without independent evidence and a verified audio variant."
+      : ready ? skipInspection.reason || "No automatic skip is enabled without independent evidence and a verified audio variant."
       : "Preparation can identify candidates; it cannot enable automatic skipping.";
     const features = [
       ["Transcription", transcriptionState, transcriptionReason],
@@ -696,7 +734,7 @@ export function createStarCastServer({
       processingStatus: listenerStatus(feedUrl, episode.id),
       rightsDecisions: { processing, display, search }, features,
       effectivePolicy: { level: intelligenceLevel(policy.tier), source: policy.source, version: policy.version, availability: state, eligible: state === "NOT_PREPARED", blockers, expectedProcessing },
-      adSkip: { candidateCount: adCandidates.length, verifiedCount: verifiedSkips.length, productionAutomaticSkipping: false },
+      adSkip: { candidateCount: adCandidates.length, verifiedCount: verifiedSkips.length, state: skipInspection.state, verificationState: skipInspection.verificationState, controlledRolloutEnabled: adSkipFeature, productionAutomaticSkipping: false },
       transcript: job?.provenance ? { ...job.provenance, readiness: job.readiness || null, quality: job.quality || null } : { publisherReference: episode.hasPublisherTranscript === true, availability: episode.hasPublisherTranscript ? "PUBLISHER_REFERENCE" : "NOT_DISCOVERED" },
       hasUsableIntelligence: derivedAvailable,
     };
@@ -1354,13 +1392,13 @@ export function createStarCastServer({
             error: "A valid publisher episode is required.",
           });
         if (url.pathname === "/api/skips/status") {
-          const inspection = skips.inspect(input.feedUrl, input.episodeId);
+          const preferences = listeners.summary(listener).preferences || {};
           return send(res, 200, {
-            ...inspection,
-            preferenceEnabled: listeners.summary(listener).preferences?.adSkipEnabled === true,
-            // Kept false until verified intervals are safely applied by the
-            // native player for the exact matching audio variant.
-            automaticSkipping: false,
+            ...skips.playback(input.feedUrl, input.episodeId, {
+              audioUrl: input.audioUrl,
+              preferences,
+            }),
+            preferenceEnabled: preferences.adSkipEnabled === true,
           });
         }
         if (url.pathname === "/api/skips/feedback")
@@ -1368,6 +1406,17 @@ export function createStarCastServer({
             res,
             200,
             skips.report(listener, input.feedUrl, input.episodeId, input),
+          );
+        if (url.pathname === "/api/skips/events")
+          return send(
+            res,
+            200,
+            skips.recordPlaybackEvent(
+              listener,
+              input.feedUrl,
+              input.episodeId,
+              input,
+            ),
           );
         return send(res, 404, { error: "Not found" });
       }
@@ -1415,6 +1464,10 @@ export function createStarCastServer({
         if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
         if (req.method === "GET") return send(res, 200, { features: adminService.featureFlags() });
         return send(res, 200, { feature: adminService.setFeatureFlag(await body(req), actor) });
+      }
+      if (url.pathname === "/api/admin/ad-skip" && req.method === "GET") {
+        if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
+        return send(res, 200, skips.operations());
       }
       if (url.pathname === "/api/admin/audit" && req.method === "GET") {
         if (!adminActor(req, "audit:read")) return send(res, 403, { error: "Administrator access is required." });

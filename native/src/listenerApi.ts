@@ -34,6 +34,7 @@ export type FollowResult = {
 };
 let connection: Promise<string> | null = null;
 let deleting = false;
+const adSkipPreferenceSubscribers = new Set<() => void>();
 export function resetListenerConnection() { connection = null; deleting = false; }
 export async function deleteListenerProfile() {
   if (!deleting) await listenerRequest("/api/listener/delete", { confirm: true });
@@ -77,12 +78,37 @@ export const attributeInvite = (code: string) =>
   listenerRequest("/api/listener/attribute", { code: code.trim() });
 export const updateFollow = (feedUrl: string, following: boolean) =>
   listenerRequest("/api/listener/follow", { feedUrl, following }) as Promise<FollowResult>;
+export async function updateAdSkipPreferences(
+  patch: Partial<Record<SkipCategory, boolean> & { adSkipEnabled: boolean }>,
+) {
+  const result = await listenerRequest("/api/listener/preferences", patch);
+  adSkipPreferenceSubscribers.forEach((subscriber) => subscriber());
+  return result;
+}
+export const onAdSkipPreferenceChange = (subscriber: () => void) => {
+  adSkipPreferenceSubscribers.add(subscriber);
+  return () => {
+    adSkipPreferenceSubscribers.delete(subscriber);
+  };
+};
 export const reportProblem = (input: Record<string, unknown>) =>
   listenerRequest("/api/reports", input);
 export type SkipStatus = {
-  automaticSkipping: false;
+  automaticSkipping: boolean;
   preferenceEnabled?: boolean;
   transcriptAvailable: boolean;
+  state?:
+    | "NOT_ANALYSED"
+    | "ANALYSING"
+    | "CANDIDATES_FOUND"
+    | "VERIFYING"
+    | "READY"
+    | "NO_ADVERTS_DETECTED"
+    | "NO_VERIFIED_INTERVALS"
+    | "UNAVAILABLE"
+    | "FAILED";
+  reason?: string;
+  sourceMatched?: boolean;
   verifiedCount: number;
   intervals: {
     id: string;
@@ -91,5 +117,11 @@ export type SkipStatus = {
     endMs: number;
     verificationState: string;
     excerpt?: string;
+  }[];
+  activeIntervals?: {
+    id: string;
+    type: SkipCategory;
+    startMs: number;
+    endMs: number;
   }[];
 };

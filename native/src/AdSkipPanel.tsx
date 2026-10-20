@@ -4,6 +4,7 @@ import * as Crypto from "expo-crypto";
 import {
   listenerRequest,
   loadListenerSummary,
+  updateAdSkipPreferences,
   type SkipCategory,
   type SkipStatus,
 } from "./listenerApi";
@@ -40,7 +41,7 @@ export function AdSkipPanel({
     [message, setMessage] = useState(""),
     [returnTo, setReturnTo] = useState<number | null>(null);
   const alive = useRef(true);
-  const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId };
+  const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url };
   const refresh = async () => {
     setBusy(true);
     setMessage("");
@@ -66,7 +67,7 @@ export function AdSkipPanel({
     return () => {
       alive.current = false;
     };
-  }, [source.feedUrl, source.episodeId]);
+  }, [source.feedUrl, source.episodeId, source.url]);
   const report = async (kind: string, intervalId?: string) => {
     if (busy) return;
     setBusy(true);
@@ -116,7 +117,7 @@ export function AdSkipPanel({
             trackColor={{ true: p.accent2 }}
             onValueChange={(value) => {
               setBusy(true);
-              void listenerRequest("/api/listener/preferences", { adSkipEnabled: value })
+              void updateAdSkipPreferences({ adSkipEnabled: value })
                 .then((result) => {
                   if (alive.current) {
                     setPreferences(result.preferences);
@@ -156,7 +157,7 @@ export function AdSkipPanel({
             trackColor={{ true: p.accent2 }}
             onValueChange={(value) => {
               setBusy(true);
-              void listenerRequest("/api/listener/preferences", {
+              void updateAdSkipPreferences({
                 [category]: value,
               })
                 .then((result) => {

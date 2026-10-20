@@ -134,9 +134,10 @@ export class PlaybackIntelligenceController {
   }
   undo() {
     if (!this.lastSkip) return false;
-    this.engine.seek(
-      Math.max(0, this.lastSkip.interval.startMs - defaults.boundaryPaddingMs),
-    );
+    // Undo must restore the listener's exact prior position, not a guessed
+    // interval edge.  Treat it as manual intent so the same interval cannot
+    // immediately fire again while the listener reviews it.
+    this.engine.seek(Math.max(0, this.lastSkip.preSkipPosition));
     this.lastSkip = null;
     this.onManualSeek();
     return true;
