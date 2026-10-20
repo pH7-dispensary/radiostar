@@ -48,7 +48,7 @@ try {
   assert.equal(detail.episodePage.total, 2, "episode detail is sourced from the current publisher feed");
   const restricted = detail.episodes.find((episode) => episode.id === "restricted-episode");
   assert.equal(restricted.state, "UNAVAILABLE");
-  assert.equal(restricted.code, "RIGHTS_ASSESSMENT_REQUIRED", "unassessed content is represented as a restriction, not a processing delay");
+  assert.equal(restricted.code, "LEGAL_BASIS_NOT_ESTABLISHED", "missing evidence is represented as a specific legal-basis restriction, not a processing delay");
   const authorised = detail.episodes.find((episode) => episode.id === "authorised-episode");
   assert.equal(authorised.action.type, "PREPARE");
   assert.equal(authorised.features.find((feature) => feature.name === "Captions").state, "RESTRICTED", "caption rights remain independently gated and are distinguished from processing availability");
@@ -70,7 +70,7 @@ try {
 
   const denied = await post("/api/admin/episodes/prepare", { feedUrl, episodeId: "restricted-episode" });
   assert.equal(denied.status, 409);
-  assert.match((await denied.json()).error, /rights assessment/i, "the preparation endpoint preserves the independent rights boundary");
+  assert.match((await denied.json()).error, /legal basis|rights assessment/i, "the preparation endpoint preserves the independent rights boundary");
 } finally {
   await new Promise((resolve) => app.server.close(resolve));
   app.store.close();

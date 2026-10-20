@@ -164,7 +164,7 @@ try {
     canRetain: true,
   });
   const rightsBlocked = await post("/api/intelligence/request", input);
-  assert.equal((await rightsBlocked.json()).status.code, "RIGHTS_RESTRICTED");
+  assert.equal((await rightsBlocked.json()).status.code, "FEATURE_NOT_AUTHORISED", "the listener receives the specific independently gated display restriction");
   assert.equal(calls, 1, "display-restricted episodes never enter paid preparation");
   app.rights.set({
     feedUrl,

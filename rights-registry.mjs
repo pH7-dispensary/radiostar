@@ -25,6 +25,11 @@ const permissions = [
   "canTranscribeAudio",
   "canDisplayCaptions",
   "canDisplayDerivedIntelligence",
+  "canGenerateBrief",
+  "canGenerateChapters",
+  "canGenerateTopics",
+  "canSearchMoments",
+  "canDetectAdvertisements",
   "canRetain",
   "canRegenerate",
   "canTranslateText",
@@ -50,6 +55,11 @@ const featurePermission = Object.freeze({
   "intelligence-processing": ["canProcessForAi", "canRetain"],
   "intelligence-display": ["canDisplayDerivedIntelligence"],
   "conversation-search": ["canDisplayDerivedIntelligence"],
+  "episode-brief": ["canGenerateBrief"],
+  "smart-chapters": ["canGenerateChapters"],
+  topics: ["canGenerateTopics"],
+  "find-moment": ["canSearchMoments"],
+  "ad-detection": ["canDetectAdvertisements"],
   captions: ["canDisplayCaptions"],
   "translation-text": ["canTranslateText"],
   "dubbing-audio": ["canGenerateDubbedAudio", "canCacheTranslatedAudio", "canDistributeTranslation"],
@@ -75,13 +85,39 @@ const defaultPolicy = () => ({
   updatedBy: "system",
   history: [],
 });
-const normaliseRecord = (record) => record && ({
+const normaliseEvidence = (input) => Array.isArray(input)
+  ? input.slice(0, 30).map((item) => ({
+    type: String(item?.type || "EVIDENCE").slice(0, 80),
+    source: String(item?.source || "unknown").slice(0, 120),
+    scope: String(item?.scope || "unknown").slice(0, 80),
+    value: String(item?.value || "").slice(0, 1000),
+    ...(typeof item?.url === "string" ? { url: item.url.slice(0, 2000) } : {}),
+  })) : [];
+const normaliseRecord = (record) => record && (() => {
+  const legacyDerived = record.canProcessForAi === true && record.canDisplayDerivedIntelligence === true;
+  return {
   ...record,
+  ...bools(record),
+  // Existing authorised records predate the feature-level fields. Preserve
+  // their bounded core-intelligence behaviour while keeping captions, dubbing
+  // and voice permissions independently false unless explicitly recorded.
+  canGenerateBrief: record.canGenerateBrief === undefined ? legacyDerived : record.canGenerateBrief === true,
+  canGenerateChapters: record.canGenerateChapters === undefined ? legacyDerived : record.canGenerateChapters === true,
+  canGenerateTopics: record.canGenerateTopics === undefined ? legacyDerived : record.canGenerateTopics === true,
+  canSearchMoments: record.canSearchMoments === undefined ? legacyDerived : record.canSearchMoments === true,
+  canDetectAdvertisements: record.canDetectAdvertisements === undefined ? legacyDerived : record.canDetectAdvertisements === true,
   assessmentStatus: assessmentValues.has(record.assessmentStatus) ? record.assessmentStatus : record.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED,
   explicitAuthorisation: record.explicitAuthorisation === true || (record.classification === RightsClassification.LICENSED && record.canProcessForAi === true && record.canDisplayDerivedIntelligence === true),
   rightsReserved: record.rightsReserved === true,
   testContentEligible: record.testContentEligible === true,
-});
+  blockerCode: typeof record.blockerCode === "string" ? record.blockerCode.slice(0, 120) : null,
+  assessmentReason: typeof record.assessmentReason === "string" ? record.assessmentReason.slice(0, 2000) : null,
+  assessmentSource: typeof record.assessmentSource === "string" ? record.assessmentSource.slice(0, 120) : null,
+  assessmentVersion: typeof record.assessmentVersion === "string" ? record.assessmentVersion.slice(0, 120) : null,
+  evidenceFingerprint: typeof record.evidenceFingerprint === "string" ? record.evidenceFingerprint.slice(0, 128) : null,
+  assessmentEvidence: normaliseEvidence(record.assessmentEvidence),
+  };
+})();
 
 /**
  * Server-owned rights records deliberately default to no permission. A publisher
@@ -205,6 +241,11 @@ export class RightsRegistry {
       canProcessForAi: true,
       canTranscribeAudio: input.canTranscribeAudio === true,
       canDisplayDerivedIntelligence: true,
+      canGenerateBrief: true,
+      canGenerateChapters: true,
+      canGenerateTopics: true,
+      canSearchMoments: true,
+      canDetectAdvertisements: true,
       canRetain: true,
       canRegenerate: true,
       // These remain independent product and rights decisions.
@@ -276,7 +317,7 @@ export class RightsRegistry {
         classification: RightsClassification.RESTRICTED,
         publisher: null,
         licence: null,
-        restrictions: "No rights assessment has authorised processing.",
+        restrictions: "This episode has not been assessed yet.",
         assessmentStatus: RightsAssessmentStatus.UNASSESSED,
         legalBasis: null,
         explicitAuthorisation: false,
@@ -294,10 +335,10 @@ export class RightsRegistry {
     const features = { ...policy.features, ...(override?.features || {}) };
     const optionalFeature = optionalFeatureFor[feature];
     let allowed = true, code = "ALLOWED", reason = "Rights requirements are satisfied.", outputProfile = "standard";
-    if (!rights.id) [allowed, code, reason] = [false, "RIGHTS_ASSESSMENT_REQUIRED", "No documented rights assessment authorises this feature yet."];
+    if (!rights.id) [allowed, code, reason] = [false, "LEGAL_BASIS_NOT_ESTABLISHED", "No rights assessment has been completed for this episode yet."];
     else if (rights.suspendedAt || rights.deletedAt) [allowed, code, reason] = [false, "TAKEDOWN_OR_SUSPENSION", "This content is suspended or subject to a takedown."];
-    else if (rights.rightsReserved || rights.classification === RightsClassification.DISPUTED) [allowed, code, reason] = [false, "RIGHTS_RESERVED", "The rights record reserves this feature or is under dispute."];
-    else if (rights.classification === RightsClassification.RESTRICTED) [allowed, code, reason] = [false, "RIGHTS_RESTRICTED", "The rights assessment does not permit this feature."];
+    else if (rights.rightsReserved || rights.classification === RightsClassification.DISPUTED) [allowed, code, reason] = [false, rights.blockerCode || "RIGHTS_RESERVED", rights.assessmentReason || "The rights record reserves this feature or is under dispute."];
+    else if (rights.classification === RightsClassification.RESTRICTED) [allowed, code, reason] = [false, rights.blockerCode || "RIGHTS_RESTRICTED", rights.assessmentReason || "The rights assessment does not permit this feature."];
     else if (!featurePermission[feature].every((name) => rights[name] === true)) [allowed, code, reason] = [false, "FEATURE_NOT_AUTHORISED", "This feature is not authorised by the rights record."];
     else if (optionalFeature && features[optionalFeature] === false) [allowed, code, reason] = [false, "POLICY_FEATURE_DISABLED", "This optional intelligence feature is disabled by policy."];
     // This is deliberately not a rights bypass. It is only available for an
@@ -393,6 +434,8 @@ export class RightsRegistry {
     for (const name of permissions)
       if (input[name] !== undefined && typeof input[name] !== "boolean")
         throw Error("Rights permissions must be true or false.");
+    if (input.assessmentEvidence !== undefined && !Array.isArray(input.assessmentEvidence))
+      throw Error("Rights assessment evidence is invalid.");
     const id = key(input.feedUrl, input.episodeId || "");
     const prior = this.store.get("rights", id);
     const record = {
@@ -410,8 +453,22 @@ export class RightsRegistry {
       explicitAuthorisation: input.explicitAuthorisation === undefined ? prior?.explicitAuthorisation === true || (input.classification === RightsClassification.LICENSED && input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true) : input.explicitAuthorisation,
       rightsReserved: input.rightsReserved === undefined ? prior?.rightsReserved === true : input.rightsReserved,
       testContentEligible: input.testContentEligible === undefined ? prior?.testContentEligible === true : input.testContentEligible,
+      blockerCode: typeof input.blockerCode === "string" ? input.blockerCode.slice(0, 120) : input.blockerCode === null ? null : prior?.blockerCode || null,
+      assessmentReason: typeof input.assessmentReason === "string" ? input.assessmentReason.slice(0, 2000) : input.assessmentReason === null ? null : prior?.assessmentReason || null,
+      assessmentSource: typeof input.assessmentSource === "string" ? input.assessmentSource.slice(0, 120) : input.assessmentSource === null ? null : prior?.assessmentSource || null,
+      assessmentVersion: typeof input.assessmentVersion === "string" ? input.assessmentVersion.slice(0, 120) : input.assessmentVersion === null ? null : prior?.assessmentVersion || null,
+      evidenceFingerprint: typeof input.evidenceFingerprint === "string" ? input.evidenceFingerprint.slice(0, 128) : input.evidenceFingerprint === null ? null : prior?.evidenceFingerprint || null,
+      assessmentEvidence: input.assessmentEvidence === undefined ? normaliseEvidence(prior?.assessmentEvidence) : normaliseEvidence(input.assessmentEvidence),
       assessmentDate: input.assessmentDate || new Date(this.now()).toISOString(),
       ...bools({ ...prior, ...input }),
+      // Preserve pre-feature-granularity authorised records. New assessments
+      // always set these explicitly; this compatibility path never extends to
+      // captions, translation, dubbing or voice replication.
+      canGenerateBrief: input.canGenerateBrief === undefined ? (prior?.canGenerateBrief === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canGenerateBrief,
+      canGenerateChapters: input.canGenerateChapters === undefined ? (prior?.canGenerateChapters === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canGenerateChapters,
+      canGenerateTopics: input.canGenerateTopics === undefined ? (prior?.canGenerateTopics === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canGenerateTopics,
+      canSearchMoments: input.canSearchMoments === undefined ? (prior?.canSearchMoments === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canSearchMoments,
+      canDetectAdvertisements: input.canDetectAdvertisements === undefined ? (prior?.canDetectAdvertisements === true || (input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true)) : input.canDetectAdvertisements,
       suspendedAt: input.suspendedAt || null,
       deletedAt: input.deletedAt || null,
       updatedAt: this.now(),
@@ -422,6 +479,28 @@ export class RightsRegistry {
     };
     this.store.set("rights", id, record);
     return record;
+  }
+  assessAutomatic(input = {}, { actor = "system:publisher-rss" } = {}) {
+    if (!input || typeof input.feedUrl !== "string" || !input.feedUrl || typeof input.episodeId !== "string" || !input.episodeId)
+      throw Error("A publisher feed and episode are required for an automatic rights assessment.");
+    const prior = this.resolve(input.feedUrl, input.episodeId);
+    const mandatory = prior.id && (prior.suspendedAt || prior.deletedAt || prior.rightsReserved || prior.classification === RightsClassification.DISPUTED);
+    if (mandatory) return { record: prior, reused: true, mandatory: true };
+    // Human-entered rights records remain authoritative. Automatic evidence may
+    // refresh only a prior automatic assessment for the same episode.
+    if (prior.id && prior.assessmentSource !== input.assessmentSource)
+      return { record: prior, reused: true, mandatory: false };
+    if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint)
+      return { record: prior, reused: true, mandatory: false };
+    const record = this.set({ ...input, episodeId: input.episodeId }, { actor });
+    this.audit("rights-assessed-automatically", record.id, actor, {
+      classification: record.classification,
+      assessmentStatus: record.assessmentStatus,
+      blockerCode: record.blockerCode,
+      evidenceCount: record.assessmentEvidence.length,
+      assessmentVersion: record.assessmentVersion,
+    });
+    return { record: normaliseRecord(record), reused: false, mandatory: false };
   }
   suspend(feedUrl, episodeId, reason, { actor = "admin" } = {}) {
     const prior = this.resolve(feedUrl, episodeId);
@@ -466,7 +545,7 @@ export class RightsRegistry {
       overrides: this.store.all("rights-policy-override").map(([, value]) => value),
       records,
       metrics: this.store.all("rights-policy-metric").map(([, value]) => value),
-      assessments: records.map((record) => ({ id: record.id, feedUrl: record.feedUrl, episodeId: record.episodeId, publisher: record.publisher, classification: record.classification, assessmentStatus: record.assessmentStatus || RightsAssessmentStatus.UNASSESSED, legalBasis: record.legalBasis || null, explicitAuthorisation: record.explicitAuthorisation === true, rightsReserved: record.rightsReserved === true, updatedAt: record.updatedAt })),
+      assessments: records.map((record) => ({ id: record.id, feedUrl: record.feedUrl, episodeId: record.episodeId, publisher: record.publisher, classification: record.classification, assessmentStatus: record.assessmentStatus || RightsAssessmentStatus.UNASSESSED, legalBasis: record.legalBasis || null, blockerCode: record.blockerCode || null, assessmentReason: record.assessmentReason || null, assessmentSource: record.assessmentSource || null, evidence: record.assessmentEvidence, explicitAuthorisation: record.explicitAuthorisation === true, rightsReserved: record.rightsReserved === true, updatedAt: record.updatedAt })),
       reservations: records.filter((record) => record.rightsReserved === true),
       takedowns: records.filter((record) => record.suspendedAt || record.deletedAt),
       audit: audits,

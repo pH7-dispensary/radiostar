@@ -57,8 +57,8 @@ const post = (path, input) => fetch(base + path, { method: "POST", headers, body
 try {
   const denied = await post("/api/intelligence/request", { feedUrl, episodeId, capability: "brief" });
   const deniedBody = await denied.json();
-  assert.equal(deniedBody.status.code, "RIGHTS_RESTRICTED", "unassessed content remains blocked before Super Admin approval");
-  assert.equal(deniedBody.status.rightsCode, "RIGHTS_ASSESSMENT_REQUIRED", "the listener contract distinguishes an absent assessment from a reservation");
+  assert.equal(deniedBody.status.code, "LEGAL_BASIS_NOT_ESTABLISHED", "a request receives the recorded assessment outcome rather than an absent-record refusal");
+  assert.equal(deniedBody.status.rightsCode, "LEGAL_BASIS_NOT_ESTABLISHED", "the listener contract distinguishes an assessed lack of basis from a reservation");
   const blocked = await fetch(base + "/api/admin/rights/blocked-content", { headers });
   const blockedBody = await blocked.json();
   assert.equal(blocked.status, 200);

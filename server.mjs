@@ -19,6 +19,7 @@ import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
 import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
+import { assessPublisherRights, publisherRightsEvidence } from "./rights-assessment.mjs";
 import { IntelligencePolicyRegistry, intelligenceLevel } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-corpus.mjs";
@@ -122,6 +123,7 @@ function episodesFromFeed(xml, feed) {
         description: tag(item, "description"),
         audioUrl: enclosure || null,
         hasPublisherTranscript: refs.length > 0,
+        rightsEvidence: publisherRightsEvidence({ channelXml: channel, itemXml: item, feedUrl: feed }),
       };
     }),
   };
@@ -273,7 +275,8 @@ export function createStarCastServer({
   }
   async function resolve(feed, id) {
     const xml = await feedXml(feed),
-      items = feedParts(xml, feed).items,
+      parts = feedParts(xml, feed),
+      items = parts.items,
       parsed = episodesFromFeed(xml, feed),
       index = parsed.episodes.findIndex((x) => x.id === id);
     if (index < 0)
@@ -302,6 +305,7 @@ export function createStarCastServer({
       publisher: parsed.publisher,
       artworkUrl: parsed.art,
       refs,
+      rightsEvidence: publisherRightsEvidence({ channelXml: parts.channel, itemXml: item, feedUrl: feed }),
     };
   }
   const queue = processingQueueFromEnv(env);
@@ -360,6 +364,25 @@ export function createStarCastServer({
     queue,
     onCompleted: ({ feedUrl, episodeId }) => skips?.inspect(feedUrl, episodeId),
   });
+  const assessEpisodeRights = async (feedUrl, episodeId, suppliedEpisode = null) => {
+    const episode = suppliedEpisode?.rightsEvidence
+      ? suppliedEpisode
+      : await (resolveEpisode ? resolveEpisode(feedUrl, episodeId) : resolve(feedUrl, episodeId));
+    const assessment = assessPublisherRights({
+      feedUrl,
+      episode,
+      evidence: episode.rightsEvidence,
+    });
+    const result = rights.assessAutomatic({
+      feedUrl,
+      episodeId,
+      publisher: episode.publisher || null,
+      podcast: episode.showName || episode.podcast || null,
+      episodeTitle: episode.title || null,
+      ...assessment,
+    });
+    return { episode, assessment: result.record, reused: result.reused, mandatory: result.mandatory };
+  };
   const listeners = new ListenerService(store, {
     inviteOrigin: env.STARCAST_INVITE_ORIGIN,
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
@@ -415,7 +438,8 @@ export function createStarCastServer({
       .filter((item) => item.id)
       .sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
     if (!episode) return { state: "UNAVAILABLE", code: "NO_EPISODE" };
-    const permission = rights.resolve(feedUrl, episode.id);
+    const assessed = await assessEpisodeRights(feedUrl, episode.id);
+    const permission = assessed.assessment;
     const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id, audit: true });
     const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id, audit: true });
     const operational = intelligencePolicy.allows(feedUrl, episode.id, "intelligence");
@@ -511,9 +535,9 @@ export function createStarCastServer({
         podcast: rightsRecord.podcast || job?.episode?.showName || null,
         publisher: rightsRecord.publisher || job?.episode?.publisher || null,
         episodeTitle: rightsRecord.episodeTitle || job?.episode?.title || null,
-        currentRestriction: rightsRecord.id ? rightsRecord.classification : "UNASSESSED",
+        currentRestriction: rightsRecord.blockerCode || (rightsRecord.id ? rightsRecord.classification : "UNASSESSED"),
         refusalReason: state?.reason || (!processing.allowed ? processing.reason : display.reason),
-        processingEligibility: mandatory ? "MANDATORY_RESTRICTION" : !rightsRecord.id ? "REQUIRES_ASSESSMENT" : processing.allowed && display.allowed ? "ELIGIBLE" : "REQUIRES_APPROVED_BASIS",
+        processingEligibility: mandatory ? "MANDATORY_RESTRICTION" : !rightsRecord.id ? "ASSESS_ON_REQUEST" : processing.allowed && display.allowed ? "ELIGIBLE" : rightsRecord.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED" ? "LEGAL_BASIS_REQUIRED" : "REQUIRES_APPROVED_BASIS",
         canApprove: !mandatory,
         previousAttempts: job?.attempts || 0,
         status: state?.state || "BLOCKED",
@@ -630,7 +654,7 @@ export function createStarCastServer({
     if (!display.allowed || !processing.allowed) {
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       rightsCode = !processing.allowed ? processing.code : display.code;
-      code = "RIGHTS_RESTRICTED";
+      code = rightsCode;
       reason = !processing.allowed ? processing.reason : display.reason;
     } else if (!operational.allowed && projected.state !== "READY") {
       // An operational hold stops new work but never revokes intelligence that
@@ -678,6 +702,11 @@ export function createStarCastServer({
     const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id });
     const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id });
     const search = rights.evaluate({ feature: "conversation-search", feedUrl, episodeId: episode.id });
+    const briefDecision = rights.evaluate({ feature: "episode-brief", feedUrl, episodeId: episode.id });
+    const chapterDecision = rights.evaluate({ feature: "smart-chapters", feedUrl, episodeId: episode.id });
+    const topicsDecision = rights.evaluate({ feature: "topics", feedUrl, episodeId: episode.id });
+    const momentDecision = rights.evaluate({ feature: "find-moment", feedUrl, episodeId: episode.id });
+    const adDetectionDecision = rights.evaluate({ feature: "ad-detection", feedUrl, episodeId: episode.id });
     const permissions = rights.resolve(feedUrl, episode.id);
     const policy = intelligencePolicy.effective(feedUrl, episode.id);
     const operational = intelligencePolicy.features(feedUrl, episode.id);
@@ -741,12 +770,12 @@ export function createStarCastServer({
       : "Preparation can identify candidates; it cannot enable automatic skipping.";
     const features = [
       ["Transcription", transcriptionState, transcriptionReason],
-      ["Episode brief", statusFor(processing.allowed && display.allowed && operational.intelligence, Boolean(job?.brief)), intelligenceReason],
-      ["Smart chapters", statusFor(processing.allowed && display.allowed && operational.chapters, Boolean(job?.chapters?.length)), intelligenceReason || (!operational.chapters ? "Chapters are paused by the podcast intelligence policy." : null)],
-      ["Topics", statusFor(processing.allowed && display.allowed && operational.topics, Boolean(job?.topics?.length || job?.brief?.topics?.length)), intelligenceReason || (!operational.topics ? "Topics are paused by the podcast intelligence policy." : null)],
-      ["Find a moment", statusFor(processing.allowed && display.allowed && operational.moments, Boolean(job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs)))), intelligenceReason || (!operational.moments ? "Moment search is paused by the podcast intelligence policy." : null)],
+      ["Episode brief", statusFor(processing.allowed && display.allowed && briefDecision.allowed && operational.intelligence, Boolean(job?.brief)), !briefDecision.allowed ? briefDecision.reason : intelligenceReason],
+      ["Smart chapters", statusFor(processing.allowed && display.allowed && chapterDecision.allowed && operational.chapters, Boolean(job?.chapters?.length)), !chapterDecision.allowed ? chapterDecision.reason : intelligenceReason || (!operational.chapters ? "Chapters are paused by the podcast intelligence policy." : null)],
+      ["Topics", statusFor(processing.allowed && display.allowed && topicsDecision.allowed && operational.topics, Boolean(job?.topics?.length || job?.brief?.topics?.length)), !topicsDecision.allowed ? topicsDecision.reason : intelligenceReason || (!operational.topics ? "Topics are paused by the podcast intelligence policy." : null)],
+      ["Find a moment", statusFor(processing.allowed && display.allowed && momentDecision.allowed && operational.moments, Boolean(job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs)))), !momentDecision.allowed ? momentDecision.reason : intelligenceReason || (!operational.moments ? "Moment search is paused by the podcast intelligence policy." : null)],
       ["Conversation search", statusFor(search.allowed && operational.conversationSearch, Boolean(job?.transcript?.segments?.length)), !search.allowed ? search.reason : !operational.conversationSearch ? "Conversation search is paused by the podcast intelligence policy." : null],
-      ["Advert detection", statusFor(processing.allowed && display.allowed && operational.adCandidates, adCandidates.length > 0), intelligenceReason || "Candidate detection never enables automatic skipping."],
+      ["Advert detection", statusFor(processing.allowed && display.allowed && adDetectionDecision.allowed && operational.adCandidates, adCandidates.length > 0), !adDetectionDecision.allowed ? adDetectionDecision.reason : intelligenceReason || "Candidate detection never enables automatic skipping."],
       ["Automatic Ad Skip", autoSkipState, autoSkipReason],
       ["Captions", statusFor(captionDecision.allowed && operational.captions, false), !captionDecision.allowed ? captionDecision.reason : !operational.captions ? "Captions are paused by the podcast intelligence policy." : "Caption delivery has its own rights and policy gate."],
       ["Private AI Dubbing", statusFor(dubbingDecision.allowed && operational.dubbing, false), !dubbingDecision.allowed ? dubbingDecision.reason : !operational.dubbing ? "Private AI Dubbing is paused by the intelligence policy." : "Private AI Dubbing remains separately authorised, beta-only and budget-limited."],
@@ -773,7 +802,7 @@ export function createStarCastServer({
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episode.id),
       state, code, reason, action, job: publicJob, policy: { ...policy, level: intelligenceLevel(policy.tier) }, rights: permissions,
       processingStatus: listenerStatus(feedUrl, episode.id),
-      rightsDecisions: { processing, display, search }, features,
+      rightsDecisions: { processing, display, search, brief: briefDecision, chapters: chapterDecision, topics: topicsDecision, moments: momentDecision, adDetection: adDetectionDecision }, features,
       effectivePolicy: { level: intelligenceLevel(policy.tier), source: policy.source, version: policy.version, availability: state, eligible: state === "NOT_PREPARED", blockers, expectedProcessing },
       adSkip: { candidateCount: adCandidates.length, verifiedCount: verifiedSkips.length, state: skipInspection.state, verificationState: skipInspection.verificationState, controlledRolloutEnabled: adSkipFeature, productionAutomaticSkipping: false },
       transcript: job?.provenance ? { ...job.provenance, readiness: job.readiness || null, quality: job.quality || null } : { publisherReference: episode.hasPublisherTranscript === true, availability: episode.hasPublisherTranscript ? "PUBLISHER_REFERENCE" : "NOT_DISCOVERED" },
@@ -979,6 +1008,7 @@ export function createStarCastServer({
   };
   const prepareEpisode = async (input, actor) => {
     if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId) throw Error("Choose a valid publisher episode.");
+    await assessEpisodeRights(input.feedUrl, input.episodeId);
     const detail = await episodeDetail(input.feedUrl, input.episodeId);
     const current = detail.episode;
     if (!["PREPARE", "RETRY"].includes(current.action.type)) throw Error(current.reason || "This episode is not eligible for preparation.");
@@ -1006,6 +1036,7 @@ export function createStarCastServer({
         return parsed.episodes.filter((episode) => episode.id).sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || "")).slice(0, maximum);
       })())];
       for (const episode of candidates) {
+        await assessEpisodeRights(input.feedUrl, episode.id, episode);
         const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
         const display = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
         const permission = rights.resolve(input.feedUrl, episode.id);
@@ -1664,6 +1695,17 @@ export function createStarCastServer({
         if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Rights administrator access is required." });
         return send(res, 200, blockedContent());
       }
+      if (url.pathname === "/api/admin/rights/assess" && req.method === "POST") {
+        const actor = adminActor(req, "rights:write", { write: true });
+        if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
+        const input = await body(req);
+        if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId)
+          return send(res, 400, { error: "A valid publisher episode is required." });
+        const outcome = await assessEpisodeRights(input.feedUrl, input.episodeId);
+        rights.audit("rights-reassessed-by-super-admin", `${input.feedUrl}:${input.episodeId}`, actor.id, { reused: outcome.reused, classification: outcome.assessment.classification, blockerCode: outcome.assessment.blockerCode || null });
+        adminService.appendAudit({ actor, action: "rights-reassessed", resource: `${input.feedUrl}:${input.episodeId}`, newState: { classification: outcome.assessment.classification, blockerCode: outcome.assessment.blockerCode || null, evidenceCount: outcome.assessment.assessmentEvidence?.length || 0 }, outcome: outcome.reused ? "UNCHANGED" : "ALLOWED" });
+        return send(res, 200, { assessment: outcome.assessment, reused: outcome.reused });
+      }
       if (url.pathname === "/api/admin/rights/approve-process" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
@@ -1684,6 +1726,7 @@ export function createStarCastServer({
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
         const input = await body(req);
         if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId) return send(res, 400, { error: "A valid publisher episode is required." });
+        await assessEpisodeRights(input.feedUrl, input.episodeId);
         const permission = rights.resolve(input.feedUrl, input.episodeId);
         const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         const display = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
@@ -1845,19 +1888,20 @@ export function createStarCastServer({
         return send(res, 400, {
           error: "A valid publisher episode is required.",
         });
-      if (url.pathname === "/api/intelligence/preflight")
-        return send(
-          res,
-          200,
-          await pipeline.preflight(input.feedUrl, input.episodeId),
-        );
+      if (url.pathname === "/api/intelligence/preflight") {
+        const assessment = await assessEpisodeRights(input.feedUrl, input.episodeId);
+        return send(res, 200, { ...(await pipeline.preflight(input.feedUrl, input.episodeId)), assessment: assessment.assessment });
+      }
       if (url.pathname === "/api/intelligence/request") {
         if (!["brief", "chapters", "moment"].includes(input.capability))
           return send(res, 400, {
             error: "A valid analysis capability is required.",
           });
+        await assessEpisodeRights(input.feedUrl, input.episodeId);
         const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
-        if (!decision.allowed)
+        const rightsFeatureForCapability = { brief: "episode-brief", chapters: "smart-chapters", moment: "find-moment" };
+        const capabilityDecision = rights.evaluate({ feature: rightsFeatureForCapability[input.capability], feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
+        if (!decision.allowed || !capabilityDecision.allowed)
           return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
         const featureForCapability = { brief: "episodeBrief", chapters: "smartChapters", moment: "findMoment" };
         if (!featureEnabled(featureForCapability[input.capability]))

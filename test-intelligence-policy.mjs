@@ -57,7 +57,7 @@ try {
   app.rights.suspend(feedUrl, restrictedEpisode, "Takedown");
   await post("/api/admin/intelligence/policies", { scope: "episode", feedUrl, episodeId: restrictedEpisode, tier: "ZERO", applyToExisting: false, applyToFuture: false, reason: "Cannot override takedown.", confirmation: "SAVE POLICY" });
   const reserved = await post("/api/intelligence/request", { feedUrl, episodeId: restrictedEpisode, capability: "brief" });
-  assert.equal((await reserved.json()).status.code, "RIGHTS_RESTRICTED", "ZERO never bypasses a takedown");
+  assert.equal((await reserved.json()).status.code, "TAKEDOWN_OR_SUSPENSION", "ZERO never bypasses a takedown");
 } finally {
   await new Promise((resolve) => app.server.close(resolve));
   app.store.close();
