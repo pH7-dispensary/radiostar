@@ -7,7 +7,7 @@ await mkdir(".starcast/qa", { recursive: true });
 const errors = [];
 try {
   for (const width of [320, 375, 390, 430, 1440]) {
-    const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+    const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce", colorScheme: "dark" });
     page.on("pageerror", error => errors.push(error.message));
     await page.route("https://d3ri12f40b85i3.cloudfront.net/**", route => {
       const path = new URL(route.request().url()).pathname;
@@ -34,6 +34,7 @@ try {
     });
     await page.reload();
     await page.getByText("WELCOME TO RADIO STAR", {exact:true}).waitFor();
+    await page.getByText("Finding your signal", {exact:true}).waitFor({state:"hidden"});
     await page.screenshot({path:`.starcast/qa/onboarding-web-${width}.png`,fullPage:true});
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
     await page.getByRole("button",{name:"Start listening",exact:true}).click();
@@ -41,6 +42,7 @@ try {
     await page.reload();
     await page.getByLabel("Open profile").click();
     await page.getByText("Subscriptions are not available in this beta.",{exact:true}).waitFor();
+    assert.match(await page.getByRole("switch",{name:"Night mode"}).innerText(),/Day mode/,"fresh preference stays light even on a dark system");
     await page.getByRole("switch",{name:"Remember local listening history"}).scrollIntoViewIfNeeded();
     await page.screenshot({path:`.starcast/qa/privacy-controls-web-${width}.png`,fullPage:true});
     await page.getByText("Delete listener profile",{exact:true}).scrollIntoViewIfNeeded();
@@ -48,6 +50,10 @@ try {
     assert.equal(await page.getByRole("link",{name:"Privacy Policy"}).count(),1);
     await page.screenshot({path:`.starcast/qa/profile-web-${width}.png`,fullPage:true});
     await page.getByRole("switch",{name:"Night mode"}).click();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem("star-cast-listener-state-v1") || "{}").nightMode === true);
+    await page.reload();
+    await page.getByLabel("Open profile").click();
+    assert.match(await page.getByRole("switch",{name:"Night mode"}).innerText(),/Night mode/,"explicit appearance persists after restart");
     await page.screenshot({path:`.starcast/qa/profile-light-web-${width}.png`,fullPage:true});
     for (const name of ["Listen", "Following", "Discover", "Library"]) {
       await page.getByRole("tab",{name}).click();

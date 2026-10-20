@@ -99,3 +99,31 @@ Previous TestFlight 1.0.0 (7):
 Existing internal group **Team (Expo)**,
 `d700defb-f451-4198-899e-11fc6ea0e0ad`, has access to all builds.
 New build/submission/IPA verification is recorded below once confirmed.
+
+- Source release commit: `22518009287ec5b27741ec9504ecae7652557e0f`, pushed to
+  `origin/work`. EAS auto-incremented local build number 7 → 8. Subsequent
+  release-record/test-only commits do not change the application source.
+- EAS build: `c9426572-2fa2-4c30-a706-c820f0f53d07`, **FINISHED**, 1.0.0 (8).
+  Existing signing identity: TETRODAXOL, UNIPESSOAL LDA, team `69F2T3M9C4`.
+- Downloaded exact IPA SHA-256:
+  `62342e989286d65c46a03b905f1526f890ae6431994d4a0ee6f2bd0ca57e6a7c`.
+  Inspected bundle/version/build, provisioning entitlement, non-debuggable
+  distribution, background audio and compiled Expo project/API configuration.
+  `codesign --verify --deep --strict` passed after extracting outside iCloud
+  Documents (that directory adds Finder metadata; the original IPA was unchanged).
+  Scanned 58 bundle files: no known server tokens or OpenAI/AWS key-shaped values.
+  Compiled 120px icon inspected, opaque and full-bleed; `assetutil` confirms
+  the opaque 1024×1024 phone AppIcon and splash assets in Assets.car.
+  Installed Home Screen appearance still requires the owner's iPhone.
+- Fresh light mode under a dark OS and saved dark preference after reload pass
+  at all four iPhone widths and desktop. Final onboarding screenshots wait for
+  the launch overlay to finish.
+- Real search-result original MPEG responds 206 to a bounded byte request.
+  No new AI processing was triggered for this verification.
+- EAS CLI 25.2.0 was used. During monitoring, npm's `latest` moved to 25.3.0
+  while its matching `@expo/eas-json` dependency was unavailable; monitoring
+  reused installed 25.2.0. No second build or signing credentials were created.
+- Submission `f918180c-a2c8-48ab-8b12-8c01563b7bf3` targets exact build 8 and
+  ASC app `6822706958`, existing **Team (Expo)** only. The first scheduling
+  attempt with `--what-to-test` was rejected before creation (EAS Enterprise-only
+  changelog field); the single scheduled upload omits that field.
