@@ -403,19 +403,28 @@ export class EpisodePipeline {
     const stale = !previous.transcriptChecks?.publisherTranscriptChecked && !previous.reassessedFromJobId;
     const processing = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
     const display = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
+    const permissions = this.rights?.resolve(feedUrl, episodeId);
+    // Reopening old failures is a new processing decision, not a licence
+    // inferred from a legacy approval checkbox or an administrator's assertion.
+    const documentedBasis = Boolean(permissions?.approvalAssessment ||
+      (permissions?.licence && permissions.assessmentEvidence?.some((item) => item.type === "PUBLISHER_LICENSE")) ||
+      (permissions?.assessmentSource === "super-admin-technical-review" && permissions.assessmentEvidence?.some((item) => item.type === "INDEPENDENT_FEATURE_AUTHORISATION")) ||
+      (permissions?.classification === "OWNED" && permissions.legalBasis && permissions.assessmentEvidence?.length));
     const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, "intelligence");
     this.ledger.refresh();
     const totals = this.ledger.totals();
     const budgetAvailable = this.ledger.controls.enabled && totals.day < this.ledger.controls.dailyUsd && totals.month < this.ledger.controls.monthlyUsd;
-    const eligible = stale && processing?.allowed !== false && display?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
+    const eligible = stale && documentedBasis && processing?.allowed !== false && display?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
     return {
       historicalFailure: { jobId: previous.jobId, code: previous.code, reason: previous.reason, at: previous.completedAt || previous.startedAt },
-      stale, eligible,
+      stale, eligible, documentedBasis,
       blockerCode: processing?.allowed === false ? processing.code : display?.allowed === false ? display.code
+        : !documentedBasis ? "LEGAL_BASIS_NOT_ESTABLISHED"
         : operational?.allowed === false ? "INTELLIGENCE_POLICY_HIGH"
         : !this.enabled || !this.configured ? "SERVER_UNAVAILABLE"
         : !budgetAvailable ? "BUDGET_LIMIT" : null,
       reason: processing?.allowed === false ? processing.reason : display?.allowed === false ? display.reason
+        : !documentedBasis ? "The historical approval has no supporting permission evidence. Record an independently supported basis before reassessment."
         : operational?.allowed === false ? "New intelligence processing is paused by policy."
         : !this.enabled || !this.configured ? "Episode analysis is temporarily unavailable."
         : !budgetAvailable ? "The intelligence budget is unavailable or exhausted."
@@ -451,6 +460,8 @@ export class EpisodePipeline {
     if (previous?.code === "DURATION_LIMIT" && ["FAILED", "BLOCKED"].includes(previous.state)) {
       recovery = this.transcriptRecovery(feedUrl, episodeId, await this.resolveEpisode(feedUrl, episodeId));
       if (recovery?.eligible) allowAudio = false;
+      if (recovery?.stale && !recovery.documentedBasis)
+        return { state: "BLOCKED", code: recovery.blockerCode, reason: recovery.reason, retryable: false };
     }
     // A source-refresh job can fail before it starts (for example after an
     // SQS visibility lease expires). Retry from the preserved completed
@@ -466,7 +477,7 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state) && !recovery?.eligible
+      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible
     )
       return publicIntelligence(previous);
     if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)

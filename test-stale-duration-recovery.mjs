@@ -17,7 +17,7 @@ const feed = "https://publisher.example/recovery.xml";
 const ledger = new BudgetLedger({ ...defaultControls, enabled: true }, store);
 const rights = new RightsRegistry(store);
 const intelligencePolicy = new IntelligencePolicyRegistry(store);
-rights.set({ feedUrl: feed, classification: "LICENSED", assessmentStatus: "APPROVED", explicitAuthorisation: true, canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true });
+rights.set({ feedUrl: feed, classification: "LICENSED", assessmentStatus: "APPROVED", explicitAuthorisation: true, licence: "https://creativecommons.org/licenses/by/4.0/", assessmentEvidence: [{ type: "PUBLISHER_LICENSE", source: "owned-test-fixture", value: "CC-BY fixture" }], canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true });
 const transcript = { transcriptVersion: "recovery-v1", sourceType: "publisher_rss", sourceUri: "https://publisher.example/transcript.vtt", segments: [
   { id: "one", startMs: 0, endMs: 60_000, text: "Authorised publisher transcripts allow long podcast episodes to be analysed without downloading or transcribing the audio, preserving the original timing evidence." },
 ] };
@@ -73,6 +73,14 @@ try {
   assert.equal(pipeline.transcriptRecovery(feed, "current", await resolveEpisode(feed, "current")).eligible, false);
   assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "current", trigger: "automatic" })).jobId, "old-current");
   seed("restricted");
+  seed("unsupported-approval");
+  rights.set({ feedUrl: feed, episodeId: "unsupported-approval", classification: "LICENSED", assessmentStatus: "APPROVED", explicitAuthorisation: true, legalBasis: "i said yes", canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true });
+  assert.equal(rights.evaluate({ feature: "intelligence-processing", feedUrl: feed, episodeId: "unsupported-approval" }).allowed, true, "fixture reproduces a legacy unsupported approval that the registry otherwise accepts");
+  assert.equal(pipeline.transcriptRecovery(feed, "unsupported-approval", await resolveEpisode(feed, "unsupported-approval")).blockerCode, "LEGAL_BASIS_NOT_ESTABLISHED");
+  assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "unsupported-approval", trigger: "automatic" })).code, "LEGAL_BASIS_NOT_ESTABLISHED");
+  assert.equal(pipeline.status(feed, "unsupported-approval").jobId, "old-unsupported-approval");
+  seed("cancelled", { state: "CANCELLED", code: "CANCELLED_BY_ADMINISTRATOR", attempts: 0 });
+  assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "cancelled", trigger: "automatic" })).jobId, "old-cancelled");
   rights.set({ feedUrl: feed, episodeId: "restricted", classification: "DISPUTED", assessmentStatus: "REJECTED", rightsReserved: true });
   assert.equal(pipeline.transcriptRecovery(feed, "restricted", await resolveEpisode(feed, "restricted")).eligible, false);
   await pipeline.request({ feedUrl: feed, episodeId: "restricted", trigger: "automatic" });

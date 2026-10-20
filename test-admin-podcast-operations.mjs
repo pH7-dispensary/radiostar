@@ -30,6 +30,7 @@ app.rights.set({
   feedUrl, episodeId: "authorised-episode", classification: RightsClassification.LICENSED, assessmentStatus: "APPROVED", explicitAuthorisation: true,
   canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true,
   podcast: "Research & Practice", publisher: "Fixture Publisher", episodeTitle: "Authorised & grounded",
+  licence: "https://creativecommons.org/licenses/by/4.0/", assessmentEvidence: [{ type: "PUBLISHER_LICENSE", source: "owned-test-fixture", value: "CC-BY fixture" }],
 });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;
