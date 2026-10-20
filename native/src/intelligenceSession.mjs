@@ -10,6 +10,7 @@ export function createIntelligenceSession(
   let pending = null,
     timer = null,
     failures = 0,
+    pollCount = 0,
     watching = false,
     deadline = 0,
     enabled = false;
@@ -18,6 +19,10 @@ export function createIntelligenceSession(
     snapshot.status?.processing !== false &&
     [
       "QUEUED",
+      "CHECKING",
+      "ACQUIRING_TRANSCRIPT",
+      "ANALYSING",
+      "INDEXING",
       "PROCESSING",
       "PARTIAL_READY",
       "DISCOVERING",
@@ -45,7 +50,10 @@ export function createIntelligenceSession(
       });
       return;
     }
-    timer = setTimeout(() => void refresh(false), pollMs);
+    // Poll more slowly for long-running jobs while retaining a quick first
+    // update. This is status delivery, not a cosmetic real-time animation.
+    const wait = Math.min(15_000, pollMs * Math.pow(1.45, Math.floor(pollCount / 4)));
+    timer = setTimeout(() => void refresh(false), wait);
   };
   const run = (operation) => {
     if (pending) return pending;
@@ -54,6 +62,9 @@ export function createIntelligenceSession(
       .then(operation)
       .then((status) => {
         failures = 0;
+        pollCount = ["QUEUED", "CHECKING", "ACQUIRING_TRANSCRIPT", "TRANSCRIBING", "ANALYSING", "INDEXING", "PROCESSING", "PARTIAL_READY", "DISCOVERING", "UNDERSTANDING", "ORGANISING"].includes(status?.state) && status?.processing !== false
+          ? pollCount + 1
+          : 0;
         emit({ status, busy: false });
       })
       .catch((error) => {
@@ -94,6 +105,7 @@ export function createIntelligenceSession(
       enabled = automatic;
       watching = true;
       failures = 0;
+      pollCount = 0;
       deadline = 0;
       emit({ paused: false });
       void refresh(automatic);
@@ -104,6 +116,7 @@ export function createIntelligenceSession(
     },
     refresh() {
       failures = 0;
+      pollCount = 0;
       deadline = 0;
       emit({ paused: false });
       return refresh(false);

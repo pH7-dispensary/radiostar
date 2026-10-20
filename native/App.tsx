@@ -1190,8 +1190,14 @@ function PlayerSheet({
       case "READY": return "Ready";
       case "PARTIAL_READY": return "Partly ready";
       case "QUEUED": return "Queued";
-      case "PROCESSING": case "DISCOVERING": case "TRANSCRIBING": case "UNDERSTANDING": case "ORGANISING": return "Preparing";
-      case "UNAVAILABLE": case "BLOCKED": return "Unavailable";
+      case "CHECKING": return "Checking";
+      case "ACQUIRING_TRANSCRIPT": return "Preparing";
+      case "TRANSCRIBING": return "Preparing audio";
+      case "ANALYSING": return "Finding moments";
+      case "INDEXING": return "Making searchable";
+      case "PROCESSING": case "DISCOVERING": case "UNDERSTANDING": case "ORGANISING": return "Preparing";
+      case "BUDGET_PAUSED": return "Paused";
+      case "UNAVAILABLE": case "BLOCKED": case "CANCELLED": return "Unavailable";
       case "FAILED": return "Needs attention";
       default: return enabled ? "Preparing" : "Available when enabled";
     }

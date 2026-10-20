@@ -19,12 +19,84 @@ export const activeStates = new Set([
   "PROCESSING",
   "PARTIAL_READY",
 ]);
+export const listenerActiveStates = new Set([
+  "CHECKING",
+  "QUEUED",
+  "ACQUIRING_TRANSCRIPT",
+  "TRANSCRIBING",
+  "ANALYSING",
+  "INDEXING",
+]);
+const terminalStates = new Set(["READY", "FAILED", "BLOCKED", "CANCELLED"]);
+const lifecycleLimit = 80;
 const completed = (value) =>
   value?.state === "READY" ||
   (value?.state === "PARTIAL_READY" && !!value.completedAt);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 export const episodeKey = (feedUrl, episodeId) =>
   hash(JSON.stringify([feedUrl, episodeId]));
+export const canonicalEpisodeId = (feedUrl, episodeId) =>
+  `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
+
+// The persisted worker state deliberately remains backward-compatible. This
+// projection is the one shared by listener clients and operations views. It
+// prevents a client from guessing progress from a timer or from raw provider
+// fields that do not mean the same thing as listener-visible progress.
+export function listenerProcessingStatus(value) {
+  if (!value) return { state: "NOT_REQUESTED", stage: null, processing: false };
+  if (value.state === "READY" || (value.state === "PARTIAL_READY" && value.completedAt))
+    return { state: "READY", stage: "READY", processing: false };
+  if (value.state === "FAILED")
+    return { state: "FAILED", stage: null, processing: false };
+  if (value.state === "CANCELLED" || value.code === "CANCELLED")
+    return { state: "CANCELLED", stage: null, processing: false };
+  if (value.state === "BLOCKED") {
+    if (value.code === "BUDGET_LIMIT")
+      return { state: "BUDGET_PAUSED", stage: null, processing: false };
+    return { state: "UNAVAILABLE", stage: null, processing: false };
+  }
+  if (value.state === "QUEUED")
+    return { state: "QUEUED", stage: "QUEUED", processing: true };
+  const stage = value.processingStage || value.phase || "CHECKING";
+  const state = {
+    DISCOVERING: "CHECKING",
+    CHECKING: "CHECKING",
+    ACQUIRING_TRANSCRIPT: "ACQUIRING_TRANSCRIPT",
+    PREPARING_AUDIO: "ACQUIRING_TRANSCRIPT",
+    TRANSCRIBING: "TRANSCRIBING",
+    UNDERSTANDING: "ANALYSING",
+    ANALYSING: "ANALYSING",
+    ORGANISING: "INDEXING",
+    INDEXING: "INDEXING",
+  }[stage] || "CHECKING";
+  return { state, stage, processing: true };
+}
+
+const lifecycleType = (value, previous) => {
+  if (value.state === "QUEUED") return "JOB_QUEUED";
+  if (value.state === "READY" || (value.state === "PARTIAL_READY" && value.completedAt)) return "INTELLIGENCE_READY";
+  if (value.state === "FAILED") return "PROCESSING_FAILED";
+  if (value.state === "BLOCKED") return "PROCESSING_UNAVAILABLE";
+  if (value.state === "CANCELLED") return "PROCESSING_CANCELLED";
+  switch (value.processingStage || value.phase) {
+    case "CHECKING": return previous?.state === "QUEUED" ? "WORKER_STARTED" : "TRANSCRIPT_CACHE_CHECK";
+    case "ACQUIRING_TRANSCRIPT": return "TRANSCRIPT_ACQUISITION";
+    case "PREPARING_AUDIO": return "AUDIO_PREPARATION";
+    case "TRANSCRIBING": return "AUDIO_TRANSCRIPTION";
+    case "ANALYSING": return "AI_ANALYSIS";
+    case "INDEXING": return "SEARCH_INDEX";
+    default: return "PROCESSING_UPDATED";
+  }
+};
+
+const transitionAllowed = (from, to) => {
+  if (!from || from === to) return true;
+  if (from === "QUEUED") return ["PROCESSING", "PARTIAL_READY", "FAILED", "BLOCKED", "CANCELLED"].includes(to);
+  if (["PROCESSING", "PARTIAL_READY"].includes(from))
+    return ["PROCESSING", "PARTIAL_READY", "READY", "FAILED", "BLOCKED", "CANCELLED"].includes(to);
+  if (["FAILED", "BLOCKED", "CANCELLED", "READY"].includes(from)) return false;
+  return false;
+};
 export function durationMs(value) {
   if (!value) return null;
   const parts = String(value).split(":").map(Number);
@@ -35,7 +107,7 @@ export function durationMs(value) {
 }
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
-  const { transcript, episode, refs, ...safe } = value;
+  const { transcript, episode, refs, lifecycle, ...safe } = value;
   return {
     ...safe,
     // Job identity is safe and necessary for operations.  Do not leak the
@@ -60,6 +132,9 @@ export function publicIntelligence(value) {
           : safe.state,
     processing: activeStates.has(safe.state) && !safe.completedAt,
     transcriptAvailable: !!transcript?.segments?.length,
+    canonicalEpisodeId: value.feedUrl && value.episodeId
+      ? canonicalEpisodeId(value.feedUrl, value.episodeId)
+      : undefined,
   };
 }
 function failure(error) {
@@ -96,6 +171,24 @@ function failure(error) {
       reason:
         "Analysis is temporarily unavailable. Your listening can continue.",
       retryable: true,
+    };
+  if (/timeout|timed out|abort/i.test(message))
+    return {
+      code: "PROVIDER_TIMEOUT",
+      reason: "Preparation timed out. You can retry once while your listening continues.",
+      retryable: true,
+    };
+  if (/format|ffmpeg|decode|unsupported audio/i.test(message))
+    return {
+      code: "AUDIO_FORMAT_UNSUPPORTED",
+      reason: "This audio format cannot be prepared safely on this server.",
+      retryable: false,
+    };
+  if (/malformed transcript|transcript.*invalid|transcript.*unusable/i.test(message))
+    return {
+      code: "TRANSCRIPT_INVALID",
+      reason: "The available transcript could not be validated for intelligence.",
+      retryable: false,
     };
   return {
     code: "ANALYSIS_FAILED",
@@ -144,17 +237,79 @@ export class EpisodePipeline {
         // single consumer. In-progress work remains failed on restart because
         // its provider outcome may be unknown and must not be retried blindly.
         if (!(this.queue && value.state === "QUEUED"))
-        store.set("intelligence", key, {
-          ...value,
-          state: "FAILED",
-          code: "INTERRUPTED",
-          reason:
-            "Analysis was interrupted when the server restarted. Please retry.",
-          retryable: value.attempts < 2,
-        });
+          this.transition(key, value, {
+            state: "FAILED",
+            code: "INTERRUPTED",
+            reason:
+              "Analysis was interrupted when the server restarted. Please retry.",
+            retryable: value.attempts < 2,
+          // A pre-Phase-4 job may persist one of the legacy detailed states
+          // (for example UNDERSTANDING). Recovery is the single safe place to
+          // close that unknown provider outcome regardless of the old graph.
+          }, { force: true });
     // Unknown provider outcomes are never refunded or retried automatically.
     for (const [id, row] of ledger.reservations)
       ledger.reconcile(id, { usd: row.usd, failed: true, uncertain: true });
+  }
+  transition(key, current, patch, { force = false } = {}) {
+    const now = new Date().toISOString();
+    return this.store.transaction(() => {
+      const stored = this.store.get("intelligence", key) || current || {};
+      // A late worker must never overwrite a newer retry or completed record.
+      if (current?.jobId && stored.jobId && current.jobId !== stored.jobId)
+        return stored;
+      let next = { ...stored, ...patch };
+      if (!transitionAllowed(stored.state, next.state) && !force)
+        throw Error(`Invalid processing transition: ${stored.state || "NONE"} to ${next.state || "NONE"}.`);
+      const previousStage = stored.processingStage || stored.phase || null;
+      const stage = next.processingStage || next.phase || null;
+      const changed = Object.entries(patch).some(([field, value]) =>
+        JSON.stringify(stored[field]) !== JSON.stringify(value),
+      ) || stored.state !== next.state || previousStage !== stage;
+      if (!changed) return stored;
+      next.updatedAt = now;
+      if (terminalStates.has(next.state) && !next.completedAt)
+        next.completedAt = now;
+      const event = {
+        id: `${next.jobId || "job"}:${(stored.lifecycle || []).length + 1}`,
+        at: now,
+        feedUrl: next.feedUrl || stored.feedUrl || null,
+        episodeId: next.episodeId || stored.episodeId || next.episode?.id || null,
+        jobId: next.jobId || null,
+        previousState: stored.state || null,
+        state: next.state || null,
+        previousStage,
+        stage,
+        type: lifecycleType(next, stored),
+        code: next.code || null,
+        reason: next.reason || null,
+        processingVersion: next.processingVersion || null,
+      };
+      next.lifecycle = [...(stored.lifecycle || []), event].slice(-lifecycleLimit);
+      this.store.set("intelligence", key, next);
+      // The per-job history makes restarts and later retries auditable even
+      // though the current status record is intentionally one per episode.
+      if (event.jobId) this.store.set("processing-event", event.id, event);
+      return next;
+    });
+  }
+  createJob(key, value) {
+    const now = value.startedAt || new Date().toISOString();
+    const initial = {
+      ...value,
+      queuedAt: value.queuedAt || now,
+      startedAt: value.startedAt || now,
+      updatedAt: now,
+      processingStage: "QUEUED",
+      lifecycle: [],
+    };
+    return this.transition(key, null, initial, { force: true });
+  }
+  eventsFor(feedUrl, episodeId) {
+    return this.store.all("processing-event")
+      .map(([, event]) => event)
+      .filter((event) => event.feedUrl === feedUrl && event.episodeId === episodeId)
+      .sort((a, b) => Date.parse(a.at || "") - Date.parse(b.at || ""));
   }
   status(feed, id) {
     const key = episodeKey(feed, id);
@@ -292,6 +447,7 @@ export class EpisodePipeline {
       startedAt: new Date().toISOString(),
       cacheHit: false,
       trigger,
+      allowAudio,
       feedUrl,
       episodeId,
       deadlineAt: new Date(Date.now() + this.jobTimeoutMs).toISOString(),
@@ -305,10 +461,10 @@ export class EpisodePipeline {
       initial.refreshBaseJobId = initial.jobId;
       this.store.set("intelligence-refresh", initial.jobId, previous);
     }
-    this.store.set("intelligence", key, initial);
+    const durableInitial = this.createJob(key, initial);
     if (this.queue) {
       const queued = {
-        jobId: initial.jobId,
+        jobId: durableInitial.jobId,
         key,
         feedUrl,
         episodeId,
@@ -317,34 +473,34 @@ export class EpisodePipeline {
         // after a parser safety upgrade). This must survive SQS dispatch; the
         // worker is the authority that fetches the transcript.
         forcePublisherRefresh,
-        queuedAt: initial.startedAt,
+        queuedAt: durableInitial.queuedAt,
       };
       // The SQLite outbox is persisted before attempting SQS. If AWS is
       // temporarily unavailable, the single consumer will reconcile it later.
-      this.store.set("processing-outbox", initial.jobId, queued);
+      this.store.set("processing-outbox", durableInitial.jobId, queued);
       try {
         await this.queue.enqueue(queued);
-        this.store.delete("processing-outbox", initial.jobId);
+        this.store.delete("processing-outbox", durableInitial.jobId);
       } catch (error) {
         console.error(JSON.stringify({
           event: "processing-queue-enqueue-deferred",
-          jobId: initial.jobId,
+          jobId: durableInitial.jobId,
           code: error?.name || "QUEUE_UNAVAILABLE",
         }));
       }
-      return publicIntelligence(initial);
+      return publicIntelligence(durableInitial);
     }
     const task = this.run({
       key,
       feedUrl,
       episodeId,
       allowAudio,
-      initial,
+      initial: durableInitial,
       previous,
       forcePublisherRefresh,
     }).finally(() => this.inflight.delete(key));
     this.inflight.set(key, task);
-    return publicIntelligence(initial);
+    return publicIntelligence(durableInitial);
   }
   async recoverQueued() {
     if (!this.queue) return;
@@ -357,8 +513,7 @@ export class EpisodePipeline {
         Date.parse(status.deadlineAt) <= now
       ) {
         const queued = status.state === "QUEUED";
-        this.store.set("intelligence", key, {
-          ...status,
+        this.transition(key, status, {
           state: "FAILED",
           code: queued ? "QUEUE_TIMEOUT" : "PROCESSING_TIMEOUT",
           reason: queued
@@ -472,8 +627,7 @@ export class EpisodePipeline {
               ? "PARTIAL_READY"
               : "PROCESSING",
         };
-      value = { ...value, ...patch };
-      this.store.set("intelligence", key, value);
+      value = this.transition(key, value, patch);
       console.log(
         JSON.stringify({
           event: "intelligence",
@@ -496,7 +650,7 @@ export class EpisodePipeline {
     }, this.jobTimeoutMs);
     timeout.unref?.();
     try {
-      update({ state: "DISCOVERING" });
+      update({ state: "DISCOVERING", processingStage: "CHECKING" });
       const episode = await this.resolveEpisode(feedUrl, episodeId),
         duration = durationMs(episode.duration),
         variant = hash(episode.audioUrl || "");
@@ -517,6 +671,7 @@ export class EpisodePipeline {
         ? null
         : this.store.get("transcript", key + ":" + variant);
       if (!transcript) {
+        update({ state: "DISCOVERING", processingStage: "ACQUIRING_TRANSCRIPT" });
         if (rights && !rights.canAcquireTranscript)
           throw Error("Rights permission does not allow transcript acquisition for this episode.");
         for (const ref of episode.refs) {
@@ -580,6 +735,10 @@ export class EpisodePipeline {
             this.ledger.controls.dailyTranscriptionSeconds
         )
           throw Error("The intelligence budget has been reached.");
+        // Downloading/chunking may take time but is not yet a provider
+        // transcription. Keep the listener state in acquisition until the
+        // provider call actually begins.
+        update({ state: "DISCOVERING", processingStage: "PREPARING_AUDIO" });
         let audioTask = this.audioInflight.get(variant);
         if (!audioTask) {
           audioTask = (async () => {
@@ -589,7 +748,7 @@ export class EpisodePipeline {
             );
             try {
               controller.signal.throwIfAborted();
-              update({ state: "TRANSCRIBING" });
+              update({ state: "TRANSCRIBING", processingStage: "TRANSCRIBING" });
               const acquired = await transcribeOnDemand({
                 episodeId,
                 audioUrl: episode.audioUrl,
@@ -608,7 +767,7 @@ export class EpisodePipeline {
             }
           })().finally(() => this.audioInflight.delete(variant));
           this.audioInflight.set(variant, audioTask);
-        } else update({ state: "TRANSCRIBING" });
+        } else update({ state: "TRANSCRIBING", processingStage: "TRANSCRIBING" });
         transcript = await audioTask;
       }
       controller.signal.throwIfAborted();
@@ -651,6 +810,7 @@ export class EpisodePipeline {
       }
       update({
         state: "UNDERSTANDING",
+        processingStage: "ANALYSING",
         transcript,
         episode: { ...episode, feedUrl, id: episodeId },
         readiness: transcript.quality.readiness,
@@ -680,7 +840,7 @@ export class EpisodePipeline {
       });
       if (!rightsAllowed())
         throw Error("Rights permission no longer allows AI processing for this episode.");
-      update({ state: "ORGANISING", ...generated });
+      update({ state: "ORGANISING", processingStage: "INDEXING", ...generated });
       update({
         state: generated.partialResult ? "PARTIAL_READY" : "READY",
         sourceCheckedAt: new Date().toISOString(),

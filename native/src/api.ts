@@ -20,7 +20,11 @@ export type CatalogueEpisode = {
 export type IntelligenceStatus = {
   state:
     | "NOT_REQUESTED"
+    | "CHECKING"
     | "QUEUED"
+    | "ACQUIRING_TRANSCRIPT"
+    | "ANALYSING"
+    | "INDEXING"
     | "PROCESSING"
     | "PARTIAL_READY"
     | "BLOCKED"
@@ -31,16 +35,36 @@ export type IntelligenceStatus = {
     | "TRANSCRIPT_READY"
     | "READY"
     | "UNAVAILABLE"
-    | "FAILED";
+    | "FAILED"
+    | "CANCELLED"
+    | "BUDGET_PAUSED";
+  legacyState?: string;
+  canonicalEpisodeId?: string;
+  processingStage?:
+    | "QUEUED"
+    | "CHECKING"
+    | "ACQUIRING_TRANSCRIPT"
+    | "PREPARING_AUDIO"
+    | "TRANSCRIBING"
+    | "ANALYSING"
+    | "INDEXING"
+    | "READY"
+    | null;
   readiness?: "FULLY_READY" | "TEXT_ONLY" | "PARTIAL" | "UNUSABLE";
   processing?: boolean;
   phase?: "DISCOVERING" | "TRANSCRIBING" | "UNDERSTANDING" | "ORGANISING";
   transcriptAvailable?: boolean;
   qualityNote?: string;
   jobId?: string;
+  startedAt?: string | null;
+  lastUpdatedAt?: string | null;
+  completedAt?: string | null;
   deadlineAt?: string;
   reason?: string;
   code?: string;
+  rightsCode?: string | null;
+  failureCategory?: "UNAVAILABLE" | "BUDGET" | "PROVIDER" | "WORKER" | "PROCESSING" | null;
+  retryEligible?: boolean;
   retryable?: boolean;
   requiresAudioConsent?: boolean;
   cacheHit?: boolean;
@@ -65,6 +89,21 @@ export type IntelligenceStatus = {
     transcriptVersion: string;
   };
   paid?: { configured: boolean; enabled: boolean };
+  availableFeatures?: {
+    brief: boolean;
+    chapters: boolean;
+    topics: boolean;
+    moments: boolean;
+  };
+  estimatedCompletion?: {
+    route: "cache" | "publisher" | "audio";
+    sampleCount: number;
+    minimumMs: number;
+    maximumMs: number;
+    label: string;
+    estimatedCompletionAt: string;
+  } | null;
+  nextAction?: "VIEW_INTELLIGENCE" | "PREPARE" | "KEEP_LISTENING" | "RETRY" | "WAIT_FOR_BUDGET" | "EXPLORE_ANOTHER_EPISODE";
 };
 export type EpisodeMoment = {
   relatedChapters?: Array<{ title: string; startMs: number; endMs: number }>;
@@ -205,7 +244,9 @@ export const isProcessing = (status: IntelligenceStatus | null) =>
   !!status &&
   status.processing !== false &&
   [
+    "CHECKING",
     "QUEUED",
+    "ACQUIRING_TRANSCRIPT",
     "PROCESSING",
     "PARTIAL_READY",
     "DISCOVERING",
@@ -214,12 +255,18 @@ export const isProcessing = (status: IntelligenceStatus | null) =>
     "ORGANISING",
   ].includes(status.state);
 const processingLabels: Record<string, string> = {
-  QUEUED: "Waiting to analyse",
-  DISCOVERING: "Finding a transcript",
-  TRANSCRIBING: "Transcribing the audio",
-  UNDERSTANDING: "Understanding the conversation",
-  ORGANISING: "Organising chapters",
+  CHECKING: "Checking this conversation.",
+  QUEUED: "Your episode is getting ready.",
+  ACQUIRING_TRANSCRIPT: "Preparing the conversation.",
+  TRANSCRIBING: "Preparing the conversation.",
+  ANALYSING: "Finding the interesting moments.",
+  INDEXING: "Making everything searchable.",
+  DISCOVERING: "Checking this conversation.",
+  UNDERSTANDING: "Finding the interesting moments.",
+  ORGANISING: "Making everything searchable.",
   READY: "Ready to explore",
+  UNAVAILABLE: "AI insights aren't available for this episode.",
+  FAILED: "We couldn't prepare this episode.",
 };
 export const processingLabel = (status: IntelligenceStatus | null) =>
   processingLabels[status?.state || ""] ||

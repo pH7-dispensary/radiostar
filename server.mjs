@@ -10,7 +10,7 @@ import {
   openAIStatus,
 } from "./openai-intelligence.mjs";
 import { LocalStore } from "./persistence.mjs";
-import { EpisodePipeline, durationMs, episodeKey, publicIntelligence } from "./episode-pipeline.mjs";
+import { EpisodePipeline, canonicalEpisodeId, durationMs, episodeKey, listenerProcessingStatus, publicIntelligence } from "./episode-pipeline.mjs";
 import { publicUrl, fetchPublicText } from "./safe-network.mjs";
 import { projectRoot, loadCredentials } from "./config.mjs";
 import { acquireServerLock } from "./server-lock.mjs";
@@ -363,6 +363,59 @@ export function createStarCastServer({
       .filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
     return samples.length ? samples[Math.floor(samples.length / 2)] : null;
   };
+  const processingRoute = (job) => {
+    if (job?.cacheHit) return "cache";
+    if (job?.provenance?.sourceType === "on_demand_audio" || job?.allowAudio) return "audio";
+    if (job?.provenance?.sourceType) return "publisher";
+    return null;
+  };
+  const percentile = (values, fraction) => {
+    if (!values.length) return null;
+    return values[Math.min(values.length - 1, Math.max(0, Math.floor((values.length - 1) * fraction)))];
+  };
+  const durationLabel = (milliseconds) => {
+    const minutes = Math.max(1, Math.round(milliseconds / 60_000));
+    return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  };
+  // ETA is intentionally withheld until comparable completed work exists.
+  // It is a measured range, not worker progress expressed as a percentage.
+  const processingEstimateFor = (job) => {
+    if (!job || !listenerProcessingStatus(job).processing) return null;
+    const route = processingRoute(job);
+    if (!route) return null;
+    const targetDuration = durationMs(job.episode?.duration);
+    const samples = store.all("intelligence")
+      .map(([, value]) => value)
+      .filter((value) => value.completedAt && Number.isFinite(value.processingMs) && value.processingMs > 0 && processingRoute(value) === route)
+      .map((value) => {
+        const sampleDuration = durationMs(value.episode?.duration);
+        // Duration affects audio work most strongly. The square-root clamp
+        // reflects the observed route without claiming linear provider time.
+        const scale = route === "audio" && targetDuration && sampleDuration
+          ? Math.max(0.5, Math.min(2, Math.sqrt(targetDuration / sampleDuration)))
+          : 1;
+        return Math.round(value.processingMs * scale);
+      })
+      .sort((a, b) => a - b);
+    if (samples.length < 3) return null;
+    const queueDepth = store.all("intelligence").filter(([, value]) => value.state === "QUEUED" && value.jobId !== job.jobId).length;
+    const lower = percentile(samples, 0.25);
+    const upper = percentile(samples, 0.75);
+    const queuedAt = Date.parse(job.queuedAt || job.startedAt || "");
+    const elapsed = Number.isFinite(queuedAt) ? Math.max(0, Date.now() - queuedAt) : 0;
+    const queueAllowance = job.state === "QUEUED" ? Math.min(upper * queueDepth, upper * 3) : 0;
+    const minimumMs = Math.max(0, lower + queueAllowance - elapsed);
+    const maximumMs = Math.max(minimumMs, upper + queueAllowance - elapsed);
+    const lowerLabel = durationLabel(minimumMs), upperLabel = durationLabel(maximumMs);
+    return {
+      route,
+      sampleCount: samples.length,
+      minimumMs,
+      maximumMs,
+      label: lowerLabel === upperLabel ? `Usually ${upperLabel}.` : `Usually ${lowerLabel}–${upperLabel}.`,
+      estimatedCompletionAt: new Date(Date.now() + maximumMs).toISOString(),
+    };
+  };
   const blockedContent = () => {
     const entries = new Map();
     const add = ({ feedUrl, episodeId = "", source = null, job = null } = {}) => {
@@ -474,6 +527,76 @@ export function createStarCastServer({
   const jobsForEpisode = (feedUrl, episodeId) => store.all("intelligence")
     .map(([, job]) => job)
     .filter((job) => job.feedUrl === feedUrl && (job.episodeId === episodeId || job.episode?.id === episodeId));
+  const failureCategory = (code) => {
+    if (!code) return null;
+    if (["RIGHTS_RESTRICTED", "AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT", "DURATION_UNKNOWN", "AUDIO_FORMAT_UNSUPPORTED", "TRANSCRIPT_INVALID"].includes(code)) return "UNAVAILABLE";
+    if (code === "BUDGET_LIMIT") return "BUDGET";
+    if (["PROVIDER_TIMEOUT", "TIMEOUT", "PROVIDER_UNAVAILABLE"].includes(code)) return "PROVIDER";
+    if (["QUEUE_TIMEOUT", "PROCESSING_TIMEOUT", "INTERRUPTED"].includes(code)) return "WORKER";
+    return "PROCESSING";
+  };
+  const listenerStatus = (feedUrl, episodeId) => {
+    const job = pipeline.status(feedUrl, episodeId) || jobsForEpisode(feedUrl, episodeId)
+      .sort((a, b) => Date.parse(b.updatedAt || b.completedAt || b.startedAt || "") - Date.parse(a.updatedAt || a.completedAt || a.startedAt || ""))[0] || null;
+    const safe = publicIntelligence(job);
+    const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
+    const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
+    const operational = intelligencePolicy.allows(feedUrl, episodeId, "intelligence");
+    const flags = listenerFeatures();
+    const availableFeatures = {
+      brief: Boolean(flags.episodeBriefs && job?.brief),
+      chapters: Boolean(flags.exploreEpisode && job?.chapters?.length),
+      topics: Boolean(flags.exploreEpisode && (job?.topics?.length || job?.brief?.themes?.length)),
+      moments: Boolean(flags.momentSearch && job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs))),
+    };
+    let projected = listenerProcessingStatus(job);
+    let code = job?.code || null;
+    let reason = job?.reason || null;
+    let rightsCode = null;
+    if (!display.allowed || !processing.allowed) {
+      projected = { state: "UNAVAILABLE", stage: null, processing: false };
+      rightsCode = !processing.allowed ? processing.code : display.code;
+      code = "RIGHTS_RESTRICTED";
+      reason = !processing.allowed ? processing.reason : display.reason;
+    } else if (!operational.allowed && projected.state !== "READY") {
+      // An operational hold stops new work but never revokes intelligence that
+      // was already lawfully prepared and persisted.
+      projected = { state: "UNAVAILABLE", stage: null, processing: false };
+      code = operational.code || "INTELLIGENCE_POLICY_HIGH";
+      reason = operational.reason || "New intelligence processing is paused by the podcast intelligence policy.";
+    } else if (!flags.episodeBriefs) {
+      projected = { state: "UNAVAILABLE", stage: null, processing: false };
+      code = "FEATURE_DISABLED";
+      reason = "AI insights are not available for this episode.";
+    }
+    const eta = projected.processing ? processingEstimateFor(job) : null;
+    const nextAction = projected.state === "READY" ? "VIEW_INTELLIGENCE"
+      : projected.state === "NOT_REQUESTED" ? "PREPARE"
+      : projected.processing ? "KEEP_LISTENING"
+      : projected.state === "FAILED" && job?.retryable ? "RETRY"
+      : projected.state === "BUDGET_PAUSED" ? "WAIT_FOR_BUDGET"
+      : "EXPLORE_ANOTHER_EPISODE";
+    return {
+      ...safe,
+      legacyState: safe.state,
+      ...projected,
+      canonicalEpisodeId: canonicalEpisodeId(feedUrl, episodeId),
+      processingStage: projected.stage,
+      jobId: job?.jobId || null,
+      startedAt: job?.startedAt || null,
+      lastUpdatedAt: job?.updatedAt || job?.completedAt || job?.startedAt || null,
+      completedAt: job?.completedAt || null,
+      failureCategory: failureCategory(code),
+      retryEligible: job?.retryable === true,
+      retryable: job?.retryable === true,
+      code,
+      rightsCode,
+      reason,
+      availableFeatures,
+      estimatedCompletion: eta,
+      nextAction,
+    };
+  };
   const episodeOperationsState = (feedUrl, episode) => {
     const job = pipeline.status(feedUrl, episode.id) || jobsForEpisode(feedUrl, episode.id)
       .sort((a, b) => Date.parse(b.completedAt || b.startedAt || "") - Date.parse(a.completedAt || a.startedAt || ""))[0] || null;
@@ -568,8 +691,9 @@ export function createStarCastServer({
       : "Preparation will reuse a canonical cache where available; audio fallback is never automatic.";
     return {
       ...episode,
-      canonicalEpisodeId: `${canonicalFeedId(feedUrl)}:${createHash("sha256").update(String(episode.id)).digest("hex").slice(0, 16)}`,
+      canonicalEpisodeId: canonicalEpisodeId(feedUrl, episode.id),
       state, code, reason, action, job: publicJob, policy: { ...policy, level: intelligenceLevel(policy.tier) }, rights: permissions,
+      processingStatus: listenerStatus(feedUrl, episode.id),
       rightsDecisions: { processing, display, search }, features,
       effectivePolicy: { level: intelligenceLevel(policy.tier), source: policy.source, version: policy.version, availability: state, eligible: state === "NOT_PREPARED", blockers, expectedProcessing },
       adSkip: { candidateCount: adCandidates.length, verifiedCount: verifiedSkips.length, productionAutomaticSkipping: false },
@@ -648,12 +772,56 @@ export function createStarCastServer({
     if (!episode) throw Error("This episode no longer appears in the publisher feed.");
     const history = jobsForEpisode(feedUrl, episodeId).map((job) => publicIntelligence(job)).sort((a, b) => Date.parse(a.startedAt || "") - Date.parse(b.startedAt || ""));
     const timeline = [{ at: episode.publishedAt || null, type: "PUBLISHER_METADATA", label: "Published in the current publisher feed." }];
-    for (const job of history) {
-      if (job.startedAt) timeline.push({ at: job.startedAt, type: "PROCESSING_REQUESTED", label: "Processing was requested.", state: job.state, jobId: job.jobId });
-      if (job.provenance?.acquiredAt) timeline.push({ at: job.provenance.acquiredAt, type: "TRANSCRIPT_ACQUIRED", label: "A transcript source was acquired.", state: job.state, jobId: job.jobId });
-      if (job.completedAt) timeline.push({ at: job.completedAt, type: "PROCESSING_COMPLETED", label: "Processing completed.", state: job.state, jobId: job.jobId });
+    const recordedEvents = pipeline.eventsFor(feedUrl, episodeId);
+    if (recordedEvents.length) {
+      for (const event of recordedEvents)
+        timeline.push({
+          at: event.at,
+          // Keep the established Admin event name for existing consumers while
+          // deriving it from the durable READY transition, never from a timer.
+          type: event.type === "INTELLIGENCE_READY" ? "PROCESSING_COMPLETED" : event.type,
+          eventType: event.type,
+          label: event.reason || (event.stage ? `Recorded ${String(event.stage).toLowerCase().replaceAll("_", " ")} stage.` : "Recorded processing transition."),
+          state: listenerProcessingStatus({ state: event.state, processingStage: event.stage, code: event.code }).state,
+          stage: event.stage,
+          jobId: event.jobId,
+          code: event.code,
+        });
+    } else {
+      // Pre-instrumentation jobs retain only their persisted timestamps. Label
+      // them as such rather than inventing detailed stages retroactively.
+      for (const job of history) {
+        if (job.startedAt) timeline.push({ at: job.startedAt, type: "LEGACY_PROCESSING_REQUEST", label: "Recorded processing request from a pre-timeline job.", state: job.state, jobId: job.jobId });
+        if (job.completedAt) timeline.push({ at: job.completedAt, type: "LEGACY_PROCESSING_COMPLETION", label: "Recorded completion from a pre-timeline job.", state: job.state, jobId: job.jobId });
+      }
     }
-    return { podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId }, episode, processingHistory: history, timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)), estimatedMedianProcessingMs: processingEstimate() };
+    const status = listenerStatus(feedUrl, episodeId);
+    const workerStarted = recordedEvents.find((event) => event.type === "WORKER_STARTED")?.at || null;
+    const queuedAt = Date.parse(status.startedAt || "");
+    const workerAt = Date.parse(workerStarted || "");
+    const jobCost = status.jobId ? ledger.usage.filter((row) => row.id.startsWith(`${status.jobId}:`)).reduce((sum, row) => sum + row.usd, 0) : 0;
+    return {
+      podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId },
+      episode: { ...episode, processingStatus: status },
+      processingHistory: history,
+      timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
+      estimatedMedianProcessingMs: processingEstimate(),
+      estimatedCompletion: status.estimatedCompletion,
+      processing: {
+        state: status.state,
+        stage: status.processingStage,
+        jobId: status.jobId,
+        startedAt: status.startedAt,
+        lastUpdatedAt: status.lastUpdatedAt,
+        completedAt: status.completedAt,
+        elapsedMs: queuedAt ? Math.max(0, Date.now() - queuedAt) : null,
+        queueWaitMs: queuedAt && workerAt ? Math.max(0, workerAt - queuedAt) : null,
+        failureCategory: status.failureCategory,
+        retryEligible: status.retryEligible,
+        actualCostUsd: Number(jobCost.toFixed(6)),
+        estimatedCompletion: status.estimatedCompletion,
+      },
+    };
   };
   const policyImpact = async (input = {}) => {
     if (!publicUrl(input.feedUrl)) throw Error("A valid podcast RSS URL is required.");
@@ -735,9 +903,10 @@ export function createStarCastServer({
     const detail = await episodeDetail(input.feedUrl, input.episodeId);
     const current = detail.episode;
     if (!["PREPARE", "RETRY"].includes(current.action.type)) throw Error(current.reason || "This episode is not eligible for preparation.");
-    const status = await pipeline.request({ feedUrl: input.feedUrl, episodeId: input.episodeId, retry: current.action.type === "RETRY", allowAudio: false, trigger: "admin" });
-    rights.audit("admin-episode-processing-requested", `${input.feedUrl}:${input.episodeId}`, actor.id, { jobId: status.jobId || null, state: status.state, audio: false });
-    adminService.appendAudit({ actor, action: "admin-episode-processing-requested", resource: `${input.feedUrl}:${input.episodeId}`, newState: { state: status.state, jobId: status.jobId || null }, reason: "Explicit operational request; audio transcription remains off.", outcome: "ALLOWED" });
+    const requested = await pipeline.request({ feedUrl: input.feedUrl, episodeId: input.episodeId, retry: current.action.type === "RETRY", allowAudio: false, trigger: "admin" });
+    const status = listenerStatus(input.feedUrl, input.episodeId);
+    rights.audit("admin-episode-processing-requested", `${input.feedUrl}:${input.episodeId}`, actor.id, { jobId: requested.jobId || null, state: status.state, audio: false });
+    adminService.appendAudit({ actor, action: "admin-episode-processing-requested", resource: `${input.feedUrl}:${input.episodeId}`, newState: { state: status.state, jobId: requested.jobId || null }, reason: "Explicit operational request; audio transcription remains off.", outcome: "ALLOWED" });
     return { status, audioTranscription: "NOT_REQUESTED", estimatedMedianProcessingMs: processingEstimate() };
   };
   const applyIntelligencePolicy = async (input, actor) => {
@@ -1320,7 +1489,10 @@ export function createStarCastServer({
           usage: ledger.usage,
           reservations: [...ledger.reservations.values()],
           totals: ledger.totals(),
-          jobs: store.all("intelligence").map(([, v]) => publicIntelligence(v)),
+          jobs: store.all("intelligence").map(([, v]) => ({
+            ...publicIntelligence(v),
+            processingStatus: v.feedUrl && v.episodeId ? listenerStatus(v.feedUrl, v.episodeId) : null,
+          })),
         });
       }
       if (url.pathname === "/api/admin/intelligence/policies" && ["GET", "POST"].includes(req.method)) {
@@ -1500,20 +1672,10 @@ export function createStarCastServer({
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
         const feed = url.searchParams.get("feedUrl"),
           id = url.searchParams.get("episodeId");
-        const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: id });
-        if (!decision.allowed)
-          return send(res, 200, {
-            status: {
-              state: "BLOCKED",
-              code: "RIGHTS_RESTRICTED",
-              rightsCode: decision.code,
-              reason: decision.reason,
-              transcriptAvailable: false,
-            },
-            features: listenerFeatures(),
-          });
+        if (!valid({ feedUrl: feed, episodeId: id }))
+          return send(res, 400, { error: "A valid publisher episode is required." });
         return send(res, 200, {
-          status: publicIntelligence(pipeline.status(feed, id)),
+          status: listenerStatus(feed, id),
           features: listenerFeatures(),
         });
       }
@@ -1561,17 +1723,39 @@ export function createStarCastServer({
           });
         const decision = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         if (!decision.allowed)
-          return send(res, 200, { status: { state: "BLOCKED", code: "RIGHTS_RESTRICTED", rightsCode: decision.code, reason: decision.reason, retryable: false } });
+          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
         const featureForCapability = { brief: "episodeBrief", chapters: "smartChapters", moment: "findMoment" };
         if (!featureEnabled(featureForCapability[input.capability]))
-          return send(res, 200, { status: { state: "BLOCKED", code: "FEATURE_DISABLED", reason: "This feature is currently unavailable.", retryable: false } });
-        const status = await pipeline.request({
+          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
+        const requested = await pipeline.request({
           ...input,
           allowAudio: input.allowAudio === true,
           retry: input.retry === true,
           trigger: input.trigger === "automatic" ? "automatic" : "manual",
         });
-        return send(res, status.state === "QUEUED" ? 202 : 200, { status });
+        // A 202 acknowledges the durable QUEUED transition. The worker can
+        // legitimately advance before this response is serialized, so clients
+        // use the status endpoint for the current state on their next poll.
+        // Keeping this acknowledgement stable avoids conflating acceptance
+        // with a claim that completed intelligence is already available.
+        const current = listenerStatus(input.feedUrl, input.episodeId);
+        const accepted = requested.state === "QUEUED" ? listenerProcessingStatus(requested) : null;
+        const status = {
+          ...current,
+          ...(accepted ? {
+            ...accepted,
+            processingStage: accepted.stage,
+            jobId: requested.jobId || current.jobId,
+            startedAt: requested.startedAt || current.startedAt,
+            lastUpdatedAt: requested.updatedAt || requested.startedAt || current.lastUpdatedAt,
+            completedAt: null,
+            code: requested.code || null,
+            reason: requested.reason || "Your episode is getting ready.",
+            nextAction: "KEEP_LISTENING",
+          } : {}),
+          cacheHit: requested.cacheHit === true || undefined,
+        };
+        return send(res, requested.state === "QUEUED" ? 202 : 200, { status });
       }
       if (url.pathname === "/api/intelligence/moment") {
         if (!featureEnabled("findMoment")) return send(res, 403, { error: "This feature is currently unavailable.", code: "FEATURE_DISABLED" });

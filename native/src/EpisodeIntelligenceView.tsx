@@ -27,6 +27,7 @@ import type { StarTheme } from "./design";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
 import { feedback } from "./feedback";
 import { LoadingState, useReducedMotion } from "./LoadingState";
+import { IntelligencePreparation } from "./IntelligencePreparation";
 import { usePlayback } from "./PlaybackProvider";
 import { AdSkipPanel } from "./AdSkipPanel";
 
@@ -176,26 +177,16 @@ export function EpisodeIntelligenceView({
   };
   const processing = isProcessing(status) && !paused;
   const rightsRestricted = status?.code === "RIGHTS_RESTRICTED";
-  const processingLabel =
-    status?.state === "QUEUED"
-      ? "Queued for preparation. Keep listening while Radio Star works."
-      : status?.phase === "DISCOVERING"
-        ? "Checking the publisher transcript. Keep listening while Radio Star works."
-        : status?.phase === "TRANSCRIBING"
-          ? "Preparing authorised audio. Keep listening while Radio Star works."
-          : status?.phase === "UNDERSTANDING"
-            ? "Preparing the episode brief. Keep listening while Radio Star works."
-            : status?.phase === "ORGANISING"
-              ? "Organising chapters and moments. Keep listening while Radio Star works."
-              : "Preparing episode intelligence. Keep listening while Radio Star works.";
   const emptyHeading = !source.feedUrl
     ? "Open this from its podcast."
     : rightsRestricted
       ? "Intelligence isn’t available for this episode."
       : status?.requiresAudioConsent
         ? "Listen a little deeper."
+        : status?.state === "BUDGET_PAUSED"
+          ? "AI insights are paused for this episode."
         : status?.state === "UNAVAILABLE"
-          ? "Intelligence is unavailable right now."
+          ? "AI insights aren't available for this episode."
           : status?.state === "FAILED"
             ? "This episode could not be prepared."
             : "Preparing this episode.";
@@ -337,8 +328,11 @@ export function EpisodeIntelligenceView({
             </LinearGradient>
           ) : (
             <>
-              {(busy || processing) && !status?.brief && !paused && (
-                <LoadingState p={p} label={processingLabel} />
+              {processing && !status?.brief && !paused && (
+                <IntelligencePreparation p={p} status={status} />
+              )}
+              {busy && !processing && !status?.brief && !paused && (
+                <LoadingState p={p} label="Checking this conversation." />
               )}
               {error ? (
                 <View style={[s.card, { borderColor: p.line }]}>
@@ -351,17 +345,7 @@ export function EpisodeIntelligenceView({
                   {action("Check again", () => void session?.refresh(), true)}
                 </View>
               ) : null}
-              {processing && (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => session?.stopWaiting()}
-                  style={s.quietButton}
-                >
-                  <Text style={{ color: p.muted }}>
-                    Stop waiting · keep listening
-                  </Text>
-                </Pressable>
-              )}
+              {processing && <Text style={[s.processingNote, { color: p.muted }]}>Listening stays available while preparation continues in the background.</Text>}
               {!processing && !busy && !error && !status?.brief && (
                 <View
                   style={[
@@ -753,6 +737,7 @@ const s = StyleSheet.create({
   },
   buttonText: { fontSize: 15, fontWeight: "600", textAlign: "center" },
   quietButton: { minHeight: 44, justifyContent: "center" },
+  processingNote: { fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   tabs: { gap: 0, paddingVertical: 4 },
   tab: {
     minHeight: 44,
