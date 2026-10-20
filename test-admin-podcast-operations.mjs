@@ -51,7 +51,7 @@ try {
   assert.equal(restricted.code, "RIGHTS_ASSESSMENT_REQUIRED", "unassessed content is represented as a restriction, not a processing delay");
   const authorised = detail.episodes.find((episode) => episode.id === "authorised-episode");
   assert.equal(authorised.action.type, "PREPARE");
-  assert.equal(authorised.features.find((feature) => feature.name === "Captions").state, "UNAVAILABLE", "caption rights remain independently gated");
+  assert.equal(authorised.features.find((feature) => feature.name === "Captions").state, "RESTRICTED", "caption rights remain independently gated and are distinguished from processing availability");
 
   const preview = await post("/api/admin/intelligence/policy-impact", { feedUrl, tier: "HIGH", maxEpisodes: 3 });
   assert.equal(preview.status, 200);

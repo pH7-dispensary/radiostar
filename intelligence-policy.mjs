@@ -1,6 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 
 export const IntelligenceTier = Object.freeze({ ZERO: "ZERO", LOW: "LOW", MEDIUM: "MEDIUM", HIGH: "HIGH" });
+// Keep the wire/storage identifiers stable, while giving administration and
+// listener-facing operational views language that does not require knowing the
+// implementation tiers.
+export const IntelligenceLevel = Object.freeze({
+  [IntelligenceTier.ZERO]: { label: "OPEN", description: "Maximum eligible automatic intelligence" },
+  [IntelligenceTier.LOW]: { label: "STANDARD", description: "Core intelligence with ordinary safeguards" },
+  [IntelligenceTier.MEDIUM]: { label: "MANAGED", description: "Core intelligence under additional monitoring" },
+  [IntelligenceTier.HIGH]: { label: "PAUSED", description: "Pause new intelligence while preserving permitted results" },
+});
+export const intelligenceLevel = (tier) => ({ tier, ...(IntelligenceLevel[tier] || { label: "UNAVAILABLE", description: "No recognised intelligence level." }) });
 const tiers = new Set(Object.values(IntelligenceTier));
 const key = (feedUrl, episodeId = "") => createHash("sha256").update(JSON.stringify([feedUrl, episodeId])).digest("hex");
 const bool = (value) => value === true;
@@ -48,7 +58,11 @@ export class IntelligencePolicyRegistry {
     const reason = String(input.reason || "").trim().slice(0, 1000);
     if (!reason) throw Error("A reason is required for a policy change.");
     const episodeId = input.episodeId || "", id = key(input.feedUrl, episodeId), previous = this.store.get("intelligence-policy", id), at = this.now();
-    if (input.expectedVersion !== undefined && previous && input.expectedVersion !== previous.version) throw Error("This policy changed elsewhere. Refresh before saving.");
+    // A new override also has a concurrency boundary: it must be based on the
+    // effective policy the administrator actually reviewed, not merely on the
+    // absence of a scoped row.
+    const effectiveBefore = this.effective(input.feedUrl, episodeId);
+    if (input.expectedVersion !== undefined && Number(input.expectedVersion) !== Number(effectiveBefore.version)) throw Error("This policy changed elsewhere. Refresh before saving.");
     const record = {
       id, feedUrl: input.feedUrl, episodeId: episodeId || null, tier: input.tier,
       version: (previous?.version || 0) + 1, applyToExisting: bool(input.applyToExisting), applyToFuture: input.applyToFuture !== false,
@@ -78,6 +92,23 @@ export class IntelligencePolicyRegistry {
     const target = current.history.find((entry) => entry.version === Number(version));
     if (!target?.tier) throw Error("The requested policy version is unavailable.");
     return this.set({ feedUrl, episodeId: episodeId || undefined, tier: target.tier, applyToExisting: false, applyToFuture: current.applyToFuture, selectedFeatures: current.selectedFeatures, reason: reason || `Rollback to version ${target.version}.` }, { actor });
+  }
+  clear(feedUrl, episodeId = "", { actor = "admin", expectedVersion, reason = "" } = {}) {
+    if (typeof feedUrl !== "string" || !feedUrl) throw Error("A podcast RSS URL is required.");
+    const id = key(feedUrl, episodeId || ""), previous = this.store.get("intelligence-policy", id);
+    if (!previous) throw Error("There is no explicit policy override to reset.");
+    if (expectedVersion !== undefined && Number(expectedVersion) !== Number(previous.version)) throw Error("This policy changed elsewhere. Refresh before resetting.");
+    const at = this.now();
+    const parent = episodeId ? this.effective(feedUrl) : this.global();
+    this.store.transaction(() => {
+      this.store.delete("intelligence-policy", id);
+      this.store.set("intelligence-policy-audit", randomUUID(), {
+        at, actor, action: "policy-reset", feedUrl, episodeId: episodeId || null,
+        previousTier: previous.tier, inheritedTier: parent.tier, version: previous.version,
+        reason: String(reason || "Reset to inherited policy.").slice(0, 1000),
+      });
+    });
+    return { previous, effective: this.effective(feedUrl, episodeId || "") };
   }
   records() { return this.store.all("intelligence-policy").map(([, value]) => value).filter((value) => value.id !== "global"); }
   audit() { return this.store.all("intelligence-policy-audit").map(([, value]) => value).sort((a, b) => b.at - a.at).slice(0, 500); }
