@@ -7,6 +7,7 @@ native/.env
 continue
 .starcast/
 native/dist/
+native/dist-testflight/
 native/web-dist/
 infra/aws/.terraform/
 infra/aws/*.tfstate*
