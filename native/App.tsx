@@ -37,10 +37,13 @@ import {
   hasPilotAccess,
   onSessionEnded,
   loadFeed,
+  loadIntelligenceStatus,
   searchCatalogue,
   type CatalogueEpisode,
   type CatalogueShow,
 } from "./src/api";
+import { createEncounterPrewarmer } from "./src/intelligenceEncounters.mjs";
+const prewarmIntelligence = createEncounterPrewarmer(loadIntelligenceStatus);
 import {
   emptyListenerState,
   loadListenerState,
@@ -1892,6 +1895,9 @@ function Library({
       History: state.history,
     };
   let items = maps[section];
+  useEffect(() => {
+    void prewarmIntelligence(items, state.intelligenceEnabled, section === "Saved Episodes" || section === "Saved Moments" ? "saved" : "opened");
+  }, [items, section, state.intelligenceEnabled]);
   let copy =
     section === "Saved Moments"
       ? "Save a verified moment when transcript intelligence is available."
@@ -2282,6 +2288,7 @@ function ShowDetail({
               onPress={() => onPlay(stored)}
               onSave={() => {
                 feedback.success();
+                if (!saved) void prewarmIntelligence([stored], state.intelligenceEnabled, "saved");
                 setState({
                   ...state,
                   saved: toggleById(state.saved, stored),
@@ -2334,6 +2341,12 @@ function AppShell() {
   useEffect(() => {
     if (hydrated) void saveListenerState(state);
   }, [hydrated, state]);
+  useEffect(() => {
+    if (!hydrated || page !== "Listen") return;
+    const episodes = state.following.flatMap((show) => state.feedEpisodes[show.id] || [])
+      .sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""));
+    void prewarmIntelligence(episodes, state.intelligenceEnabled, "followed");
+  }, [hydrated, page, state.following, state.feedEpisodes, state.intelligenceEnabled]);
   useEffect(() => {
     if (hydrated)
       void setIdentity(

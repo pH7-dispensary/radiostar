@@ -93,3 +93,6 @@ stop();
 assert.equal(restarted.getSnapshot().status.state, "READY");
 assert.equal(requests, 0, "restarts and recovery read existing results");
 console.log("Native status, measured ETA, shared polling recovery and audio state contracts passed");
+assert.equal(intelligencePresentation({ state: "UNAVAILABLE", availabilityState: "REVIEW_REQUIRED", code: "LEGAL_BASIS_NOT_ESTABLISHED" }).state, "REVIEW_REQUIRED");
+assert.equal(intelligencePresentation({ state: "TRANSCRIBING", processing: true, work: { completedChunks: 2, totalChunks: 13 } }).progress, "2 of 13 audio chunks complete.");
+assert.equal(intelligencePresentation({ state: "TRANSCRIBING", processing: true, work: { completedChunks: 99, totalChunks: 13 } }).progress, null);

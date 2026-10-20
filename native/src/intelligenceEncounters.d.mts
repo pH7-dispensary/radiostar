@@ -1,0 +1,1 @@
+export function createEncounterPrewarmer(request: (feed: string, id: string, source: string) => Promise<unknown>, options?: { now?: () => number; cooldownMs?: number }): (episodes: Array<{ feedUrl?: string; id: string }>, enabled?: boolean, source?: string) => Promise<void>;

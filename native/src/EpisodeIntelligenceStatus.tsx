@@ -78,6 +78,7 @@ export function EpisodeIntelligenceStatus({ p, status, enabled = true, error = "
         <ProcessingMark p={p} stage={model.state} active={model.processing} ready={model.ready} />
         <View style={styles.copy}>
           <Text accessibilityLiveRegion="polite" style={[styles.title, { color: p.text }]}>{model.label}</Text>
+          {model.progress && <Text style={[styles.detail, { color: p.muted }]}>{model.progress}</Text>}
           {(model.processing || model.state === "WAITING") && <Text style={[styles.detail, { color: p.muted }]}>{model.eta || (model.state === "QUEUED" ? "Waiting to begin preparation." : model.processing ? "Preparing your conversation." : model.explanation)}</Text>}
         </View>
       </View>

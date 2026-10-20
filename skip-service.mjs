@@ -142,7 +142,7 @@ export class SkipService {
     const key = episodeKey(feed, episode);
     this.store.set("skip-audio-verification", key, { episodeKey: key, state: "PROCESSING", attempts: attempt, updatedAt: nowIso(), reason: null });
     try {
-      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, maxSeconds: this.maxAudioSeconds });
+      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
       this.store.transaction(() => {
         const at = nowIso();
         this.store.set("skip-audio-verification", key, {

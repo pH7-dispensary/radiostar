@@ -1,6 +1,7 @@
 import type { IntelligenceStatus } from "./api";
 export type IntelligencePresentation = {
   state: string; label: string; explanation: string; processing: boolean;
+  progress?: string | null;
   eta: string | null; action: "enable" | "refresh" | "prepare" | "retry" | "audio" | null; ready: boolean;
 };
 export function intelligencePresentation(status: IntelligenceStatus | null, options?: {

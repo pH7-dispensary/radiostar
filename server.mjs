@@ -412,9 +412,9 @@ export function createStarCastServer({
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
     automaticEnabled: () => featureEnabled("adSkip"),
-    maxAudioSeconds: ledger.controls.maxEpisodeSeconds,
-    canVerifyAudio: ({ feedUrl, episodeId }) => {
-      if (!featureEnabled("adSkip"))
+    maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
+    canVerifyAudio: ({ feedUrl, episodeId, value }) => {
+      if (!featureEnabled("adSkip") && !testingMode.limits(value?.testingContext).dailyUsd)
         return {
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
@@ -430,7 +430,7 @@ export function createStarCastServer({
         feedUrl,
         episodeId,
       });
-      if (!processing.allowed || !display.allowed || !permission.canTranscribeAudio)
+      if (!rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed || !processing.allowed || !display.allowed || !permission.canTranscribeAudio)
         return {
           allowed: false,
           reason: !processing.allowed
@@ -2084,7 +2084,8 @@ export function createStarCastServer({
           id = url.searchParams.get("episodeId");
         if (!valid({ feedUrl: feed, episodeId: id }))
           return send(res, 400, { error: "A valid publisher episode is required." });
-        await backgroundEncounter(testListener(req), feed, id);
+        const source = ["saved", "followed", "playing"].includes(url.searchParams.get("source")) ? url.searchParams.get("source") : "opened";
+        await backgroundEncounter(testListener(req), feed, id, source);
         return send(res, 200, {
           status: listenerStatus(feed, id),
           features: listenerFeatures(),

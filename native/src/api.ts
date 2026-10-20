@@ -39,6 +39,8 @@ export type IntelligenceStatus = {
     | "CANCELLED"
     | "BUDGET_PAUSED";
   legacyState?: string;
+  availabilityState?: string;
+  work?: { completedChunks?: number; totalChunks?: number; completedBatches?: number; totalBatches?: number; synthesisPending?: boolean };
   canonicalEpisodeId?: string;
   processingStage?:
     | "QUEUED"
@@ -230,9 +232,10 @@ export async function loadFeed(feedUrl: string): Promise<{
 export async function loadIntelligenceStatus(
   feedUrl: string,
   episodeId: string,
+  source = "opened",
 ): Promise<IntelligenceStatus> {
   return request(
-    `/api/intelligence/status?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=${encodeURIComponent(episodeId)}`,
+    `/api/intelligence/status?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=${encodeURIComponent(episodeId)}&source=${encodeURIComponent(source)}`,
     { headers: developmentHeaders() },
   ).then((x) => x.status);
 }

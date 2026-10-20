@@ -10,6 +10,7 @@ const labels = {
   ANALYSING: "Finding the interesting moments.",
   INDEXING: "Making everything searchable.",
   UNAVAILABLE: "AI insights aren't available for this episode.",
+  REVIEW_REQUIRED: "This conversation needs a rights review.",
   FAILED: "Preparation was interrupted.",
   BUDGET_PAUSED: "Preparation is temporarily paused.",
   NOT_REQUESTED: "This conversation hasn't been prepared.",
@@ -40,6 +41,8 @@ const explanations = {
   PROVIDER_UNAVAILABLE: "The AI service is temporarily unavailable.",
   SOURCE_VALIDATION_FAILED: "The available source couldn't be validated reliably.",
   FEATURE_DISABLED: "This feature is currently disabled.",
+  TESTING_EXPIRED: "Internal testing has ended or been disabled. Previously prepared insights remain available where authorised.",
+  PROVIDER_OUTCOME_UNKNOWN: "A processing request needs an administrator's review before it can safely continue. Your podcast keeps playing.",
 };
 
 export function intelligencePresentation(status, { enabled = true, error = "", paused = false, sourceAvailable = true, now = Date.now() } = {}) {
@@ -53,6 +56,7 @@ export function intelligencePresentation(status, { enabled = true, error = "", p
   let state = completed ? "READY" : active ? stage : status?.state || "WAITING";
   if (["UNAVAILABLE", "BLOCKED", "CANCELLED", "TRANSCRIPT_READY"].includes(state)) state = "UNAVAILABLE";
   if (code === "BUDGET_LIMIT") state = "BUDGET_PAUSED";
+  if (status?.availabilityState === "REVIEW_REQUIRED") state = "REVIEW_REQUIRED";
   if (!enabled && !completed) state = "DISABLED";
   else if ((error || paused) && !completed) state = "WAITING";
   const processing = active && enabled && !error && !paused;
@@ -79,5 +83,8 @@ export function intelligencePresentation(status, { enabled = true, error = "", p
     : state === "FAILED" && (status?.retryEligible === true || status?.retryable === true) ? "retry"
     : state === "UNAVAILABLE" && status?.requiresAudioConsent && ["AUDIO_CONSENT_REQUIRED", "TRANSCRIPT_UNAVAILABLE"].includes(code) ? "audio"
     : state === "BUDGET_PAUSED" ? "refresh" : null;
-  return { state, label: labels[state] || labels.UNAVAILABLE, explanation, processing, eta, action, ready: completed && state === "READY" };
+  const work = status?.work;
+  const count = (done, total, name) => Number.isInteger(done) && Number.isInteger(total) && done >= 0 && total > 0 && done <= total ? `${done} of ${total} ${name} complete.` : null;
+  const progress = processing ? state === "TRANSCRIBING" ? count(work?.completedChunks, work?.totalChunks, "audio chunks") : state === "ANALYSING" ? count(work?.completedBatches, work?.totalBatches, "analysis batches") : null : null;
+  return { state, label: labels[state] || labels.UNAVAILABLE, explanation, processing, eta, progress, action, ready: completed && state === "READY" };
 }
