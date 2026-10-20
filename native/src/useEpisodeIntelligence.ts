@@ -48,7 +48,8 @@ export function useEpisodeIntelligence(
   }, [session]);
   useEffect(() => {
     if (!visible || !session) return;
-    let stop = session.watch(enabled);
+    let stop = AppState.currentState === "active" || AppState.currentState == null
+      ? session.watch(enabled) : () => {};
     const listener = AppState.addEventListener("change", (state) => {
       stop();
       if (state === "active") stop = session.watch(enabled);

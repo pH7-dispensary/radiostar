@@ -59,6 +59,7 @@ import { motion, themes, type StarTheme } from "./src/design";
 import { useEpisodeIntelligence } from "./src/useEpisodeIntelligence";
 import { EpisodeIntelligenceView } from "./src/EpisodeIntelligenceView";
 import { PlayerIntelligenceAccordion } from "./src/PlayerIntelligenceAccordion";
+import { AudioPlaybackFeedback, AudioWaitingRing } from "./src/AudioPlaybackFeedback";
 import { SearchScreen } from "./src/SearchScreen";
 import { ReferralPanel, InviteEntry } from "./src/ReferralPanel";
 import { ListenerSync } from "./src/ListenerSync";
@@ -1116,6 +1117,8 @@ function PlayerSheet({
       setSpeed,
       fadeAndPause,
       cancelFade,
+      audio,
+      retry,
     } = usePlayback(),
     timer = useRef<NativeSleepTimer | null>(null),
     ai = useRef<NativeAiSleepBridge | null>(null),
@@ -1350,7 +1353,6 @@ function PlayerSheet({
                 style={[styles.playerShow, { color: p.muted }]}
               >
                 {source.show}
-                {snapshot.buffered ? " · Buffering…" : ""}
               </Text>
               <Pressable
                 accessibilityRole="adjustable"
@@ -1421,13 +1423,14 @@ function PlayerSheet({
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+                  accessibilityLabel={audio.waiting ? "Cancel audio waiting" : audio.state === "FAILED" ? "Retry audio" : snapshot.playing ? "Pause" : "Play"}
                   onPress={() => {
                     feedback.light();
-                    snapshot.playing ? pause() : play(source);
+                    void (snapshot.playing || audio.waiting ? pause() : audio.state === "FAILED" ? retry() : play(source)).catch(() => {});
                   }}
                   style={[styles.playButton, { backgroundColor: p.text }]}
                 >
+                  <AudioWaitingRing p={p} waiting={audio.waiting} />
                   <Ionicons
                     name={snapshot.playing ? "pause" : "play"}
                     size={22}
@@ -1443,6 +1446,7 @@ function PlayerSheet({
                   <Text style={{ color: p.text, fontSize: 19 }}>30 ↷</Text>
                 </Pressable>
               </View>
+              <AudioPlaybackFeedback p={p} audio={audio} onRetry={() => void retry().catch(() => {})} />
               <View style={styles.speedRow}>
                 {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
                   <Chip
@@ -1463,7 +1467,7 @@ function PlayerSheet({
                 </View>
               ) : null}
               <CaptionWindow p={p} />
-              <PlayerIntelligenceAccordion
+              {visible && <PlayerIntelligenceAccordion
                 source={source}
                 p={p}
                 enabled={enabled}
@@ -1471,7 +1475,7 @@ function PlayerSheet({
                 intelligence={intelligence}
                 onPlay={(ms) => play({ ...source, startPositionMs: ms })}
                 onOpenPanel={setPanel}
-              />
+              />}
               <ProblemReport p={p} compact />
               <Pressable
                 accessibilityRole="button"
@@ -1590,7 +1594,7 @@ function PlayerSheet({
 }
 
 function MiniPlayer({ onOpen, p, adSkipNotice }: { onOpen: () => void; p: Theme; adSkipNotice: AdSkipNotice | null }) {
-  let { source, snapshot, play, pause } = usePlayback();
+  let { source, snapshot, play, pause, audio, retry } = usePlayback();
   if (!source) return null;
   return (
     <BlurView
@@ -1627,20 +1631,21 @@ function MiniPlayer({ onOpen, p, adSkipNotice }: { onOpen: () => void; p: Theme;
               {source.title}
             </Text>
             <Text numberOfLines={1} style={[styles.small, { color: p.muted }]}>
-              {source.show}
+              {audio.label || source.show}
             </Text>
           </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={snapshot.playing ? "Pause" : "Play"}
+          accessibilityLabel={audio.waiting ? "Cancel audio waiting" : audio.state === "FAILED" ? "Retry audio" : snapshot.playing ? "Pause" : "Play"}
           onPress={(event) => {
             event.stopPropagation();
             feedback.light();
-            snapshot.playing ? pause() : play(source);
+            void (snapshot.playing || audio.waiting ? pause() : audio.state === "FAILED" ? retry() : play(source)).catch(() => {});
           }}
           style={[styles.miniPlay, { backgroundColor: p.text }]}
         >
+          <AudioWaitingRing p={p} waiting={audio.waiting} />
           <Ionicons
             name={snapshot.playing ? "pause" : "play"}
             size={16}

@@ -14,12 +14,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AdSkipPanel } from "./AdSkipPanel";
 import {
   findEpisodeMoment,
-  isProcessing,
   type EpisodeMoment,
 } from "./api";
 import type { StarTheme } from "./design";
 import { feedback } from "./feedback";
-import { IntelligencePreparation } from "./IntelligencePreparation";
+import { EpisodeIntelligenceStatus } from "./EpisodeIntelligenceStatus";
 import {
   listenerRequest,
   loadListenerSummary,
@@ -35,28 +34,6 @@ type Accordion = Panel | null;
 
 const stamp = (ms: number) =>
   `${Math.floor(ms / 60_000)}:${String(Math.floor(ms / 1_000) % 60).padStart(2, "0")}`;
-
-function unavailableCopy(
-  state: ReturnType<typeof useEpisodeIntelligence>,
-  enabled: boolean,
-) {
-  if (!enabled)
-    return "Turn on episode intelligence to prepare authorised conversations while you listen.";
-  if (
-    state.status?.availabilityCode === "RIGHTS_RESTRICTED" ||
-    state.status?.availabilityCode === "LEGAL_BASIS_NOT_ESTABLISHED" ||
-    state.status?.code === "RIGHTS_RESTRICTED" ||
-    state.status?.code === "LEGAL_BASIS_NOT_ESTABLISHED"
-  )
-    return "AI notes aren’t available for this episode. You can keep listening or try another episode.";
-  if (state.status?.state === "BUDGET_PAUSED")
-    return "AI insights are paused for this episode while the listening service reaches its allowance.";
-  if (state.status?.state === "FAILED")
-    return "We couldn’t prepare this episode. You can try again without interrupting playback.";
-  if (state.error)
-    return "We couldn’t check episode intelligence right now. Your listening is unaffected.";
-  return "AI insights aren’t available for this episode.";
-}
 
 function useAdSkip(source: Source) {
   const alive = useRef(true);
@@ -149,11 +126,9 @@ export function PlayerIntelligenceAccordion({
   const lookupVersion = useRef(0);
   const skip = useAdSkip(source);
   const { status, session, busy, paused } = intelligence;
-  const processing = isProcessing(status) && !paused;
-  const ready = status?.state === "READY" || status?.state === "PARTIAL_READY";
+  const ready = status?.state === "READY" || (status?.state === "PARTIAL_READY" && status?.processing === false);
   const hasVerifiedMoments =
     ready && status?.availableFeatures?.moments !== false && status?.transcriptAvailable !== false;
-  const unavailable = unavailableCopy(intelligence, enabled);
 
   useEffect(() => {
     setOpen(null);
@@ -163,6 +138,10 @@ export function PlayerIntelligenceAccordion({
     setSearchMessage("");
     lookupVersion.current++;
   }, [source.episodeId, source.feedUrl]);
+
+  useEffect(() => {
+    if (ready) setOpen((current) => current || "brief");
+  }, [ready, source.episodeId, source.feedUrl]);
 
   useEffect(() => {
     if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental)
@@ -212,29 +191,7 @@ export function PlayerIntelligenceAccordion({
   };
 
   const content = (target: Exclude<Accordion, null>) => {
-    if (!enabled)
-      return (
-        <View style={styles.empty}>
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>{unavailable}</Text>
-          <Action p={p} label="Turn on intelligence" onPress={prepare} />
-        </View>
-      );
-    if (processing || (!status && !intelligence.error))
-      return (
-        <View style={styles.preparing}>
-          <IntelligencePreparation p={p} status={status} compact />
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>Listening continues while this prepares.</Text>
-        </View>
-      );
-    if (!ready)
-      return (
-        <View style={styles.empty}>
-          <Text style={[styles.emptyCopy, { color: p.muted }]}>{unavailable}</Text>
-          {(status?.retryEligible || status?.retryable || status?.state === "NOT_REQUESTED") && (
-            <Action p={p} label={status?.state === "FAILED" ? "Try again" : "Prepare episode"} onPress={prepare} />
-          )}
-        </View>
-      );
+    if (target !== "ads" && (!enabled || !ready)) return null;
     if (target === "brief")
       return (
         <View style={styles.body}>
@@ -377,25 +334,36 @@ export function PlayerIntelligenceAccordion({
     : skip.message || "Checking verified intervals";
 
   return (
+    <View>
+    <EpisodeIntelligenceStatus
+      p={p} status={status} enabled={enabled} error={intelligence.error} paused={paused} sourceAvailable={!!source.feedUrl}
+      busy={busy} introduction onAction={(action) => {
+        if (action === "enable") onEnable();
+        else if (action === "refresh") void session?.refresh();
+        else if (action === "audio") onOpenPanel("brief");
+        else prepare();
+      }}
+    />
     <View style={[styles.container, { borderColor: p.line, backgroundColor: p.surfaceStrong }]}>
       <Text style={[styles.eyebrow, { color: p.accent }]}>EPISODE INTELLIGENCE</Text>
-      <Text style={[styles.intro, { color: p.muted }]}>Grounded features appear here when this episode is ready.</Text>
       <Row
         p={p}
         title="AI Episode Brief"
-        detail={processing ? "Preparing an evidence-backed overview" : ready ? "A grounded overview from this episode" : unavailable}
+        detail="Overview and key themes"
         icon="sparkles"
         open={open === "brief"}
-        onPress={() => toggle("brief")}
+        available={ready}
+        onPress={() => ready && toggle("brief")}
       />
       {open === "brief" && content("brief")}
       <Row
         p={p}
         title="Explore Episode"
-        detail={processing ? "Chapters, topics and moments are preparing" : ready ? "Chapters, topics and verified moments" : unavailable}
+        detail="Chapters, topics and verified moments"
         icon="compass-outline"
         open={open === "explore"}
-        onPress={() => toggle("explore")}
+        available={ready}
+        onPress={() => ready && toggle("explore")}
       />
       {open === "explore" && content("explore")}
       <View style={[styles.adRow, { borderTopColor: p.line }]}>
@@ -428,6 +396,7 @@ export function PlayerIntelligenceAccordion({
       <Text style={[styles.safety, { color: p.muted }]}>Only independently verified, audio-matched intervals are ever eligible. Automatic skipping is limited to controlled rollouts and remains disabled for production release until measured safety criteria are met.</Text>
       {open === "ads" && content("ads")}
     </View>
+    </View>
   );
 }
 
@@ -438,6 +407,7 @@ function Row({
   icon,
   open,
   onPress,
+  available = true,
 }: {
   p: StarTheme;
   title: string;
@@ -445,12 +415,15 @@ function Row({
   icon: React.ComponentProps<typeof Ionicons>["name"];
   open: boolean;
   onPress(): void;
+  available?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityState={{ expanded: open }}
+      accessibilityState={{ expanded: open, disabled: !available }}
+      accessibilityHint={!available ? "See the episode intelligence status above for availability." : undefined}
+      disabled={!available}
       onPress={onPress}
       style={[styles.row, { borderTopColor: p.line }]}
     >
@@ -459,7 +432,7 @@ function Row({
         <Text style={[styles.rowTitle, { color: p.text }]}>{title}</Text>
         <Text numberOfLines={2} style={[styles.rowDetail, { color: p.muted }]}>{detail}</Text>
       </View>
-      <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={p.muted} />
+      {available && <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={p.muted} />}
     </Pressable>
   );
 }
@@ -491,7 +464,7 @@ function Action({
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: 22, borderWidth: StyleSheet.hairlineWidth, borderRadius: 22, overflow: "hidden", paddingTop: 16 },
+  container: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 22, overflow: "hidden", paddingTop: 16 },
   eyebrow: { fontSize: 11, fontWeight: "800", letterSpacing: 1.4, paddingHorizontal: 16 },
   intro: { fontSize: 13, lineHeight: 18, paddingHorizontal: 16, paddingTop: 5, paddingBottom: 10 },
   row: { minHeight: 70, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 11 },

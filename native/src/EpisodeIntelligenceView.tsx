@@ -17,9 +17,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   findEpisodeMoment,
-  isProcessing,
   preflightEpisode,
-  processingLabel,
   type AnalysisPreflight,
   type EpisodeMoment,
 } from "./api";
@@ -28,7 +26,7 @@ import type { StarTheme } from "./design";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
 import { feedback } from "./feedback";
 import { LoadingState, useReducedMotion } from "./LoadingState";
-import { IntelligencePreparation } from "./IntelligencePreparation";
+import { EpisodeIntelligenceStatus } from "./EpisodeIntelligenceStatus";
 import { usePlayback } from "./PlaybackProvider";
 import { AdSkipPanel } from "./AdSkipPanel";
 
@@ -176,43 +174,6 @@ export function EpisodeIntelligenceView({
       if (alive.current) setWorking(false);
     }
   };
-  const processing = isProcessing(status) && !paused;
-  const availabilityCode = status?.availabilityCode || status?.code || "";
-  const rightsRestricted = [
-    "RIGHTS_RESTRICTED",
-    "LEGAL_BASIS_NOT_ESTABLISHED",
-  ].includes(availabilityCode);
-  const terminalMessage = processingLabel(status);
-  const terminalHeading: Record<string, string> = {
-    DURATION_LIMIT: "This episode needs a transcript.",
-    TRANSCRIPT_UNAVAILABLE: "No usable transcript found.",
-    AUDIO_TRANSCRIPTION_NOT_AUTHORISED:
-      "Audio transcription isn’t available.",
-    BUDGET_LIMIT: "Preparation is paused.",
-    PROCESSING_TIMEOUT: "Preparation was interrupted.",
-  };
-  const emptyHeading = !source.feedUrl
-    ? "Open this from its podcast."
-    : rightsRestricted
-      ? "Intelligence isn’t available for this episode."
-      : terminalHeading[availabilityCode]
-        ? terminalHeading[availabilityCode]
-        : status?.requiresAudioConsent
-        ? "Listen a little deeper."
-        : status?.state === "BUDGET_PAUSED"
-          ? "AI insights are paused for this episode."
-        : status?.state === "UNAVAILABLE"
-          ? "AI insights aren't available for this episode."
-          : status?.state === "FAILED"
-            ? "This episode could not be prepared."
-            : "Preparing this episode.";
-  const emptyCopy = !source.feedUrl
-    ? "Open this episode from its podcast in Search so Radio Star can find its publisher feed."
-    : rightsRestricted
-      ? terminalMessage
-      : availabilityCode
-        ? terminalMessage
-        : status?.reason || "This episode has not been prepared yet.";
   const scrollSelectedTab = () => {
     const index = ["Chapters", "Topics", "Find a Moment"].indexOf(
       tab,
@@ -346,60 +307,14 @@ export function EpisodeIntelligenceView({
             </LinearGradient>
           ) : (
             <>
-              {processing && !status?.brief && !paused && (
-                <IntelligencePreparation p={p} status={status} />
-              )}
-              {busy && !processing && !status?.brief && !paused && (
-                <LoadingState p={p} label="Checking this conversation." />
-              )}
-              {error ? (
-                <View style={[s.card, { borderColor: p.line }]}>
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    style={[s.copy, { color: p.muted }]}
-                  >
-                    {error}
-                  </Text>
-                  {action("Check again", () => void session?.refresh(), true)}
-                </View>
-              ) : null}
-              {processing && <Text style={[s.processingNote, { color: p.muted }]}>Listening stays available while preparation continues in the background.</Text>}
-              {!processing && !busy && !error && !status?.brief && (
-                <View
-                  style={[
-                    s.card,
-                    { borderColor: p.line, backgroundColor: p.surface },
-                  ]}
-                >
-                  <Text style={[s.heading, { color: p.text }]}>
-                    {emptyHeading}
-                  </Text>
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    style={[s.copy, { color: p.muted }]}
-                  >
-                    {emptyCopy}
-                  </Text>
-                  {!source.feedUrl
-                    ? action("Back to player", onBack, true)
-                    : rightsRestricted
-                      ? action("Back to player", onBack, true)
-                    : status?.requiresAudioConsent
-                      ? action(
-                          "Use audio analysis",
-                          () => void prepareConsent(),
-                        )
-                      : status?.retryable ||
-                          status?.state === "NOT_REQUESTED" ||
-                          status?.code === "SERVER_UNAVAILABLE"
-                        ? action("Try again", () => void session?.request())
-                        : action(
-                            "Check again",
-                            () => void session?.refresh(),
-                            true,
-                          )}
-                </View>
-              )}
+              <EpisodeIntelligenceStatus p={p} status={status} enabled={enabled} error={error} paused={paused} busy={busy} sourceAvailable={!!source.feedUrl}
+                onAction={(next) => {
+                  if (next === "refresh") void session?.refresh();
+                  else if (next === "audio") void prepareConsent();
+                  else if (next === "enable") onEnable();
+                  else void session?.request();
+                }}
+              />
               {consent && (
                 <View
                   style={[
@@ -426,7 +341,7 @@ export function EpisodeIntelligenceView({
                   {action("Not now", () => setConsent(null), true)}
                 </View>
               )}
-              {panel === "brief" && status?.brief && (
+              {panel === "brief" && (status?.state === "READY" || (status?.state === "PARTIAL_READY" && status.processing === false)) && status?.brief && (
                 <Animated.View
                   style={[
                     s.card,
@@ -491,7 +406,7 @@ export function EpisodeIntelligenceView({
                   )}
                 </Animated.View>
               )}
-              {panel === "explore" && (
+              {panel === "explore" && (status?.state === "READY" || (status?.state === "PARTIAL_READY" && status.processing === false)) && (
                 <>
                   {status?.qualityNote && (
                     <Text style={[s.copy, { color: p.muted }]}>

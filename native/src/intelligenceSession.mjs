@@ -11,9 +11,9 @@ export function createIntelligenceSession(
     timer = null,
     failures = 0,
     pollCount = 0,
-    watching = false,
     deadline = 0,
     enabled = false;
+  const watchers = new Map();
   const listeners = new Set();
   const active = () =>
     snapshot.status?.processing !== false &&
@@ -36,7 +36,7 @@ export function createIntelligenceSession(
   };
   const schedule = () => {
     clearTimeout(timer);
-    if (!watching || snapshot.paused || !active()) return;
+    if (!watchers.size || snapshot.paused || !active()) return;
     const serverDeadline = Date.parse(snapshot.status?.deadlineAt || "");
     if (!deadline)
       deadline = Number.isFinite(serverDeadline)
@@ -46,7 +46,7 @@ export function createIntelligenceSession(
       emit({
         paused: true,
         error:
-          "This is taking longer than expected. Check the server result before starting again.",
+          "Live updates are paused. Check the latest status while you keep listening.",
       });
       return;
     }
@@ -57,7 +57,7 @@ export function createIntelligenceSession(
   };
   const run = (operation) => {
     if (pending) return pending;
-    emit({ busy: true, error: "" });
+    emit({ busy: true });
     pending = Promise.resolve()
       .then(operation)
       .then((status) => {
@@ -65,14 +65,16 @@ export function createIntelligenceSession(
         pollCount = ["QUEUED", "CHECKING", "ACQUIRING_TRANSCRIPT", "TRANSCRIBING", "ANALYSING", "INDEXING", "PROCESSING", "PARTIAL_READY", "DISCOVERING", "UNDERSTANDING", "ORGANISING"].includes(status?.state) && status?.processing !== false
           ? pollCount + 1
           : 0;
-        emit({ status, busy: false });
+        emit({ status, busy: false, paused: false, error: "" });
       })
       .catch((error) => {
         failures++;
         emit({
           busy: false,
-          error: error?.userFacing
-            ? error.message
+          error: error?.status === 403
+            ? "Your listening-service session needs to be restored."
+            : error?.status >= 500
+              ? "The listening service is temporarily unavailable. Your audio is unaffected."
             : "Could not reach your listening server. Your audio is unaffected.",
           paused: failures >= 3 || !active(),
         });
@@ -102,16 +104,18 @@ export function createIntelligenceSession(
       };
     },
     watch(automatic) {
-      enabled = automatic;
-      watching = true;
+      const watcher = Symbol();
+      watchers.set(watcher, automatic);
+      enabled = [...watchers.values()].some(Boolean);
       failures = 0;
       pollCount = 0;
       deadline = 0;
       emit({ paused: false });
       void refresh(automatic);
       return () => {
-        watching = false;
-        clearTimeout(timer);
+        watchers.delete(watcher);
+        enabled = [...watchers.values()].some(Boolean);
+        if (!watchers.size) clearTimeout(timer);
       };
     },
     refresh() {
@@ -127,6 +131,9 @@ export function createIntelligenceSession(
         snapshot.status?.state === "READY" ||
         snapshot.status?.brief
       )
+        return Promise.resolve();
+      if (snapshot.status?.state === "FAILED" &&
+          !(snapshot.status.retryEligible || snapshot.status.retryable))
         return Promise.resolve();
       deadline = 0;
       failures = 0;

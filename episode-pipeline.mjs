@@ -9,6 +9,7 @@ import { prepareAudio, transcribeOnDemand } from "./transcription.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
+import { processingTiming } from "./processing-estimate.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -107,7 +108,7 @@ export function durationMs(value) {
 }
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
-  const { transcript, episode, refs, lifecycle, ...safe } = value;
+  const { transcript, episode, refs, lifecycle, estimateHistory, timing, ...safe } = value;
   return {
     ...safe,
     // Job identity is safe and necessary for operations.  Do not leak the
@@ -306,6 +307,15 @@ export class EpisodePipeline {
         processingVersion: next.processingVersion || null,
       };
       next.lifecycle = [...(stored.lifecycle || []), event].slice(-lifecycleLimit);
+      if (next.completedAt) next.timing = {
+        ...processingTiming(next),
+        episodeDurationMs: durationMs(next.episode?.duration),
+        completedAt: next.completedAt,
+        estimates: (next.estimateHistory || []).map((estimate) => ({
+          ...estimate,
+          actualRemainingMs: Math.max(0, Date.parse(next.completedAt) - Date.parse(estimate.updatedAt)),
+        })),
+      };
       this.store.set("intelligence", key, next);
       // The per-job history makes restarts and later retries auditable even
       // though the current status record is intentionally one per episode.
@@ -719,6 +729,7 @@ export class EpisodePipeline {
       update({
         state: "DISCOVERING",
         processingStage: "CHECKING",
+        episode: { ...episode, feedUrl, id: episodeId },
         transcriptChecks,
       });
       if (!transcript) {
@@ -828,7 +839,7 @@ export class EpisodePipeline {
         // Downloading/chunking may take time but is not yet a provider
         // transcription. Keep the listener state in acquisition until the
         // provider call actually begins.
-        update({ state: "DISCOVERING", processingStage: "PREPARING_AUDIO" });
+        update({ state: "DISCOVERING", processingStage: "PREPARING_AUDIO", transcriptChecks });
         let audioTask = this.audioInflight.get(variant);
         if (!audioTask) {
           audioTask = (async () => {

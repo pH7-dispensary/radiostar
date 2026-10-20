@@ -4,6 +4,7 @@ import { createStarCastServer } from "./server.mjs";
 import { episodeKey, listenerProcessingStatus } from "./episode-pipeline.mjs";
 import { RightsClassification } from "./rights-registry.mjs";
 import { assessTranscript } from "./transcripts.mjs";
+import { PROCESSING_VERSION } from "./openai-intelligence.mjs";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const feedUrl = "https://publisher.example/progress.xml";
@@ -58,9 +59,10 @@ for (let index = 0; index < 3; index++) {
   const id = `historical-${index}`;
   app.store.set("intelligence", episodeKey(feedUrl, id), {
     state: "READY", jobId: `historical-job-${index}`, feedUrl, episodeId: id,
-    processingVersion: "2026-10-grounded-v1", processingMs: 90_000 + index * 10_000,
+    processingVersion: PROCESSING_VERSION, processingMs: 90_000 + index * 10_000,
     startedAt: new Date(Date.now() - 180_000).toISOString(), completedAt: new Date(Date.now() - 80_000).toISOString(),
     provenance: { sourceType: "publisher_rss" },
+    lifecycle: [{ stage: "ANALYSING", at: new Date(Date.now() - 180_000 - index * 10_000).toISOString() }],
     episode: { id, duration: "02:00", feedUrl },
     transcript, brief: { overview: "Historical fixture", themes: ["Fixture"], detail: "Measured history." }, chapters: [],
   });
@@ -94,6 +96,10 @@ try {
   const ready = (await (await fetch(base + statusUrl, { headers: listenerHeaders })).json()).status;
   assert.equal(ready.state, "READY");
   assert.equal(ready.processing, false);
+  const completedRecord = app.pipeline.status(feedUrl, episodeId);
+  assert.ok(completedRecord.timing.stageDurationsMs.ANALYSING > 0);
+  assert.equal(completedRecord.timing.estimates.length, 1, "first stage estimate survives completion for accuracy review");
+  assert.ok(completedRecord.timing.estimates[0].actualRemainingMs >= 0);
   assert.equal(ready.availableFeatures.brief, true);
   assert.equal(ready.nextAction, "VIEW_INTELLIGENCE");
   assert.equal(ready.transcript, undefined, "the status API never exposes full transcript text");

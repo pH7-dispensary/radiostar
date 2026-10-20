@@ -11,6 +11,7 @@ import {
   openAIStatus,
 } from "./openai-intelligence.mjs";
 import { LocalStore } from "./persistence.mjs";
+import { measuredProcessingEstimate } from "./processing-estimate.mjs";
 import { EpisodePipeline, availabilityCode as availabilityCodeFor, canonicalEpisodeId, durationMs, episodeKey, listenerProcessingStatus, publicIntelligence } from "./episode-pipeline.mjs";
 import { publicUrl, fetchPublicText } from "./safe-network.mjs";
 import { projectRoot, loadCredentials } from "./config.mjs";
@@ -477,58 +478,20 @@ export function createStarCastServer({
       .filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
     return samples.length ? samples[Math.floor(samples.length / 2)] : null;
   };
-  const processingRoute = (job) => {
-    if (job?.cacheHit) return "cache";
-    if (job?.provenance?.sourceType === "on_demand_audio" || job?.allowAudio) return "audio";
-    if (job?.provenance?.sourceType) return "publisher";
-    return null;
-  };
-  const percentile = (values, fraction) => {
-    if (!values.length) return null;
-    return values[Math.min(values.length - 1, Math.max(0, Math.floor((values.length - 1) * fraction)))];
-  };
-  const durationLabel = (milliseconds) => {
-    const minutes = Math.max(1, Math.round(milliseconds / 60_000));
-    return minutes === 1 ? "1 minute" : `${minutes} minutes`;
-  };
   // ETA is intentionally withheld until comparable completed work exists.
   // It is a measured range, not worker progress expressed as a percentage.
   const processingEstimateFor = (job) => {
     if (!job || !listenerProcessingStatus(job).processing) return null;
-    const route = processingRoute(job);
-    if (!route) return null;
-    const targetDuration = durationMs(job.episode?.duration);
-    const samples = store.all("intelligence")
-      .map(([, value]) => value)
-      .filter((value) => value.completedAt && Number.isFinite(value.processingMs) && value.processingMs > 0 && processingRoute(value) === route)
-      .map((value) => {
-        const sampleDuration = durationMs(value.episode?.duration);
-        // Duration affects audio work most strongly. The square-root clamp
-        // reflects the observed route without claiming linear provider time.
-        const scale = route === "audio" && targetDuration && sampleDuration
-          ? Math.max(0.5, Math.min(2, Math.sqrt(targetDuration / sampleDuration)))
-          : 1;
-        return Math.round(value.processingMs * scale);
-      })
-      .sort((a, b) => a - b);
-    if (samples.length < 3) return null;
-    const queueDepth = store.all("intelligence").filter(([, value]) => value.state === "QUEUED" && value.jobId !== job.jobId).length;
-    const lower = percentile(samples, 0.25);
-    const upper = percentile(samples, 0.75);
-    const queuedAt = Date.parse(job.queuedAt || job.startedAt || "");
-    const elapsed = Number.isFinite(queuedAt) ? Math.max(0, Date.now() - queuedAt) : 0;
-    const queueAllowance = job.state === "QUEUED" ? Math.min(upper * queueDepth, upper * 3) : 0;
-    const minimumMs = Math.max(0, lower + queueAllowance - elapsed);
-    const maximumMs = Math.max(minimumMs, upper + queueAllowance - elapsed);
-    const lowerLabel = durationLabel(minimumMs), upperLabel = durationLabel(maximumMs);
-    return {
-      route,
-      sampleCount: samples.length,
-      minimumMs,
-      maximumMs,
-      label: lowerLabel === upperLabel ? `Usually ${upperLabel}.` : `Usually ${lowerLabel}–${upperLabel}.`,
-      estimatedCompletionAt: new Date(Date.now() + maximumMs).toISOString(),
-    };
+    const estimate = measuredProcessingEstimate(job, store.all("intelligence").map(([, value]) => value));
+    if (estimate && !job.estimateHistory?.some((entry) => entry.stage === estimate.stage)) {
+      // At most one observation per stage, in the existing job record. Polling
+      // never rewrites lifecycle timestamps or invents progress events.
+      const key = episodeKey(job.feedUrl, job.episodeId);
+      const current = store.get("intelligence", key);
+      if (current?.jobId === job.jobId)
+        store.set("intelligence", key, { ...current, estimateHistory: [...(current.estimateHistory || []), estimate].slice(-8) });
+    }
+    return estimate;
   };
   const blockedContent = () => {
     const entries = new Map();

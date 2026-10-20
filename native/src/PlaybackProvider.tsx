@@ -13,6 +13,7 @@ import {
   useAudioPlayerStatus,
 } from "expo-audio";
 import type { PlaybackSnapshot } from "./contracts";
+import { playbackPresentation, type AudioFeedback } from "./playbackPresentation.mjs";
 
 export type Source = {
   episodeId: string;
@@ -31,6 +32,8 @@ type Persisted = {
 type PlaybackContextValue = {
   snapshot: PlaybackSnapshot;
   source: Source | null;
+  audio: AudioFeedback;
+  retry: () => Promise<void>;
   play: (source: Source) => Promise<void>;
   pause: () => Promise<void>;
   seek: (ms: number) => Promise<void>;
@@ -49,6 +52,10 @@ export function usePlayback() {
   return value;
 }
 export function PlaybackProvider({ children }: { children: React.ReactNode }) {
+  const [connecting, setConnecting] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const waitingSince = useRef<number | null>(null);
+  const lastWaitingMs = useRef(0);
   let [snapshot, setSnapshot] = useState<PlaybackSnapshot>({
       episodeId: "",
       positionMs: 0,
@@ -68,6 +75,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const positions = useRef<Record<string, number>>({});
   const sourceRef = useRef(source);
   sourceRef.current = source;
+  const audio = playbackPresentation(status, { connecting, error: playbackError, hasSource: !!source });
+  useEffect(() => {
+    if (audio.waiting && waitingSince.current === null) waitingSince.current = Date.now();
+    if (!audio.waiting && waitingSince.current !== null) {
+      lastWaitingMs.current = Date.now() - waitingSince.current;
+      waitingSince.current = null;
+    }
+  }, [audio.waiting]);
   const persistPosition = async (positionMs: number) => {
     const currentSource = sourceRef.current;
     if (!currentSource) return;
@@ -99,6 +114,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         if (!raw || cancelled) return;
         let stored = JSON.parse(raw) as Persisted;
         if (!stored.source?.url || operation.current > 0) return;
+        sourceRef.current = { ...stored.source, startPositionMs: undefined };
+        setSource(sourceRef.current);
+        setConnecting(true);
+        setSnapshot((previous) => ({ ...previous, episodeId: stored.source.episodeId,
+          positionMs: stored.snapshot.positionMs || 0, speed: stored.snapshot.speed || 1 }));
         player.replace(stored.source.url);
         player.setPlaybackRate(stored.snapshot.speed || 1);
         const started = Date.now();
@@ -109,7 +129,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
           Date.now() - started < 15000
         )
           await new Promise((resolve) => setTimeout(resolve, 100));
-        if (cancelled || operation.current > 0 || !player.isLoaded) return;
+        if (cancelled || operation.current > 0) return;
+        if (!player.isLoaded) throw Error("Audio restore failed");
         await player.seekTo((stored.snapshot.positionMs || 0) / 1000);
         if (!cancelled) {
           setSource({ ...stored.source, startPositionMs: undefined });
@@ -121,7 +142,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
           }));
         }
       } catch {
-        /* Missing or stale state must not block playback. */
+        if (!cancelled && operation.current === 0 && sourceRef.current)
+          setPlaybackError("Audio couldn't play. Please try again.");
+      } finally {
+        if (!cancelled && operation.current === 0) setConnecting(false);
       }
     })();
     return () => {
@@ -130,6 +154,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     };
   }, [player]);
   useEffect(() => {
+    if (connecting || playbackError || status.error) return;
     setSnapshot((previous) => ({
       ...previous,
       positionMs: Math.round((status.currentTime || 0) * 1000),
@@ -140,7 +165,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       buffered: !!status.isBuffering,
       updatedAt: Date.now(),
     }));
-  }, [status.currentTime, status.duration, status.playing, status.isBuffering]);
+  }, [connecting, playbackError, status.error, status.currentTime, status.duration, status.playing, status.isBuffering]);
   useEffect(() => {
     if (!source || Date.now() - lastWrite.current < 5_000) return;
     lastWrite.current = Date.now();
@@ -160,20 +185,28 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   let value: PlaybackContextValue = {
     snapshot,
     source,
+    audio,
+    retry: async () => {
+      if (sourceRef.current) await value.play({ ...sourceRef.current, startPositionMs: snapshot.positionMs });
+    },
     play: async (next) => {
       const currentOperation = ++operation.current;
+      try {
+      setPlaybackError(null);
       fadeOperation.current++;
       player.volume = 1;
       const switching = sourceRef.current?.url !== next.url;
-      if (switching) {
-        player.replace(next.url);
+      const reload = switching || !player.isLoaded || audio.state === "FAILED";
+      if (reload) {
+        setConnecting(true);
         sourceRef.current = { ...next, startPositionMs: undefined };
         setSource({ ...next, startPositionMs: undefined });
+        player.replace(next.url);
         setSnapshot((s) => ({
           ...s,
           episodeId: next.episodeId,
-          positionMs: 0,
-          durationMs: null,
+          positionMs: switching ? 0 : s.positionMs,
+          durationMs: switching ? null : s.durationMs,
           playing: false,
         }));
         const started = Date.now();
@@ -189,7 +222,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
       const target =
         next.startPositionMs ??
-        (switching ? positions.current[next.episodeId] : undefined);
+        (switching ? positions.current[next.episodeId] : reload ? snapshot.positionMs : undefined);
       if (target !== undefined) await player.seekTo(Math.max(0, target) / 1000);
       if (next.startPositionMs !== undefined)
         setManualSeekRevision((revision) => revision + 1);
@@ -199,10 +232,21 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         { title: next.title, artist: next.show, artworkUrl: next.artworkUrl },
         { showSeekBackward: true, showSeekForward: true },
       );
+      player.setPlaybackRate(snapshot.speed);
       player.play();
+      } catch (error) {
+        if (currentOperation === operation.current) {
+          setPlaybackError("Audio couldn't play. Please try again.");
+          setSnapshot((previous) => ({ ...previous, playing: false }));
+        }
+        throw error;
+      } finally {
+        if (currentOperation === operation.current) setConnecting(false);
+      }
     },
     pause: async () => {
       operation.current++;
+      setConnecting(false);
       fadeOperation.current++;
       player.pause();
       player.volume = 1;

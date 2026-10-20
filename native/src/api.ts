@@ -118,6 +118,8 @@ export type IntelligenceStatus = {
     maximumMs: number;
     label: string;
     estimatedCompletionAt: string;
+    confidence?: "medium" | "high";
+    updatedAt?: string;
   } | null;
   nextAction?: "VIEW_INTELLIGENCE" | "PREPARE" | "KEEP_LISTENING" | "RETRY" | "WAIT_FOR_BUDGET" | "EXPLORE_ANOTHER_EPISODE";
 };
