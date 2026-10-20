@@ -351,22 +351,26 @@ export class EpisodePipeline {
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
       if (
-        status?.state === "QUEUED" &&
+        activeStates.has(status?.state) &&
+        !completed(status) &&
         status.deadlineAt &&
         Date.parse(status.deadlineAt) <= now
       ) {
+        const queued = status.state === "QUEUED";
         this.store.set("intelligence", key, {
           ...status,
           state: "FAILED",
-          code: "QUEUE_TIMEOUT",
-          reason: "The processing worker did not start before its queue deadline. You can retry once.",
+          code: queued ? "QUEUE_TIMEOUT" : "PROCESSING_TIMEOUT",
+          reason: queued
+            ? "The processing worker did not start before its queue deadline. You can retry once."
+            : "Processing did not finish before its deadline. You can retry once.",
           retryable: status.attempts < 2,
         });
         this.store.delete("processing-outbox", status.jobId);
         console.error(JSON.stringify({
           event: "processing-queue-job-expired",
           jobId: status.jobId,
-          code: "QUEUE_TIMEOUT",
+          code: queued ? "QUEUE_TIMEOUT" : "PROCESSING_TIMEOUT",
         }));
       }
     }

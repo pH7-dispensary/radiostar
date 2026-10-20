@@ -97,4 +97,13 @@ assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").
 const recovered = await pipeline.request({ feedUrl: "https://publisher.example/feed", episodeId: "queue-episode", retry: true });
 assert.equal(recovered.state, "QUEUED");
 assert.equal(queuedJobs.at(-1).forcePublisherRefresh, true, "a timed-out recheck preserves its completed cache for one safe retry");
+store.set("intelligence", storedKey, {
+  ...store.get("intelligence", storedKey),
+  state: "PARTIAL_READY",
+  phase: "ORGANISING",
+  deadlineAt: "2020-01-01T00:00:00.000Z",
+  completedAt: undefined,
+});
+await pipeline.recoverQueued();
+assert.equal(pipeline.status("https://publisher.example/feed", "queue-episode").code, "PROCESSING_TIMEOUT");
 console.log("Dedicated SQS processing queue contract passed");
