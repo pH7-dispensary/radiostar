@@ -17,6 +17,7 @@ import { acquireServerLock } from "./server-lock.mjs";
 import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
+import { IntelligencePolicyRegistry } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-corpus.mjs";
 import { subscriptionsFromEnv } from "./subscriptions.mjs";
@@ -295,6 +296,7 @@ export function createStarCastServer({
     };
   }
   const queue = processingQueueFromEnv(env);
+  const intelligencePolicy = new IntelligencePolicyRegistry(store);
   const pipeline = new EpisodePipeline({
     store,
     ledger,
@@ -306,6 +308,7 @@ export function createStarCastServer({
     fetchTranscript,
     audioFactory,
     rights,
+    intelligencePolicy,
     queue,
     onCompleted: ({ feedUrl, episodeId }) => skips?.inspect(feedUrl, episodeId),
   });
@@ -315,7 +318,7 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline);
   const subscriptions = subscriptionsFromEnv(store, env);
-  const translation = new TranslationService({ rights, subscriptions, env, store });
+  const translation = new TranslationService({ rights, subscriptions, intelligencePolicy, env, store });
   const fixtureIdentity = () => {
     const origin = String(env.STARCAST_TEST_CORPUS_ORIGIN || "").replace(/\/$/, "");
     if (!/^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(origin)) throw Error("The owned translation fixture origin is unavailable.");
@@ -335,8 +338,9 @@ export function createStarCastServer({
     const permission = rights.resolve(feedUrl, episode.id);
     const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id, audit: true });
     const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id, audit: true });
-    if (!permission.canAcquireTranscript || !processing.allowed || !display.allowed)
-      return { state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: !permission.canAcquireTranscript ? "The publisher has not authorised transcript acquisition." : processing.allowed ? display.reason : processing.reason };
+    const operational = intelligencePolicy.allows(feedUrl, episode.id, "intelligence");
+    if (!permission.canAcquireTranscript || !processing.allowed || !display.allowed || !operational.allowed)
+      return { state: "BLOCKED", code: !operational.allowed ? "INTELLIGENCE_POLICY_HIGH" : "RIGHTS_RESTRICTED", reason: !operational.allowed ? "New intelligence processing is paused by the podcast intelligence policy." : !permission.canAcquireTranscript ? "The publisher has not authorised transcript acquisition." : processing.allowed ? display.reason : processing.reason };
     // Following is never consent to paid audio. Publisher transcripts only.
     return pipeline.request({ feedUrl, episodeId: episode.id, trigger: "automatic" });
   };
@@ -405,12 +409,79 @@ export function createStarCastServer({
       groups: [...groups.values()].sort((a, b) => a.podcast.localeCompare(b.podcast)),
     };
   };
+  const intelligencePolicyCatalogue = () => {
+    const channels = new Map();
+    const jobs = store.all("intelligence").map(([, job]) => job);
+    const add = (feedUrl, metadata = {}) => {
+      if (!feedUrl || !publicUrl(feedUrl)) return;
+      const item = channels.get(feedUrl) || { feedUrl, podcast: metadata.podcast || "Podcast", publisher: metadata.publisher || null, artworkUrl: metadata.artworkUrl || null, episodeCount: 0, blockedIntelligenceCount: 0, lastProcessingActivity: null, episodes: [] };
+      if (metadata.podcast) item.podcast = metadata.podcast;
+      if (metadata.publisher) item.publisher = metadata.publisher;
+      if (metadata.artworkUrl) item.artworkUrl = metadata.artworkUrl;
+      if (metadata.episodeId && !item.episodes.some((episode) => episode.episodeId === metadata.episodeId)) item.episodes.push(metadata);
+      channels.set(feedUrl, item);
+    };
+    for (const record of rights.list()) add(record.feedUrl, { podcast: record.podcast, publisher: record.publisher, episodeId: record.episodeId, episodeTitle: record.episodeTitle });
+    for (const job of jobs) {
+      add(job.feedUrl, { podcast: job.episode?.showName, publisher: job.episode?.publisher, artworkUrl: job.episode?.artworkUrl, episodeId: job.episodeId || job.episode?.id, episodeTitle: job.episode?.title });
+      const channel = channels.get(job.feedUrl); if (!channel) continue;
+      if (["BLOCKED", "FAILED"].includes(job.state)) channel.blockedIntelligenceCount++;
+      const at = Date.parse(job.completedAt || job.updatedAt || job.startedAt || "");
+      if (Number.isFinite(at) && (!channel.lastProcessingActivity || at > channel.lastProcessingActivity)) channel.lastProcessingActivity = at;
+    }
+    for (const policy of intelligencePolicy.records()) add(policy.feedUrl, { episodeId: policy.episodeId });
+    return {
+      generatedAt: new Date().toISOString(), global: intelligencePolicy.global(),
+      policies: intelligencePolicy.records(), audit: intelligencePolicy.audit(),
+      metrics: Object.fromEntries(["READY", "QUEUED", "PROCESSING", "BLOCKED", "FAILED"].map((state) => [state, jobs.filter((job) => job.state === state).length])),
+      podcasts: [...channels.values()].map((channel) => {
+        const history = jobs.filter((job) => job.feedUrl === channel.feedUrl).map((job) => publicIntelligence(job)).sort((a, b) => Date.parse(b.completedAt || b.startedAt || "") - Date.parse(a.completedAt || a.startedAt || "")).slice(0, 20);
+        return { ...channel, episodeCount: channel.episodes.length, rights: rights.resolve(channel.feedUrl), policy: intelligencePolicy.effective(channel.feedUrl), effectivePermissions: intelligencePolicy.features(channel.feedUrl), processingHistory: history, episodes: channel.episodes.map((episode) => ({ ...episode, rights: rights.resolve(channel.feedUrl, episode.episodeId), policy: intelligencePolicy.effective(channel.feedUrl, episode.episodeId), effectivePermissions: intelligencePolicy.features(channel.feedUrl, episode.episodeId) })) };
+      }).sort((a, b) => a.podcast.localeCompare(b.podcast)),
+    };
+  };
+  const applyIntelligencePolicy = async (input, actor) => {
+    const scope = input.scope === "global" ? "global" : input.scope === "episode" ? "episode" : "podcast";
+    if (input.confirmation !== "SAVE POLICY") throw Error("Type SAVE POLICY before changing intelligence automation.");
+    const policy = scope === "global" ? intelligencePolicy.setGlobal(input, { actor: actor.id }) : intelligencePolicy.set({ ...input, episodeId: scope === "episode" ? input.episodeId : undefined }, { actor: actor.id });
+    const jobs = [];
+    // Existing work is deliberately bounded, and audio is opt-in even where a
+    // recorded rights permission exists. This never becomes a back-catalogue bill.
+    if (scope !== "global" && policy.applyToExisting && policy.tier !== "HIGH") {
+      const maximum = Math.max(1, Math.min(3, Math.floor(Number(input.maxEpisodes) || 1)));
+      const candidates = scope === "episode" ? [await pipeline.resolveEpisode(input.feedUrl, input.episodeId)] : [...(await (async () => {
+        const parsed = episodesFromFeed(await feedXml(input.feedUrl), input.feedUrl);
+        return parsed.episodes.filter((episode) => episode.id).sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || "")).slice(0, maximum);
+      })())];
+      for (const episode of candidates) {
+        const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
+        const display = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
+        const permission = rights.resolve(input.feedUrl, episode.id);
+        if (!processing.allowed || !display.allowed) { jobs.push({ episodeId: episode.id, state: "BLOCKED", code: "RIGHTS_RESTRICTED" }); continue; }
+        jobs.push(await pipeline.request({ feedUrl: input.feedUrl, episodeId: episode.id, allowAudio: input.includeAuthorisedAudio === true && permission.canTranscribeAudio === true, trigger: "admin" }));
+      }
+    }
+    rights.audit("intelligence-policy-changed", policy.id, actor.id, { scope, tier: policy.tier, version: policy.version, jobsCreated: jobs.filter((job) => job.jobId).length });
+    adminService.appendAudit({ actor, action: "intelligence-policy-changed", resource: policy.id, newState: { scope, tier: policy.tier, version: policy.version, jobsCreated: jobs.filter((job) => job.jobId).length }, reason: policy.reason, outcome: "ALLOWED" });
+    return { policy, jobs };
+  };
   const approveAndProcess = async (input, actor) => {
     const scope = input.scope === "podcast" ? "podcast" : "episode";
     if (!publicUrl(input.feedUrl) || (scope === "episode" && (typeof input.episodeId !== "string" || !input.episodeId)))
       throw Error("Choose a valid podcast channel and episode.");
-    const approval = rights.approveProcessing({ ...input, episodeId: scope === "episode" ? input.episodeId : undefined }, { actor: actor.id });
     const target = scope === "podcast" ? await latestEpisode(input.feedUrl) : await pipeline.resolveEpisode(input.feedUrl, input.episodeId);
+    const approval = rights.approveProcessing({ ...input, episodeId: scope === "episode" ? input.episodeId : undefined }, { actor: actor.id });
+    // A documented approval is an explicit operational decision as well as a
+    // rights assessment. Keep it at LOW: core intelligence only, with no
+    // implication that captions, dubbing or voice features are authorised.
+    let operationalPolicy = intelligencePolicy.effective(input.feedUrl, target.id);
+    if (!intelligencePolicy.allows(input.feedUrl, target.id, "intelligence").allowed)
+      operationalPolicy = intelligencePolicy.set({
+        feedUrl: input.feedUrl,
+        episodeId: scope === "episode" ? target.id : undefined,
+        tier: "LOW", applyToExisting: false, applyToFuture: scope === "podcast",
+        reason: "Documented Super Admin approval enabled bounded core intelligence.",
+      }, { actor: actor.id });
     const status = await pipeline.request({
       feedUrl: input.feedUrl,
       episodeId: target.id,
@@ -424,7 +495,7 @@ export function createStarCastServer({
       podcast: target.showName || target.podcast || input.podcast || null,
       classification: approval.record.classification, legalBasis: approval.record.legalBasis,
       audioTranscriptionApproved: approval.record.canTranscribeAudio,
-      status: status.state, jobId: status.jobId || null,
+      status: status.state, jobId: status.jobId || null, intelligenceTier: operationalPolicy.tier,
     };
     store.set("processing-approval", record.id, record);
     rights.audit("super-admin-processing-queued", record.id, actor.id, { scope, feedUrl: record.feedUrl, episodeId: record.episodeId, jobId: record.jobId, status: record.status });
@@ -824,9 +895,10 @@ export function createStarCastServer({
           return send(res, 429, { error: "Caption updates are temporarily limited. Keep listening and try again shortly." });
         const permission = rights.resolve(input.feedUrl, input.episodeId);
         const captionDecision = rights.evaluate({ feature: "captions", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
-        if (!captionDecision.allowed) {
+        const operational = intelligencePolicy.allows(input.feedUrl, input.episodeId, "captions");
+        if (!captionDecision.allowed || !operational.allowed) {
           rights.audit("caption-denied", `${input.feedUrl}:${input.episodeId}`, "listener", { classification: permission.classification, code: captionDecision.code });
-          return send(res, 200, { available: false, reason: "Captions are not authorised for this episode." });
+          return send(res, 200, { available: false, reason: !operational.allowed ? "Captions are paused by the podcast intelligence policy." : "Captions are not authorised for this episode." });
         }
         listeners.captionPlayback(listener, input);
         const window = pipeline.captions(input.feedUrl, input.episodeId, input.positionMs);
@@ -879,6 +951,21 @@ export function createStarCastServer({
           totals: ledger.totals(),
           jobs: store.all("intelligence").map(([, v]) => publicIntelligence(v)),
         });
+      }
+      if (url.pathname === "/api/admin/intelligence/policies" && ["GET", "POST"].includes(req.method)) {
+        const actor = adminActor(req, req.method === "GET" ? "rights:read" : "intelligence:write", { write: req.method === "POST" });
+        if (!actor || (req.method === "POST" && actor.role !== "SUPER_ADMIN")) return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
+        if (req.method === "GET") return send(res, 200, intelligencePolicyCatalogue());
+        return send(res, 202, await applyIntelligencePolicy(await body(req), actor));
+      }
+      if (url.pathname === "/api/admin/intelligence/policies/rollback" && req.method === "POST") {
+        const actor = adminActor(req, "intelligence:write", { write: true });
+        if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
+        const input = await body(req);
+        if (!publicUrl(input.feedUrl)) return send(res, 400, { error: "A valid podcast RSS URL is required." });
+        const policy = intelligencePolicy.rollback(input.feedUrl, input.episodeId || "", input.version, { actor: actor.id, reason: input.reason });
+        adminService.appendAudit({ actor, action: "intelligence-policy-rolled-back", resource: policy.id, newState: { tier: policy.tier, version: policy.version }, reason: policy.reason, outcome: "ALLOWED" });
+        return send(res, 200, { policy });
       }
       if (url.pathname === "/api/admin/rights" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "rights:read" : "rights:write", { write: req.method === "POST" });
@@ -1135,7 +1222,7 @@ export function createStarCastServer({
       code: error?.name || "QUEUE_STOPPED",
     })));
   }
-  return { server, store, ledger, pipeline, listeners, skips, rights, adminService, subscriptions, translation, queue };
+  return { server, store, ledger, pipeline, listeners, skips, rights, intelligencePolicy, adminService, subscriptions, translation, queue };
 }
 if (
   process.argv[1] &&

@@ -101,6 +101,7 @@ export class EpisodePipeline {
     fetchTranscript = fetchPublisherTranscript,
     audioFactory = prepareAudio,
     rights = null,
+    intelligencePolicy = null,
     queue = null,
     onCompleted = null,
     jobTimeoutMs = 15 * 60 * 1000,
@@ -116,6 +117,7 @@ export class EpisodePipeline {
       fetchTranscript,
       audioFactory,
       rights,
+      intelligencePolicy,
       queue,
       onCompleted,
       jobTimeoutMs,
@@ -236,6 +238,14 @@ export class EpisodePipeline {
         reason: "Episode analysis is temporarily unavailable.",
         retryable: false,
       };
+    const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, "intelligence");
+    if (operational && !operational.allowed)
+      return {
+        state: "BLOCKED",
+        code: "INTELLIGENCE_POLICY_HIGH",
+        reason: "New intelligence processing is paused by the podcast intelligence policy.",
+        retryable: false,
+      };
     const processingDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId, audit: true });
     const displayDecision = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId, audit: true });
     if ((processingDecision && !processingDecision.allowed) || (displayDecision && !displayDecision.allowed))
@@ -252,6 +262,7 @@ export class EpisodePipeline {
       attempts,
       processingVersion: PROCESSING_VERSION,
       rightsPolicy: { mode: processingDecision?.mode || null, version: processingDecision?.policyVersion || null, outputProfile: processingDecision?.outputProfile || "standard" },
+      intelligencePolicy: operational ? { tier: operational.tier, source: operational.source, version: operational.policyVersion } : null,
       startedAt: new Date().toISOString(),
       cacheHit: false,
       trigger,
