@@ -38,6 +38,9 @@ try {
   assert.equal(status.automaticSkipping, true);
   assert.equal((await (await call("/api/skips/status", input, ordinaryCredential)).json()).automaticSkipping, false);
   assert.equal((await (await call("/api/skips/status", { ...input, audioVariantFingerprint: "0".repeat(64) })).json()).automaticSkipping, false);
+  app.rights.set({ ...rights, canDisplayDerivedIntelligence: false });
+  assert.equal((await (await call("/api/skips/status", input)).json()).automaticSkipping, false, "a cached verified interval cannot bypass revoked display permission");
+  app.rights.set(rights);
   const interval = status.activeIntervals[0];
   let position = interval.startMs + 100;
   const result = await executeVerifiedSkip({ interval, positionMs: position, durationMs: 50000, current: () => true, authorise: async row => { const response = await call("/api/skips/authorise", { ...input, ...row }); assert.equal(response.status, 200); return response.json(); }, seek: async target => position = target });

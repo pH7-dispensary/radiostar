@@ -8,6 +8,7 @@ continue
 .starcast/
 native/dist/
 native/dist-testflight/
+native/dist-pilot/
 native/web-dist/
 infra/aws/.terraform/
 infra/aws/*.tfstate*

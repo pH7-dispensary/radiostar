@@ -151,6 +151,9 @@ export class SkipService {
       return;
     }
     if (this.inflight.has(key) || ["READY", "DYNAMIC_VARIANT"].includes(previous?.state)) return;
+    // A missing transcript/audio binding is not transient. Retry only if the
+    // bound source changes, rather than rewriting a failed job on every poll.
+    if (previous?.state === "UNAVAILABLE" && previous.inputHash !== undefined && previous.inputHash === (value.transcript?.audioContentHash || null)) return;
     if (previous?.state === "FAILED" && (previous.attempts || 0) >= 2) return;
     const attempt = (previous?.attempts || 0) + 1;
     this.store.set("skip-audio-verification", key, { episodeKey: key, state: "QUEUED", attempts: attempt, updatedAt: nowIso(), reason: null });
@@ -171,7 +174,7 @@ export class SkipService {
         }
         const at = nowIso();
         this.store.set("skip-audio-verification", key, {
-          episodeKey: key, state: result.state || "READY", attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
+          episodeKey: key, state: result.state || "READY", inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
           variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs } : null,
         });
         if (result.state !== "READY" || !result.variant) return;
@@ -208,7 +211,8 @@ export class SkipService {
     const exactSource = typeof audioUrl === "string" && Boolean(value?.episode?.audioUrl) && audioUrl === value.episode.audioUrl;
     const verification = this.verification(episodeKey(feed, episode));
     const variant = verification?.state === "READY" ? verification.variant : null;
-    const permitted = exactSource && inspection.state !== "UNAVAILABLE" && this.automaticEnabled(listener) && preferences.adSkipEnabled === true;
+    const displayAllowed = !this.pipeline.rights || this.pipeline.rights.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: episode }).allowed;
+    const permitted = exactSource && displayAllowed && inspection.state !== "UNAVAILABLE" && this.automaticEnabled(listener) && preferences.adSkipEnabled === true;
     const sourceMatched = Boolean(permitted && variant?.audioVariantFingerprint && audioVariantFingerprint === variant.audioVariantFingerprint);
     const activeIntervals = sourceMatched ? this.store.all("skip-interval").map(([, item]) => item)
       .filter((item) => item.episodeKey === episodeKey(feed, episode) && categories.has(item.type) && preferences[item.type] === true && intervalDecision({ interval: item, variantFingerprint: audioVariantFingerprint, durationMs: variant.durationMs, positionMs: item.startMs, flags: { ad_skip: "on", intro_skip: "on", title_sequence_skip: "on", preview_skip: "on", outro_skip: "on" } }).skip)
