@@ -302,9 +302,16 @@ function testing() {
   document.querySelector("#testing-refresh").onclick = async () => { try { await load("testing"); render(); } catch (error) { notify(error.message); } };
   document.querySelectorAll("[data-review-testing]").forEach((button) => button.onclick = () => approvalEditor(d.attention[Number(button.dataset.reviewTesting)]));
   const form = document.querySelector("#testing-controls");
+  if (form) {
+    form.querySelector('option[value="true"]').textContent = c.active ? "Enabled until configured expiry" : "Enable for seven days";
+    const pilot = document.createElement("label"); pilot.className = "check";
+    pilot.innerHTML = '<input type="checkbox" name="adSkipPilotEnabled"><span>Verified Ad Skip pilot · selected testers only</span>';
+    pilot.querySelector("input").checked = c.adSkipPilotEnabled === true;
+    form.prepend(pilot);
+  }
   if (form) form.onsubmit = async (event) => {
     event.preventDefault(); const data = new FormData(form); const button = form.querySelector("button"); button.disabled = true;
-    try { await api("/api/admin/intelligence/testing", { method: "POST", body: JSON.stringify({ enabled: data.get("enabled") === "true", listenerIds: data.getAll("listenerIds"), expectedVersion: c.version, reason: data.get("reason"), confirmation: data.get("confirmation") }) }); await load("testing"); render(); notify("Testing configuration saved and audited."); } catch (error) { notify(error.message); button.disabled = false; }
+    try { await api("/api/admin/intelligence/testing", { method: "POST", body: JSON.stringify({ enabled: data.get("enabled") === "true", adSkipPilotEnabled: data.get("adSkipPilotEnabled") === "on", listenerIds: data.getAll("listenerIds"), expectedVersion: c.version, reason: data.get("reason"), confirmation: data.get("confirmation") }) }); await load("testing"); render(); notify("Testing configuration saved and audited."); } catch (error) { notify(error.message); button.disabled = false; }
   };
 }
 function translate() {
@@ -319,6 +326,9 @@ function costs() {
 }
 function adSkip() {
   const d = state.adSkip, c = d.counts;
+  // Keep synthetic evaluation receipts distinct from ordinary listening.
+  c.automaticSkips = d.release.realEpisodeSkips ?? c.automaticSkips;
+  c.undoEvents = Math.max(0, c.undoEvents - (d.release.evaluationUndos || 0));
   const rows = d.intervals.length ? d.intervals.map((item) => `<tr><td>${badge(item.verificationState)}<br><span class="muted small">${html(item.type)}</span></td><td>${html(item.publisherFeed || "Publisher unavailable")}</td><td>${elapsed(item.startMs)}–${elapsed(item.endMs)}</td><td>${item.boundaryVerified ? badge("VERIFIED") : badge("PENDING")}</td><td>${html(item.evidenceSources.join(" · ") || "None")}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">No persisted Ad Skip candidates exist yet.</td></tr>`;
   page("Ad Skip safety", "A real operations view of candidate evidence, verification work and listener safety signals. It never promotes a candidate.", `<div class="banner">Production automatic skipping is ${d.release.productionAutomaticSkipping ? "enabled" : "disabled"}. Release evidence is ${html(label(d.release.status))}; no accuracy metric is inferred from sparse data.</div><div class="grid">${card("Candidates", c.candidates, "Transcript signals only")}${card("Verified", c.verified, "Audio and boundary evidence")}${card("Disputed", c.disputed, "Never automatically skipped")}${card("Verification failures", c.failed, "Bounded retries only")}${card("Automatic skips", c.automaticSkips, "Recorded player events")}${card("Undo events", c.undoEvents, "Exact-position restores")}</div><section class="panel"><div class="panel-head"><div><h3>Candidate and verification evidence</h3><p>Audio fingerprints, validators and diagnostics remain server-side. This view exposes only decision-safe fields.</p></div>${badge(d.release.status)}</div><div class="table-wrap"><table class="feature-table"><thead><tr><th>Decision</th><th>Publisher source</th><th>Boundary</th><th>Audio boundary</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div></section><section class="panel"><h3>Production release gate</h3><p class="muted">Requires ${html(d.release.criteria.labelledEpisodes)} labelled episodes, ${html(d.release.criteria.verifiedIntervals)} verified intervals, ${(d.release.criteria.precision * 100).toFixed(1)}% precision, zero conversation or mismatched-variant skips, ≤${html(d.release.criteria.p95DecisionMs)}ms p95 decision time, and 100% undo restoration. Current measured result: unavailable.</p></section>`);
 }

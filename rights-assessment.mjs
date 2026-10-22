@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 // A public feed, a transcript link, or the absence of a reservation is never
 // treated as permission.  It can establish bounded intelligence only when the
 // publisher has supplied a recognised, machine-readable licence.
-export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v1";
+export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v2";
 
 const text = (value) => String(value || "")
   .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
@@ -94,6 +94,14 @@ export function publisherRightsEvidence({ channelXml = "", itemXml = "", feedUrl
       ...elementValues(xml, "podcast:rights"),
     ]);
     for (const value of rightsText) {
+      // A narrowly worded distribution reservation is not an internal-analysis
+      // prohibition. Retain the verbatim evidence and gate its actual scope.
+      const distributionOnly = /(?:no|prohibit(?:ed)?|not permitted)[\s\S]{0,45}(?:public transcript distribution|distribution of (?:full )?transcripts|public captions)/i.test(value)
+        && !reservation(value);
+      if (distributionOnly) {
+        const item = { type: "SCOPED_PUBLISHER_RESTRICTION", source: "publisher-rss", scope, value: compact(value, 500), features: ["captions", "transcript-distribution"] };
+        reservations.push(item); evidence.push(item); continue;
+      }
       if (!reservation(value)) continue;
       const item = { type: "PUBLISHER_RESTRICTION", source: "publisher-rss", scope, value: compact(value, 500) };
       reservations.push(item);
@@ -117,8 +125,9 @@ export function assessPublisherRights({ feedUrl, episode, evidence } = {}) {
     assessmentVersion: RIGHTS_ASSESSMENT_VERSION,
     evidenceFingerprint: snapshot.fingerprint,
     assessmentEvidence: snapshot.evidence,
+    reservedFeatures: [...new Set(snapshot.reservations.flatMap(item => item.features || []))],
   };
-  if (snapshot.reservations.length) return {
+  if (snapshot.reservations.some(item => !item.features?.length)) return {
     ...common,
     classification: "RESTRICTED",
     assessmentStatus: "REJECTED",

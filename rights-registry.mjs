@@ -111,6 +111,7 @@ const normaliseRecord = (record) => record && (() => {
   assessmentStatus: assessmentValues.has(record.assessmentStatus) ? record.assessmentStatus : record.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED,
   explicitAuthorisation: record.explicitAuthorisation === true || (record.classification === RightsClassification.LICENSED && record.canProcessForAi === true && record.canDisplayDerivedIntelligence === true),
   rightsReserved: record.rightsReserved === true,
+  reservedFeatures: Array.isArray(record.reservedFeatures) ? record.reservedFeatures : [],
   testContentEligible: record.testContentEligible === true,
   blockerCode: typeof record.blockerCode === "string" ? record.blockerCode.slice(0, 120) : null,
   assessmentReason: typeof record.assessmentReason === "string" ? record.assessmentReason.slice(0, 2000) : null,
@@ -442,12 +443,14 @@ export class RightsRegistry {
   evaluate({ feature, feedUrl, episodeId = "", audit = false, policy: policyOverride } = {}) {
     if (!featurePermission[feature]) throw Error("A valid rights feature is required.");
     const rights = this.resolve(feedUrl, episodeId), policy = policyOverride || this.policy(), override = this.override(feedUrl, episodeId);
+    const scopedReservation = [this.store.get("rights", key(feedUrl)), this.store.get("rights", key(feedUrl, episodeId))].find(record => record?.reservedFeatures?.includes(feature));
     const mode = override?.mode || policy.mode;
     const features = { ...policy.features, ...(override?.features || {}) };
     const optionalFeature = optionalFeatureFor[feature];
     let allowed = true, code = "ALLOWED", reason = "Rights requirements are satisfied.", outputProfile = "standard";
     if (!rights.id) [allowed, code, reason] = [false, "LEGAL_BASIS_NOT_ESTABLISHED", "No rights assessment has been completed for this episode yet."];
     else if (rights.suspendedAt || rights.deletedAt) [allowed, code, reason] = [false, "TAKEDOWN_OR_SUSPENSION", "This content is suspended or subject to a takedown."];
+    else if (scopedReservation) [allowed, code, reason] = [false, "SCOPED_PUBLISHER_RESTRICTION", "The publisher has reserved this specific output; independent internal-processing permissions are unchanged."];
     else if (rights.rightsReserved || rights.classification === RightsClassification.DISPUTED) [allowed, code, reason] = [false, rights.blockerCode || "RIGHTS_RESERVED", rights.assessmentReason || "The rights record reserves this feature or is under dispute."];
     else if (mandatoryRestriction(rights)) [allowed, code, reason] = [false, rights.blockerCode, rights.assessmentReason || "A recorded mandatory restriction applies to this content."];
     else if (rights.approvalAssessment?.revokedAt) [allowed, code, reason] = [false, "APPROVAL_REVOKED", "The documented approval has been revoked. Review new evidence before processing."];
@@ -551,6 +554,7 @@ export class RightsRegistry {
         throw Error("Rights permissions must be true or false.");
     if (input.assessmentEvidence !== undefined && !Array.isArray(input.assessmentEvidence))
       throw Error("Rights assessment evidence is invalid.");
+    if (input.reservedFeatures !== undefined && (!Array.isArray(input.reservedFeatures) || input.reservedFeatures.some(feature => ![...Object.keys(featurePermission), "transcript-distribution"].includes(feature)))) throw Error("Reserved feature scope is invalid.");
     const id = key(input.feedUrl, input.episodeId || "");
     const prior = this.store.get("rights", id);
     const record = {
@@ -567,6 +571,7 @@ export class RightsRegistry {
       assessmentStatus: input.assessmentStatus || prior?.assessmentStatus || (input.classification === RightsClassification.LICENSED ? RightsAssessmentStatus.APPROVED : RightsAssessmentStatus.UNASSESSED),
       explicitAuthorisation: input.explicitAuthorisation === undefined ? prior?.explicitAuthorisation === true || (input.classification === RightsClassification.LICENSED && input.canProcessForAi === true && input.canDisplayDerivedIntelligence === true) : input.explicitAuthorisation,
       rightsReserved: input.rightsReserved === undefined ? prior?.rightsReserved === true : input.rightsReserved,
+      reservedFeatures: input.reservedFeatures === undefined ? prior?.reservedFeatures || [] : [...new Set(input.reservedFeatures)],
       testContentEligible: input.testContentEligible === undefined ? prior?.testContentEligible === true : input.testContentEligible,
       blockerCode: typeof input.blockerCode === "string" ? input.blockerCode.slice(0, 120) : input.blockerCode === null ? null : prior?.blockerCode || null,
       assessmentReason: typeof input.assessmentReason === "string" ? input.assessmentReason.slice(0, 2000) : input.assessmentReason === null ? null : prior?.assessmentReason || null,
@@ -606,7 +611,7 @@ export class RightsRegistry {
     if (mandatory) return { record: prior, reused: true, mandatory: true };
     // Human-entered rights records remain authoritative. Automatic evidence may
     // refresh only a prior automatic assessment for the same episode.
-    if (prior.id && prior.assessmentSource !== input.assessmentSource)
+    if (prior.id && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
       return { record: prior, reused: true, mandatory: false };
     if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint)
       return { record: prior, reused: true, mandatory: false };

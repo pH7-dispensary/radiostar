@@ -28,7 +28,7 @@ const parseSilence = (output) => {
   return marks.filter((mark) => Number.isFinite(mark.ms));
 };
 
-async function boundaryEvidence(path, boundaryMs, durationMs) {
+async function boundaryEvidence(path, boundaryMs, durationMs, side) {
   const startMs = Math.max(0, boundaryMs - boundaryWindowMs);
   const windowMs = Math.min(durationMs - startMs, boundaryWindowMs * 2);
   if (windowMs <= 0) return null;
@@ -55,6 +55,7 @@ async function boundaryEvidence(path, boundaryMs, durationMs) {
   );
   const closest = parseSilence(`${stdout}\n${stderr}`)
     .map((mark) => ({ ...mark, absoluteMs: startMs + mark.ms }))
+    .filter((mark) => side === "start" ? mark.absoluteMs >= boundaryMs : mark.absoluteMs <= boundaryMs)
     .sort((a, b) => Math.abs(a.absoluteMs - boundaryMs) - Math.abs(b.absoluteMs - boundaryMs))[0];
   if (!closest || Math.abs(closest.absoluteMs - boundaryMs) > boundaryToleranceMs)
     return null;
@@ -94,8 +95,9 @@ async function boundaryEvidence(path, boundaryMs, durationMs) {
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
  * validator or a non-silent boundary leaves the interval unverified.
  */
-export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds }) {
-  const audio = await prepareAudio(audioUrl, maxSeconds);
+export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, audioFactory = prepareAudio }) {
+  if (!/^[a-f0-9]{64}$/.test(expectedContentHash || "")) return { state: "UNAVAILABLE", reason: "The transcript has not been aligned to these exact audio bytes. Automatic skipping remains off.", candidates: [] };
+  const audio = await audioFactory(audioUrl, maxSeconds);
   try {
     const etag = audio.delivery?.headers?.etag || null;
     if (
@@ -110,11 +112,13 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds }) {
         candidates: [],
       };
     const audioVariantFingerprint = await contentFingerprint(audio.path);
+    if (!expectedContentHash || expectedContentHash !== audioVariantFingerprint)
+      return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
     const verified = [];
     for (const candidate of candidates) {
       const [start, end] = await Promise.all([
-        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs),
-        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs),
+        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs, "start"),
+        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs, "end"),
       ]);
       if (!start || !end) {
         verified.push({ id: candidate.id, boundaryVerified: false });
@@ -138,6 +142,7 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds }) {
         etag,
         contentLength: Number(audio.delivery.headers?.contentLength) || null,
         audioVariantFingerprint,
+        durationMs: audio.durationMs,
       },
       candidates: verified,
     };

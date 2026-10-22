@@ -24,8 +24,9 @@ assert.match(app, /PlayerIntelligenceAccordion/);
 assert.match(app, /numberOfLines=\{titleExpanded \? undefined : 2\}/);
 assert.match(app, /accessibilityRole="adjustable"/);
 assert.match(adSkip, /showMasterToggle = true/);
-assert.match(adSkipRuntime, /rights, rollout, preferences, acoustic evidence, boundary/);
-assert.match(adSkipRuntime, /manualSuppressionMs = 10_000/);
+assert.match(adSkipRuntime, /executeVerifiedSkip/);
+assert.match(adSkipRuntime, /\/api\/skips\/authorise/);
+assert.match(adSkipRuntime, /manualUntil.current = Date.now\(\) \+ 10_000/);
 assert.match(adSkipRuntime, /kind: "automatic_skip"/);
 assert.match(app, /Verified advert skipped/);
 

@@ -32,7 +32,7 @@ export function AdSkipPanel({
   onPlay(ms: number): Promise<unknown>;
   showMasterToggle?: boolean;
 }) {
-  const { snapshot, seek } = usePlayback();
+  const { snapshot, seek, audioVariantFingerprint } = usePlayback();
   const [status, setStatus] = useState<SkipStatus | null>(null),
     [preferences, setPreferences] = useState<
       Partial<Record<SkipCategory, boolean> & { adSkipEnabled: boolean }>
@@ -41,7 +41,7 @@ export function AdSkipPanel({
     [message, setMessage] = useState(""),
     [returnTo, setReturnTo] = useState<number | null>(null);
   const alive = useRef(true);
-  const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url };
+  const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint };
   const refresh = async () => {
     setBusy(true);
     setMessage("");
@@ -190,8 +190,8 @@ export function AdSkipPanel({
       </Text>
       {!status?.transcriptAvailable && (
         <Text style={copy}>
-          No transcript evidence is available yet. Brief and Explore can prepare
-          this episode; audio analysis still asks first.
+          No transcript evidence is available yet. Eligible episodes prepare
+          automatically for enrolled internal testers.
         </Text>
       )}
       {status?.intervals.map((interval) => (

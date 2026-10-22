@@ -23,12 +23,14 @@ try {
   if (!await page.locator("#testing-controls").count()) throw Error(JSON.stringify({ errors, text: await page.locator("body").innerText() }));
   const form = page.locator("#testing-controls");
   await form.locator('select[name="enabled"]').selectOption("true");
-  await form.getByRole("checkbox").check();
+  await form.locator('input[name="listenerIds"]').check();
+  await form.locator('input[name="adSkipPilotEnabled"]').check();
   await form.getByLabel("Reason", { exact: true }).fill("Verify internal testing controls with mocked providers.");
   await form.getByLabel("Confirmation", { exact: true }).fill("ENABLE TESTING");
   await form.getByRole("button").click();
   await page.getByText("Testing configuration saved and audited.").waitFor();
   assert.equal(app.store.get("intelligence-test-mode", "configuration").enabled, true);
+  assert.equal(app.store.get("intelligence-test-mode", "configuration").adSkipPilotEnabled, true);
   await page.screenshot({ path: output + "/desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);

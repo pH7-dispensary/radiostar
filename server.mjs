@@ -28,6 +28,7 @@ import { subscriptionsFromEnv } from "./subscriptions.mjs";
 import { TranslationService, validLanguage } from "./translation.mjs";
 import { AdminService } from "./admin-service.mjs";
 import { IntelligenceTestMode, testingLimits } from "./intelligence-test-mode.mjs";
+import { adSkipFixture } from "./ad-skip-fixture.mjs";
 
 export const decodeHtmlEntity = (value) =>
   String(value || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, token) => {
@@ -326,6 +327,7 @@ export function createStarCastServer({
       publisher: parsed.publisher,
       artworkUrl: parsed.art,
       refs,
+      ...(feed === `${env.STARCAST_TEST_CORPUS_ORIGIN}${adSkipFixture.feedPath}` && id === adSkipFixture.episodeId ? { ownedFixtureAudioHash: adSkipFixture.manifest().audioContentHash } : {}),
       rightsEvidence: publisherRightsEvidence({ channelXml: parts.channel, itemXml: item, feedUrl: feed }),
     };
   }
@@ -411,10 +413,12 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
-    automaticEnabled: () => featureEnabled("adSkip"),
-    maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
+    automaticEnabled: (listener) => testingMode.adSkipAllowed(listener?.id),
+    maxAudioSeconds: (value) => testingMode.limits(testingMode.context(value?.testingContext?.listenerId)).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
-      if (!featureEnabled("adSkip") && !testingMode.limits(value?.testingContext).dailyUsd)
+      if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
+        return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
+      if (!featureEnabled("adSkip") && !testingMode.allowed(value?.testingContext?.listenerId))
         return {
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
@@ -1390,7 +1394,7 @@ export function createStarCastServer({
         res.setHeader("set-cookie", [adminCookie("", req, 0), csrfCookie("", req, 0)]);
         return send(res, 200, { revoked: true });
       }
-      const corpus = testCorpusEnabled && testCorpusOrigin && approvedTestCorpus.response(url.pathname, testCorpusOrigin);
+      const corpus = testCorpusEnabled && testCorpusOrigin && (approvedTestCorpus.response(url.pathname, testCorpusOrigin) || adSkipFixture.response(url.pathname, testCorpusOrigin));
       const isAdminSurface = url.pathname === "/admin" || url.pathname.startsWith("/admin.") || url.pathname.startsWith("/api/admin/");
       if (env.STARCAST_PRIVATE_PILOT === "enabled" && url.pathname !== "/api/health" && !isAdminSurface && !corpus && req.method !== "OPTIONS" && !trusted(req))
         return send(res, 403, { error: "Your private-beta access has expired or been revoked. Reconnect with a new invitation.", code: "DEVICE_UNAUTHORISED" });
@@ -1418,8 +1422,13 @@ export function createStarCastServer({
       }
       if (!url.pathname.startsWith("/api/")) {
         if (corpus && ["GET", "HEAD"].includes(req.method)) {
+          const bytes = Buffer.isBuffer(corpus.body) ? corpus.body : Buffer.from(corpus.body);
+          const etag = `"${createHash("sha256").update(bytes).digest("hex")}"`;
+          if (req.headers["if-match"] && req.headers["if-match"] !== etag) return send(res, 412, { error: "Audio variant changed." });
           res.writeHead(200, {
             "content-type": corpus.type,
+            "content-length": bytes.length,
+            etag,
             "cache-control": "public, max-age=300",
             "x-content-type-options": "nosniff",
           });
@@ -1624,11 +1633,15 @@ export function createStarCastServer({
           return send(res, 200, {
             ...skips.playback(input.feedUrl, input.episodeId, {
               audioUrl: input.audioUrl,
+              audioVariantFingerprint: input.audioVariantFingerprint,
+              listener,
               preferences,
             }),
             preferenceEnabled: preferences.adSkipEnabled === true,
           });
         }
+        if (url.pathname === "/api/skips/authorise")
+          return send(res, 200, skips.authorise(listener, input.feedUrl, input.episodeId, input, listeners.summary(listener).preferences || {}));
         if (url.pathname === "/api/skips/feedback")
           return send(
             res,

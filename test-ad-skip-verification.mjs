@@ -34,6 +34,7 @@ const skip = new SkipService(store, pipeline, {
       etag: '"owned-fixture-v1"',
       contentLength: 42,
       audioVariantFingerprint: "actual-audio-content-hash",
+      durationMs: 60000,
     },
     candidates: candidates.map((candidate) => ({
       id: candidate.id,
@@ -52,11 +53,14 @@ status = skip.inspect(feedUrl, episodeId);
 assert.equal(status.verifiedCount, 1, "only the actual-audio verifier can promote a candidate");
 const listener = new ListenerService(store).register("a".repeat(64));
 const preferences = { adSkipEnabled: true, advert: true, intro: false, title_sequence: false, preview: false, outro: false };
-assert.equal(skip.playback(feedUrl, episodeId, { audioUrl, preferences }).automaticSkipping, true);
+assert.equal(skip.playback(feedUrl, episodeId, { audioUrl, preferences }).automaticSkipping, false, "a URL alone never proves the played bytes");
+const input = { audioUrl, preferences, listener, audioVariantFingerprint: "actual-audio-content-hash" };
+assert.equal(skip.playback(feedUrl, episodeId, input).automaticSkipping, true);
 assert.equal(skip.playback(feedUrl, episodeId, { audioUrl: audioUrl + "?dynamic=1", preferences }).automaticSkipping, false, "a changed source URL is never treated as the verified variant");
 const interval = status.intervals[0];
-assert.deepEqual(skip.recordPlaybackEvent(listener, feedUrl, episodeId, { eventId: "automatic-skip-event", intervalId: interval.id, kind: "automatic_skip", positionMs: 10_120 }), { recorded: true });
-assert.deepEqual(skip.recordPlaybackEvent(listener, feedUrl, episodeId, { eventId: "undo-skip-event", intervalId: interval.id, kind: "undo", positionMs: 10_120 }), { recorded: true });
+const lease = skip.authorise(listener, feedUrl, episodeId, { ...input, intervalId: interval.id, positionMs: 10_120 }, preferences);
+assert.deepEqual(skip.recordPlaybackEvent(listener, feedUrl, episodeId, { eventId: "automatic-skip-event", intervalId: interval.id, kind: "automatic_skip", positionMs: lease.targetMs, authorisationId: lease.authorisationId }), { recorded: true });
+assert.deepEqual(skip.recordPlaybackEvent(listener, feedUrl, episodeId, { eventId: "undo-skip-event", intervalId: interval.id, kind: "undo", positionMs: 10_120, authorisationId: lease.authorisationId }), { recorded: true });
 assert.equal(skip.operations().counts.automaticSkips, 1);
 assert.equal(skip.operations().counts.undoEvents, 1);
 skip.report(listener, feedUrl, episodeId, { eventId: "conversation-report", intervalId: interval.id, kind: "skipped_conversation" });

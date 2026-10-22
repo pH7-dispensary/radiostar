@@ -75,7 +75,7 @@ try {
   await Promise.all(app.pipeline.inflight.values());
   const rights = app.rights.resolve(feedUrl, "licensed");
   assert.equal(rights.assessmentStatus, "APPROVED");
-  assert.equal(rights.assessmentSource, "publisher-rss-v1");
+  assert.equal(rights.assessmentSource, "publisher-rss-v2");
   assert.equal(rights.canGenerateBrief && rights.canGenerateChapters && rights.canGenerateTopics && rights.canSearchMoments, true, "core derived intelligence permissions are independently recorded");
   assert.equal(rights.canDisplayCaptions || rights.canGenerateDubbedAudio || rights.canCloneSpeakerVoice, false, "captions, dubbing and voice replication stay independently blocked");
   assert.equal(app.pipeline.status(feedUrl, "licensed").state, "READY", "the eligible episode reaches READY through the real pipeline");

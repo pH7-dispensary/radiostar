@@ -4,11 +4,14 @@ import * as FileSystem from "expo-file-system/legacy";
 
 let pending: Promise<unknown> = Promise.resolve();
 let writesPaused = false;
+let privacyRevision = 0;
+export const localPrivacyState = () => ({ paused: writesPaused, revision: privacyRevision });
 export function resumeLocalWrites() { writesPaused = false; }
 export const removeIdentity = (key: string): Promise<void> =>
   Platform.OS === "web" ? Promise.resolve(globalThis.localStorage?.removeItem(key)) : SecureStore.deleteItemAsync(key);
 export async function eraseLocalListenerData() {
   writesPaused = true;
+  privacyRevision++;
   await pending;
   const documents = ["star-cast-listener-state-v1", "star-cast-native-playback-v1",
     "star-cast-native-playback-v1-positions", "star-cast-offline-reports",
@@ -24,6 +27,10 @@ export async function eraseLocalListenerData() {
   }
   await removeIdentity("star-cast-installation-credential");
   await removeIdentity("star-cast-pilot-token");
+  if (Platform.OS !== "web" && FileSystem.cacheDirectory) {
+    for (const name of await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory))
+      if (/^radiostar-verified-[a-f0-9]{64}\.audio$/.test(name)) await FileSystem.deleteAsync(FileSystem.cacheDirectory + name, { idempotent: true });
+  }
 }
 /** Small identity values stay in Keychain; large listener documents use app-private files. */
 export const getIdentity = (key: string): Promise<string | null> =>

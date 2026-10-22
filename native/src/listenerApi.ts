@@ -94,6 +94,8 @@ export const onAdSkipPreferenceChange = (subscriber: () => void) => {
 export const reportProblem = (input: Record<string, unknown>) =>
   listenerRequest("/api/reports", input);
 export type SkipStatus = {
+  pilotEnabled?: boolean;
+  variant?: { deliveryUrl: string; etag: string; contentLength: number; audioVariantFingerprint: string; durationMs: number } | null;
   automaticSkipping: boolean;
   preferenceEnabled?: boolean;
   transcriptAvailable: boolean;

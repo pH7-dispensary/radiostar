@@ -26,7 +26,7 @@ import {
   type SkipStatus,
 } from "./listenerApi";
 import { LoadingState, useReducedMotion } from "./LoadingState";
-import type { Source } from "./PlaybackProvider";
+import { usePlayback, type Source } from "./PlaybackProvider";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
 
 type Panel = "brief" | "explore" | "ads";
@@ -36,6 +36,7 @@ const stamp = (ms: number) =>
   `${Math.floor(ms / 60_000)}:${String(Math.floor(ms / 1_000) % 60).padStart(2, "0")}`;
 
 function useAdSkip(source: Source) {
+  const { audioVariantFingerprint } = usePlayback();
   const alive = useRef(true);
   const revision = useRef(0);
   const [status, setStatus] = useState<SkipStatus | null>(null);
@@ -48,11 +49,12 @@ function useAdSkip(source: Source) {
     alive.current = true;
     setStatus(null);
     setMessage("");
-    Promise.all([
+    const refresh = () => Promise.all([
       listenerRequest("/api/skips/status", {
         feedUrl: source.feedUrl,
         episodeId: source.episodeId,
         audioUrl: source.url,
+        audioVariantFingerprint,
       }),
       loadListenerSummary(),
     ])
@@ -65,10 +67,13 @@ function useAdSkip(source: Source) {
         if (alive.current && currentRevision === revision.current)
           setMessage("Ad Skip preferences are unavailable right now.");
       });
+    void refresh();
+    const timer = setInterval(() => void refresh(), 10000);
     return () => {
       alive.current = false;
+      clearInterval(timer);
     };
-  }, [source.episodeId, source.feedUrl, source.url]);
+  }, [source.episodeId, source.feedUrl, source.url, audioVariantFingerprint]);
 
   const update = (next: boolean) => {
     if (busy) return;
@@ -329,7 +334,7 @@ export function PlayerIntelligenceAccordion({
         : skip.status.state === "UNAVAILABLE"
           ? skip.status.reason || "Not available for this episode"
           : skip.status.verifiedCount
-            ? `${skip.status.verifiedCount} verified interval${skip.status.verifiedCount === 1 ? "" : "s"} available`
+            ? skip.status.automaticSkipping ? "Ad Skip ready" : (skip.status.variant?.contentLength || 0) > 32 * 1024 * 1024 ? "Ad Skip unavailable for this audio" : skip.status.pilotEnabled ? "Verified audio available on next play" : "Internal pilot only"
             : "No verified intervals in this episode"
     : skip.message || "Checking verified intervals";
 

@@ -1,0 +1,1 @@
+export function executeVerifiedSkip(input: { interval: {id: string; startMs: number; endMs: number}; positionMs: number; durationMs: number; authorise(input: {intervalId: string; positionMs: number}): Promise<any>; seek(ms: number): Promise<number>; current(): boolean }): Promise<{lease: any; positionMs: number; durationMs: number; undo(): Promise<number>}>;

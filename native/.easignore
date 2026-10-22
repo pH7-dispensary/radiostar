@@ -5,6 +5,7 @@ node_modules/
 .env
 dist/
 dist-testflight/
+dist-pilot/
 web-dist/
 google-cloud-sdk/
 google-cloud-cli-darwin-arm.tar.gz

@@ -14,6 +14,7 @@ import {
 } from "expo-audio";
 import type { PlaybackSnapshot } from "./contracts";
 import { playbackPresentation, type AudioFeedback } from "./playbackPresentation.mjs";
+import { verifiedPlaybackCopy } from "./verifiedAudio";
 
 export type Source = {
   episodeId: string;
@@ -37,7 +38,8 @@ type PlaybackContextValue = {
   play: (source: Source) => Promise<void>;
   pause: () => Promise<void>;
   seek: (ms: number) => Promise<void>;
-  seekAutomatically: (ms: number) => Promise<void>;
+  seekAutomatically: (ms: number) => Promise<number>;
+  audioVariantFingerprint: string | null;
   manualSeekRevision: number;
   setSpeed: (speed: number) => Promise<void>;
   fadeAndPause: (durationMs: number) => Promise<number>;
@@ -52,6 +54,7 @@ export function usePlayback() {
   return value;
 }
 export function PlaybackProvider({ children }: { children: React.ReactNode }) {
+  const [audioVariantFingerprint, setAudioVariantFingerprint] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const waitingSince = useRef<number | null>(null);
@@ -201,7 +204,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setConnecting(true);
         sourceRef.current = { ...next, startPositionMs: undefined };
         setSource({ ...next, startPositionMs: undefined });
-        player.replace(next.url);
+        setAudioVariantFingerprint(null);
+        const verified = await verifiedPlaybackCopy(next);
+        if (currentOperation !== operation.current) return;
+        player.replace(verified?.uri || next.url);
+        setAudioVariantFingerprint(verified?.fingerprint || null);
         setSnapshot((s) => ({
           ...s,
           episodeId: next.episodeId,
@@ -287,9 +294,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         0,
         Math.min(ms, player.duration > 0 ? player.duration * 1000 : ms),
       );
-      await player.seekTo(target / 1000);
-      await persistPosition(target);
+      const generation = operation.current;
+      await player.seekTo(target / 1000, 0, 0);
+      const observed = player.currentTime * 1000;
+      if (generation !== operation.current || !player.isLoaded || Math.abs(observed - target) > 350) throw Error("Playback seek was not confirmed.");
+      await persistPosition(observed);
+      return observed;
     },
+    audioVariantFingerprint,
     manualSeekRevision,
     setSpeed: async (speed) => {
       player.setPlaybackRate(speed);

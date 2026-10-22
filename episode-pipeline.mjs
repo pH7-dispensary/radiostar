@@ -988,6 +988,7 @@ export class EpisodePipeline {
                 onProgress: recordWork,
               });
               if (!rightsAllowed()) throw Error("Rights permission no longer allows audio transcript retention.");
+              acquired.audioContentHash = audio.contentHash || null;
               this.store.set("audio-transcript", variant, acquired);
               return acquired;
             } finally {
@@ -1011,6 +1012,7 @@ export class EpisodePipeline {
         ...transcript,
         episodeId,
         audioVariant: variant,
+        ...(episode.ownedFixtureAudioHash ? { audioContentHash: episode.ownedFixtureAudioHash } : {}),
         quality:
           transcript.sourceType === "on_demand_audio"
             ? transcript.quality
@@ -1212,6 +1214,8 @@ export class EpisodePipeline {
         this.store.delete("skip-execution", recordKey);
         removed.skipExecutions++;
       }
+    for (const [recordKey, value] of this.store.all("skip-authorisation"))
+      if (value.episodeKey === key) this.store.delete("skip-authorisation", recordKey);
     return removed;
   }
   purgeFeed(feed) {

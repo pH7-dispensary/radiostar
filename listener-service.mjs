@@ -76,7 +76,7 @@ export class ListenerService {
   deleteProfile(listener) {
     return this.store.transaction(() => {
       const ownedKinds = ["invite-code", "allowance-ledger", "follow", "listening-event",
-        "listening-session", "offline-listening", "problem-report", "verified-subject", "qualification-audit", "subscription"];
+        "listening-session", "offline-listening", "problem-report", "verified-subject", "qualification-audit", "subscription", "skip-authorisation"];
       for (const kind of ownedKinds)
         for (const [id, record] of this.store.all(kind))
           if (record.owner === listener.id) this.store.delete(kind, id);
