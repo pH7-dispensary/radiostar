@@ -235,6 +235,7 @@ export class EpisodePipeline {
     intelligencePolicy = null,
     queue = null,
     onCompleted = null,
+    onTranscriptReady = null,
     testingMode = null,
     jobTimeoutMs = 15 * 60 * 1000,
   }) {
@@ -252,6 +253,7 @@ export class EpisodePipeline {
       intelligencePolicy,
       queue,
       onCompleted,
+      onTranscriptReady,
       testingMode,
       jobTimeoutMs,
     });
@@ -990,6 +992,11 @@ export class EpisodePipeline {
               if (!rightsAllowed()) throw Error("Rights permission no longer allows audio transcript retention.");
               acquired.audioContentHash = audio.contentHash || null;
               this.store.set("audio-transcript", variant, acquired);
+              // Reuse the already-downloaded source while it is still on disk.
+              // This callback cannot grant rights or initiate another model call.
+              update({ transcript: { ...acquired, audioVariant: variant }, episode: { ...episode, feedUrl, id: episodeId } });
+              try { await this.onTranscriptReady?.({ feedUrl, episodeId, intelligence: value, preparedAudio: audio }); }
+              catch (error) { console.error(JSON.stringify({ event: "audio-candidate-inspection-failed", code: error?.code || "INSPECTION_FAILED" })); }
               return acquired;
             } finally {
               await audio.cleanup();
@@ -1058,6 +1065,10 @@ export class EpisodePipeline {
         },
         sourceSignature: hash(JSON.stringify([episode.audioUrl, episode.refs, PUBLISHER_TRANSCRIPT_PARSER_VERSION])),
       });
+      // Ad detection needs the canonical transcript, not successful summary
+      // generation. Keep its failure independent from the intelligence job.
+      try { await this.onTranscriptReady?.({ feedUrl, episodeId, intelligence: value }); }
+      catch (error) { console.error(JSON.stringify({ event: "transcript-candidate-inspection-failed", code: error?.code || "INSPECTION_FAILED" })); }
       const generated = await generateLongFormIntelligence({
         transcript,
         ledger,
@@ -1204,6 +1215,7 @@ export class EpisodePipeline {
       this.store.delete("skip-audio-verification", key);
       removed.skipVerification++;
     }
+    this.store.delete("skip-analysis", key);
     for (const [recordKey, value] of this.store.all("skip-feedback"))
       if (value.episodeKey === key) {
         this.store.delete("skip-feedback", recordKey);

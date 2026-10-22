@@ -7,6 +7,9 @@ import { assessTranscript } from "./transcripts.mjs";
 import { PROCESSING_VERSION } from "./openai-intelligence.mjs";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+let analysisStarted, finishAnalysis;
+const analysisStartedPromise = new Promise(resolve => { analysisStarted = resolve; });
+const analysisGate = new Promise(resolve => { finishAnalysis = resolve; });
 const feedUrl = "https://publisher.example/progress.xml";
 const episodeId = "progress-episode";
 const feed = `<?xml version="1.0"?><rss><channel><title>Progress &amp; Evidence</title><itunes:author>Radio Star fixture</itunes:author><item><guid>${episodeId}</guid><title>Preparation &amp; delivery</title><pubDate>Tue, 20 Oct 2026 10:00:00 GMT</pubDate><itunes:duration>02:00</itunes:duration><enclosure url="https://publisher.example/progress.mp3"/></item></channel></rss>`;
@@ -37,7 +40,8 @@ const app = createStarCastServer({
   },
   fetchTranscript: async () => transcript,
   client: { responses: { create: async () => {
-    await wait(80);
+    analysisStarted();
+    await analysisGate;
     return { output_text: JSON.stringify({ overview: "The fixture explains measured preparation stages.", themes: ["Preparation"], detail: "The conversation covers queued work, transcript acquisition and grounded delivery.", sourceSegmentIndexes: [1], chapters: [{ title: "Preparation", description: "Measured work stages.", sourceSegmentIndexes: [1, 2] }] }), usage: { input_tokens: 10, output_tokens: 10 } };
   } } },
 });
@@ -83,7 +87,7 @@ try {
   const duplicate = await request();
   assert.equal((await duplicate.json()).status.jobId, acceptedBody.status.jobId, "duplicate requests reuse the accepted job");
 
-  await wait(35);
+  await analysisStartedPromise;
   const active = (await (await fetch(base + statusUrl, { headers: listenerHeaders })).json()).status;
   assert.equal(active.state, "ANALYSING", "the listener sees the actual provider-analysis stage");
   assert.equal(active.processingStage, "ANALYSING");
@@ -92,6 +96,7 @@ try {
   assert.equal(active.availableFeatures.brief, false, "features remain unavailable until persisted intelligence exists");
   assert.equal(active.nextAction, "KEEP_LISTENING");
 
+  finishAnalysis();
   await Promise.all(app.pipeline.inflight.values());
   const ready = (await (await fetch(base + statusUrl, { headers: listenerHeaders })).json()).status;
   assert.equal(ready.state, "READY");
@@ -124,6 +129,7 @@ try {
   assert.equal(listenerProcessingStatus({ state: "BLOCKED", code: "RIGHTS_RESTRICTED" }).state, "UNAVAILABLE");
   assert.equal(listenerProcessingStatus({ state: "CANCELLED", code: "CANCELLED" }).state, "CANCELLED");
 } finally {
+  finishAnalysis();
   await new Promise((resolve) => app.server.close(resolve));
   app.store.close();
 }

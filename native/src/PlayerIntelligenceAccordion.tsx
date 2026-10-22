@@ -334,7 +334,7 @@ export function PlayerIntelligenceAccordion({
         : skip.status.state === "UNAVAILABLE"
           ? skip.status.reason || "Not available for this episode"
           : skip.status.verifiedCount
-            ? skip.status.automaticSkipping ? "Ad Skip ready" : (skip.status.variant?.contentLength || 0) > 32 * 1024 * 1024 ? "Ad Skip unavailable for this audio" : skip.status.pilotEnabled ? "Verified audio available on next play" : "Internal pilot only"
+            ? skip.status.automaticSkipping ? "Ad Skip ready" : skip.status.pilotEnabled ? "Audio matching required on next play" : "Internal pilot only"
             : "No verified intervals in this episode"
     : skip.message || "Checking verified intervals";
 

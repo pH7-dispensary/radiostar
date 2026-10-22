@@ -386,6 +386,10 @@ export function createStarCastServer({
     intelligencePolicy,
     queue,
     testingMode,
+    onTranscriptReady: async ({ feedUrl, episodeId, preparedAudio }) => {
+      skips?.inspect(feedUrl, episodeId, { preparedAudio });
+      if (preparedAudio) await skips?.inflight.get(episodeKey(feedUrl, episodeId));
+    },
     onCompleted: ({ feedUrl, episodeId }) => rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed && skips?.inspect(feedUrl, episodeId),
   });
   const assessEpisodeRights = async (feedUrl, episodeId, suppliedEpisode = null) => {
@@ -414,6 +418,7 @@ export function createStarCastServer({
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
     automaticEnabled: (listener) => testingMode.adSkipAllowed(listener?.id),
+    testingContext: (listener) => testingMode.context(listener?.id),
     maxAudioSeconds: (value) => testingMode.limits(testingMode.context(value?.testingContext?.listenerId)).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
@@ -481,6 +486,7 @@ export function createStarCastServer({
       }
       store.delete("intelligence-attention", key);
       const status = await pipeline.request({ feedUrl, episodeId, testingContext: context, priority: ({ playing: 100, opened: 80, saved: 60, followed: 40 })[source] || 20, allowAudio: true, trigger: "automatic" });
+      if (pipeline.status(feedUrl, episodeId)?.transcript?.segments?.length) skips.inspect(feedUrl, episodeId, { testingContext: context });
       return status;
     })().finally(() => encounters.delete(key));
     encounters.set(key, task);
@@ -1425,14 +1431,22 @@ export function createStarCastServer({
           const bytes = Buffer.isBuffer(corpus.body) ? corpus.body : Buffer.from(corpus.body);
           const etag = `"${createHash("sha256").update(bytes).digest("hex")}"`;
           if (req.headers["if-match"] && req.headers["if-match"] !== etag) return send(res, 412, { error: "Audio variant changed." });
-          res.writeHead(200, {
+          const range = req.headers.range?.match(/^bytes=(\d+)-(\d*)$/);
+          const start = range ? Number(range[1]) : 0;
+          const end = range?.[2] ? Math.min(Number(range[2]), bytes.length - 1) : bytes.length - 1;
+          if (req.headers.range && (!range || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= bytes.length || end < start)) {
+            res.writeHead(416, {"content-range": `bytes */${bytes.length}`}); return res.end();
+          }
+          res.writeHead(range ? 206 : 200, {
             "content-type": corpus.type,
-            "content-length": bytes.length,
+            "content-length": end - start + 1,
+            "accept-ranges": "bytes",
+            ...(range ? {"content-range": `bytes ${start}-${end}/${bytes.length}`} : {}),
             etag,
             "cache-control": "public, max-age=300",
             "x-content-type-options": "nosniff",
           });
-          return res.end(req.method === "HEAD" ? undefined : corpus.body);
+          return res.end(req.method === "HEAD" ? undefined : bytes.subarray(start, end + 1));
         }
         const invitation = url.pathname.match(
           /^\/invite\/([a-zA-Z0-9_-]{12})$/,
@@ -1634,6 +1648,7 @@ export function createStarCastServer({
             ...skips.playback(input.feedUrl, input.episodeId, {
               audioUrl: input.audioUrl,
               audioVariantFingerprint: input.audioVariantFingerprint,
+              audioMatchCode: input.audioMatchCode,
               listener,
               preferences,
             }),

@@ -199,7 +199,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       fadeOperation.current++;
       player.volume = 1;
       const switching = sourceRef.current?.url !== next.url;
-      const reload = switching || !player.isLoaded || audio.state === "FAILED";
+      const reload = switching || !player.isLoaded || audio.state === "FAILED" || (!audioVariantFingerprint && !player.playing);
       if (reload) {
         setConnecting(true);
         sourceRef.current = { ...next, startPositionMs: undefined };
@@ -207,7 +207,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setAudioVariantFingerprint(null);
         const verified = await verifiedPlaybackCopy(next);
         if (currentOperation !== operation.current) return;
-        player.replace(verified?.uri || next.url);
+        player.replace(verified ? { uri: verified.uri, headers: verified.headers } : next.url);
         setAudioVariantFingerprint(verified?.fingerprint || null);
         setSnapshot((s) => ({
           ...s,

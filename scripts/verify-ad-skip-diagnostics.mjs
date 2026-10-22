@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+import { createReviewFixture, feedUrl } from "../test-phase3-fixture.mjs";
+import { episodeKey } from "../episode-pipeline.mjs";
+const { chromium } = await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || "playwright");
+const { app } = createReviewFixture();
+app.store.set("intelligence", episodeKey(feedUrl, "restricted"), { state: "BLOCKED", code: "PUBLISHER_RESTRICTION", feedUrl, episodeId: "restricted", episode: {title: "Labelled UI fixture: a long episode title with a recorded publisher restriction", showName: "Radio Star test material"} });
+app.store.set("intelligence-encounter", episodeKey(feedUrl, "restricted"), {feedUrl, episodeId: "restricted", source: "opened", at: new Date().toISOString()});
+await new Promise(resolve => app.server.listen(0, "127.0.0.1", resolve));
+const origin = `http://127.0.0.1:${app.server.address().port}`;
+const output = ".starcast/adskip-recovery-visual";
+await mkdir(output, {recursive: true});
+const browser = await chromium.launch({headless: true});
+try {
+  const context = await browser.newContext({viewport: {width: 1440, height: 1000}});
+  await context.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  const page = await context.newPage(), errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(origin + "/admin");
+  await page.getByLabel("Administrator credential").fill("phase3-test-admin");
+  await page.getByRole("button", {name: "Sign in securely"}).click();
+  await page.locator(".technical-nav summary").click();
+  await page.getByRole("button", {name: "Ad Skip safety", exact: true}).click();
+  await page.locator("#ad-skip-diagnostics").waitFor();
+  assert.match(await page.locator("#ad-skip-diagnostics").innerText(), /missing analysis is not evidence/i);
+  await page.screenshot({path: output + "/desktop.png", fullPage: true});
+  await page.setViewportSize({width: 390, height: 844});
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+  await page.screenshot({path: output + "/mobile.png", fullPage: true});
+  assert.deepEqual(errors, []);
+  console.log("Admin diagnostics desktop/mobile login, rendering, overflow and console checks passed using labelled test fixtures.");
+} finally { await browser.close(); await new Promise(resolve => app.server.close(resolve)); app.store.close(); }

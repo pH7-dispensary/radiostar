@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
+import { open, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import ffmpeg from "ffmpeg-static";
+import ffprobe from "ffprobe-static";
 import { prepareAudio } from "./transcription.mjs";
 
 const exec = promisify(execFile);
@@ -20,6 +22,32 @@ const contentFingerprint = (path) =>
       .on("error", reject)
       .on("end", () => resolve(digest.digest("hex")));
   });
+
+// Byte witnesses are bounded, not a proportional seek guess. A strong HTTP
+// precondition pins the *whole* streamed representation; these hashes also
+// check that the enclosure serves the bytes inspected at the ad boundaries.
+async function byteWitnesses(path, candidates) {
+  const size = (await stat(path)).size;
+  const offsets = new Set([0]);
+  for (const candidate of candidates.filter(row => row.boundaryVerified).slice(0, 8)) {
+    for (const ms of [candidate.startMs, candidate.endMs]) {
+      const { stdout } = await exec(ffprobe.path, ["-v", "error", "-protocol_whitelist", "file,pipe", "-read_intervals", `${Math.max(0, ms / 1000 - 1)}%+2`, "-select_streams", "a:0", "-show_entries", "packet=pos", "-of", "json", path], { timeout: 15000, maxBuffer: 256000 });
+      const pos = Number(JSON.parse(stdout).packets?.find(row => /^\d+$/.test(row.pos))?.pos);
+      if (Number.isSafeInteger(pos) && pos >= 0 && pos < size) offsets.add(Math.max(0, pos - 1024));
+    }
+  }
+  const file = await open(path, "r");
+  try {
+    const windows = [];
+    for (const start of offsets) {
+      const bytes = Buffer.alloc(Math.min(65536, size - start));
+      const read = await file.read(bytes, 0, bytes.length, start);
+      if (read.bytesRead !== bytes.length) throw Error("Audio witness was truncated");
+      windows.push({ start, end: start + bytes.length - 1, sha256: createHash("sha256").update(bytes).digest("hex") });
+    }
+    return windows;
+  } finally { await file.close(); }
+}
 
 const parseSilence = (output) => {
   const marks = [];
@@ -95,22 +123,12 @@ async function boundaryEvidence(path, boundaryMs, durationMs, side) {
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
  * validator or a non-silent boundary leaves the interval unverified.
  */
-export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, audioFactory = prepareAudio }) {
+export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, preparedAudio = null, audioFactory = prepareAudio }) {
   if (!/^[a-f0-9]{64}$/.test(expectedContentHash || "")) return { state: "UNAVAILABLE", reason: "The transcript has not been aligned to these exact audio bytes. Automatic skipping remains off.", candidates: [] };
-  const audio = await audioFactory(audioUrl, maxSeconds);
+  const audio = preparedAudio || await audioFactory(audioUrl, maxSeconds);
   try {
     const etag = audio.delivery?.headers?.etag || null;
-    if (
-      !strongEtag(etag) ||
-      /(?:^|,)\s*(?:user-agent|cookie|authorization)\s*(?:,|$)/i.test(
-        String(audio.delivery?.headers?.vary || ""),
-      )
-    )
-      return {
-        state: "DYNAMIC_VARIANT",
-        reason: "The publisher delivery has no strong, stable audio-variant validator.",
-        candidates: [],
-      };
+    const streamSafe = strongEtag(etag) && !/(?:^|,)\s*(?:user-agent|cookie|authorization)\s*(?:,|$)/i.test(String(audio.delivery?.headers?.vary || ""));
     const audioVariantFingerprint = await contentFingerprint(audio.path);
     if (!expectedContentHash || expectedContentHash !== audioVariantFingerprint)
       return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
@@ -121,7 +139,7 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
         boundaryEvidence(audio.path, candidate.endMs, audio.durationMs, "end"),
       ]);
       if (!start || !end) {
-        verified.push({ id: candidate.id, boundaryVerified: false });
+        verified.push({ id: candidate.id, boundaryVerified: false, code: !start && !end ? "BOTH_BOUNDARIES_UNCERTAIN" : !start ? "START_BOUNDARY_UNCERTAIN" : "END_BOUNDARY_UNCERTAIN" });
         continue;
       }
       verified.push({
@@ -134,6 +152,10 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
           .digest("hex"),
       });
     }
+    let windows = [];
+    // Unsupported container packet indexing must not invalidate otherwise
+    // safe exact-file playback. It just leaves bounded streaming unavailable.
+    try { if (streamSafe) windows = await byteWitnesses(audio.path, verified); } catch {}
     return {
       state: "READY",
       variant: {
@@ -143,10 +165,11 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
         contentLength: Number(audio.delivery.headers?.contentLength) || null,
         audioVariantFingerprint,
         durationMs: audio.durationMs,
+        windows,
       },
       candidates: verified,
     };
   } finally {
-    await audio.cleanup();
+    if (!preparedAudio) await audio.cleanup();
   }
 }

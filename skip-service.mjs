@@ -3,10 +3,13 @@ import { episodeKey } from "./episode-pipeline.mjs";
 import { feedback, Verification } from "./ad-skip.mjs";
 import { intervalDecision } from "./ad-skip.mjs";
 import { ListenerError } from "./listener-service.mjs";
+import { skipDiagnostics } from "./skip-diagnostics.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
 const categories = new Set(["advert", "intro", "title_sequence", "preview", "outro"]);
+const sponsorLanguage = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|thanks to .{1,50} for sponsoring)\b/i;
+const commercialOffer = /\b(promo code|discount code|use code|free trial|percent off|visit .{1,80}(?: to |sign up|signup)|go to .{1,60} for)\b|\d+% off/i;
 const validEventId = (value) =>
   typeof value === "string" && /^[a-zA-Z0-9_-]{8,120}$/.test(value);
 
@@ -14,8 +17,8 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
   if (!Number.isFinite(segment.startMs) || !Number.isFinite(segment.endMs) || segment.endMs <= segment.startMs)
     return null;
   const text = String(segment.text || "");
-  const sponsorship = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|thanks to .{1,50} for sponsoring)\b/i.test(text);
-  const cta = /\b(promo code|discount code|use code|free trial|percent off|% off|visit .{1,60} to|go to .{1,60} for)\b/i.test(text);
+  const sponsorship = sponsorLanguage.test(text);
+  const cta = commercialOffer.test(text);
   const early = segment.startMs < 180000;
   const late = Number.isFinite(transcript.durationMs) && segment.startMs > transcript.durationMs * 0.8;
   const type = sponsorship || cta ? "advert" : early && /\[(?:opening |theme |intro )music\]/i.test(text) ? "title_sequence" : (early || late) && /\b(coming up (?:next|on)|in (?:our|the) next episode)\b/i.test(text) ? "preview" : early && /\b(hello and welcome to|welcome back to (?:the|our))\b/i.test(text) ? "intro" : late && /\b(thanks? (?:you )?for listening|that'?s all for (?:today|this episode))\b/i.test(text) ? "outro" : null;
@@ -34,7 +37,7 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
     confidence: disputed ? 0.5 : transcriptConfidence,
     verificationState: disputed ? Verification.DISPUTED : Verification.CANDIDATE,
     disputed,
-    processingVersion: "transcript-candidates-v3",
+    processingVersion: "transcript-candidates-v4",
     qualifiesForAudioVerification: type === "advert" && sponsorship && cta,
     evidence: [
       {
@@ -61,8 +64,12 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
 
 function listenerState({ value, intervals, verification }) {
   if (!value) return ["NOT_ANALYSED", "Ad detection has not been prepared for this episode."];
-  if (!["READY", "PARTIAL_READY"].includes(value.state)) return ["ANALYSING", "Ad candidates will be checked after authorised episode intelligence is ready."];
-  if (!value.transcript?.segments?.length) return ["UNAVAILABLE", "No authorised timestamped transcript is available for advert detection."];
+  if (!value.transcript?.segments?.length) {
+    if (["FAILED", "CANCELLED"].includes(value.state)) return ["FAILED", value.reason || "Episode preparation failed."];
+    if (["BLOCKED", "BUDGET_PAUSED", "UNAVAILABLE"].includes(value.state)) return ["UNAVAILABLE", value.reason || "Episode preparation is unavailable."];
+    if (!["READY", "PARTIAL_READY"].includes(value.state)) return ["ANALYSING", "Waiting for an authorised transcript; summary completion is not required."];
+    return ["UNAVAILABLE", "No authorised timestamped transcript is available for advert detection."];
+  }
   if (!intervals.length) return ["NO_ADVERTS_DETECTED", "No advert candidates were found in the analysed transcript."];
   if (intervals.some((item) => item.verificationState === Verification.VERIFIED)) return ["READY", "Verified, audio-matched intervals are ready for this exact source variant."];
   if (["QUEUED", "PROCESSING"].includes(verification?.state)) return ["VERIFYING", "Checking candidate boundaries against the authorised audio source."];
@@ -74,23 +81,24 @@ function listenerState({ value, intervals, verification }) {
 }
 
 export class SkipService {
-  constructor(store, pipeline, { verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, maxAudioSeconds = 7200 } = {}) {
+  constructor(store, pipeline, { verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, testingContext = () => null, maxAudioSeconds = 7200 } = {}) {
     this.store = store;
     this.pipeline = pipeline;
     this.verifyAudio = verifyAudio;
     this.canVerifyAudio = canVerifyAudio;
     this.automaticEnabled = automaticEnabled;
+    this.testingContext = testingContext;
     this.maxAudioSeconds = maxAudioSeconds;
     this.inflight = new Map();
     this.verificationTail = Promise.resolve();
   }
   verification(key) { return this.store.get("skip-audio-verification", key) || null; }
-  inspect(feed, episode) {
+  inspect(feed, episode, context = {}) {
     const rights = this.pipeline.rights;
-    if (rights && (!rights.evaluate({ feature: "ad-detection", feedUrl: feed, episodeId: episode }).allowed ||
-        !rights.evaluate({ feature: "intelligence-processing", feedUrl: feed, episodeId: episode }).allowed))
-      return { state: "UNAVAILABLE", reason: "Advert detection is not authorised by the current assessment.", intervals: [], activeIntervals: [], verifiedCount: 0, candidateCount: 0, automaticSkipping: false };
-    const value = this.pipeline.status(feed, episode), key = episodeKey(feed, episode), transcript = value?.transcript;
+    const refusal = rights && ["ad-detection", "intelligence-processing"].map(feature => rights.evaluate({ feature, feedUrl: feed, episodeId: episode })).find(decision => !decision.allowed);
+    if (refusal) return { state: "UNAVAILABLE", code: refusal.code || "RIGHTS_NOT_ESTABLISHED", reason: refusal.reason, intervals: [], activeIntervals: [], verifiedCount: 0, candidateCount: null, automaticSkipping: false };
+    const stored = this.pipeline.status(feed, episode);
+    const value = stored && { ...stored, ...(context.testingContext ? { testingContext: context.testingContext } : {}) }, key = episodeKey(feed, episode), transcript = value?.transcript;
     const all = this.store.all("skip-interval").map(([, item]) => item);
     const prior = all.filter((item) => item.episodeKey === key);
     const segments = [...(transcript?.segments || [])];
@@ -98,12 +106,12 @@ export class SkipService {
     // only adjacent short speech spans, retaining every original citation.
     for (let index = 0; index < (transcript?.segments?.length || 0); index++) {
       const first = transcript.segments[index];
-      if (!/\b(sponsored by|our sponsors?|brought to you by)\b/i.test(first.text || "") || /\b(use code|promo code|free trial|discount code)\b/i.test(first.text || "")) continue;
+      if (!sponsorLanguage.test(first.text || "") || commercialOffer.test(first.text || "")) continue;
       const group = [first];
-      for (const next of transcript.segments.slice(index + 1, index + 4)) {
+      for (const next of transcript.segments.slice(index + 1, index + 33)) {
         if (next.startMs - group.at(-1).endMs > 3000 || next.endMs - first.startMs > 120000) break;
         group.push(next);
-        if (/\b(use code|promo code|free trial|discount code)\b/i.test(next.text || "")) {
+        if (commercialOffer.test(next.text || "")) {
           segments.push({ ...first, id: group.map(row => row.id).join(":"), sourceSegmentIds: group.map(row => row.id), endMs: next.endMs, text: group.map(row => row.text).join(" ") }); break;
         }
       }
@@ -126,19 +134,26 @@ export class SkipService {
     }
     const intervals = this.store.all("skip-interval").map(([, item]) => item)
       .filter((item) => item.episodeKey === key && (item.sourceVariantKey || item.audioVariant) === transcript?.audioVariant);
-    this.scheduleVerification(feed, episode, value, intervals);
+    if (transcript?.segments?.length) {
+      const previous = this.store.get("skip-analysis", key);
+      const input = hash(JSON.stringify([transcript.transcriptVersion, transcript.contentHash, transcript.audioVariant, "transcript-candidates-v4"]));
+      if (previous?.input !== input) this.store.set("skip-analysis", key, { episodeKey: key, feedUrl: feed, episodeId: episode, input, state: "COMPLETE", candidateCount: intervals.length, at: nowIso() });
+    }
+    this.scheduleVerification(feed, episode, value, intervals, context.preparedAudio);
     const verification = this.verification(key), [state, reason] = listenerState({ value, intervals, verification });
     return {
       automaticSkipping: false,
       transcriptAvailable: Boolean(transcript?.segments?.length),
       state,
       reason,
+      code: verification?.code || (state === "FAILED" || state === "UNAVAILABLE" ? value?.code || "TRANSCRIPT_UNAVAILABLE" : state === "CANDIDATES_FOUND" ? "CANDIDATES_UNVERIFIED" : state),
+      candidateCount: intervals.length,
       verificationState: verification?.state || null,
       intervals: intervals.map(({ id, type, startMs, endMs, verificationState, excerpt }) => ({ id, type, startMs, endMs, verificationState, excerpt })),
       verifiedCount: intervals.filter((item) => item.verificationState === Verification.VERIFIED && item.boundaryVerified && !item.disputed && Boolean(item.audioVariantFingerprint)).length,
     };
   }
-  scheduleVerification(feed, episode, value, intervals) {
+  scheduleVerification(feed, episode, value, intervals, preparedAudio = null) {
     const key = episodeKey(feed, episode);
     const eligible = intervals.filter((item) => item.qualifiesForAudioVerification && item.verificationState === Verification.CANDIDATE && !item.disputed);
     if (!eligible.length || !value?.episode?.audioUrl) return;
@@ -147,25 +162,26 @@ export class SkipService {
     const previous = this.verification(key);
     if (!policy.allowed || !this.verifyAudio) {
       if (!previous || previous.state !== "UNAVAILABLE" || previous.reason !== policy.reason)
-        this.store.set("skip-audio-verification", key, { episodeKey: key, state: "UNAVAILABLE", reason: policy.reason || "Audio boundary verification is not configured.", updatedAt: nowIso() });
+        this.store.set("skip-audio-verification", key, { episodeKey: key, state: "UNAVAILABLE", code: policy.code || "AUDIO_VERIFICATION_NOT_AUTHORISED", reason: policy.reason || "Audio boundary verification is not configured.", updatedAt: nowIso() });
       return;
     }
-    if (this.inflight.has(key) || ["READY", "DYNAMIC_VARIANT"].includes(previous?.state)) return;
+    const inputKey = hash(JSON.stringify([value.transcript?.audioContentHash || null, value.transcript?.transcriptVersion, value.episode.audioUrl, eligible.map(row => row.id)]));
+    if (this.inflight.has(key) || (["READY", "DYNAMIC_VARIANT"].includes(previous?.state) && previous.inputKey === inputKey)) return;
     // A missing transcript/audio binding is not transient. Retry only if the
     // bound source changes, rather than rewriting a failed job on every poll.
-    if (previous?.state === "UNAVAILABLE" && previous.inputHash !== undefined && previous.inputHash === (value.transcript?.audioContentHash || null)) return;
+    if (previous?.state === "UNAVAILABLE" && previous.inputKey === inputKey) return;
     if (previous?.state === "FAILED" && (previous.attempts || 0) >= 2) return;
     const attempt = (previous?.attempts || 0) + 1;
     this.store.set("skip-audio-verification", key, { episodeKey: key, state: "QUEUED", attempts: attempt, updatedAt: nowIso(), reason: null });
-    const pending = this.verificationTail.then(() => this.verify(feed, episode, value, eligible, attempt)).finally(() => this.inflight.delete(key));
+    const pending = this.verificationTail.then(() => this.verify(feed, episode, value, eligible, attempt, inputKey, preparedAudio)).finally(() => this.inflight.delete(key));
     this.verificationTail = pending.catch(() => {});
     this.inflight.set(key, pending);
   }
-  async verify(feed, episode, value, candidates, attempt) {
+  async verify(feed, episode, value, candidates, attempt, inputKey, preparedAudio) {
     const key = episodeKey(feed, episode);
     this.store.set("skip-audio-verification", key, { episodeKey: key, state: "PROCESSING", attempts: attempt, updatedAt: nowIso(), reason: null });
     try {
-      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, expectedContentHash: value.transcript?.audioContentHash, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
+      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
       this.store.transaction(() => {
         const permission = this.canVerifyAudio({ feedUrl: feed, episodeId: episode, value });
         if (!(typeof permission === "boolean" ? permission : permission?.allowed)) {
@@ -174,8 +190,8 @@ export class SkipService {
         }
         const at = nowIso();
         this.store.set("skip-audio-verification", key, {
-          episodeKey: key, state: result.state || "READY", inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
-          variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs } : null,
+          episodeKey: key, state: result.state || "READY", inputKey, code: result.code || (result.state === "DYNAMIC_VARIANT" ? "VARIANT_MISMATCH" : result.state === "UNAVAILABLE" ? "AUDIO_BINDING_REQUIRED" : null), inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
+          variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs, windows: result.variant.windows || [] } : null,
         });
         if (result.state !== "READY" || !result.variant) return;
         const outcomes = new Map((result.candidates || []).map((item) => [item.id, item]));
@@ -183,7 +199,7 @@ export class SkipService {
           const current = this.store.get("skip-interval", candidate.id), outcome = outcomes.get(candidate.id);
           if (!current || current.disputed || current.verificationState !== Verification.CANDIDATE || !outcome) continue;
           if (!outcome.boundaryVerified) {
-            this.store.set("skip-interval", current.id, { ...current, verificationState: Verification.VARIANT_MATCHED, lastVerifiedAt: at });
+            this.store.set("skip-interval", current.id, { ...current, verificationState: Verification.VARIANT_MATCHED, code: outcome.code || "BOUNDARY_EVIDENCE_INSUFFICIENT", lastVerifiedAt: at });
             continue;
           }
           const startMs = outcome.startMs, endMs = outcome.endMs;
@@ -202,12 +218,12 @@ export class SkipService {
     } catch (error) {
       this.store.set("skip-audio-verification", key, {
         episodeKey: key, state: "FAILED", attempts: attempt, updatedAt: nowIso(),
-        reason: "Audio boundary verification could not complete.", diagnostic: String(error?.message || "verification failed").slice(0, 500),
+        code: "AUDIO_VERIFICATION_FAILED", reason: "Audio boundary verification could not complete.", diagnostic: String(error?.message || "verification failed").slice(0, 500),
       });
     }
   }
-  playback(feed, episode, { audioUrl, audioVariantFingerprint, listener, preferences = {} } = {}) {
-    const inspection = this.inspect(feed, episode), value = this.pipeline.status(feed, episode);
+  playback(feed, episode, { audioUrl, audioVariantFingerprint, audioMatchCode, listener, preferences = {} } = {}) {
+    const inspection = this.inspect(feed, episode, { testingContext: this.testingContext(listener) }), value = this.pipeline.status(feed, episode);
     const exactSource = typeof audioUrl === "string" && Boolean(value?.episode?.audioUrl) && audioUrl === value.episode.audioUrl;
     const verification = this.verification(episodeKey(feed, episode));
     const variant = verification?.state === "READY" ? verification.variant : null;
@@ -217,7 +233,14 @@ export class SkipService {
     const activeIntervals = sourceMatched ? this.store.all("skip-interval").map(([, item]) => item)
       .filter((item) => item.episodeKey === episodeKey(feed, episode) && categories.has(item.type) && preferences[item.type] === true && intervalDecision({ interval: item, variantFingerprint: audioVariantFingerprint, durationMs: variant.durationMs, positionMs: item.startMs, flags: { ad_skip: "on", intro_skip: "on", title_sequence_skip: "on", preview_skip: "on", outro_skip: "on" } }).skip)
       .map(({ id, type, startMs, endMs }) => ({ id, type, startMs, endMs, targetMs: endMs })) : [];
-    return { ...inspection, automaticSkipping: activeIntervals.length > 0, activeIntervals, sourceMatched, pilotEnabled: Boolean(this.automaticEnabled(listener)),
+    const matchFailure = ["AUDIO_PRECONDITION_UNSUPPORTED", "AUDIO_VARIANT_CHANGED", "AUDIO_WITNESS_MISMATCH", "AUDIO_MATCH_FAILED", "BOUNDED_PROOF_UNAVAILABLE"].includes(audioMatchCode) ? audioMatchCode : null;
+    const code = !displayAllowed ? "DISPLAY_NOT_AUTHORISED" : !this.automaticEnabled(listener) ? "PILOT_DISABLED" : preferences.adSkipEnabled !== true ? "PREFERENCE_DISABLED" : !exactSource ? "SOURCE_URL_MISMATCH" : !variant ? inspection.code : !audioVariantFingerprint ? matchFailure || "AUDIO_MATCH_NOT_CHECKED" : !sourceMatched ? "VARIANT_MISMATCH" : !activeIntervals.length ? "NO_ELIGIBLE_INTERVALS" : "READY";
+    if (this.automaticEnabled(listener)) {
+      const key = episodeKey(feed, episode), analysis = this.store.get("skip-analysis", key);
+      const playback = { code, sourceMatched, matchAttempted: Boolean(audioVariantFingerprint), enabled: activeIntervals.length > 0 };
+      if (analysis && JSON.stringify(analysis.playback) !== JSON.stringify(playback)) this.store.set("skip-analysis", key, { ...analysis, playback, playbackAt: nowIso() });
+    }
+    return { ...inspection, code, automaticSkipping: activeIntervals.length > 0, activeIntervals, sourceMatched, pilotEnabled: Boolean(this.automaticEnabled(listener)),
       // Never send a playable lease based only on a URL. The native player must
       // hash and play a local copy of the exact verified publisher bytes.
       variant: permitted && inspection.verifiedCount > 0 && variant ? variant : null };
@@ -249,11 +272,23 @@ export class SkipService {
     });
     return this.inspect(feed, episode);
   }
-  recordPlaybackEvent(listener, feed, episode, { eventId, intervalId, kind, positionMs, authorisationId }) {
-    if (!validEventId(eventId) || !["automatic_skip", "undo"].includes(kind)) throw new ListenerError("Choose a valid Ad Skip playback event.");
+  recordPlaybackEvent(listener, feed, episode, { eventId, intervalId, kind, positionMs, authorisationId, code }) {
+    const stages = ["skip_requested", "seek_attempted", "seek_failed", "undo_requested", "undo_failed"];
+    if (!validEventId(eventId) || !["automatic_skip", "undo", ...stages].includes(kind)) throw new ListenerError("Choose a valid Ad Skip playback event.");
     if (!Number.isFinite(positionMs) || positionMs < 0 || positionMs > 24 * 3600000) throw new ListenerError("A valid playback position is required.");
-    const key = episodeKey(feed, episode), interval = this.store.get("skip-interval", intervalId);
-    const lease = this.store.get("skip-authorisation", authorisationId);
+    const key = episodeKey(feed, episode), interval = typeof intervalId === "string" ? this.store.get("skip-interval", intervalId) : null;
+    const lease = typeof authorisationId === "string" ? this.store.get("skip-authorisation", authorisationId) : null;
+    if (stages.includes(kind)) {
+      if (!interval || interval.episodeKey !== key || (!this.automaticEnabled(listener) && !(kind.startsWith("undo_") && lease?.owner === listener.id && lease.executedAt))) throw new ListenerError("This diagnostic event is not authorised.");
+      if (authorisationId && (!lease || lease.owner !== listener.id || lease.episodeKey !== key || lease.intervalId !== intervalId)) throw new ListenerError("This playback authorisation is unavailable.");
+      if (kind === "seek_attempted" && !lease) throw new ListenerError("An authorised seek is required.");
+      const id = hash(`${listener.id}:${eventId}`);
+      if (this.store.get("skip-execution", id)) return { recorded: true };
+      if (this.store.all("skip-execution").filter(([, row]) => row.owner === listener.id && Date.parse(row.createdAt) > Date.now() - 3600000).length >= 120) throw new ListenerError("Ad Skip diagnostics are temporarily limited.", 429);
+      const reason = ["INTERVAL_PASSED", "AUTHORISATION_FAILED", "SEEK_NOT_CONFIRMED", "SOURCE_CHANGED", "UNDO_NOT_CONFIRMED"].includes(code) ? code : kind === "seek_failed" ? "SEEK_NOT_CONFIRMED" : kind === "undo_failed" ? "UNDO_NOT_CONFIRMED" : null;
+      this.store.set("skip-execution", id, { id, owner: listener.id, episodeKey: key, intervalId, kind, positionMs, code: reason, evaluation: Boolean(this.pipeline.status(feed, episode)?.episode?.ownedFixtureAudioHash), provenance: "client_reported_stage", createdAt: nowIso() });
+      return { recorded: true };
+    }
     if (!interval || interval.episodeKey !== key || !lease || lease.owner !== listener.id || lease.episodeKey !== key || lease.intervalId !== intervalId) throw new ListenerError("This playback authorisation is unavailable.");
     if (kind === "automatic_skip" && (lease.expiresAt < Date.now() || !this.automaticEnabled(listener) || interval.disputed || Math.abs(positionMs - lease.targetMs) > 350)) throw new ListenerError("This skip did not confirm its authorised destination.");
     if (kind === "undo" && (!lease.executedAt || Math.abs(positionMs - lease.positionMs) > 350)) throw new ListenerError("Undo did not confirm the previous listening position.");
@@ -273,6 +308,7 @@ export class SkipService {
     const count = (predicate, rows = intervals) => rows.filter(predicate).length;
     return {
       generatedAt: nowIso(),
+      diagnostics: skipDiagnostics(this.store, this.pipeline.rights),
       counts: {
         candidates: count((item) => item.verificationState === Verification.CANDIDATE), variantMatched: count((item) => item.verificationState === Verification.VARIANT_MATCHED), verified: count((item) => item.verificationState === Verification.VERIFIED), disputed: count((item) => item.verificationState === Verification.DISPUTED), rejected: count((item) => item.verificationState === Verification.REJECTED),
         processing: count((item) => ["QUEUED", "PROCESSING"].includes(item.state), verification), failed: count((item) => item.state === "FAILED", verification), automaticSkips: count((item) => item.kind === "automatic_skip", executions), undoEvents: count((item) => item.kind === "undo", executions), falsePositiveReports: count((item) => item.kind === "skipped_conversation", feedbackRows), missedAdvertReports: count((item) => item.kind === "missed", feedbackRows),
