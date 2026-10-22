@@ -5,6 +5,7 @@ export function skipDiagnostics(store, rights) {
   const rows = kind => store.all(kind).map(([key, value]) => ({ key, ...value }));
   const jobs = new Map(rows("intelligence").map(row => [row.key, row]));
   const encounters = new Map(rows("intelligence-encounter").map(row => [episodeKey(row.feedUrl, row.episodeId), row]));
+  const attention = new Map(rows("intelligence-attention").map(row => [episodeKey(row.feedUrl, row.episodeId), row]));
   const analyses = new Map(rows("skip-analysis").map(row => [row.episodeKey, row]));
   const verification = new Map(rows("skip-audio-verification").map(row => [row.episodeKey, row]));
   const intervals = rows("skip-interval"), events = rows("skip-execution");
@@ -36,7 +37,7 @@ export function skipDiagnostics(store, rights) {
       analysis?.playbackAt && { at: analysis.playbackAt, stage: "Tester playback check", code: latestPlayback.code },
       ...receipts.map(row => ({ at: row.createdAt, stage: row.kind, code: row.code || row.provenance })),
     ].filter(Boolean).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-    return { episodeKey: key, feedUrl, episodeId, title: job?.episode?.title || episodeId || "Episode metadata unavailable", podcast: job?.episode?.showName || null,
+    return { episodeKey: key, feedUrl, episodeId, title: job?.episode?.title || attention.get(key)?.title || episodeId || "Episode metadata unavailable", podcast: job?.episode?.showName || attention.get(key)?.podcast || null,
       analysis: analysis ? "COMPLETE" : candidates.length ? "LEGACY_EVIDENCE" : "NOT_STARTED", transcriptAvailable: Boolean(job?.transcript?.segments?.length),
       candidates: analysis || candidates.length ? candidates.length : null, verified: safe.length,
       audioMatching: latestPlayback ? latestPlayback.sourceMatched ? "MATCHED" : latestPlayback.matchAttempted ? "MISMATCHED" : "UNKNOWN" : "UNKNOWN",

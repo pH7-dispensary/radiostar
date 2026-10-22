@@ -792,12 +792,12 @@ export function createStarCastServer({
       : episode.hasPublisherTranscript ? "A publisher transcript reference can be evaluated before any paid audio fallback."
       : permissions.canTranscribeAudio && pipeline.audioEnabled && ledger.controls.enabled ? "Audio fallback needs explicit administrator selection and remains subject to the hard budget."
       : "No authorised transcript source is currently available; paid audio fallback is not enabled for this request.";
+    const skipInspection = skips.inspect(feedUrl, episode.id);
     const skipIntervals = store.all("skip-interval").map(([, value]) => value)
       .filter((value) => value.episodeKey === episodeKey(feedUrl, episode.id));
     const verifiedSkips = skipIntervals.filter((value) => value.verificationState === "VERIFIED" && value.boundaryVerified && value.audioVariantFingerprint && !value.disputed);
     const adCandidates = skipIntervals.filter((value) => value.verificationState === "CANDIDATE");
-    const skipInspection = skips.inspect(feedUrl, episode.id);
-    const adSkipFeature = featureEnabled("adSkip");
+    const adSkipFeature = featureEnabled("adSkip") || testingMode.configuration().listenerIds.some(id => testingMode.adSkipAllowed(id));
     const autoSkipState = !processing.allowed || !display.allowed ? "RESTRICTED"
       : !adSkipFeature ? "DISABLED"
       : preparing ? state
