@@ -5,13 +5,22 @@ import { LocalStore } from "./persistence.mjs";
 import { episodeKey } from "./episode-pipeline.mjs";
 import { EpisodePipeline } from "./episode-pipeline.mjs";
 import { BudgetLedger } from "./openai-intelligence.mjs";
+import { latestPublishedEpisodes } from "./followed-preparation.mjs";
+
+const published = (id, day, extra = {}) => ({ id, publishedAt: `2026-01-${day}T00:00:00Z`, audioUrl: `https://owned.example/${id}.mp3`, ...extra });
+assert.deepEqual(latestPublishedEpisodes([
+  published('old', '01'), published('third', '02'), published('second', '03'), published('newest', '04'),
+  published('newest', '04'), published('withdrawn', '05', { withdrawn: true }), published('deleted', '06', { deleted: true }),
+  published('bad-date', '07', { publishedAt: 'not a date' }), published('no-audio', '08', { audioUrl: null }),
+  published('future', '09', { publishedAt: '2099-01-01' }),
+]).map(e => e.id), ['newest', 'second', 'third']);
 
 const store = new LocalStore(":memory:"), feeds = ["https://owned.example/a.xml", "https://owned.example/b.xml"];
 let latest = 3, audioCalls = 0, textCalls = 0;
 const text = "Our original software fixture discusses reliable evidence, careful source review, accountable spending and accurately timed podcast intelligence for listeners.";
 const app = createStarCastServer({ store,
   env: { STARCAST_PAID_INTELLIGENCE: "enabled", STARCAST_AUDIO_TRANSCRIPTION: "enabled", OPENAI_API_KEY: "mock-only", STARCAST_DEV_INTELLIGENCE_TOKEN: "device", STARCAST_ADMIN_TOKEN: "admin" },
-  fetchFeed: async () => `<rss><channel><title>Owned fixture</title>${Array.from({length: 4}, (_,i) => latest-i).map(i => `<item><guid>episode-${i}</guid><title>Original ${i}</title><pubDate>${new Date(Date.UTC(2026,9,20+i)).toUTCString()}</pubDate><itunes:duration>60</itunes:duration><enclosure url="https://owned.example/${i}.mp3"/></item>`).join("")}</channel></rss>`,
+  fetchFeed: async () => `<rss><channel><title>Owned fixture</title>${Array.from({length: 125}, (_,i) => `<item><guid>old-${i}</guid><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate><enclosure url="https://owned.example/old-${i}.mp3"/></item>`).join('')}${Array.from({length: 4}, (_,i) => latest-i).reverse().map(i => `<item><guid>episode-${i}</guid><title>Original ${i}</title><pubDate>${new Date(Date.UTC(2026,0,20+i)).toUTCString()}</pubDate><itunes:duration>60</itunes:duration><enclosure url="https://owned.example/${i}.mp3"/></item>`).join("")}</channel></rss>`,
   resolveEpisode: async (feed,id) => ({id,title:id,showName:"Owned fixture",duration:"60",audioUrl:`https://owned.example/${feed.endsWith('a.xml')?'a':'b'}/${id}.mp3`,refs:[]}),
   audioFactory: async audioUrl => ({durationMs:60_000,contentHash:createHash('sha256').update(audioUrl).digest('hex'),chunkFactory:async()=>Buffer.from('owned mock audio'),cleanup:async()=>{}}),
   client: { audio: { transcriptions: { create: async () => { audioCalls++; return {segments:[{start:0,end:60,text}]}; } } }, responses: { create: async () => { textCalls++; return {status:"completed",output_text:JSON.stringify({overview:text,detail:text,themes:["Evidence"],sourceSegmentIndexes:[1],chapters:[{title:"Evidence",description:"Grounded review",sourceSegmentIndexes:[1]}]}),usage:{input_tokens:100,output_tokens:100}}; } } },
@@ -40,14 +49,36 @@ try {
   app.adminService.setFeatureFlag({id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100,reason:'Authorised fixture verification'},actor);
   assert.equal(estimate.snapshot.activeUsers,2);assert.equal(estimate.snapshot.feeds,2);assert.equal(estimate.uniqueEpisodes,6);assert.equal(audioCalls,0);
   assert.equal(estimate.counts.REVIEW_REQUIRED,1);assert(estimate.estimate.knownUsd>0);
+  assert.equal(estimate.acquisition.requiringAudio,6);assert.equal(estimate.acquisition.eligibleRequiringAudio,5);
+  assert.equal(estimate.budget.remainingDailyUsd,5);
+  assert.deepEqual(estimate.rows.filter(r=>r.feedUrl===feeds[0]).map(r=>r.episodeId),['episode-3','episode-2','episode-1']);
+  await prep.refresh({force:true,newlyFollowed:feeds[0]});
+  assert.equal(prep.summary().rows.find(r=>r.feedUrl===feeds[0]&&r.rank===0).priority,70,'new follow never outranks opened content');
   assert.throws(()=>prep.action({action:"activate",reason:"test"},{role:"READ_ONLY"}),/Super/);
   prep.action({action:"activate",reason:"Authorised test",confirmation:"CONFIRM",expectedVersion:0},actor);
   await settle();
   assert.equal(prep.summary().counts.READY,5);assert.equal(audioCalls,5);assert.equal(textCalls,5);
   await prep.refresh({force:true});await settle();assert.equal(audioCalls,5,"shared follows and refresh must reuse completed results");
+  assert.equal(prep.summary().acquisition.intelligenceCacheHits,5);
+  assert.equal(prep.summary().acquisition.transcriptCacheHits,5);
+  assert.equal(prep.summary().estimate.eligibleKnownUsd,0);
+  const completed=app.pipeline.status(feeds[0],'episode-3');
+  assert.equal(completed.work.completedChunks,1);assert.equal(completed.work.completedBatches,1,'chunk and analysis progress both survive final handoff');
+  await prep.encounter(user.id,feeds[0],'episode-3','playing');
+  await prep.encounter(user.id,feeds[0],'episode-3','opened');
+  await prep.encounter(other.id,feeds[0],'episode-3','opened');
+  await prep.refresh({force:true});assert.equal(prep.summary().rows.find(r=>r.key===episodeKey(feeds[0],'episode-3')).priority,100,'open and scheduled refresh cannot downgrade playing priority');
+  const normalDiscovery=prep.discover;prep.discover=async feed=>{if(feed===feeds[0])throw Error('temporary RSS outage');return normalDiscovery(feed);};
+  const outage=await prep.refresh({force:true});assert.equal(outage.snapshot.errors.length,1);assert.equal(outage.uniqueEpisodes,6,'feed outage preserves the known window');
+  prep.discover=normalDiscovery;await prep.refresh({force:true});assert.equal(prep.summary().snapshot.errors.length,0);
   latest=4;await prep.refresh({force:true});await settle();
   assert.equal(prep.summary().uniqueEpisodes,6);assert.equal(audioCalls,7,"only new publications process");
   assert(app.pipeline.status(feeds[0],"episode-1").brief,"historical intelligence retained");
+  app.listeners.follow(user,{feedUrl:feeds[1],following:false});
+  await prep.refresh({force:true});assert.equal(prep.summary().snapshot.feeds,2,'another follower retains shared demand');
+  app.listeners.follow(other,{feedUrl:feeds[1],following:false});
+  await prep.refresh({force:true});assert.equal(prep.summary().uniqueEpisodes,3,'last unfollow removes future demand, not cached intelligence');
+  assert(app.pipeline.status(feeds[1],'episode-3').brief);
   const ready=await(await fetch(origin+'/api/intelligence/status?'+new URLSearchParams({feedUrl:feeds[0],episodeId:"episode-4"}),{headers:{'x-star-cast-dev-token':'device',authorization:'Bearer ordinary-user-credential-at-least-32-characters'}})).json();
   assert.equal(ready.status.state,"READY");assert(ready.status.brief);assert.equal(ready.status.transcript,undefined);
   const denied=await fetch(origin+'/api/admin/intelligence/followed',{method:'POST',headers:{'x-star-cast-dev-token':'device','content-type':'application/json'},body:JSON.stringify({action:'activate'})});assert.equal(denied.status,403);

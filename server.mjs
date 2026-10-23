@@ -102,10 +102,10 @@ async function podcastIndexSearch(query, limit = 12) {
 }
 const MAX_CATALOGUE_EPISODES = 30;
 // A listener can legitimately reopen an older episode from their library or a
-// shared link. Keep catalogue responses compact, while allowing a bounded
-// look-back for an explicit episode request. The publisher document has
-// already passed the server's 8 MB network limit.
-const MAX_RESOLVABLE_EPISODES = 120;
+// shared link. Keep catalogue responses compact. RSS bytes are bounded by the
+// server's 8 MB network limit. Resolve the same complete document used by
+// publication ordering, including feeds whose newest item is not near the top.
+const MAX_RESOLVABLE_EPISODES = Infinity;
 
 class PublisherEpisodeError extends Error {
   constructor(message, code = "EPISODE_NOT_FOUND") {
@@ -133,11 +133,11 @@ function episodesFromFeed(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
     title: tag(channel, "title"),
     publisher: tag(channel, "itunes:author") || tag(channel, "author"),
     art: (channel.match(/<itunes:image[^>]+href=["']([^"']+)/i) || [])[1],
-    episodes: items.map((item, index) => {
+    episodes: items.map((item) => {
       let enclosure = (item.match(/<enclosure[^>]+url=["']([^"']+)/i) ||
-          item.match(/<link[^>]+href=["']([^"']+)/i) ||
+          item.match(/<link\b(?=[^>]*rel=["']enclosure["'])[^>]*href=["']([^"']+)/i) ||
           [])[1],
-        guid = tag(item, "guid") || tag(item, "id") || `${feed}:${index}`,
+        guid = tag(item, "guid") || tag(item, "id") || enclosure || null,
         refs = transcriptRefsFromItem(item);
       return {
         id: guid,
@@ -146,6 +146,7 @@ function episodesFromFeed(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
         duration: tag(item, "itunes:duration"),
         description: tag(item, "description"),
         audioUrl: enclosure || null,
+        withdrawn: /^(true|yes|1)$/i.test(tag(item, "podcast:withdrawn") || tag(item, "withdrawn")),
         hasPublisherTranscript: refs.length > 0,
         rightsEvidence: publisherRightsEvidence({ channelXml: channel, itemXml: item, feedUrl: feed }),
       };
@@ -482,7 +483,11 @@ export function createStarCastServer({
     return device && !device.revokedAt && Date.parse(device.expiresAt) > Date.now() ? device.listenerId : null;
   };
   const followedPreparation = new FollowedPreparation({ store, pipeline, ledger, testingMode, rights,
-    discover: async feedUrl => [...episodesFromFeed(await feedXml(feedUrl, true), feedUrl).episodes].filter(v => v.id).sort((a,b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0)),
+    discover: async feedUrl => {
+      const xml = await feedXml(feedUrl, true);
+      if (!/<(rss|feed)\b[^>]*>[\s\S]*<\/\1\s*>/i.test(xml)) throw new PublisherEpisodeError("Publisher feed is temporarily invalid.", "SOURCE_UNAVAILABLE");
+      return episodesFromFeed(xml, feedUrl, Infinity).episodes;
+    },
     assess: assessEpisodeRights,
     enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
     allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,

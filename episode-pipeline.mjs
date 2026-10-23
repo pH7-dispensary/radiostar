@@ -40,6 +40,10 @@ export const episodeKey = (feedUrl, episodeId) =>
 export const canonicalEpisodeId = (feedUrl, episodeId) =>
   `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
 
+export const recoverableTechnicalJob = (job) => job?.state === "FAILED" && job.retryable !== false &&
+  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
+  (job.recoveries || 0) < 2;
+
 // The persisted worker state deliberately remains backward-compatible. This
 // projection is the one shared by listener clients and operations views. It
 // prevents a client from guessing progress from a timer or from raw provider
@@ -653,7 +657,8 @@ export class EpisodePipeline {
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
       const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
-      const safeRetry = status.state === "FAILED" && ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT"].includes(status.code) && (status.recoveries || 0) < 2;
+      const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
+        now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
       if (limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
@@ -768,7 +773,7 @@ export class EpisodePipeline {
     const recordWork = (work) => {
       const current = this.store.get("intelligence", key);
       if (!expired && current?.jobId === value.jobId && !current.completedAt) {
-        value = { ...current, work, updatedAt: new Date().toISOString() };
+        value = { ...current, work: { ...current.work, ...work }, updatedAt: new Date().toISOString() };
         this.store.set("intelligence", key, value);
       }
     };

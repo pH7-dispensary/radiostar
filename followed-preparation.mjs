@@ -1,9 +1,22 @@
-import { episodeKey, durationMs, activeStates } from "./episode-pipeline.mjs";
+import { episodeKey, durationMs, activeStates, listenerProcessingStatus, recoverableTechnicalJob } from "./episode-pipeline.mjs";
+import { createHash } from "node:crypto";
+import { measuredProcessingEstimate } from "./processing-estimate.mjs";
+import { publicUrl } from "./safe-network.mjs";
 import { setImmediate as yieldToRequests } from "node:timers/promises";
 
 const kind = "followed-preparation";
 const iso = () => new Date().toISOString();
 const waitCodes = new Set(["BUDGET_LIMIT", "SERVER_BUSY", "SERVER_UNAVAILABLE"]);
+export function latestPublishedEpisodes(episodes, now = Date.now()) {
+  const seen = new Set();
+  return episodes.filter(e => e.id && publicUrl(e.audioUrl) &&
+    !e.withdrawn && !e.deleted && Number.isFinite(Date.parse(e.publishedAt)) && Date.parse(e.publishedAt) <= now)
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || String(a.id).localeCompare(String(b.id)))
+    .filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; }).slice(0, 3);
+}
+const recent = (row, listeners) => listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
+const priorityFor = (row, listeners) => Math.max(row.manualPriority || 0,
+  recent(row, listeners) ? row.encounterPriority || 80 : 0, row.inWindow ? 70 - row.rank * 10 : 0);
 
 // Durable demand, not a second AI pipeline. Every dispatch uses the canonical
 // pipeline and its transactional outbox, rights checks and shared cost ledger.
@@ -33,13 +46,13 @@ export class FollowedPreparation {
     const prior = this.store.get(kind, "snapshot");
     const follows = this.follows(), feeds = [...new Set(follows.map(v => v.feedUrl))].sort();
     const signature = JSON.stringify(follows.map(v => [v.owner, v.feedUrl]).sort());
-    if (!force && !newlyFollowed && prior?.signature === signature && Date.now() - Date.parse(prior.at) < 3600000) return this.summary();
+    if (!force && !newlyFollowed && prior?.signature === signature && Date.now() - Date.parse(prior.at) < (prior.errors?.length ? 300000 : 3600000)) return this.summary();
     const errors = [], windowKeys = [];
     // Serial feed discovery bounds RSS and assessment traffic as well as memory.
     for (const feedUrl of feeds) {
       try {
-        const episodes = await this.discover(feedUrl);
-        for (const [rank, episode] of episodes.slice(0, 3).entries()) {
+        const episodes = latestPublishedEpisodes(await this.discover(feedUrl));
+        for (const [rank, episode] of episodes.entries()) {
           await yieldToRequests();
           const key = episodeKey(feedUrl, episode.id), old = this.store.get("followed-demand", key);
           windowKeys.push(key);
@@ -49,17 +62,23 @@ export class FollowedPreparation {
           const cached = this.pipeline.status(feedUrl, episode.id);
           const sourceNeedsRefresh = cached?.state === "READY" && (cached.episode?.audioUrl !== resolved.audioUrl || JSON.stringify(cached.episode?.refs) !== JSON.stringify(resolved.refs) || Date.now() - Date.parse(cached.sourceCheckedAt || cached.completedAt) >= 86400000);
           const seconds = durationMs(resolved.duration) / 1000 || null;
-          const hasTranscript = Boolean(cached?.transcript?.segments?.length || this.store.get("transcript", key)?.segments?.length);
-          const audioUsd = hasTranscript || resolved.refs?.length ? 0 : seconds == null ? null : Math.ceil(seconds) * 0.0001;
+          const variant = createHash("sha256").update(resolved.audioUrl || "").digest("hex");
+          const hasTranscript = Boolean(this.store.get("transcript", `${key}:${variant}`)?.segments?.length || this.store.get("audio-transcript", variant)?.segments?.length);
+          const ready = cached?.state === "READY" && !sourceNeedsRefresh;
+          const audioUsd = ready || hasTranscript ? 0 : seconds == null ? null : Math.ceil(seconds) * 0.0001;
+          const acquisition = { intelligenceCacheHit: ready, transcriptCacheHit: hasTranscript,
+            publisherReferences: resolved.refs?.length || 0, publisherTranscriptFound: cached?.episode?.audioUrl === resolved.audioUrl && cached?.transcriptChecks?.publisherTranscriptFound === true,
+            requiresAudio: !ready && !hasTranscript && !resolved.refs?.length, durationSeconds: seconds, audioVariant: variant };
           this.put({ ...old, key, feedUrl, episodeId: episode.id, title: resolved.title, podcast: resolved.showName,
-            rank, inWindow: true, sourceNeedsRefresh, priority: Math.max(old?.manualPriority || 0, newlyFollowed === feedUrl ? 90 - rank : 70 - rank * 10),
+            rank, inWindow: true, sourceNeedsRefresh, acquisition, publishedAt: episode.publishedAt,
+            priority: priorityFor({ ...old, rank, inWindow: true }, new Set(this.listeners().map(v => v.id))),
             source: newlyFollowed === feedUrl ? "new-follow" : "followed", assessedAt: iso(), createdAt: old?.createdAt || iso(),
             eligible: processing.allowed, retryAfter: processing.allowed && old?.eligible === false ? null : old?.retryAfter,
             ...(processing.allowed && old?.eligible === false ? { state: "NOT_REQUESTED", code: null, reason: null } : {}),
             decision: { code: decision.code, reason: decision.reason, evidence: this.rights.resolve(feedUrl, episode.id).assessmentEvidence || [] },
-            // Planning estimate, not a reservation. Publisher references may fail;
-            // actual fallback is still atomically budgeted before any paid call.
-            estimate: { audioUsd, textUsd: cached?.state === "READY" ? 0 : seconds ? Math.max(0.01, seconds / 3600 * 0.05) : null, basis: "RSS duration; Whisper $0.006/min; planning text allowance $0.05/hour; publisher references assumed usable" },
+            // References are NOT verified transcripts. Include potential fallback
+            // until acquisition proves reuse; reservations remain authoritative.
+            estimate: { audioUsd, textUsd: ready ? 0 : seconds ? Math.max(0.01, seconds / 3600 * 0.05) : null, basis: "RSS duration; Whisper $0.006/min; text planning allowance $0.05/hour; includes fallback for unverified publisher references" },
           });
         }
       } catch { errors.push({ feedUrl, code: "SOURCE_UNAVAILABLE", reason: "Feed or episode discovery failed; it will be retried at the next refresh." }); }
@@ -73,7 +92,8 @@ export class FollowedPreparation {
   async encounter(listenerId, feedUrl, episodeId, source) {
     if (!this.configuration().enabled || !this.listeners().some(v => v.id === listenerId)) return;
     const key = episodeKey(feedUrl, episodeId), old = this.store.get("followed-demand", key);
-    const row = { ...old, key, feedUrl, episodeId, priority: source === "playing" ? 100 : 80, source, encounterOwner: listenerId, encounteredAt: iso(), createdAt: old?.createdAt || iso() };
+    const encounterPriority = Math.max(source === "playing" ? 100 : 80, recent(old || {}, new Set(this.listeners().map(v => v.id))) ? old.encounterPriority || 0 : 0);
+    const row = { ...old, key, feedUrl, episodeId, priority: Math.max(old?.manualPriority || 0, encounterPriority), encounterPriority, source, encounterOwner: listenerId, encounteredAt: iso(), createdAt: old?.createdAt || iso() };
     this.put(row);
     void this.drain().catch(() => {});
   }
@@ -83,10 +103,10 @@ export class FollowedPreparation {
     return this.draining;
   }
   async dispatch() {
-    if (!this.configuration().enabled || !this.enabled() || !this.store.get(kind, "snapshot")) return;
+    if (this.refreshing || !this.configuration().enabled || !this.enabled() || !this.store.get(kind, "snapshot")) return;
     const feeds = new Set(this.follows().map(v => v.feedUrl)), listeners = new Set(this.listeners().map(v => v.id));
     let slots = Math.max(0, 2 - this.store.all("intelligence").filter(([, j]) => activeStates.has(j.state) && !j.completedAt).length);
-    for (const row of this.rows().sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
+    for (const row of this.rows().map(row => ({ ...row, priority: priorityFor(row, listeners) })).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
       await yieldToRequests();
       if (row.paused || Date.parse(row.retryAfter || "") > Date.now()) continue;
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
@@ -109,7 +129,10 @@ export class FollowedPreparation {
         }
         if (!this.allowed(row.feedUrl, row.episodeId)) { this.put({ ...row, state: "PAUSED", code: "AUTOMATIC_PREPARATION_DISABLED" }); continue; }
         this.store.delete("intelligence-attention", row.key);
-        const status = await this.pipeline.request({ feedUrl: row.feedUrl, episodeId: row.episodeId, trigger: "automatic", platformProcessing: true, allowAudio: true, priority: row.priority, retry: row.retry === true, testingContext: this.testingMode.platformContext() });
+        // SQS recovery resumes the same job/checkpoints. The local adapter has
+        // no queue, so use its existing bounded retry instead, never both.
+        const localRecovery = !this.pipeline.queue && recoverableTechnicalJob(cached) && Date.now() - Date.parse(cached.completedAt || "") >= 60000;
+        const status = await this.pipeline.request({ feedUrl: row.feedUrl, episodeId: row.episodeId, trigger: "automatic", platformProcessing: true, allowAudio: true, priority: row.priority, retry: row.retry === true || localRecovery, testingContext: this.testingMode.platformContext() });
         this.put({ ...row, sourceNeedsRefresh: false, eligible: true, title: episode.title, podcast: episode.showName, state: status.state, code: status.code || null, reason: status.reason || null, retry: false,
           firstQueuedAt: row.firstQueuedAt || (status.jobId ? iso() : null), retryAfter: waitCodes.has(status.code) ? new Date(Date.now() + 60000).toISOString() : null });
         if (status.jobId && activeStates.has(status.state)) slots--;
@@ -118,19 +141,37 @@ export class FollowedPreparation {
   }
   summary() {
     this.ledger.refresh();
-    const snapshot = this.store.get(kind, "snapshot"), rows = this.rows().filter(v => v.inWindow || v.encounterOwner).map(row => {
+    const feeds = new Set(this.follows().map(v => v.feedUrl)), listeners = new Set(this.listeners().map(v => v.id));
+    const history = this.store.all("intelligence").map(([, job]) => job);
+    const snapshot = this.store.get(kind, "snapshot"), rows = this.rows().filter(v => v.inWindow && feeds.has(v.feedUrl) || recent(v, listeners)).map(row => {
       const job = this.pipeline.status(row.feedUrl, row.episodeId);
       const recovered = this.pipeline.rightsRecovery?.(row.feedUrl, row.episodeId);
-      const state = row.paused ? "PAUSED" : row.eligible === false ? "REVIEW_REQUIRED" : recovered ? "NOT_REQUESTED" : job?.code === "BUDGET_LIMIT" ? "WAITING" : job?.state || row.state || "NOT_REQUESTED";
-      return { ...row, ...this.status?.(row.feedUrl, row.episodeId), state, code: row.eligible === false ? row.decision?.code || row.code : recovered || job?.state === "READY" ? null : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
+      const projected = job ? listenerProcessingStatus(job) : null;
+      const state = row.paused || row.state === "PAUSED" ? "PAUSED" : row.eligible === false ? "REVIEW_REQUIRED" : recovered || row.sourceNeedsRefresh && projected?.state === "READY" ? "DISCOVERED" : projected?.state === "NOT_REQUESTED" || !job ? row.code === "BUDGET_LIMIT" ? "BUDGET_PAUSED" : row.state === "FAILED" ? "FAILED" : "DISCOVERED" : projected.state;
+      const ready = state === "READY";
+      const matchingVariant = !row.acquisition?.audioVariant || createHash("sha256").update(job?.episode?.audioUrl || "").digest("hex") === row.acquisition.audioVariant;
+      const acquisition = { ...row.acquisition, intelligenceCacheHit: ready && !row.sourceNeedsRefresh,
+        publisherTranscriptFound: matchingVariant && job?.transcriptChecks?.publisherTranscriptFound === true || row.acquisition?.publisherTranscriptFound === true,
+        transcriptCacheHit: matchingVariant && !!job?.transcript?.segments?.length || row.acquisition?.transcriptCacheHit === true };
+      return { ...row, acquisition, priority: priorityFor(row, listeners), ...this.status?.(row.feedUrl, row.episodeId), state, stage: projected?.stage || null,
+        work: job?.work || null, queuePosition: null, estimatedCompletion: measuredProcessingEstimate(job, history),
+        elapsedMs: job?.startedAt ? Math.max(0, Date.parse(job.completedAt || iso()) - Date.parse(job.startedAt)) : null,
+        code: row.eligible === false ? row.decision?.code || row.code : recovered || ready ? null : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
     });
     const window = rows.filter(v => v.inWindow), counts = {};
     for (const row of window) counts[row.state] = (counts[row.state] || 0) + 1;
     const pending = window.filter(v => v.state !== "READY"), estimates = pending.map(v => v.estimate);
-    const knownUsd = estimates.reduce((n, v) => n + (v?.audioUsd || 0) + (v?.textUsd || 0), 0);
+    const remaining = row => (row.acquisition?.transcriptCacheHit ? 0 : row.estimate?.audioUsd || 0) + (row.estimate?.textUsd || 0);
+    const knownUsd = pending.reduce((n, row) => n + remaining(row), 0);
+    const limits = { ...this.ledger.controls, ...this.testingMode.limits(this.testingMode.platformContext()) }, totals = this.ledger.totals();
+    const audio = pending.filter(v => !v.acquisition?.transcriptCacheHit && v.acquisition?.requiresAudio);
     const completedLast24Hours = window.filter(v => v.state === "READY" && Date.parse(v.completedAt) >= Date.now() - 86400000).length;
     return { configuration: this.configuration(), refreshInProgress: Boolean(this.refreshing), snapshot, counts, uniqueEpisodes: window.length, requiringPreparation: pending.length,
-      estimate: { knownUsd, unknownEpisodes: estimates.filter(v => v?.audioUsd == null || v?.textUsd == null).length, eligibleKnownUsd: pending.filter(v => v.eligible).reduce((n,v) => n + (v.estimate?.audioUsd || 0) + (v.estimate?.textUsd || 0), 0), completionEta: null, reason: "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable." },
+      acquisition: { intelligenceCacheHits: window.filter(v => v.acquisition?.intelligenceCacheHit).length, transcriptCacheHits: window.filter(v => v.acquisition?.transcriptCacheHit).length,
+        publisherTranscriptsFound: window.filter(v => v.acquisition?.publisherTranscriptFound).length, publisherReferencesUnverified: pending.filter(v => v.acquisition?.publisherReferences && !v.acquisition?.publisherTranscriptFound && !v.acquisition?.transcriptCacheHit).length,
+        requiringAudio: audio.length, eligibleRequiringAudio: audio.filter(v => v.eligible).length, estimatedAudioHours: audio.reduce((n,v) => n + (v.acquisition?.durationSeconds || 0) / 3600, 0), unknownAudioDurations: audio.filter(v => !v.acquisition?.durationSeconds).length },
+      budget: { limits, temporaryExpiresAt: this.testingMode.configuration?.().active ? this.testingMode.configuration().expiresAt : null, remainingDailyUsd: Math.max(0, limits.dailyUsd - totals.day), remainingMonthlyUsd: Math.max(0, limits.monthlyUsd - totals.month), remainingAudioSeconds: Math.max(0, limits.dailyTranscriptionSeconds - totals.transcriptionSeconds) },
+      estimate: { knownUsd, unknownEpisodes: estimates.filter(v => v?.audioUsd == null || v?.textUsd == null).length, eligibleKnownUsd: pending.filter(v => v.eligible).reduce((n,v) => n + remaining(v), 0), completionEta: null, reason: "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable." },
       throughput: { completedLast24Hours, episodesPerHour: completedLast24Hours / 24, observationWindowHours: 24 },
       expenditure: { ...this.ledger.totals(), actualMonthUsd: this.ledger.usage.filter(v => v.at.startsWith(iso().slice(0,7))).reduce((n,v) => n + v.usd, 0), reservedUsd: [...this.ledger.reservations.values()].reduce((n,v) => n + v.usd, 0) }, rows: rows.sort((a,b) => b.priority-a.priority).slice(0, 100), totalRows: rows.length };
   }
