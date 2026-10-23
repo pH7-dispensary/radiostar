@@ -84,6 +84,7 @@ const jobRoute = (job) => {
   return "UNCLASSIFIED";
 };
 const jobState = (job) => {
+  if (job.state === 'PARTIAL_READY' && job.completedAt) return 'PARTIAL_READY';
   if (job.state === "BLOCKED" && job.code === "BUDGET_LIMIT") return "BUDGET_PAUSED";
   if (activeJobStates.has(job.state) && job.state !== "QUEUED") return "PROCESSING";
   return job.state || "NOT_RECORDED";

@@ -375,9 +375,10 @@ export function createStarCastServer({
     try {
       const fs = statfsSync(env.STARCAST_DATA_DIR || '/var/lib/starcast');
       const totalBytes = fs.blocks * fs.bsize, availableBytes = fs.bavail * fs.bsize;
-      disk = { name: 'Disk capacity', status: availableBytes < 3 * 1024 ** 3 ? 'DEGRADED' : 'HEALTHY', reason: `${(availableBytes / 1024 ** 3).toFixed(1)} GiB available; deployments require 3 GiB headroom.`, detail: { totalBytes, availableBytes, usedPercent: Math.round((1-fs.bfree/fs.blocks)*100) }, observedAt: new Date().toISOString() };
+      disk = { name: 'Disk capacity', status: availableBytes < 3 * 1024 ** 3 ? 'DEGRADED' : 'HEALTHY', reason: `${Math.round((1-fs.bfree/fs.blocks)*100)}% used · ${(availableBytes / 1024 ** 3).toFixed(1)} GiB available; deployments require 3 GiB headroom.`, detail: { totalBytes, availableBytes, usedPercent: Math.round((1-fs.bfree/fs.blocks)*100) }, observedAt: new Date().toISOString() };
       const copies = readdirSync('/opt/starcast').filter(name => /^previous-\d+$/.test(name));
-      retention = { name: 'Deployment retention', status: copies.length <= 2 ? 'HEALTHY' : 'DEGRADED', reason: `${copies.length} retained deployment copies; retention limit is two.`, detail: { retained: copies.length, limit: 2 }, observedAt: new Date().toISOString() };
+      const legacy = copies.filter(name => readdirSync('/opt/starcast/'+name).some(entry => entry.startsWith('._'))).length;
+      retention = { name: 'Deployment retention', status: copies.length <= 2 ? 'HEALTHY' : 'DEGRADED', reason: `${copies.length} retained deployment copies; retention limit is two.${legacy ? ` ${legacy} legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.` : ''}`, detail: { retained: copies.length, limit: 2, protectedLegacy: legacy }, observedAt: new Date().toISOString() };
     } catch { /* Unknown is not a healthy measurement. */ }
     let backup = { name: 'Last verified backup', status: 'UNKNOWN', reason: 'No protected backup verification record is available.' };
     try {

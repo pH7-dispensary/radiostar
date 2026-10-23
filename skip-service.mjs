@@ -270,7 +270,7 @@ export class SkipService {
     const code = !displayAllowed ? "DISPLAY_NOT_AUTHORISED" : !this.automaticEnabled(listener) ? "PILOT_DISABLED" : preferences.adSkipEnabled !== true ? "PREFERENCE_DISABLED" : !exactSource ? "SOURCE_URL_MISMATCH" : !variant ? inspection.code : !audioVariantFingerprint ? matchFailure || "AUDIO_MATCH_NOT_CHECKED" : !sourceMatched ? "VARIANT_MISMATCH" : !activeIntervals.length ? "NO_ELIGIBLE_INTERVALS" : "READY";
     if (this.automaticEnabled(listener)) {
       const key = episodeKey(feed, episode), analysis = this.store.get("skip-analysis", key);
-      const playback = { code, sourceMatched, matchAttempted: Boolean(audioVariantFingerprint), enabled: activeIntervals.length > 0 };
+      const playback = { code, sourceMatched, matchAttempted: Boolean(audioVariantFingerprint), enabled: activeIntervals.length > 0, pilotEnabled: true, preferenceEnabled: preferences.adSkipEnabled === true };
       if (analysis && JSON.stringify(analysis.playback) !== JSON.stringify(playback)) this.store.set("skip-analysis", key, { ...analysis, playback, playbackAt: nowIso() });
     }
     return { ...inspection, code, automaticSkipping: activeIntervals.length > 0, activeIntervals, sourceMatched, pilotEnabled: Boolean(this.automaticEnabled(listener)),
@@ -345,7 +345,9 @@ export class SkipService {
       const job = this.store.get('intelligence', item.episodeKey);
       if (!job) throw Error('The canonical processing record is missing.');
       const before = this.verification(item.episodeKey);
-      this.scheduleVerification(job.feedUrl, job.episodeId || job.episode?.id, job, [item]);
+      // Use the canonical candidate set: a one-interval subset would change
+      // the input fingerprint and incorrectly reset the bounded retry counter.
+      this.inspect(job.feedUrl || job.episode?.feedUrl, job.episodeId || job.episode?.id);
       const after = this.verification(item.episodeKey), queued = this.inflight.has(item.episodeKey) && (after?.attempts || 0) > (before?.attempts || 0);
       return { previous: item.verificationState, current: item.verificationState, queued, processingStarted: after?.state === 'PROCESSING', changed: queued ? 'Audio verification queued; it has not completed.' : 'No new verification job accepted; existing evidence, rights or retry limits apply.' };
     }

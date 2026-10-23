@@ -20,7 +20,7 @@ export function commandCentre(store, operations, ledger, now = Date.now()) {
   }
   const transcriptKeys = new Set(transcripts.filter(([, t]) => t.segments?.length).map(([key]) => key.split(':')[0]));
   const audioKeys = new Set(transcripts.filter(([, t]) => t.segments?.length && /audio|transcrib/i.test(t.sourceType || '')).map(([key]) => key.split(':')[0]));
-  const jobKeys = test => new Set(jobs.filter(test).map(j => episodeKey(j.feedUrl, j.episodeId || j.episode?.id)));
+  const jobKeys = test => new Set(jobs.filter(test).map(j => episodeKey(j.feedUrl || j.episode?.feedUrl, j.episodeId || j.episode?.id)));
   const sets = {
     discovered: new Set(episodes.keys()), transcripts: transcriptKeys, transcribed: audioKeys,
     generated: jobKeys(j => !!j.brief || !!j.chapters?.length || !!j.topics?.length),

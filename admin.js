@@ -418,6 +418,7 @@ function bindAttentionActions() {
     const item = state.attentionActions?.[Number(button.dataset.attention)];
     if (!item) return;
     if (item.feedUrl && item.episodeId) return openEpisode(item.feedUrl, item.episodeId).catch((error) => notify(error.message));
+    if (item.feedUrl) return openPodcast(item.feedUrl).catch((error) => notify(error.message));
     state.view = item.destination || "operations";
     try { await load(); render(); } catch (error) { notify(error.message); }
   });
@@ -543,6 +544,8 @@ function enhanceCommandCentre() {
     const s=state.skipOperations.commandCentre.adSkip;
     content.querySelector('.grid').innerHTML = card('Episodes analysed',s.analysedEpisodes,'Persisted analysis records')+card('Candidate intervals',s.candidates,'All recorded decisions')+card('Verified intervals',s.verifiedIntervals,'Independent boundary evidence')+card('Verified coverage',s.verifiedEpisodes,'Eligibility still checked per listen')+card('Skip attempts',s.attempted,'Real-episode telemetry')+card('Confirmed skips',s.confirmed,'Client-confirmed seeks')+card('Undo events',s.undo,'Real-episode telemetry')+card('Incorrect-skip reports',state.adSkip.counts.falsePositiveReports,'Reports, not adjudicated errors')+card('Variant mismatch events',s.variantMismatches,'Recorded events only');
     content.querySelector('.grid').insertAdjacentHTML('afterend',`<p class="muted">${html(s.note)}</p>`);
+    content.querySelectorAll('.feature-table tbody tr').forEach((tr,i)=>{const item=state.adSkip.intervals[i];if(!item)return;tr.cells[2].insertAdjacentHTML('beforeend',`<br><small>Proposed: ${item.proposedStartMs==null?'Not historically recorded':elapsed(item.proposedStartMs)+'–'+elapsed(item.proposedEndMs)}<br>Variant: ${html(item.audioVariant || 'Not recorded')}</small>`);});
+    content.querySelectorAll('#ad-skip-diagnostics tbody tr').forEach((tr,i)=>{const item=state.adSkip.diagnostics[i];if(!item)return;tr.cells[2].insertAdjacentHTML('beforeend',`<br><small>Last tester preference: ${item.preferenceEnabled==null?'Not recorded':item.preferenceEnabled?'On':'Off'}<br>Pilot at check: ${item.pilotEnabled==null?'Not recorded':item.pilotEnabled?'Active':'Inactive'}</small>`);});
     if (isSuperAdmin()) content.querySelectorAll('.feature-table tbody tr').forEach((tr,i)=>{
       const item=state.adSkip.intervals[i]; if(!item)return;
       const cell=tr.insertCell(); cell.innerHTML=['reject','suspend','reverify'].filter(action=>action!=='reverify'||['CANDIDATE','VARIANT_MATCHED'].includes(item.verificationState)).map(action=>`<button class="secondary" data-skip-review="${action}">${{reject:'Reject',suspend:'Suspend',reverify:'Request re-verification'}[action]}</button>`).join(' ');

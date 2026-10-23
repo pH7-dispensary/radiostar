@@ -42,6 +42,7 @@ export function skipDiagnostics(store, rights) {
       candidates: analysis || candidates.length ? candidates.length : null, verified: safe.length,
       audioMatching: latestPlayback ? latestPlayback.sourceMatched ? "MATCHED" : latestPlayback.matchAttempted ? "MISMATCHED" : "UNKNOWN" : "UNKNOWN",
       automaticSkipping: latestPlayback ? latestPlayback.enabled ? "ENABLED" : "DISABLED" : "UNKNOWN",
+      pilotEnabled: latestPlayback?.pilotEnabled ?? null, preferenceEnabled: latestPlayback?.preferenceEnabled ?? null,
       attempts: receipts.filter(row => row.kind === "seek_attempted").length, successes: successes.length, failures: failures.length,
       undos:receipts.filter(row=>row.kind==="undo").length, undoFailures:receipts.filter(row=>row.kind==="undo_failed").length,
       verificationAttempts:verified?.attempts || 0, retryAfter:verified?.retryAfter || null,

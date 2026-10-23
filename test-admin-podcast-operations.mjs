@@ -85,6 +85,15 @@ try {
   const denied = await post("/api/admin/episodes/prepare", { feedUrl, episodeId: "restricted-episode" });
   assert.equal(denied.status, 409);
   assert.match((await denied.json()).error, /legal basis|rights assessment/i, "the preparation endpoint preserves the independent rights boundary");
+  const login = await post('/api/admin/session', {adminToken:'admin-token'});
+  const cookie=login.headers.getSetCookie().map(v=>v.split(';')[0]).join('; '), csrf=cookie.match(/starcast_admin_csrf=([^;]+)/)[1];
+  const readyJobId=app.pipeline.status(feedUrl,'authorised-episode').jobId;
+  const latest=await fetch(base+'/api/admin/podcasts/prepare',{method:'POST',headers:{'content-type':'application/json',cookie,'x-star-cast-csrf':csrf},body:JSON.stringify({feedUrl,reason:'Owned fixture latest-window verification',confirmation:'CONFIRM'})});
+  assert.equal(latest.status,200);
+  const latestBody=await latest.json();assert.equal(latestBody.outcomes.length,2,'latest preparation is bounded to available episodes');
+  assert.equal(latestBody.outcomes.find(j=>j.episodeId==='authorised-episode').jobId,readyJobId,'latest action reuses the canonical cache');
+  assert.equal(latestBody.outcomes.find(j=>j.episodeId==='restricted-episode').state,'BLOCKED','batch action cannot bypass independent rights');
+  assert.equal(latestBody.outcome.processingStarted,false,'a cache hit is not new processing');
 } finally {
   await new Promise((resolve) => app.server.close(resolve));
   app.store.close();

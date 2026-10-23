@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import { createStarCastServer } from './server.mjs';
 import { LocalStore } from './persistence.mjs';
 import { episodeKey } from './episode-pipeline.mjs';
+import { PROCESSING_VERSION } from './openai-intelligence.mjs';
 
 const app=createStarCastServer({store:new LocalStore(':memory:'),env:{NODE_ENV:'production',STARCAST_ADMIN_TOKEN:'command-test',STARCAST_DEV_INTELLIGENCE_TOKEN:'test-device'}});
 const feedUrl='https://fixture.example/rss',episodeId='command-episode',key=episodeKey(feedUrl,episodeId),at=new Date().toISOString();
 app.store.set('intelligence',key,{jobId:'command-job',feedUrl,episodeId,state:'FAILED',code:'TRANSCRIPT_UNAVAILABLE',reason:'Publisher transcript could not be acquired.',updatedAt:at,episode:{id:episodeId,title:'Command fixture',showName:'Owned fixture'}});
 app.store.set('followed-demand',key,{key,feedUrl,episodeId,title:'Command fixture',inWindow:true});
+app.store.set('intelligence',episodeKey(feedUrl,'legacy'),{jobId:'legacy-job',state:'READY',brief:{overview:'Owned legacy fixture'},completedAt:at,episode:{feedUrl,id:'legacy',title:'Legacy metadata shape'}});
 app.store.set('skip-interval','interval',{id:'interval',episodeKey:key,verificationState:'VERIFIED',boundaryVerified:true,audioVariantFingerprint:'fixture-hash',startMs:1000,endMs:2000,evidence:[]});
 app.store.set('skip-execution','confirmed',{episodeKey:key,kind:'automatic_skip',provenance:'client_confirmed_seek',createdAt:at});
 app.store.set('skip-execution','synthetic',{episodeKey:key,kind:'automatic_skip',provenance:'client_confirmed_seek',evaluation:true,createdAt:at});
@@ -16,8 +18,9 @@ const token={'x-star-cast-admin-token':'command-test','content-type':'applicatio
 const request=(path,body,headers=token)=>fetch(base+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined});
 try {
   const op=await (await request('/api/admin/operations')).json();
-  assert.equal(op.commandCentre.funnel[0].count,1,'same episode in demand and job is counted once');
-  assert.equal(op.commandCentre.summary.ready,0);
+  assert.equal(op.commandCentre.funnel[0].count,2,'same episode in demand and job is counted once');
+  assert.equal(op.commandCentre.summary.ready,1);
+  assert.equal(op.commandCentre.funnel.find(s=>s.id==='ready').count,1,'legacy nested metadata uses the same canonical identity in every count');
   assert.equal(op.commandCentre.summary.platformHealth,'UNKNOWN','absent worker telemetry is not green or failed');
   assert.equal(op.commandCentre.adSkip.confirmed,1,'synthetic confirmation excluded from real playback');
   assert.equal(op.commandCentre.adSkip.verifiedEpisodes,1);
@@ -55,8 +58,18 @@ try {
   app.store.set('budget','ledger',{usage:[{id:'command-job:text',jobId:'command-job',kind:'text',usd:.25,at}],reservations:[['pending',{id:'pending',jobId:'command-job',kind:'text',usd:.3,at}]]});
   const costs=await (await request('/api/admin/costs')).json();
   assert.equal(costs.commandCentre.cost.actualTodayUsd,.25,'reservations are not billed spend');assert.equal(costs.commandCentre.cost.reservedUsd,.3);
-  assert.equal(costs.commandCentre.processing[0].reservedCostUsd,.3);
+  assert.equal(costs.commandCentre.processing.find(j=>j.jobId==='command-job').reservedCostUsd,.3);
   assert.equal(costs.commandCentre.summary.waiting,1);
   assert.equal(costs.commandCentre.summary.preparing,0,'queued is not actively preparing');
+  const original=app.skips.scheduleVerification;
+  app.rights.set({feedUrl,episodeId,classification:'LICENSED',assessmentStatus:'APPROVED',explicitAuthorisation:true,canAcquireTranscript:true,canProcessForAi:true,canDetectAdvertisements:true,canRetain:true,assessmentEvidence:[{type:'OWNED_FIXTURE',value:'Synthetic local test content'}]});
+  let candidateSet=[];
+  app.skips.scheduleVerification=(_feed,_episode,_job,intervals)=>{candidateSet=intervals;};
+  app.store.set('intelligence',key,{...app.store.get('intelligence',key),processingVersion:PROCESSING_VERSION,transcript:{audioVariant:'v1',segments:[{id:'s1',text:'A discussion without advertisements.',startMs:0,endMs:1000}]}});
+  for(const id of ['candidate-one','candidate-two'])app.store.set('skip-interval',id,{id,episodeKey:key,sourceVariantKey:'v1',verificationState:'CANDIDATE',startMs:1000,endMs:2000});
+  const reverify=await request('/api/admin/ad-skip/review',{id:'candidate-one',action:'reverify',reason:'Bounded fixture check',confirmation:'CONFIRM',expectedState:'CANDIDATE'},session);
+  assert.equal(reverify.status,200);assert.equal((await reverify.json()).outcome.processingStarted,false);
+  assert.equal(candidateSet.length,2,'re-verification preserves the full canonical input, not a subset that resets retry limits');
+  app.skips.scheduleVerification=original;
 } finally {await new Promise(r=>app.server.close(r));app.store.close();}
 console.log('Command centre episode counts, evidence, human review, stale updates, CSRF, audit and interval safety passed');
