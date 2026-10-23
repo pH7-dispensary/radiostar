@@ -724,11 +724,13 @@ export function createStarCastServer({
     const operational = intelligencePolicy.allows(feedUrl, episodeId, "intelligence");
     const flags = listenerFeatures();
     const featureAllowed = (feature) => processing.allowed && display.allowed && rights.evaluate({ feature, feedUrl, episodeId }).allowed;
+    const validated = name => ["READY","PARTIAL_READY"].includes(job?.featureStatus?.[name]?.state);
     const availableFeatures = {
-      brief: Boolean(flags.episodeBriefs && featureAllowed("episode-brief") && job?.brief),
-      chapters: Boolean(flags.exploreEpisode && featureAllowed("smart-chapters") && job?.chapters?.length),
-      topics: Boolean(flags.exploreEpisode && featureAllowed("topics") && (job?.topics?.length || job?.brief?.themes?.length)),
-      moments: Boolean(flags.momentSearch && featureAllowed("find-moment") && job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs))),
+      brief: Boolean(flags.episodeBriefs && featureAllowed("episode-brief") && validated("brief") && job?.brief),
+      chapters: Boolean(flags.exploreEpisode && featureAllowed("smart-chapters") && validated("chapters") && job?.chapters?.length),
+      topics: Boolean(flags.exploreEpisode && featureAllowed("topics") && validated("topics") && job?.topics?.length),
+      moments: Boolean(flags.momentSearch && featureAllowed("find-moment") && job?.featureStatus?.moments?.state === "READY"),
+      search: Boolean(flags.conversationSearch && featureAllowed("conversation-search") && job?.featureStatus?.search?.state === "READY"),
     };
     if (!availableFeatures.brief) delete safe.brief;
     if (!availableFeatures.chapters) delete safe.chapters;
@@ -756,14 +758,14 @@ export function createStarCastServer({
       code = operational.code || "INTELLIGENCE_POLICY_HIGH";
       availabilityCode = availabilityCodeFor(code);
       reason = operational.reason || "New intelligence processing is paused by the podcast intelligence policy.";
-    } else if (!flags.episodeBriefs) {
+    } else if (![flags.episodeBriefs,flags.exploreEpisode,flags.momentSearch,flags.conversationSearch].some(Boolean)) {
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       code = "FEATURE_DISABLED";
       availabilityCode = availabilityCodeFor(code);
       reason = "AI insights are not available for this episode.";
     }
     const eta = projected.processing ? processingEstimateFor(job) : null;
-    const nextAction = projected.state === "READY" ? "VIEW_INTELLIGENCE"
+    const nextAction = projected.state === "READY" || projected.state === "PARTIAL_READY" && !projected.processing && Object.values(availableFeatures).some(Boolean) ? "VIEW_INTELLIGENCE"
       : projected.state === "NOT_REQUESTED" ? "PREPARE"
       : projected.processing ? "KEEP_LISTENING"
       : projected.state === "FAILED" && job?.retryable ? "RETRY"
@@ -789,6 +791,14 @@ export function createStarCastServer({
       rightsCode,
       reason,
       availableFeatures,
+      featureStatus:Object.fromEntries(Object.entries(job?.featureStatus || {}).map(([name,feature])=>{
+        const permitted=name==="transcript" ? processing.allowed : name==="adCandidates" ? processing.allowed&&rights.evaluate({feature:"ad-detection",feedUrl,episodeId}).allowed : Boolean(availableFeatures[name]);
+        // Readiness is independent of eligibility: pending permitted features
+        // retain their actual stage rather than becoming a generic refusal.
+        const mapping={brief:[flags.episodeBriefs,"episode-brief"],chapters:[flags.exploreEpisode,"smart-chapters"],topics:[flags.exploreEpisode,"topics"],moments:[flags.momentSearch,"find-moment"],search:[flags.conversationSearch,"conversation-search"]};
+        const allowed=mapping[name]?mapping[name][0]&&featureAllowed(mapping[name][1]):permitted;
+        return [name,allowed?feature:{state:"UNAVAILABLE",code:"FEATURE_NOT_AUTHORISED"}];
+      })),
       estimatedCompletion: eta,
       nextAction,
     };
@@ -816,6 +826,7 @@ export function createStarCastServer({
     // result disappear. A distinct state keeps that operational distinction
     // visible without changing the underlying rights decision.
     else if (publicJob?.state === "READY") [state, reason, code] = ["READY", display.allowed ? "Authorised intelligence is ready." : "Internal analysis is ready; listener display is not authorised.", "READY"];
+    else if (publicJob?.state === "PARTIAL_READY" && publicJob.processing === false) [state, reason, code] = ["PARTIAL_READY", "Completed features remain available; inspect the feature table for incomplete outputs.", "PARTIAL_READY"];
     else if (!operational.intelligence) [state, reason, code] = ["PAUSED", "New intelligence processing is paused by the podcast intelligence policy.", "INTELLIGENCE_POLICY_HIGH"];
     else if (recovery?.eligible) [state, reason, code] = ["NOT_PREPARED", recovery.reason, "TRANSCRIPT_REASSESSMENT_AVAILABLE"];
     else if (recovery?.stale && recovery.blockerCode) [state, reason, code] = ["UNAVAILABLE", recovery.reason, recovery.blockerCode];
@@ -827,7 +838,7 @@ export function createStarCastServer({
     const ready = state === "READY";
     const preparing = state === "PREPARING" || state === "QUEUED";
     const failed = state === "FAILED";
-    const statusFor = (allowed, available) => !allowed ? "RESTRICTED" : available && ready ? "READY" : failed ? "FAILED" : preparing ? "PREPARING" : "ELIGIBLE";
+    const statusFor = (allowed, available) => !allowed ? "RESTRICTED" : available ? "READY" : failed ? "FAILED" : preparing ? "PREPARING" : "ELIGIBLE";
     const derivedAvailable = ready && Boolean(job?.brief || job?.chapters || job?.topics || job?.transcript?.segments?.length);
     const intelligenceReason = !processing.allowed ? processing.reason : !display.allowed ? display.reason : !operational.intelligence ? "Core intelligence is paused by the podcast intelligence policy." : null;
     const captionDecision = rights.evaluate({ feature: "captions", feedUrl, episodeId: episode.id });
@@ -881,8 +892,13 @@ export function createStarCastServer({
       ["Automatic Ad Skip", autoSkipState, autoSkipReason],
       ["Captions", statusFor(captionDecision.allowed && operational.captions, false), !captionDecision.allowed ? captionDecision.reason : !operational.captions ? "Captions are paused by the podcast intelligence policy." : "Caption delivery has its own rights and policy gate."],
       ["Private AI Dubbing", statusFor(dubbingDecision.allowed && operational.dubbing, false), !dubbingDecision.allowed ? dubbingDecision.reason : !operational.dubbing ? "Private AI Dubbing is paused by the intelligence policy." : "Private AI Dubbing remains separately authorised, beta-only and budget-limited."],
-    ].map(([name, featureState, detail]) => ({ name, state: featureState, reason: detail || (featureState === "READY" ? "Available from the authorised processing record." : null) }));
-    const action = ready ? { type: "VIEW_RESULTS", label: "View intelligence" }
+    ].map(([name, featureState, detail]) => {
+      const field={"Episode brief":"brief","Smart chapters":"chapters","Topics":"topics","Find a moment":"moments","Conversation search":"search","Advert detection":"adCandidates"}[name];
+      const actual=job?.featureStatus?.[field];
+      const finalState=featureState!=="RESTRICTED"&&actual?actual.state:featureState;
+      return {name,state:finalState,reason:finalState==="READY"?"Available from the authorised persisted record.":actual?.code || detail || null};
+    });
+    const action = ready || state === "PARTIAL_READY" ? { type: "VIEW_RESULTS", label: "View available intelligence" }
       : preparing ? { type: "VIEW_PROCESSING", label: "View processing" }
       : recovery?.eligible ? { type: "REASSESS", label: "Recheck transcripts & prepare" }
       : failed && publicJob?.retryable && processing.allowed && display.allowed ? { type: "RETRY", label: "Retry eligible failure" }

@@ -110,7 +110,7 @@ try {
   assert.equal(ready.transcript, undefined, "the status API never exposes full transcript text");
 
   const events = app.pipeline.eventsFor(feedUrl, episodeId);
-  assert.deepEqual(events.map((event) => event.type), ["JOB_QUEUED", "WORKER_STARTED", "TRANSCRIPT_CACHE_CHECK", "TRANSCRIPT_ACQUISITION", "AI_ANALYSIS", "SEARCH_INDEX", "INTELLIGENCE_READY"]);
+  assert.deepEqual(events.map((event) => event.type), ["JOB_QUEUED", "WORKER_STARTED", "TRANSCRIPT_CACHE_CHECK", "TRANSCRIPT_ACQUISITION", "TRANSCRIPT_READY", "AI_ANALYSIS", "SEARCH_INDEX", "INTELLIGENCE_READY"]);
   assert.equal(events.some((event) => event.type === "AUDIO_TRANSCRIPTION"), false, "publisher transcripts never claim audio transcription");
   assert.ok(events.every((event) => event.previousState !== undefined && event.state && event.at && event.processingVersion), "each transition is attributable and versioned");
 

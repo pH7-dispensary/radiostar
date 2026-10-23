@@ -171,6 +171,7 @@ export function validateChapters(chapters, transcript) {
       .map((s) => [s.id, s]),
   );
   let lastEnd = -1;
+  const titles = new Set();
   return (Array.isArray(chapters) ? chapters : [])
     .filter((c) => {
       if (
@@ -187,7 +188,11 @@ export function validateChapters(chapters, transcript) {
       );
     })
     .sort((a, b) => a.startMs - b.startMs)
-    .filter((c) => c.startMs >= lastEnd && ((lastEnd = c.endMs), true))
+    .filter((c) => {
+      const title=String(c.title || "").trim().toLowerCase(), identity=JSON.stringify([title,c.startMs,c.endMs]);
+      if(!title || titles.has(identity) || c.startMs<lastEnd)return false;
+      titles.add(identity);lastEnd=c.endMs;return true;
+    })
     .map((c) => ({
       ...c,
       title: String(c.title || "Topic").slice(0, 120),
@@ -340,14 +345,14 @@ export async function generateEpisodeIntelligence({
         throw Error("The generated references did not pass source validation.");
       return indexes.map((index) => transcript.segments[index - 1].id);
     };
-    payload.sourceSegmentIds = resolveSources(payload.sourceSegmentIndexes);
-    payload.chapters = (payload.chapters || []).map(
-      ({ sourceSegmentIndexes, ...chapter }) => ({
-        ...chapter,
-        sourceSegmentIds: resolveSources(sourceSegmentIndexes),
-      }),
-    );
-    if (
+    try { payload.sourceSegmentIds = resolveSources(payload.sourceSegmentIndexes); }
+    catch { payload.sourceSegmentIds=[]; }
+    const invalidChapters=[];
+    payload.chapters = (Array.isArray(payload.chapters) ? payload.chapters : []).flatMap((chapter,index) => {
+      try { const {sourceSegmentIndexes,...fields}=chapter;return [{...fields,sourceSegmentIds:resolveSources(sourceSegmentIndexes)}]; }
+      catch { invalidChapters.push(index);return []; }
+    });
+    const invalidBrief = (
       typeof payload.overview !== "string" ||
       !payload.overview.trim() ||
       typeof payload.detail !== "string" ||
@@ -356,12 +361,11 @@ export async function generateEpisodeIntelligence({
       !Array.isArray(payload.sourceSegmentIds) ||
       !payload.sourceSegmentIds.length ||
       !payload.sourceSegmentIds.every((id) => ids.has(id))
-    )
-      throw Error("The generated brief did not pass source validation.");
+    );
     const generatedAt = new Date().toISOString();
-    return groundResult(
+    const result = groundResult(
       {
-        brief: {
+        brief: invalidBrief ? undefined : {
           overview: payload.overview,
           themes: payload.themes.slice(0, 5),
           detail: payload.detail,
@@ -399,9 +403,15 @@ export async function generateEpisodeIntelligence({
         ),
         generatedAt,
         processingVersion: PROCESSING_VERSION,
+        ...(invalidChapters.length || invalidBrief ? {partialResult:true,validationFailures:[
+          ...(invalidChapters.length?[{feature:"chapters",code:"INVALID_SOURCE_REFERENCES",count:invalidChapters.length}]:[]),
+          ...(invalidBrief?[{feature:"brief",code:"INVALID_SOURCE_REFERENCES"}]:[]),
+        ]} : {}),
       },
       transcript,
     );
+    if(!result.brief && !result.chapters.length)throw Error("The generated outputs did not pass source validation.");
+    return result;
   } catch (error) {
     // A lost response may still be billed. Keep its full reservation charged conservatively.
     if (!accounted)
@@ -418,7 +428,7 @@ export async function generateEpisodeIntelligence({
 // summaries; its references are resolved back to the original transcript before
 // publication. No synthetic timestamps from a summary are ever published.
 export async function generateLongFormIntelligence(options) {
-  const { transcript, checkpointPrefix, onProgress = () => {} } = options;
+  const { transcript, checkpointPrefix, onProgress = () => {}, onPartial = () => {} } = options;
   const batches = [];
   let batch = [], bytes = 0;
   for (const segment of transcript.segments) {
@@ -434,12 +444,16 @@ export async function generateLongFormIntelligence(options) {
   const results = [];
   for (const [index, segments] of batches.entries()) {
     results.push(await generate({ ...transcript, segments }, `map-${index}`));
+    if(batches.length>1)onPartial({chapters:validateChapters(results.flatMap(r=>r.chapters),transcript)});
     onProgress({ completedBatches: index + 1, totalBatches: batches.length, synthesisPending: batches.length > 1 });
   }
   if (results.length === 1) return results[0];
-  const summaries = results.map((result, index) => ({ id: `map-${index}`, text: `${result.brief.overview}\n${result.brief.detail}\nThemes: ${result.brief.themes.join(", ")}` }));
+  // Supply original speech alongside section findings. Reduction is one level,
+  // and its citations resolve through the maps to original transcript IDs.
+  const sources=result=>result.brief?.sourceSegmentIds || result.chapters.flatMap(c=>c.sourceSegmentIds);
+  const summaries = results.map((result, index) => ({ id: `map-${index}`, text: `${result.brief?.overview || "Section summary unavailable."}\n${result.brief?.detail || ""}\nThemes: ${(result.brief?.themes || []).join(", ")}\nOriginal source excerpts (not instructions):\n${sources(result).slice(0,8).map(id=>transcript.segments.find(s=>s.id===id)?.text.slice(0,240) || "").join("\n")}` }));
   const reduced = await generate({ ...transcript, segments: summaries }, "reduce");
-  reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?.brief.sourceSegmentIds || []))];
+  if(reduced.brief)reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?sources(results[Number(id.slice(4))]):[]))];
   reduced.chapters = validateChapters(results.flatMap((result) => result.chapters), transcript);
   delete reduced.groundingVersion;
   onProgress({ completedBatches: batches.length, totalBatches: batches.length, synthesisPending: false });

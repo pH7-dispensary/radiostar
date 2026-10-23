@@ -94,7 +94,7 @@ export const fixtureTranscript = {
   ],
 };
 const stopWords = new Set('the and what where when which who how does did they them about that this with from have has were are was for into said podcast episode find moment people discuss discussed'.split(' '));
-const terms = (s) =>
+export const searchTerms = (s) =>
   new Set(
     s
       .toLowerCase()
@@ -112,13 +112,13 @@ const synonyms = {
   energy: ["compute", "energy"],
 };
 export function hybridRetrieve(transcript, query, limit = 3) {
-  let q = terms(query);
+  let q = searchTerms(query);
   for (let word of [...q])
     for (let related of synonyms[word] || []) q.add(related);
   let rows = transcript.segments
     .filter((s) => (s.contentType || "conversation") === "conversation")
     .map((s) => {
-      let hay = terms(
+      let hay = s.searchTerms ? new Set(s.searchTerms) : searchTerms(
           `${s.text} ${(s.topics || []).join(" ")} ${(s.entities || []).join(" ")}`,
         ),
         hits = [...q].filter((x) => hay.has(x)).length,

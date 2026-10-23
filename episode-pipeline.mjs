@@ -11,6 +11,7 @@ import { hybridRetrieve } from "./intelligence.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
+import { DELIVERY_VERSION, transcriptFingerprint, buildSearchIndex, groundedTopics, deliveryValidation } from "./intelligence-delivery.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -51,7 +52,7 @@ export const recoverableTechnicalJob = (job) => job?.state === "FAILED" && job.r
 export function listenerProcessingStatus(value) {
   if (!value) return { state: "NOT_REQUESTED", stage: null, processing: false };
   if (value.state === "READY" || (value.state === "PARTIAL_READY" && value.completedAt))
-    return { state: "READY", stage: "READY", processing: false };
+    return { state: value.state, stage: value.state, processing: false };
   if (value.state === "FAILED")
     return { state: "FAILED", stage: null, processing: false };
   if (value.state === "CANCELLED" || value.code === "CANCELLED")
@@ -74,6 +75,7 @@ export function listenerProcessingStatus(value) {
     ANALYSING: "ANALYSING",
     ORGANISING: "INDEXING",
     INDEXING: "INDEXING",
+    TRANSCRIPT_READY: "ANALYSING",
   }[stage] || "CHECKING";
   return { state, stage, processing: true };
 }
@@ -89,6 +91,7 @@ const lifecycleType = (value, previous) => {
     case "ACQUIRING_TRANSCRIPT": return "TRANSCRIPT_ACQUISITION";
     case "PREPARING_AUDIO": return "AUDIO_PREPARATION";
     case "TRANSCRIBING": return "AUDIO_TRANSCRIPTION";
+    case "TRANSCRIPT_READY": return "TRANSCRIPT_READY";
     case "ANALYSING": return "AI_ANALYSIS";
     case "INDEXING": return "SEARCH_INDEX";
     default: return "PROCESSING_UPDATED";
@@ -379,7 +382,40 @@ export class EpisodePipeline {
       if (value.partialResult) value.state = "PARTIAL_READY";
       this.store.set("intelligence", key, value);
     }
-    return value?.processingVersion === PROCESSING_VERSION ? value : null;
+    if (value?.processingVersion !== PROCESSING_VERSION) return null;
+    return this.deliver(value);
+  }
+  deliver(value) {
+    if (!value?.transcript?.segments?.length || !value.feedUrl || !value.episodeId) return value;
+    if (this.rights && !this.rights.evaluate({ feature:"intelligence-processing", feedUrl:value.feedUrl, episodeId:value.episodeId }).allowed) return value;
+    const key=episodeKey(value.feedUrl,value.episodeId), transcript=value.transcript;
+    let index=this.store.get("search-index",key), derived;
+    try {
+      if(index?.version!==DELIVERY_VERSION || index.processingVersion!==value.processingVersion || index.fingerprint!==transcriptFingerprint(transcript)) {
+        index=buildSearchIndex(transcript,value);
+        this.store.set("search-index",key,index);
+      }
+      const topics=groundedTopics(value,index);
+      derived={...value,topics};
+      const validation=deliveryValidation(derived,index);
+      const pending=!completed(value) && activeStates.has(value.state);
+      const features=validation.features;
+      if(pending)for(const name of ["brief","chapters","topics"])if(features[name].state==="FAILED")features[name]={state:"ANALYSING"};
+      const ads=this.store.get("skip-analysis",key);
+      features.adCandidates={state:ads?.state==="COMPLETE"?"READY":"PENDING",candidateCount:ads?.candidateCount ?? null};
+      derived={...derived,featureStatus:features,deliveryValidation:{...validation,features:undefined},
+        searchIndex:{version:index.version,transcriptVersion:index.transcriptVersion,segmentCount:index.segments.length,indexedAt:index.indexedAt}};
+      if(completed(value)) {
+        derived.state=validation.complete?"READY":"PARTIAL_READY";
+        if(!validation.complete)derived.qualityNote=value.qualityNote || "Some outputs did not pass validation. Available features remain usable.";
+      }
+    } catch(error) {
+      derived={...value,featureStatus:{...value.featureStatus,search:{state:"FAILED",code:"INDEXING_FAILED"},moments:{state:"FAILED",code:"INDEXING_FAILED"}},
+        deliveryValidation:{version:DELIVERY_VERSION,complete:false,failures:[{feature:"search",code:"INDEXING_FAILED"}]},
+        ...(completed(value)?{state:"PARTIAL_READY",qualityNote:"Search indexing needs recovery. Completed analysis is preserved."}:{})};
+    }
+    if(JSON.stringify(derived)!==JSON.stringify(value))this.store.set("intelligence",key,derived);
+    return derived;
   }
   async preflight(feed, id) {
     const episode = await this.resolveEpisode(feed, id),
@@ -662,6 +698,12 @@ export class EpisodePipeline {
     if (!this.queue) return;
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
+      // Repair missing derived indexes/topics without buying analysis again.
+      if(status.transcript && status.processingVersion===PROCESSING_VERSION) {
+        this.deliver(status);
+        try { await this.onTranscriptReady?.({feedUrl:status.feedUrl,episodeId:status.episodeId,intelligence:status}); }
+        catch { console.error(JSON.stringify({event:"transcript-candidate-inspection-failed",code:"RECOVERY_INSPECTION_FAILED"})); }
+      }
       const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
       // One bounded software-repair replay of the pre-fix assembly failures.
       // Reuses paid checkpoints; never resets retry counts or unknown outcomes.
@@ -739,7 +781,8 @@ export class EpisodePipeline {
     // Standard SQS ordering is not a priority guarantee. Choose only among
     // already-authorised persisted jobs; put the displaced receipt back into
     // the outbox before acknowledging it. Never interrupt active paid work.
-    const preferred = this.store.all("intelligence").filter(([, job]) => job.state === "QUEUED" && !job.completedAt && (job.priority || 0) > (initial.priority || 0)).sort((a, b) => (b[1].priority || 0) - (a[1].priority || 0))[0];
+    const rank = job => (job.priority || 0) + Math.min(100, Math.floor(Math.max(0,Date.now()-Date.parse(job.queuedAt || new Date().toISOString()))/300000)*5);
+    const preferred = this.store.all("intelligence").filter(([, job]) => job.state === "QUEUED" && !job.completedAt && rank(job) > rank(initial)).sort((a, b) => rank(b[1])-rank(a[1]))[0];
     if (preferred) {
       this.store.set("processing-outbox", queued.jobId, queued);
       return this.executeQueued({ key: preferred[0], ...preferred[1] }, signal);
@@ -1074,7 +1117,7 @@ export class EpisodePipeline {
       }
       update({
         state: "UNDERSTANDING",
-        processingStage: "ANALYSING",
+        processingStage: "TRANSCRIPT_READY",
         transcript,
         transcriptChecks,
         episode: { ...episode, feedUrl, id: episodeId },
@@ -1096,6 +1139,8 @@ export class EpisodePipeline {
       // generation. Keep its failure independent from the intelligence job.
       try { await this.onTranscriptReady?.({ feedUrl, episodeId, intelligence: value }); }
       catch (error) { console.error(JSON.stringify({ event: "transcript-candidate-inspection-failed", code: error?.code || "INSPECTION_FAILED" })); }
+      value=this.deliver(value);
+      update({processingStage:"ANALYSING"});
       const generated = await generateLongFormIntelligence({
         transcript,
         ledger,
@@ -1111,6 +1156,7 @@ export class EpisodePipeline {
           if (initial.testingContext && !initial.platformProcessing && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
         },
         onProgress: recordWork,
+        onPartial: (partial) => { update(partial); value=this.deliver(value); },
         onProviderResponse: (response) => {
           if (rightsAllowed()) this.store.set("provider-result", value.jobId, response);
         },
@@ -1121,12 +1167,14 @@ export class EpisodePipeline {
       // Keep canonical internal analysis for reuse; listener responses enforce
       // each output permission independently, including after a rights change.
       update({ state: "ORGANISING", processingStage: "INDEXING", ...generated });
+      value=this.deliver(value);
       update({
-        state: generated.partialResult ? "PARTIAL_READY" : "READY",
+        state: generated.partialResult || !value.deliveryValidation?.complete ? "PARTIAL_READY" : "READY",
         sourceCheckedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
         processingMs: Date.now() - Date.parse(value.startedAt),
       });
+      value=this.deliver(value);
       // Candidate creation is conservative and persisted separately. It never
       // enables automatic skipping; the callback may only inspect grounded,
       // completed transcript material.
@@ -1243,6 +1291,7 @@ export class EpisodePipeline {
       removed.skipVerification++;
     }
     this.store.delete("skip-analysis", key);
+    this.store.delete("search-index", key);
     for (const [recordKey, value] of this.store.all("skip-feedback"))
       if (value.episodeKey === key) {
         this.store.delete("skip-feedback", recordKey);
@@ -1272,11 +1321,14 @@ export class EpisodePipeline {
     if (decision && !decision.allowed)
       return [];
     if (this.rights && !this.rights.evaluate({ feature: "find-moment", feedUrl: feed, episodeId: id }).allowed) return [];
-    return value?.transcript
-      ? hybridRetrieve(value.transcript, query, 5)
+    const index=value?.featureStatus?.search?.state==="READY" && this.store.get("search-index",episodeKey(feed,id));
+    return index
+      ? hybridRetrieve(index, query, 5)
           .filter((m) => Number.isFinite(m.startMs) && Number.isFinite(m.endMs))
           .map((moment) => ({
             ...moment,
+            context:String(moment.context || "").slice(0,360),
+            episode:{id,feedUrl:feed,title:value.episode?.title,showName:value.episode?.showName},
             relatedChapters: (value.chapters || [])
               .filter((chapter) =>
                 chapter.sourceSegmentIds?.includes(moment.segmentId),
@@ -1293,15 +1345,16 @@ export class EpisodePipeline {
       )
       .filter(
         (v) =>
-          completed(v) &&
+          v?.featureStatus?.search?.state === "READY" &&
           v.processingVersion === PROCESSING_VERSION &&
+          (!this.rights || ["intelligence-processing","intelligence-display"].every(feature=>this.rights.evaluate({feature,feedUrl:v.episode.feedUrl,episodeId:v.episode.id}).allowed)) &&
           (!this.rights || this.rights.evaluate({ feature: "conversation-search", feedUrl: v.episode.feedUrl, episodeId: v.episode.id }).allowed) &&
           (!momentsOnly || !this.rights || this.rights.evaluate({ feature: "find-moment", feedUrl: v.episode.feedUrl, episodeId: v.episode.id }).allowed) &&
           (!feedUrls || feedUrls.includes(v.episode.feedUrl)),
       );
     const matches = corpus
       .flatMap((v) =>
-        hybridRetrieve(v.transcript, query, 3)
+        hybridRetrieve(this.store.get("search-index",episodeKey(v.episode.feedUrl,v.episode.id)), query, 3)
           .filter((m) => !momentsOnly || Number.isFinite(m.startMs))
           .map((m) => ({
             ...m,
@@ -1319,12 +1372,12 @@ export class EpisodePipeline {
           .slice(0, 3)
           .map((m, i) => `[${i + 1}] ${m.episode.showName}: “${m.context}”`)
           .join("\n\n")
-      : "No processed transcript passages matched this question. Analyse an episode to expand your searchable library.";
+      : "No processed transcript passages matched this question. Eligible followed episodes are prepared automatically.";
     const followUps = [
       ...new Set(
         corpus
           .filter((v) => matches.some((m) => m.episode.id === v.episode.id))
-          .flatMap((v) => v.brief.themes),
+          .flatMap((v) => (v.topics || []).map(t=>t.label)),
       ),
     ]
       .slice(0, 3)
