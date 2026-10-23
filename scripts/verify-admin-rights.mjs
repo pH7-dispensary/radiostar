@@ -64,6 +64,17 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator(".processing-status").scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/desktop-ready.png` });
+  // Real publisher evidence often includes long URLs in the two-column panel.
+  await page.locator('.split .panel').last().evaluate(panel => {
+    const evidence = document.createElement('p'); evidence.id = 'long-evidence-layout-fixture';
+    evidence.textContent = 'Publisher licence: https://example.org/licences/' + 'evidence'.repeat(35);
+    panel.append(evidence);
+  });
+  for (const width of [768, 375]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `long evidence stays inside the ${width}px episode detail`);
+  }
+  await page.locator('#long-evidence-layout-fixture').evaluate(element => element.remove());
   app.store.set("intelligence", episodeKey(feedUrl, "owned-one"), {
     state: "BLOCKED", code: "DURATION_LIMIT", reason: "Historical duration gate before transcript discovery.", attempts: 2,
     jobId: "browser-legacy-duration", feedUrl, episodeId: "owned-one", processingVersion: PROCESSING_VERSION,
