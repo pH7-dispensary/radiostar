@@ -49,20 +49,32 @@ else if (action === "connect") {
   const uri = `s3://${output.artifact_bucket.value}/releases/${sha}.tar.gz`;
   execFileSync("aws", ["s3", "cp", file, uri, "--profile", "radiostar", "--region", "eu-west-2", "--only-show-errors"], { stdio: "pipe" });
   const staged = "/opt/starcast/staged-" + sha;
+  const maintenanceSource = readFileSync("scripts/cloud/release-maintenance.mjs", "utf8");
   commands = [`set -eu
 export PATH=/usr/local/bin:/usr/bin:/bin
 umask 022
+exec 9>/run/starcast-deploy.lock
+flock -n 9 || { echo 'Another deployment is active'; exit 1; }
+${idleCheck}
+node --input-type=module -e ${quote(maintenanceSource + "\nmaintainReleases({apply:true}); assertDeploymentCapacity();")}
 test ! -e ${staged}
 mkdir ${staged}
 aws s3 cp ${uri} /opt/starcast/update.tar.gz --region eu-west-2 --only-show-errors
 echo '${sha}  /opt/starcast/update.tar.gz' | sha256sum -c -
 tar -xzf /opt/starcast/update.tar.gz -C ${staged}
 cd ${staged}
-npm ci --omit=dev --no-audit --no-fund
+npm ci --omit=dev --no-audit --no-fund --cache ${staged}/.npm-cache
+rm -rf -- ${staged}/.npm-cache
 node -e "const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});"
 dnf install -y logrotate
 cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast
+install -m 644 scripts/cloud/starcast-logrotate.service scripts/cloud/starcast-logrotate.timer /etc/systemd/system/
+mkdir -p /etc/systemd/journald.conf.d
+install -m 644 scripts/cloud/journald-limits.conf /etc/systemd/journald.conf.d/starcast.conf
+systemctl daemon-reload
+systemctl enable --now starcast-logrotate.timer
+systemctl restart systemd-journald
 chmod -R a+rX ${staged}
 previous=/opt/starcast/previous-$(date +%s)
 metadata_backup=/var/lib/starcast/release-before-update.json
@@ -84,6 +96,7 @@ if ! curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4
   exit 1
 fi
 rm -f "$metadata_backup"
+node --input-type=module -e ${quote(maintenanceSource + "\nmaintainReleases({apply:true});")}
 echo 'Release ${sha} healthy; previous source retained for rollback.'`];
 } else throw Error("Use status, check-idle, verify-store, verify-runtime, restart, connect, deploy or poll <command-id>");
 if (commands) {

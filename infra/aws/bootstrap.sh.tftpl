@@ -15,9 +15,13 @@ aws s3 cp s3://${bucket}/${release_key} /opt/starcast/release.tar.gz --region eu
 echo '${release_sha}  /opt/starcast/release.tar.gz' | sha256sum -c -
 tar -xzf /opt/starcast/release.tar.gz -C /opt/starcast/app
 cd /opt/starcast/app
-npm ci --omit=dev --no-audit --no-fund
+npm ci --omit=dev --no-audit --no-fund --cache /opt/starcast/app/.npm-cache
+rm -rf -- /opt/starcast/app/.npm-cache
 cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast
+install -m 644 scripts/cloud/starcast-logrotate.service scripts/cloud/starcast-logrotate.timer /etc/systemd/system/
+mkdir -p /etc/systemd/journald.conf.d
+install -m 644 scripts/cloud/journald-limits.conf /etc/systemd/journald.conf.d/starcast.conf
 if [ ! -f /var/lib/starcast/backend.sqlite ]; then
   aws s3 cp s3://${bucket}/seed/initial.sqlite /var/lib/starcast/backend.sqlite --region eu-west-2 --only-show-errors
 fi
@@ -62,5 +66,7 @@ cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'LOGS'
 {"agent":{"run_as_user":"root"},"logs":{"logs_collected":{"files":{"collect_list":[{"file_path":"/var/log/starcast/backend.log","log_group_name":"${log_group}","log_stream_name":"{instance_id}","timezone":"UTC"}]}},"force_flush_interval":15}}
 LOGS
 systemctl daemon-reload
+systemctl enable --now starcast-logrotate.timer
+systemctl restart systemd-journald
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 systemctl enable --now starcast

@@ -1,0 +1,6 @@
+[Unit]
+Description=Bound Radio Star application log growth
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate /etc/logrotate.d/starcast
