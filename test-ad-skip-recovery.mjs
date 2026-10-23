@@ -53,4 +53,7 @@ assert.equal(reused.state, "READY", "exact-file verification does not unnecessar
 assert.equal(reused.candidates[0].boundaryVerified, true);
 assert.equal(downloaded, false);
 assert.equal(cleaned, false, "the source owner, not verifier, controls cleanup");
+const coarse=await verifyAdSkipAudio({audioUrl:variant.deliveryUrl,expectedContentHash:manifest.audioContentHash,candidates:[{id:'coarse',startMs:14000,endMs:35000}],preparedAudio:{path:'fixtures/ad-skip-owned-v1.mp3',durationMs:manifest.durationMs,delivery:{url:variant.deliveryUrl,headers:{contentLength:manifest.contentLength}}}});
+assert(coarse.candidates[0].boundaryVerified,'bounded inward search tolerates coarse timestamping without relaxing acoustic evidence');
+assert(coarse.candidates[0].startMs>=15000&&coarse.candidates[0].endMs<=35000,'never extend outside the independently evidenced owned ad');
 console.log("Recovery: bounded large-source proof, hostile range responses, stale lease, speed/Undo adapter and truthful diagnostics passed (not physical-device accuracy).");

@@ -9,7 +9,11 @@ import { prepareAudio } from "./transcription.mjs";
 
 const exec = promisify(execFile);
 const boundaryWindowMs = 1_500;
-const boundaryToleranceMs = 650;
+export const adSkipAudioVerificationVersion = "inward-silence-v2";
+// Coarse transcript boundaries need not coincide with a pause within 650 ms.
+// Search at most three seconds INSIDE the candidate. Never extend its span,
+// relax the silence threshold, or trim more than a third from either side.
+const maximumInwardTrimMs = 3_000;
 
 const strongEtag = (value) =>
   typeof value === "string" && /^"[^"\r\n]+"$/.test(value.trim());
@@ -56,9 +60,9 @@ const parseSilence = (output) => {
   return marks.filter((mark) => Number.isFinite(mark.ms));
 };
 
-async function boundaryEvidence(path, boundaryMs, durationMs, side) {
-  const startMs = Math.max(0, boundaryMs - boundaryWindowMs);
-  const windowMs = Math.min(durationMs - startMs, boundaryWindowMs * 2);
+async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs) {
+  const startMs = Math.max(0, boundaryMs - (side === "end" ? inwardTrimMs : boundaryWindowMs));
+  const windowMs = Math.min(durationMs - startMs, inwardTrimMs + boundaryWindowMs);
   if (windowMs <= 0) return null;
   const { stdout, stderr } = await exec(
     ffmpeg,
@@ -85,7 +89,7 @@ async function boundaryEvidence(path, boundaryMs, durationMs, side) {
     .map((mark) => ({ ...mark, absoluteMs: startMs + mark.ms }))
     .filter((mark) => side === "start" ? mark.absoluteMs >= boundaryMs : mark.absoluteMs <= boundaryMs)
     .sort((a, b) => Math.abs(a.absoluteMs - boundaryMs) - Math.abs(b.absoluteMs - boundaryMs))[0];
-  if (!closest || Math.abs(closest.absoluteMs - boundaryMs) > boundaryToleranceMs)
+  if (!closest || Math.abs(closest.absoluteMs - boundaryMs) > inwardTrimMs)
     return null;
   const clipStartMs = Math.max(0, closest.absoluteMs - 250);
   const { stdout: pcm } = await exec(
@@ -134,9 +138,11 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
       return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
     const verified = [];
     for (const candidate of candidates) {
+      const inwardTrimMs = Math.min(maximumInwardTrimMs, Math.floor((candidate.endMs - candidate.startMs) / 3));
+      if (!Number.isFinite(inwardTrimMs) || inwardTrimMs <= 0) { verified.push({id:candidate.id,boundaryVerified:false,code:"INVALID_CANDIDATE_BOUNDARIES"}); continue; }
       const [start, end] = await Promise.all([
-        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs, "start"),
-        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs, "end"),
+        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs, "start", inwardTrimMs),
+        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs, "end", inwardTrimMs),
       ]);
       if (!start || !end) {
         verified.push({ id: candidate.id, boundaryVerified: false, code: !start && !end ? "BOTH_BOUNDARIES_UNCERTAIN" : !start ? "START_BOUNDARY_UNCERTAIN" : "END_BOUNDARY_UNCERTAIN" });

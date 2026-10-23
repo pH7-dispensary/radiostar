@@ -4,6 +4,7 @@ import { feedback, Verification } from "./ad-skip.mjs";
 import { intervalDecision } from "./ad-skip.mjs";
 import { ListenerError } from "./listener-service.mjs";
 import { skipDiagnostics } from "./skip-diagnostics.mjs";
+import { adSkipAudioVerificationVersion } from "./ad-skip-verification.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
@@ -20,7 +21,7 @@ const accountOffer = /\b(?:credit (?:towards|for)|new account|create an? account
 const addressedAction = /\b(?:go there to|go to|start by going to|get started at|sign up at)\b|\bget (?:a|an|your) .{0,80}\bcredit\b/i;
 const directResponseOffer = text => referralAddress.test(text) && accountOffer.test(text) && addressedAction.test(text);
 const strongAdvertText = text => !sponsorshipDenial.test(text) && ((sponsorLanguage.test(text) && commercialOffer.test(text)) || directResponseOffer(text));
-const verificationInput = (value, candidates) => hash(JSON.stringify([value?.transcript?.audioContentHash || null, value?.transcript?.transcriptVersion, value?.transcript?.audioVariant, value?.episode?.audioUrl, candidates.map(row => [row.id,row.startMs,row.endMs])]));
+const verificationInput = (value, candidates) => hash(JSON.stringify([adSkipAudioVerificationVersion, value?.transcript?.audioContentHash || null, value?.transcript?.transcriptVersion, value?.transcript?.audioVariant, value?.episode?.audioUrl, candidates.map(row => [row.id,row.startMs,row.endMs])]));
 const validEventId = (value) =>
   typeof value === "string" && /^[a-zA-Z0-9_-]{8,120}$/.test(value);
 
@@ -170,11 +171,11 @@ export class SkipService {
   }
   scheduleVerification(feed, episode, value, intervals, preparedAudio = null) {
     const key = episodeKey(feed, episode);
-    const eligible = intervals.filter((item) => item.qualifiesForAudioVerification && item.verificationState === Verification.CANDIDATE && !item.disputed);
+    const previous = this.verification(key);
+    const eligible = intervals.filter((item) => item.qualifiesForAudioVerification && (item.verificationState === Verification.CANDIDATE || (item.verificationState === Verification.VARIANT_MATCHED && previous?.verifierVersion !== adSkipAudioVerificationVersion)) && !item.disputed);
     if (!eligible.length || !value?.episode?.audioUrl) return;
     const permission = this.canVerifyAudio({ feedUrl: feed, episodeId: episode, value });
     const policy = typeof permission === "boolean" ? { allowed: permission } : permission || {};
-    const previous = this.verification(key);
     if (!policy.allowed || !this.verifyAudio) {
       if (!previous || previous.state !== "UNAVAILABLE" || previous.reason !== policy.reason)
         this.store.set("skip-audio-verification", key, { ...previous, episodeKey: key, state: "UNAVAILABLE", code: policy.code || "AUDIO_VERIFICATION_NOT_AUTHORISED", reason: policy.reason || "Audio boundary verification is not configured.", updatedAt: nowIso() });
@@ -218,14 +219,14 @@ export class SkipService {
         }
         const at = nowIso();
         this.store.set("skip-audio-verification", key, {
-          episodeKey: key, state: result.state || "READY", inputKey, code: result.code || (result.state === "DYNAMIC_VARIANT" ? "VARIANT_MISMATCH" : result.state === "UNAVAILABLE" ? "AUDIO_BINDING_REQUIRED" : null), inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
+          episodeKey: key, state: result.state || "READY", inputKey, verifierVersion:adSkipAudioVerificationVersion, code: result.code || (result.state === "DYNAMIC_VARIANT" ? "VARIANT_MISMATCH" : result.state === "UNAVAILABLE" ? "AUDIO_BINDING_REQUIRED" : null), inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
           variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs, windows: result.variant.windows || [] } : null,
         });
         if (result.state !== "READY" || !result.variant) return;
         const outcomes = new Map((result.candidates || []).map((item) => [item.id, item]));
         for (const candidate of candidates) {
           const current = this.store.get("skip-interval", candidate.id), outcome = outcomes.get(candidate.id);
-          if (!current || current.disputed || current.verificationState !== Verification.CANDIDATE || !outcome) continue;
+          if (!current || current.disputed || ![Verification.CANDIDATE,Verification.VARIANT_MATCHED].includes(current.verificationState) || !outcome) continue;
           if (!outcome.boundaryVerified) {
             this.store.set("skip-interval", current.id, { ...current, verificationState: Verification.VARIANT_MATCHED, code: outcome.code || "BOUNDARY_EVIDENCE_INSUFFICIENT", lastVerifiedAt: at });
             continue;
@@ -234,7 +235,7 @@ export class SkipService {
           if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs < current.startMs || endMs > current.endMs || endMs <= startMs || endMs + 300 > result.variant.durationMs) continue;
           this.store.set("skip-interval", current.id, {
             ...current, startMs, endMs, boundaryVerified: true, audioVariantFingerprint: result.variant.audioVariantFingerprint,
-            verificationState: Verification.VERIFIED, confidence: 0.97, verifiedAt: at, lastVerifiedAt: at,
+            verificationState: Verification.VERIFIED, confidence: 0.97, audioVerificationVersion:adSkipAudioVerificationVersion, verifiedAt: at, lastVerifiedAt: at,
             evidence: [
               ...(current.evidence || []),
               { source: "fingerprint", signal: "actual_audio_pcm_boundary", confidence: 0.99, fingerprint: outcome.boundaryFingerprint },

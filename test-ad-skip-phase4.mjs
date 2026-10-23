@@ -70,6 +70,14 @@ assert(offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegme
 assert(!offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.includes('editorial')));
 assert(!offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.includes('denial')));
 offerStore.close();
+const upgradeStore=new LocalStore(':memory:');let upgrades=0;
+const upgradeService=new SkipService(upgradeStore,{status:()=>({...value,episode:{audioUrl:'https://publisher.example/audio'},transcript:{...transcript,segments:transcript.segments.slice(0,2)}})},{canVerifyAudio:()=>true,verifyAudio:async({candidates})=>{upgrades++;return{state:'READY',variant:{audioVariantFingerprint:'a'.repeat(64),durationMs:180000},candidates:candidates.map(c=>({id:c.id,boundaryVerified:false}))};}});
+upgradeService.inspect(feed,episode);await upgradeService.inflight.get(key);
+upgradeService.inspect(feed,episode);assert.equal(upgrades,1,'unchanged unverified results do not cause repeated downloads');
+upgradeStore.set('skip-audio-verification',key,{...upgradeStore.get('skip-audio-verification',key),verifierVersion:'legacy',inputKey:'legacy'});
+upgradeService.inspect(feed,episode);await upgradeService.inflight.get(key);
+upgradeService.inspect(feed,episode);assert.equal(upgrades,2,'version upgrade gets one bounded reevaluation, without reinstating disputes');
+upgradeStore.close();
 assert.match(adSkipStatusText({state:'CANDIDATES_FOUND'},true),/awaiting verification/);
 assert.match(adSkipStatusText({state:'READY',verifiedCount:1,automaticSkipping:true},false),/is off/);
 assert.equal(adSkipStatusText({state:'READY',verifiedCount:1,automaticSkipping:true},true),'Ad Skip ready');
