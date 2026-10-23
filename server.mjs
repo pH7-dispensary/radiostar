@@ -431,13 +431,16 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
-    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && (featureEnabled("adSkip") || testingMode.adSkipAllowed(listener.id))),
+    // A generic PRIVATE_BETA/ENABLED flag is not tester membership or a
+    // measured public safety release. Until that gate exists, leases are
+    // available exclusively to the explicitly enrolled, unexpired pilot.
+    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && testingMode.adSkipAllowed(listener.id)),
     testingContext: (listener) => testingMode.context(listener?.id),
     maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
         return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
-      if (!featureEnabled("adSkip") && !testingMode.adSkipPreparationAllowed())
+      if (!testingMode.adSkipPreparationAllowed())
         return {
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
@@ -864,7 +867,7 @@ export function createStarCastServer({
       .filter((value) => value.episodeKey === episodeKey(feedUrl, episode.id));
     const verifiedSkips = skipIntervals.filter((value) => value.verificationState === "VERIFIED" && value.boundaryVerified && value.audioVariantFingerprint && !value.disputed);
     const adCandidates = skipIntervals.filter((value) => value.verificationState === "CANDIDATE");
-    const adSkipFeature = featureEnabled("adSkip") || testingMode.configuration().listenerIds.some(id => testingMode.adSkipAllowed(id));
+    const adSkipFeature = testingMode.adSkipPreparationAllowed();
     const autoSkipState = !processing.allowed || !display.allowed ? "RESTRICTED"
       : !adSkipFeature ? "DISABLED"
       : preparing ? state

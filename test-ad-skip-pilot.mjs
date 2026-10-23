@@ -14,7 +14,9 @@ const store = new LocalStore(":memory:"), app = createStarCastServer({ store, en
 const credential = "test-pilot-installation-credential-".repeat(2);
 const listener = app.listeners.register(credential);
 const ordinaryCredential = "ordinary-installation-credential-".repeat(2);
-app.listeners.register(ordinaryCredential);
+const ordinaryListener=app.listeners.register(ordinaryCredential);
+app.listeners.preferences(ordinaryListener,{adSkipEnabled:true,advert:true});
+store.set('feature-flag','adSkip',{id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100});
 store.set("pilot-device", "owned-pilot-fixture", { listenerId: listener.id, expiresAt: new Date(Date.now() + 86400000).toISOString() });
 const testing = new IntelligenceTestMode(store);
 const configuration = testing.set({ enabled: true, adSkipPilotEnabled: true, listenerIds: [listener.id], expectedVersion: 0, reason: "Owned evaluation", confirmation: "ENABLE TESTING" }, "fixture-admin");
@@ -38,6 +40,9 @@ try {
   const status = await (await call("/api/skips/status", input)).json();
   assert.equal(status.automaticSkipping, true);
   assert.equal((await (await call("/api/skips/status", input, ordinaryCredential)).json()).automaticSkipping, false);
+  store.set('feature-flag','adSkip',{id:'adSkip',state:'ENABLED',rolloutPercent:100});
+  assert.equal((await (await call('/api/skips/status',input,ordinaryCredential)).json()).automaticSkipping,false,'global feature activation cannot bypass explicit pilot membership');
+  assert.equal((await call('/api/skips/authorise',{...input,intervalId:status.activeIntervals[0].id,positionMs:status.activeIntervals[0].startMs},ordinaryCredential)).status,400);
   assert.equal((await (await call("/api/skips/status", { ...input, audioVariantFingerprint: "0".repeat(64) })).json()).automaticSkipping, false);
   app.rights.set({ ...rights, canDisplayDerivedIntelligence: false });
   assert.equal((await (await call("/api/skips/status", input)).json()).automaticSkipping, false, "a cached verified interval cannot bypass revoked display permission");

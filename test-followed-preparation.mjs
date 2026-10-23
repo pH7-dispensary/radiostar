@@ -6,6 +6,7 @@ import { episodeKey } from "./episode-pipeline.mjs";
 import { EpisodePipeline } from "./episode-pipeline.mjs";
 import { BudgetLedger } from "./openai-intelligence.mjs";
 import { latestPublishedEpisodes } from "./followed-preparation.mjs";
+import { IntelligenceTestMode } from "./intelligence-test-mode.mjs";
 
 const published = (id, day, extra = {}) => ({ id, publishedAt: `2026-01-${day}T00:00:00Z`, audioUrl: `https://owned.example/${id}.mp3`, ...extra });
 assert.deepEqual(latestPublishedEpisodes([
@@ -90,6 +91,9 @@ try {
   const pausedFollow=await fetch(origin+'/api/listener/follow',{method:'POST',headers:{'x-star-cast-dev-token':'device',authorization:'Bearer ordinary-user-credential-at-least-32-characters','content-type':'application/json'},body:JSON.stringify({feedUrl:feeds[0],following:true})});
   assert.equal((await pausedFollow.json()).processing.code,'AUTOMATIC_PREPARATION_DISABLED','platform pause must not fall back to legacy paid preparation');
   app.listeners.privacy(other,{intelligenceEnabled:false});assert.equal(prep.listeners().length,1);
+  assert.equal(app.skips.automaticEnabled(user),false,'following and a global beta flag alone do not enrol an Ad Skip tester');
+  store.set('pilot-device','followed-skip-tester',{listenerId:user.id,expiresAt:new Date(Date.now()+86400000).toISOString()});
+  new IntelligenceTestMode(store).set({enabled:true,adSkipPilotEnabled:true,listenerIds:[user.id],expectedVersion:0,confirmation:'ENABLE TESTING',reason:'Explicit cached-skip tester fixture'},actor.id);
   assert.equal(app.skips.automaticEnabled(user),true,'pausing preparation does not disable verified cached skips');prep.action({action:'activate',reason:'test',confirmation:'CONFIRM',expectedVersion:2},actor);assert.equal(app.skips.automaticEnabled(user),true);assert.equal(app.skips.automaticEnabled(null),false);
   const budgetKey=episodeKey(feeds[0],'capacity-wait'), queued=[];
   store.set('intelligence',budgetKey,{jobId:'capacity-job',feedUrl:feeds[0],episodeId:'capacity-wait',state:'BLOCKED',code:'BUDGET_LIMIT',platformProcessing:true,testingContext:{platform:true,version:999},priority:95,allowAudio:true,attempts:1,resumeAfter:new Date(0).toISOString(),completedAt:new Date().toISOString()});
