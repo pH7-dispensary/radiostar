@@ -23,6 +23,21 @@ let commands;
 if (action === "status") commands = ["cloud-init status", "systemctl is-active starcast", "tail -n 12 /var/log/starcast/backend.log"];
 else if (action === "verify-runtime") commands = ["set -eu", "cd /opt/starcast/app", "/usr/local/bin/node -e " + quote(`const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) {execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});} console.log('FFmpeg and FFprobe executable checks passed.');`)];
 else if (action === "check-idle") commands = ["set -eu", idleCheck, "echo 'No active intelligence jobs.'"];
+else if (action === 'preflight') commands = ['set -eu', idleCheck, '/usr/local/bin/node --input-type=module -e ' + quote(`
+  import { DatabaseSync, backup } from 'node:sqlite';
+  import { chmodSync, statfsSync, readdirSync, readFileSync } from 'node:fs';
+  const disk=statfsSync('/var/lib/starcast'), availableBytes=disk.bavail*disk.bsize;
+  if(availableBytes<3*1024**3)throw Error('Insufficient deployment headroom');
+  const rollback=readdirSync('/opt/starcast').filter(n=>/^previous-\\d{10,13}$/.test(n));
+  if(!rollback.length)throw Error('No local rollback release found');
+  const db=new DatabaseSync('/var/lib/starcast/backend.sqlite',{readOnly:true});
+  const path='/var/lib/starcast/pre-command-centre-'+Date.now()+'.sqlite';
+  await backup(db,path);db.close();chmodSync(path,0o600);
+  const copy=new DatabaseSync(path,{readOnly:true});const integrity=Object.values(copy.prepare('PRAGMA integrity_check').get())[0];copy.close();
+  if(integrity!=='ok')throw Error('Recovery backup integrity failed');
+  const release=JSON.parse(readFileSync('/var/lib/starcast/release.json','utf8'));
+  console.log(JSON.stringify({backup:path,integrity,availableBytes,rollbackCopies:rollback.length,releaseSha:release.releaseSha}));
+`)];
 else if (action === "restart") commands = ["set -eu", idleCheck, "systemctl restart starcast", "curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4173/api/health"];
 else if (action === "verify-store") commands = ["/usr/local/bin/node --input-type=module -e " + quote(`
   import { DatabaseSync } from 'node:sqlite';

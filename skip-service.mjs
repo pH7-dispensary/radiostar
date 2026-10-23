@@ -234,7 +234,7 @@ export class SkipService {
           const startMs = outcome.startMs, endMs = outcome.endMs;
           if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs < current.startMs || endMs > current.endMs || endMs <= startMs || endMs + 300 > result.variant.durationMs) continue;
           this.store.set("skip-interval", current.id, {
-            ...current, startMs, endMs, boundaryVerified: true, audioVariantFingerprint: result.variant.audioVariantFingerprint,
+            ...current, proposedStartMs: current.proposedStartMs ?? current.startMs, proposedEndMs: current.proposedEndMs ?? current.endMs, startMs, endMs, boundaryVerified: true, audioVariantFingerprint: result.variant.audioVariantFingerprint,
             verificationState: Verification.VERIFIED, confidence: 0.97, audioVerificationVersion:adSkipAudioVerificationVersion, verifiedAt: at, lastVerifiedAt: at,
             evidence: [
               ...(current.evidence || []),
@@ -332,6 +332,26 @@ export class SkipService {
       this.store.set("skip-execution", id, { id, owner: listener.id, episodeKey: key, intervalId, kind, positionMs, audioVariantFingerprint: lease.audioVariantFingerprint, evaluation: Boolean(this.pipeline.status(feed, episode)?.episode?.ownedFixtureAudioHash), provenance: "client_confirmed_seek", createdAt: nowIso() });
     });
     return { recorded: true };
+  }
+  review(input, actor) {
+    if (actor?.role !== 'SUPER_ADMIN' || actor.source !== 'session') throw Error('A protected Super Admin session is required.');
+    if (!String(input.reason || '').trim() || input.confirmation !== 'CONFIRM') throw Error('A reason and confirmation are required.');
+    const item = this.store.get('skip-interval', input.id);
+    if (!item) throw Error('Choose a recorded interval.');
+    if (!['reject','suspend','reverify'].includes(input.action)) throw Error('Choose a supported review action.');
+    if (input.expectedState !== item.verificationState) throw Error('The interval changed. Refresh before reviewing.');
+    if (input.action === 'reverify') {
+      if (item.disputed || ['REJECTED','DISPUTED','VERIFIED'].includes(item.verificationState)) throw Error('Rejected, suspended or verified intervals cannot be promoted or reset through re-verification.');
+      const job = this.store.get('intelligence', item.episodeKey);
+      if (!job) throw Error('The canonical processing record is missing.');
+      const before = this.verification(item.episodeKey);
+      this.scheduleVerification(job.feedUrl, job.episodeId || job.episode?.id, job, [item]);
+      const after = this.verification(item.episodeKey), queued = this.inflight.has(item.episodeKey) && (after?.attempts || 0) > (before?.attempts || 0);
+      return { previous: item.verificationState, current: item.verificationState, queued, processingStarted: after?.state === 'PROCESSING', changed: queued ? 'Audio verification queued; it has not completed.' : 'No new verification job accepted; existing evidence, rights or retry limits apply.' };
+    }
+    const next = { ...item, verificationState: input.action === 'reject' ? Verification.REJECTED : Verification.DISPUTED, disputed: input.action === 'suspend' || item.disputed, reviewReason: String(input.reason).trim().slice(0,1000), reviewedAt: nowIso(), reviewedBy: actor.id };
+    this.store.set('skip-interval', item.id, next);
+    return { previous: item.verificationState, current: next.verificationState, processingStarted: false, changed: 'Interval excluded from automatic skipping; acoustic evidence retained.' };
   }
   operations() {
     const intervals = this.store.all("skip-interval").map(([, item]) => item);

@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { FollowedPreparation } from "./followed-preparation.mjs";
 import { readFile } from "node:fs/promises";
-import { readFileSync } from "node:fs";
+import { readFileSync, statfsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
@@ -370,9 +370,27 @@ export function createStarCastServer({
     }
     const observedQueue = queue ? await queue.metrics() : null;
     const release = releaseMetadata();
+    let disk = { name: 'Disk capacity', status: 'UNKNOWN', reason: 'Filesystem capacity is not available.' };
+    let retention = { name: 'Deployment retention', status: 'UNKNOWN', reason: 'Deployment copies could not be inspected.' };
+    try {
+      const fs = statfsSync(env.STARCAST_DATA_DIR || '/var/lib/starcast');
+      const totalBytes = fs.blocks * fs.bsize, availableBytes = fs.bavail * fs.bsize;
+      disk = { name: 'Disk capacity', status: availableBytes < 3 * 1024 ** 3 ? 'DEGRADED' : 'HEALTHY', reason: `${(availableBytes / 1024 ** 3).toFixed(1)} GiB available; deployments require 3 GiB headroom.`, detail: { totalBytes, availableBytes, usedPercent: Math.round((1-fs.bfree/fs.blocks)*100) }, observedAt: new Date().toISOString() };
+      const copies = readdirSync('/opt/starcast').filter(name => /^previous-\d+$/.test(name));
+      retention = { name: 'Deployment retention', status: copies.length <= 2 ? 'HEALTHY' : 'DEGRADED', reason: `${copies.length} retained deployment copies; retention limit is two.`, detail: { retained: copies.length, limit: 2 }, observedAt: new Date().toISOString() };
+    } catch { /* Unknown is not a healthy measurement. */ }
+    let backup = { name: 'Last verified backup', status: 'UNKNOWN', reason: 'No protected backup verification record is available.' };
+    try {
+      const record = JSON.parse(readFileSync('/var/lib/starcast/backup-verification.json', 'utf8'));
+      if (record.integrity === 'ok' && Number.isFinite(Date.parse(record.verifiedAt))) {
+        const uploaded = record.uploaded === true && /^backend-[\dTZ.-]+\.sqlite$/.test(record.object || '');
+        backup = { name: 'Last verified backup', status: uploaded ? Date.now()-Date.parse(record.verifiedAt) > 3600000 ? 'DEGRADED' : 'HEALTHY' : 'UNKNOWN', reason: uploaded ? 'SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.' : 'No verified upload is recorded.', observedAt: record.verifiedAt };
+      }
+    } catch { /* Only report verified evidence. */ }
     const components = [
       { name: "Backend API", status: "HEALTHY", reason: "This authenticated operations request reached the active backend.", observedAt: new Date().toISOString() },
       database,
+      disk, retention, backup,
       queue ? { name: "Processing queue", status: observedQueue.status, reason: observedQueue.reason, observedAt: observedQueue.observedAt, detail: observedQueue.processing } : { name: "Processing queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
       queue ? { name: "Dead-letter queue", status: observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : observedQueue.deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY", reason: observedQueue.status === "UNAVAILABLE" ? observedQueue.reason : observedQueue.deadLetter.visible > 0 ? "Messages require operator investigation." : "No messages are waiting in the dead-letter queue.", observedAt: observedQueue.observedAt, detail: observedQueue.deadLetter } : { name: "Dead-letter queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
       { name: "Processing worker", status: queue ? (observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : queue.running ? "HEALTHY" : "DEGRADED") : "UNKNOWN", reason: queue ? (queue.running ? "The single durable queue consumer is running." : "The queue consumer is not running.") : "No queue worker is configured for this server release." },
@@ -918,7 +936,7 @@ export function createStarCastServer({
       : state === "PAUSED" ? "No new work will start until an administrator changes the intelligence level."
       : preparing ? "The existing job will continue through the recorded pipeline stages."
       : episode.hasPublisherTranscript ? "Preparation will evaluate the publisher transcript before any paid audio fallback."
-      : "Preparation will reuse a canonical cache where available; audio fallback is never automatic.";
+      : "Preparation reuses the canonical cache first; automatic audio fallback requires an eligible source, active operational policy and available spending capacity.";
     return {
       ...episode,
       ...intelligenceDimensions(feedUrl, episode.id, true),
@@ -966,7 +984,7 @@ export function createStarCastServer({
     const needle = String(query || "").trim().toLowerCase();
     const filtered = catalogueSort(models.filter((item) => !needle || [item.title, item.publisher, item.feedUrl, item.canonicalFeedId].join(" ").toLowerCase().includes(needle)), sort);
     const start = (safePage - 1) * safeSize;
-    return { generatedAt: new Date().toISOString(), query: needle, sort, page: safePage, pageSize: safeSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / safeSize)), items: filtered.slice(start, start + safeSize).map(({ episodes, ...item }) => item) };
+    return { generatedAt: new Date().toISOString(), query: needle, sort, page: safePage, pageSize: safeSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / safeSize)), items: filtered.slice(start, start + safeSize).map(({ episodes, ...item }) => ({ ...item, knownEpisodes: episodes.length, latestEpisode: episodes[0] ? { title: episodes[0].title, publishedAt: episodes[0].publishedAt } : null, policy: intelligencePolicy.effective(item.feedUrl), latestThree: { total: Math.min(3,episodes.length), ready: episodes.slice(0,3).filter(e => e.state === 'READY').length }, adSkipCoverage: episodes.filter(e => e.adSkip?.verifiedCount > 0).length, attentionCount: episodes.filter(e => ['FAILED','UNAVAILABLE'].includes(e.state)).length })) };
   };
   const podcastDetail = async (feedUrl, { episodeQuery = "", page = 1, pageSize = 20 } = {}) => {
     const entry = knownPodcastFeeds().find((item) => item.feedUrl === feedUrl);
@@ -1173,6 +1191,8 @@ export function createStarCastServer({
       throw Error("Choose a podcast from the Radio Star operations catalogue.");
     if (scope === "episode" && (typeof input.episodeId !== "string" || !input.episodeId))
       throw Error("Choose a publisher episode before creating an episode override.");
+    const previousPolicy = scope === 'global' ? intelligencePolicy.global() : intelligencePolicy.effective(input.feedUrl, scope === 'episode' ? input.episodeId : undefined);
+    const affectedEpisodes = scope === 'episode' ? 1 : store.all('intelligence').filter(([,j]) => scope === 'global' || j.feedUrl === input.feedUrl).length;
     const policy = scope === "global" ? intelligencePolicy.setGlobal(input, { actor: actor.id }) : intelligencePolicy.set({ ...input, episodeId: scope === "episode" ? input.episodeId : undefined }, { actor: actor.id });
     const jobs = [];
     // Existing work is deliberately bounded, and audio is opt-in even where a
@@ -1197,7 +1217,7 @@ export function createStarCastServer({
     }
     const createdJobs = jobs.filter((job) => job.jobId).map((job) => ({ episodeId: job.episodeId, jobId: job.jobId, state: job.state }));
     rights.audit("intelligence-policy-changed", policy.id, actor.id, { scope, tier: policy.tier, version: policy.version, affectedEpisodes: jobs.length, jobsCreated: createdJobs.length });
-    adminService.appendAudit({ actor, action: "intelligence-policy-changed", resource: policy.id, previousState: { source: scope, expectedVersion: input.expectedVersion ?? null }, newState: { scope, tier: policy.tier, level: intelligenceLevel(policy.tier).label, version: policy.version, affectedEpisodes: jobs.length, jobsCreated: createdJobs }, reason: policy.reason, outcome: "ALLOWED" });
+    adminService.appendAudit({ actor, action: "intelligence-policy-changed", resource: policy.id, previousState: { source: previousPolicy.source || scope, tier: previousPolicy.tier, version: previousPolicy.version }, newState: { scope, tier: policy.tier, level: intelligenceLevel(policy.tier).label, version: policy.version, affectedEpisodes, affectedScope: 'Persisted jobs; future eligible episodes also inherit channel/global policy.', jobsCreated: createdJobs }, reason: policy.reason, outcome: "ALLOWED" });
     return { policy: { ...policy, level: intelligenceLevel(policy.tier) }, jobs, createdJobs, processingStarted: createdJobs.length > 0 };
   };
   const resetIntelligencePolicy = (input, actor) => {
@@ -1805,11 +1825,40 @@ export function createStarCastServer({
         if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, { ...await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }), followedPreparation: followedPreparation.summary() });
       }
+      if (url.pathname === '/api/admin/advisories' && req.method === 'POST') {
+        const actor = adminActor(req, 'configuration:write', { write: true });
+        if (!actor || actor.source !== 'session' || actor.role !== 'SUPER_ADMIN') return send(res, 403, { error: 'An authenticated Super Admin session and CSRF protection are required.' });
+        const input = await body(req);
+        const current = await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus });
+        try { return send(res, 200, adminService.updateAdvisory(input, actor, current.attention)); }
+        catch (error) { return send(res, 409, { error: error.message }); }
+      }
+      if (url.pathname === '/api/admin/intelligence/prioritise' && req.method === 'POST') {
+        const actor=adminActor(req,'configuration:write',{write:true});
+        if (!actor || actor.role!=='SUPER_ADMIN' || actor.source!=='session') return send(res,403,{error:'A protected Super Admin session is required.'});
+        const input=await body(req),key=episodeKey(input.feedUrl,input.episodeId);
+        if(!String(input.reason||'').trim() || input.confirmation!=='CONFIRM') return send(res,400,{error:'A reason and confirmation are required.'});
+        try {
+          store.transaction(()=>{
+            const job=store.get('intelligence',key);if(!job || job.state!=='QUEUED' || job.jobId!==input.jobId)throw Error('This queued job changed. Refresh before prioritising.');
+            store.set('intelligence',key,{...job,priority:95});
+            adminService.appendAudit({actor,action:'processing-prioritised',resource:job.jobId,previousState:{priority:job.priority||0},newState:{priority:95},reason:String(input.reason).slice(0,1000),outcome:'ALLOWED'});
+          });
+          return send(res,200,{outcome:{requested:'Prioritise queued episode',succeeded:true,changed:'Queued priority raised to 95.',affectedEpisodes:1,processingStarted:false,next:'The worker selects eligible queued work using priority and ageing. Active work is never interrupted.'}});
+        }catch(error){return send(res,409,{error:error.message});}
+      }
       if (url.pathname === "/api/admin/intelligence/followed" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, "intelligence:read", { write: req.method === "POST" });
         if (!actor || req.method === "POST" && actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super administrator access is required for preparation changes." });
         if (req.method === "POST") {
           const input = await body(req);
+          if (input.action === 'prepare-missing') {
+            if (actor.source !== 'session' || !String(input.reason || '').trim() || input.confirmation !== 'CONFIRM') return send(res,403,{error:'A protected Super Admin session, reason and confirmation are required.'});
+            if (!followedPreparation.configuration().enabled) return send(res,409,{error:'Automatic preparation is paused. Resume it explicitly before preparing missing episodes.'});
+            adminService.appendAudit({actor,action:'prepare-missing-requested',resource:'followed-window',reason:input.reason,outcome:'REQUESTED'});
+            void followedPreparation.refresh({force:true}).then(() => followedPreparation.drain()).catch(() => console.error(JSON.stringify({event:'prepare-missing-failed',code:'PREPARATION_UNAVAILABLE'})));
+            return send(res,202,{...followedPreparation.summary(),outcome:{requested:'Prepare missing followed episodes',succeeded:null,affectedEpisodes:null,processingStarted:false,next:'Discovery requested. Watch the queue for accepted jobs; rights, policy, retries and spending limits still apply.'}});
+          }
           if (input.action === "estimate") {
             void followedPreparation.refresh({ force: true }).catch(() => console.error(JSON.stringify({ event: "followed-discovery-failed", code: "SOURCE_UNAVAILABLE" })));
             return send(res, 202, followedPreparation.summary());
@@ -1828,7 +1877,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/costs" && req.method === "GET") {
         if (!adminActor(req, "finance:read")) return send(res, 403, { error: "Finance administrator access is required." });
         const operations = await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus });
-        return send(res, 200, { generatedAt: operations.generatedAt, cost: operations.cost, processing: operations.processing.performance, infrastructure: operations.infrastructure });
+        return send(res, 200, { generatedAt: operations.generatedAt, cost: operations.cost, commandCentre: operations.commandCentre, allowance: followedPreparation.summary().budget, processing: operations.processing.performance, infrastructure: operations.infrastructure });
       }
       if (url.pathname === "/api/admin/search" && req.method === "GET") {
         const actor = adminActor(req, "overview:read");
@@ -1854,6 +1903,19 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/ad-skip" && req.method === "GET") {
         if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
         return send(res, 200, skips.operations());
+      }
+      if (url.pathname === '/api/admin/ad-skip/review' && req.method === 'POST') {
+        const actor = adminActor(req,'configuration:write',{write:true});
+        if (!actor || actor.role !== 'SUPER_ADMIN' || actor.source !== 'session') return send(res,403,{error:'A protected Super Admin session is required.'});
+        const input = await body(req);
+        try {
+          const change = store.transaction(() => {
+            const result = skips.review(input,actor);
+            adminService.appendAudit({actor,action:'ad-skip-'+input.action,resource:input.id,previousState:{state:result.previous},newState:{state:result.current},reason:input.reason,outcome:result.queued ? 'QUEUED' : result.previous===result.current ? 'UNCHANGED' : 'ALLOWED'});
+            return result;
+          });
+          return send(res,200,{outcome:{requested:input.action,succeeded:change.previous!==change.current || change.queued === true,affectedEpisodes:1,...change,next:'Inspect recorded verification and playback evidence. No review action certifies acoustic safety.'}});
+        } catch(error) { return send(res,409,{error:error.message}); }
       }
       if (url.pathname === "/api/admin/audit" && req.method === "GET") {
         if (!adminActor(req, "audit:read")) return send(res, 403, { error: "Administrator access is required." });
@@ -1909,6 +1971,26 @@ export function createStarCastServer({
         } catch (error) {
           return send(res, 409, { error: String(error?.message || "This episode could not be prepared.") });
         }
+      }
+      if (url.pathname === '/api/admin/podcasts/prepare' && req.method === 'POST') {
+        const actor=adminActor(req,'configuration:write',{write:true});
+        if (!actor || actor.role !== 'SUPER_ADMIN' || actor.source !== 'session') return send(res,403,{error:'A protected Super Admin session is required.'});
+        const input=await body(req);
+        if(input.confirmation!=='CONFIRM' || !String(input.reason||'').trim()) return send(res,400,{error:'Confirm this bounded preparation request and record a reason.'});
+        try {
+          const detail=await podcastDetail(input.feedUrl);
+          const outcomes=[];
+          for(const episode of detail.episodes.slice(0,3)) {
+            await assessEpisodeRights(input.feedUrl,episode.id);
+            try {
+              const job=await pipeline.request({feedUrl:input.feedUrl,episodeId:episode.id,trigger:'automatic',platformProcessing:true,allowAudio:true,priority:95,testingContext:testingMode.platformContext()});
+              outcomes.push({episodeId:episode.id,state:job.state,code:job.code||null,jobId:job.jobId||null});
+            }catch(error){outcomes.push({episodeId:episode.id,state:'FAILED',code:'REQUEST_FAILED'});}
+          }
+          const queued=outcomes.filter(j=>j.state==='QUEUED').length, ready=outcomes.filter(j=>j.state==='READY').length;
+          adminService.appendAudit({actor,action:'prepare-latest-requested',resource:input.feedUrl,newState:{outcomes},reason:String(input.reason).slice(0,1000),outcome:'REQUESTED'});
+          return send(res,200,{outcomes,outcome:{requested:'Prepare latest three episodes',succeeded:outcomes.some(j=>['READY','QUEUED','PROCESSING'].includes(j.state)),affectedEpisodes:outcomes.length,processingStarted:outcomes.some(j=>['PROCESSING','DISCOVERING','TRANSCRIBING','UNDERSTANDING'].includes(j.state)),changed:`${queued} queued; ${ready} already ready; ${outcomes.length-queued-ready} other recorded outcomes.`,next:'Inspect episode states for blockers. Cached or existing jobs are reused; no retry or spending limit is reset.'}});
+        }catch(error){return send(res,409,{error:error.message});}
       }
       if (url.pathname === "/api/admin/administrators" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "administrators:read" : "administrators:write", { write: req.method === "POST" });

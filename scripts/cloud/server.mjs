@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { backup } from "node:sqlite";
-import { unlink } from "node:fs/promises";
+import { backup, DatabaseSync } from "node:sqlite";
+import { unlink, writeFile, rename } from "node:fs/promises";
 import { createStarCastServer } from "../../server.mjs";
 import { acquireServerLock } from "../../server-lock.mjs";
 
@@ -47,8 +47,14 @@ async function saveBackup() {
   const path = `/var/lib/starcast/${name}`;
   try {
     await backup(store.db, path);
+    const copy = new DatabaseSync(path, { readOnly: true });
+    let integrity;
+    try { integrity = Object.values(copy.prepare('PRAGMA integrity_check').get())[0]; } finally { copy.close(); }
+    if (integrity !== 'ok') throw Error('Backup integrity check failed');
     execFileSync("aws", ["s3", "cp", path, `s3://${process.env.STARCAST_BACKUP_BUCKET}/backups/${name}`,
       "--region", "eu-west-2", "--only-show-errors"], { stdio: ["ignore", "pipe", "pipe"], timeout: 60000 });
+    await writeFile('/var/lib/starcast/backup-verification.json.tmp', JSON.stringify({ integrity, verifiedAt: new Date().toISOString(), uploaded: true, object: name }), { mode: 0o600 });
+    await rename('/var/lib/starcast/backup-verification.json.tmp', '/var/lib/starcast/backup-verification.json');
     console.log(JSON.stringify({ event: "backup-complete" }));
   } catch {
     console.error(JSON.stringify({ event: "backup-failed" }));

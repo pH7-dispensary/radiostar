@@ -1,9 +1,8 @@
 import { mountRightsReview } from "./admin.rights.js";
 const root = document.querySelector("#app");
 let state = { view: "overview" };
-const navigation = [["overview", "Overview"], ["podcasts", "Podcasts"], ["episodes", "Episodes"], ["processing", "AI Processing"], ["listeners", "Listeners"], ["translate", "Translation"], ["rights", "Rights & Policies"], ["operations", "Operations"], ["settings", "Settings"]];
-const technicalNavigation = [["features", "Feature flags"], ["policies", "Intelligence policy"], ["blocked", "Blocked content"], ["adSkip", "Ad Skip safety"], ["intelligence", "Raw processing"], ["costs", "Cost ledger"], ["audit", "Audit log"]];
-navigation.splice(5, 0, ["testing", "Internal testing"]);
+const navigation = [["overview", "Overview"], ["podcasts", "Podcasts"], ["processing", "AI Processing"], ["adSkip", "Ad Skip"], ["attention", "Needs Attention"], ["costs", "Costs"], ["settings", "Settings"]];
+const technicalNavigation = [["episodes", "Episodes"], ["listeners", "Listeners"], ["translate", "Translation"], ["rights", "Rights & Policies"], ["operations", "Infrastructure"], ["testing", "Internal testing"], ["features", "Feature flags"], ["policies", "Intelligence policy"], ["blocked", "Blocked content"], ["intelligence", "Raw processing"], ["audit", "Audit log"]];
 const html = (value) => String(value ?? "—").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const when = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not recorded";
 const csrf = () => document.cookie.split("; ").find((item) => item.startsWith("starcast_admin_csrf="))?.slice("starcast_admin_csrf=".length) || "";
@@ -36,7 +35,7 @@ const intelligenceOptions = (selected) => ["ZERO", "LOW", "MEDIUM", "HIGH"].map(
 const isSuperAdmin = () => state.session?.actor?.role === "SUPER_ADMIN";
 const can = (permission) => state.session?.permissions?.includes(permission);
 const artwork = (url, name) => /^https:\/\//i.test(String(url || "")) ? `<img class="podcast-art" src="${html(url)}" alt="${html(name)} artwork">` : `<span class="podcast-art missing" aria-label="Artwork unavailable">RS</span>`;
-const notify = (message) => { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.textContent = message; document.body.append(toast); setTimeout(() => toast.remove(), 4000); };
+  const notify = (message) => { document.querySelector(".toast")?.remove(); const toast = document.createElement("div"); toast.className = "toast"; toast.setAttribute('role','status'); toast.textContent = message; document.body.append(toast); setTimeout(() => toast.remove(), 10000); };
 const card = (name, value, note) => `<article class="card"><div class="label">${html(name)}</div><div class="metric">${html(value)}</div><div class="note">${html(note)}</div></article>`;
 
 function login(error = "") {
@@ -49,6 +48,8 @@ function login(error = "") {
 }
 
 async function load(view = state.view) {
+  if (view === 'attention') { state.attention = await api('/api/admin/operations'); return; }
+  if (view === 'adSkip') { [state.adSkip, state.skipOperations] = await Promise.all([api('/api/admin/ad-skip'), api('/api/admin/operations')]); return; }
   if (view === "testing") {
     [state.testing, state.testingJobs] = await Promise.all([api("/api/admin/intelligence/testing"), api("/api/admin/intelligence")]);
     return;
@@ -81,9 +82,16 @@ async function openEpisode(feedUrl, episodeId) {
   state.view = "episodeDetail"; render();
 }
 async function initialise() {
-  try { state.session = await api("/api/admin/session"); await load(); render(); }
+  try { state.session = await api("/api/admin/session"); await restoreRoute(); }
   catch { login(); }
 }
+async function restoreRoute() {
+  const params=new URLSearchParams(location.hash.slice(1)),view=params.get('view');
+  if(view==='podcastDetail' && params.get('feedUrl')) return openPodcast(params.get('feedUrl'));
+  if(view==='episodeDetail' && params.get('feedUrl') && params.get('episodeId')) return openEpisode(params.get('feedUrl'),params.get('episodeId'));
+  state.view=[...navigation,...technicalNavigation].some(([id])=>id===view)?view:'overview';await load();render();
+}
+window.addEventListener('popstate',()=>{if(state.session)restoreRoute().catch(e=>notify(e.message));});
 function page(title, copy, body) {
   const active = state.view === "podcastDetail" || state.view === "episodeDetail" ? "podcasts" : state.view;
   root.innerHTML = `<div class="shell"><aside class="sidebar"><div class="brand">RADIO STAR</div><h1>Control Centre</h1><small>Server-authoritative operations</small><nav class="nav" aria-label="Primary navigation">${navigation.map(([id, name]) => `<button data-view="${id}" ${active === id ? 'aria-current="page"' : ""}>${name}</button>`).join("")}</nav><details class="technical-nav"><summary>Technical controls</summary><nav class="nav">${technicalNavigation.map(([id, name]) => `<button data-view="${id}" ${state.view === id ? 'aria-current="page"' : ""}>${name}</button>`).join("")}</nav></details><div class="sidebar-foot">Signed in as <strong>${html(state.session.actor.name)}</strong><br>${html(state.session.actor.role)}<br><button class="sign-out" id="logout">Sign out</button></div></aside><section class="content"><header class="topline"><div><div class="eyebrow">${html(title)}</div><h2>${html(title)}</h2><p>${html(copy)}</p></div><div class="topline-actions"><button class="secondary command-trigger" id="admin-command" aria-haspopup="dialog">Search records <kbd>⌘ K</kbd></button><div class="identity"><strong>${html(state.session.actor.name)}</strong>${html(state.session.actor.role)}</div></div></header>${body}</section></div>`;
@@ -92,14 +100,35 @@ function page(title, copy, body) {
   document.querySelector("#admin-command").onclick = () => openCommandPalette();
 }
 
-function overview() {
-  const d = state.overview, attention = d.attention || [];
-  const attentionRows = attention.length ? attention.slice(0, 8).map((item, index) => `<tr><td>${badge(item.severity)}</td><td><strong>${html(item.resource)}</strong><br><span class="muted small">${html(item.reason)}</span></td><td>${item.listenerImpact == null ? "Not available" : html(item.listenerImpact)}</td><td>${when(item.detectedAt)}</td><td><button class="secondary" data-attention="${index}">Investigate</button></td></tr>`).join("") : `<tr><td colspan="5" class="empty">No actionable operational issues are recorded. New failures, rights reviews, support reports and budget thresholds appear here.</td></tr>`;
-  state.attentionActions = attention.slice(0, 8);
-  const body = `<div class="status-summary"><span>${badge(d.infrastructure.status)} Infrastructure evidence</span><span>Updated ${when(d.generatedAt)}</span><span>${html(d.coverage.scope)}</span></div><div class="grid">${card("Known operations episodes", d.coverage.knownEpisodes, "Persisted records only")}${card("AI-ready", d.coverage.ready, "Authorised completed jobs")}${card("Preparing", d.coverage.preparing, "Queue and active work")}${card("Needs attention", attention.length, "Measured exceptions")}</div><section class="panel priority-panel"><div class="panel-head"><div><span class="eyebrow">Operations priority</span><h3>Needs attention</h3><p>Ordered by severity, measured listener impact, then how long the issue has persisted.</p></div><button class="secondary" data-view="operations">Open operations</button></div><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Issue</th><th>Measured listener impact</th><th>Detected</th><th></th></tr></thead><tbody>${attentionRows}</tbody></table></div></section><div class="split"><section class="panel"><div class="panel-head"><div><h3>Intelligence coverage</h3><p>${html(d.coverage.denominatorNote)}</p></div>${badge("MEASURED")}</div><div class="coverage-grid"><div><strong>${html(d.coverage.ready)}</strong><span>Ready</span></div><div><strong>${html(d.coverage.preparing)}</strong><span>Preparing</span></div><div><strong>${html(d.coverage.unavailable)}</strong><span>Unavailable</span></div><div><strong>${html(d.coverage.failed)}</strong><span>Failed</span></div></div></section><section class="panel"><h3>Cost safeguards</h3><p>Hard server-side limits remain separate from AWS monitoring alerts.</p><dl class="fact-list"><div><dt>AI today</dt><dd>$${html(Number(d.cost.totals?.day || 0).toFixed(4))} / $${html(d.cost.controls?.dailyUsd ?? "—")}</dd></div><div><dt>AI this month</dt><dd>$${html(Number(d.cost.totals?.month || 0).toFixed(4))} / $${html(d.cost.controls?.monthlyUsd ?? "—")}</dd></div><div><dt>Audio today</dt><dd>${html(Math.round(Number(d.cost.totals?.transcriptionSeconds || 0) / 60))} minutes</dd></div></dl><button class="secondary" data-view="costs">Inspect costs</button></section></div>`;
-  page("Overview", "A measured command centre for listener impact, processing health, rights-aware availability and cost controls.", body);
-  bindAttentionActions();
+function commandOverview() {
+  const d = state.overview, c = d.commandCentre, s = c.summary;
+  const stage = c.funnel.find(f => f.id === state.funnelStage);
+  const rows = stage ? c.episodes.filter(e => stage.episodeKeys.includes(e.key)) : [];
+  page('Overview', 'Platform health, preparation and the next decision.', `
+    <div class="status-summary"><span>Updated ${when(d.generatedAt)}</span><span>${html(d.coverage.scope)}</span><button class="secondary" data-view="operations">Inspect infrastructure</button></div>
+    <div class="grid command-metrics">${card('Platform health', label(s.platformHealth), 'API · worker · queue · database')}${card('AI-ready episodes', s.ready, 'Completed internal intelligence')}${card('Preparing', s.preparing, 'Active processing')}${card('Waiting', s.waiting, 'Queued or capacity paused')}${card('Ad Skip coverage', s.adSkipCoverage, 'Episodes with verified intervals')}${card('AI spending today', '$'+s.actualTodayUsd.toFixed(4), 'Recorded application ledger')}</div>
+    <section class="panel"><div class="panel-head"><div><h3>Preparation coverage</h3><p>${html(c.denominator)}</p></div></div><div class="funnel">${c.funnel.map(f => `<button class="secondary ${stage?.id === f.id ? 'selected' : ''}" data-funnel="${f.id}" aria-pressed="${stage?.id === f.id}"><strong>${f.count}</strong><span>${html(f.label)}</span></button>`).join('')}</div>
+    ${stage ? `<h4>${html(stage.label)}</h4><div class="episode-source-list">${rows.map(e => `<button class="source-row" data-funnel-episode="${html(e.key)}"><span><strong>${html(e.title)}</strong><small>${html(e.podcast)}</small></span><span>Inspect →</span></button>`).join('') || '<p>No episodes recorded at this stage.</p>'}</div>` : '<p>Select a stage to inspect its episodes.</p>'}</section>
+    <section class="panel priority-panel"><div class="panel-head"><div><h3>Needs attention</h3><p>${d.attention.filter(a => !['RESOLVED','DISMISSED'].includes(a.status)).length} open advisories. Reviews never change enforced restrictions.</p></div><button class="primary" data-view="attention">Open inbox</button></div><ul class="attention-list">${d.attention.filter(a => !['RESOLVED','DISMISSED'].includes(a.status)).slice(0,5).map(a => `<li><div>${badge(a.severity)} <strong>${html(a.resource)}</strong><p>${html(a.reason)}</p></div></li>`).join('') || '<li>No open advisories.</li>'}</ul></section>`);
+  document.querySelectorAll('[data-funnel]').forEach(b => b.onclick = () => { state.funnelStage = b.dataset.funnel; render(); });
+  document.querySelectorAll('[data-funnel-episode]').forEach(b => b.onclick = () => { const e = c.episodes.find(e => e.key === b.dataset.funnelEpisode); openEpisode(e.feedUrl,e.episodeId).catch(e => notify(e.message)); });
 }
+
+function attentionInbox() {
+  const d = state.attention, filter = state.attentionFilter || 'OPEN';
+  const items = d.attention.filter(a => filter === 'ALL' || (filter === 'OPEN' ? !['RESOLVED','DISMISSED'].includes(a.status) : a.severity === filter));
+  state.attentionActions = items;
+  page('Needs Attention', 'Review evidence, record an outcome, and intervene only when necessary.', `<section class="panel"><div class="panel-head"><h3>Advisory inbox</h3><label>Filter<select id="attention-filter">${['OPEN','ALL','CRITICAL','HIGH','MEDIUM','LOW'].map(v => `<option ${v === filter ? 'selected' : ''}>${v}</option>`).join('')}</select></label></div><p>Observed ${when(d.generatedAt)} · Closing an advisory does not authorise processing or remove a restriction.</p><ul class="attention-list">${items.map((a,i) => `<li><div>${badge(a.severity)} ${badge(a.status)}<h4>${html(a.resource)}</h4><p>${html(a.reason)}</p><details><summary>Evidence and recommendation</summary><p>${html(a.evidence)}</p><p>Features: ${html(a.features.join(', '))}</p><p>Detected: ${when(a.detectedAt)}</p><p>${html(a.action)}</p>${a.review ? `<p>Last review: ${html(a.review.reason)} · ${when(a.review.updatedAt)}</p>` : ''}</details><div class="row-actions"><button class="secondary" data-attention="${i}">Review${a.feedUrl ? ' / policy controls' : ''}</button>${isSuperAdmin() ? ['ACKNOWLEDGED','RESOLVED','DISMISSED'].map(status => `<button class="secondary" data-review="${i}" data-status="${status}">${{ACKNOWLEDGED:'Acknowledge',RESOLVED:'Resolve',DISMISSED:'Dismiss'}[status]}</button>`).join('') : ''}</div></div></li>`).join('') || '<li>No matching advisories.</li>'}</ul></section>`);
+  document.querySelector('#attention-filter').onchange = e => { state.attentionFilter = e.target.value; render(); };
+  bindAttentionActions();
+  document.querySelectorAll('[data-review]').forEach(b => b.onclick = async () => {
+    const a = items[Number(b.dataset.review)], reason = prompt('What evidence did you review, and what is the outcome?'); if (!reason?.trim()) return;
+    b.disabled = true;
+    try { const result = await api('/api/admin/advisories', { method:'POST', body:JSON.stringify({id:a.id,status:b.dataset.status,reason,expectedVersion:a.version}) }); await load('attention'); render(); notify(result.outcome.changed); }
+    catch(e) { b.disabled = false; notify(e.message); }
+  });
+}
+
 
 function podcasts() {
   const d = state.podcasts, filters = state.podcastFilters || {};
@@ -107,7 +136,7 @@ function podcasts() {
   page("Podcasts", "A live operations catalogue built from real Radio Star records and current publisher RSS metadata.", `<section class="panel catalogue-hero"><div><span class="eyebrow">Operations catalogue</span><h3>Find the record behind a listening experience.</h3><p>RSS metadata is refreshed for sources Radio Star already knows. No popularity or catalogue data is invented here.</p></div><div class="catalogue-facts"><span>${html(d.total)} sources</span><span>Page ${html(d.page)} of ${html(d.totalPages)}</span></div></section><section class="panel"><form id="podcast-search" class="catalogue-toolbar"><label>Search podcasts, publishers, RSS or canonical ID<input name="q" value="${html(filters.q || "")}" placeholder="Search known operations records"></label><label>Sort<select name="sort"><option value="title" ${filters.sort === "title" ? "selected" : ""}>Title</option><option value="latest" ${filters.sort === "latest" ? "selected" : ""}>Latest episode</option><option value="ready" ${filters.sort === "ready" ? "selected" : ""}>Intelligence ready</option></select></label><button class="primary">Search</button></form><div class="table-wrap"><table class="catalogue-table"><thead><tr><th>Podcast</th><th>Metadata</th><th>Intelligence</th><th>Followers</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="pagination"><span>${html(d.total)} matching source${d.total === 1 ? "" : "s"}</span><div><button class="secondary" id="podcast-prev" ${d.page <= 1 ? "disabled" : ""}>Previous</button><button class="secondary" id="podcast-next" ${d.page >= d.totalPages ? "disabled" : ""}>Next</button></div></div></section>`);
   document.querySelector("#podcast-search").onsubmit = async (event) => { event.preventDefault(); const next = Object.fromEntries(new FormData(event.currentTarget)); try { await loadPodcastCatalogue({ ...next, page: 1 }); render(); } catch (error) { notify(error.message); } };
   const attention = document.createElement("button"); attention.className = "secondary"; attention.textContent = "Needs attention";
-  attention.onclick = async () => { try { await load("testing"); state.view = "testing"; render(); document.querySelector("#testing-attention")?.scrollIntoView(); } catch (error) { notify(error.message); } };
+  attention.onclick = async () => { try { await load("attention"); state.view = "attention"; render(); } catch (error) { notify(error.message); } };
   document.querySelector(".catalogue-facts").append(attention);
   document.querySelector("#podcast-prev").onclick = async () => { try { await loadPodcastCatalogue({ page: d.page - 1 }); render(); } catch (error) { notify(error.message); } };
   document.querySelector("#podcast-next").onclick = async () => { try { await loadPodcastCatalogue({ page: d.page + 1 }); render(); } catch (error) { notify(error.message); } };
@@ -348,10 +377,10 @@ function translate() {
 function costs() {
   const d = state.costs, c = d.cost, controls = c.controls || {}, totals = c.totals || {}, translation = c.translation || {};
   const routeRows = Object.entries(d.processing?.routes || {}).map(([route, metric]) => `<tr><td>${html(route.replaceAll("_", " "))}</td><td>${html(metric.jobs)}</td><td>${metric.averageProcessingMs == null ? "Not available" : elapsed(metric.averageProcessingMs)}</td><td>${metric.failureRate == null ? "Not available" : `${Math.round(metric.failureRate * 100)}%`}</td></tr>`).join("") || `<tr><td colspan="4" class="empty">No compatible completed processing measurements are available yet.</td></tr>`;
-  page("Costs", "Authoritative provider ledgers, hard limits and explicitly unavailable billing data. Monitoring alerts never override a server-side cap.", `<div class="grid">${card("AI today", `$${html(Number(totals.day || 0).toFixed(4))}`, `Limit $${html(controls.dailyUsd ?? "—")}`)}${card("AI this month", `$${html(Number(totals.month || 0).toFixed(4))}`, `Limit $${html(controls.monthlyUsd ?? "—")}`)}${card("New audio today", `${Math.round(Number(totals.transcriptionSeconds || 0) / 60)} min`, `Limit ${Math.round(Number(controls.dailyTranscriptionSeconds || 0) / 60)} min`)}${card("Outstanding reservations", `$${html(Number(c.freeAi?.reservationsUsd || 0) + Number(c.audioTranscription?.reservationsUsd || 0)).toFixed(4)}`, "Reserved, not yet reconciled")}</div><section class="panel"><h3>Cost categories</h3><div class="table-wrap"><table><thead><tr><th>Category</th><th>Recorded cost</th><th>Reserved</th><th>Evidence</th></tr></thead><tbody><tr><td>Free AI intelligence</td><td>$${html(Number(c.freeAi?.actualUsd || 0).toFixed(4))}</td><td>$${html(Number(c.freeAi?.reservationsUsd || 0).toFixed(4))}</td><td>Application ledger</td></tr><tr><td>Audio transcription</td><td>$${html(Number(c.audioTranscription?.actualUsd || 0).toFixed(4))}</td><td>$${html(Number(c.audioTranscription?.reservationsUsd || 0).toFixed(4))}</td><td>${html(Math.round(Number(c.audioTranscription?.seconds || 0) / 60))} recorded minutes</td></tr><tr><td>Private Translate</td><td>${translation.totals ? `$${html(Number(translation.totals.monthUsd || 0).toFixed(4))}` : "Not available"}</td><td>${translation.reservations?.length ?? "Not available"} reservation(s)</td><td>Separate private-beta ledger</td></tr><tr><td>AWS infrastructure</td><td>Not available</td><td>Not applicable</td><td>${html(c.aws?.reason || "No server-side billing data is configured.")}</td></tr></tbody></table></div></section><section class="panel"><h3>Measured processing efficiency</h3><p>Only compatible, completed route records are compared.</p><div class="table-wrap"><table><thead><tr><th>Route</th><th>Jobs</th><th>Average processing</th><th>Failure rate</th></tr></thead><tbody>${routeRows}</tbody></table></div></section>`);
+  page("Costs", "Authoritative provider ledgers, hard limits and explicitly unavailable billing data. Monitoring alerts never override a server-side cap.", `<div class="grid">${card("AI today", `$${html(Number(totals.day || 0).toFixed(4))}`, `Limit $${html(controls.dailyUsd ?? "—")}`)}${card("AI this month", `$${html(Number(totals.month || 0).toFixed(4))}`, `Limit $${html(controls.monthlyUsd ?? "—")}`)}${card("New audio today", `${Math.round(Number(totals.transcriptionSeconds || 0) / 60)} min`, `Limit ${Math.round(Number(controls.dailyTranscriptionSeconds || 0) / 60)} min`)}${card("Outstanding reservations", `$${html((Number(c.freeAi?.reservationsUsd || 0) + Number(c.audioTranscription?.reservationsUsd || 0)).toFixed(4))}`, "Reserved, not yet reconciled")}</div><section class="panel"><h3>Cost categories</h3><div class="table-wrap"><table><thead><tr><th>Category</th><th>Recorded cost</th><th>Reserved</th><th>Evidence</th></tr></thead><tbody><tr><td>Free AI intelligence</td><td>$${html(Number(c.freeAi?.actualUsd || 0).toFixed(4))}</td><td>$${html(Number(c.freeAi?.reservationsUsd || 0).toFixed(4))}</td><td>Application ledger</td></tr><tr><td>Audio transcription</td><td>$${html(Number(c.audioTranscription?.actualUsd || 0).toFixed(4))}</td><td>$${html(Number(c.audioTranscription?.reservationsUsd || 0).toFixed(4))}</td><td>${html(Math.round(Number(c.audioTranscription?.seconds || 0) / 60))} recorded minutes</td></tr><tr><td>Private Translate</td><td>${translation.totals ? `$${html(Number(translation.totals.monthUsd || 0).toFixed(4))}` : "Not available"}</td><td>${translation.reservations?.length ?? "Not available"} reservation(s)</td><td>Separate private-beta ledger</td></tr><tr><td>AWS infrastructure</td><td>Not available</td><td>Not applicable</td><td>${html(c.aws?.reason || "No server-side billing data is configured.")}</td></tr></tbody></table></div></section><section class="panel"><h3>Measured processing efficiency</h3><p>Only compatible, completed route records are compared.</p><div class="table-wrap"><table><thead><tr><th>Route</th><th>Jobs</th><th>Average processing</th><th>Failure rate</th></tr></thead><tbody>${routeRows}</tbody></table></div></section>`);
 }
 function adSkip() {
-  const d = state.adSkip, c = d.counts;
+  const d = state.adSkip, c = { ...d.counts };
   // Keep synthetic evaluation receipts distinct from ordinary listening.
   c.automaticSkips = d.release.realEpisodeSkips ?? c.automaticSkips;
   c.undoEvents = Math.max(0, c.undoEvents - (d.release.evaluationUndos || 0));
@@ -459,5 +488,92 @@ function scheduleDetailRefresh() {
     detailPoll = setTimeout(async () => { if (document.querySelector("#rights-workspace:focus-within, #rights-workspace details[open]")) return scheduleDetailRefresh(); if (state.view === "podcastDetail" && state.podcastDetail?.feedUrl === feedUrl) { try { await openPodcast(feedUrl); } catch {} } }, 5000);
   }
 }
-function render() { ({ overview, podcasts, podcastDetail, episodeDetail, episodes, processing, listeners, operations, features, rights, policies, blocked, adSkip, intelligence, testing, translate, costs, audit, settings }[state.view] || overview)(); scheduleDetailRefresh(); }
+function enhanceCommandCentre() {
+  const content = document.querySelector('.content'); if (!content) return;
+  if (['podcastDetail','episodeDetail'].includes(state.view)) {
+    const podcast=state.view==='podcastDetail',d=podcast?state.podcastDetail:state.episodeDetail,policy=podcast?d.futurePolicy:d.episode.policy;
+    const toolbar=document.createElement('div');toolbar.className='row-actions';
+    if(podcast){const view=document.createElement('button');view.className='secondary';view.textContent='View Episodes';view.onclick=()=>content.querySelector('.episode-table')?.scrollIntoView({block:'start'});toolbar.append(view);}
+    if(isSuperAdmin()) {
+      const pause=document.createElement('button');pause.className='secondary';pause.textContent=policy.tier==='HIGH'?'Resume AI':'Pause AI';
+      pause.onclick=()=>{const select=document.querySelector('.policy-preview-form select[name="tier"]');if(select){select.value=policy.tier==='HIGH'?'ZERO':'HIGH';select.focus();select.scrollIntoView({block:'center'});notify('Record a reason and review the impact before saving.');}};toolbar.append(pause);
+      if(podcast && policy.tier!=='HIGH') {
+        const prepare=document.createElement('button');prepare.className='primary';prepare.textContent='Prepare Latest Episodes';
+        prepare.onclick=async()=>{const reason=prompt('Reason to prepare the latest three episodes within the current allowance:');if(!reason?.trim()||!confirm('Prepare up to three eligible episodes? Authorised audio fallback may use the existing allowance. Cached results and existing jobs will be reused.'))return;prepare.disabled=true;
+          try{const r=await api('/api/admin/podcasts/prepare',{method:'POST',body:JSON.stringify({feedUrl:d.feedUrl,reason,confirmation:'CONFIRM'})});await openPodcast(d.feedUrl);notify(r.outcome.changed);}catch(e){prepare.disabled=false;notify(e.message);}};toolbar.append(prepare);
+      }
+    }
+    const diagnostics=document.createElement('button');diagnostics.className='secondary';diagnostics.textContent='View Diagnostics';diagnostics.onclick=async()=>{state.view='processing';await load();render();};toolbar.append(diagnostics);
+    content.querySelector('.podcast-header,.episode-hero')?.insertAdjacentElement('afterend',toolbar);
+    const advisories=podcast?d.episodes.flatMap(e=>(e.advisories||[]).map(a=>({...a,title:e.title}))):d.episode.advisories || [];
+    if(advisories.length)content.insertAdjacentHTML('beforeend',`<section class="panel"><h3>Risk advisories</h3><ul class="attention-list">${advisories.slice(0,10).map(a=>`<li><div><strong>${html(a.title || a.code)}</strong><p>${html(a.reason || a.recommendedAction)}</p><p>${html(a.recommendedAction)}</p></div></li>`).join('')}</ul><p>Advisories do not change the operational policy. Mandatory restrictions remain independently enforced.</p></section>`);
+    if(podcast){const latest=d.episodes.slice(0,3);toolbar.insertAdjacentHTML('afterend',`<section class="panel"><h3>Latest three episodes</h3><ul class="attention-list">${latest.map(e=>`<li><div><strong>${html(e.title)}</strong><p>${badge(e.state)} · Transcript: ${html(e.transcript.sourceType || e.transcript.availability || 'Not recorded')} · ${e.adSkip.verifiedCount} verified intervals</p></div></li>`).join('')||'<li>Publisher metadata unavailable; saved processing records are preserved.</li>'}</ul></section>`);}
+    if(!podcast){const rows=content.querySelectorAll('.feature-table tbody tr'),reasons=new Set();rows.forEach(row=>{const reason=row.cells[2]?.textContent;if(reason && reasons.has(reason)) row.cells[2].textContent='Same restriction as above.';else reasons.add(reason);});}
+  }
+  if (state.view === 'processing') {
+    const d = state.processing, filter = state.jobFilter || 'ALL';
+    const panel = [...content.querySelectorAll('.panel')].find(p => p.querySelector('h3')?.textContent === 'Jobs');
+    if (panel) {
+      panel.querySelector('.panel-head').insertAdjacentHTML('beforeend', `<label>Job status<select id="job-filter">${['ALL','QUEUED','PROCESSING','READY','FAILED','BLOCKED','BUDGET_PAUSED','CANCELLED'].map(v => `<option ${v===filter?'selected':''}>${v}</option>`).join('')}</select></label>`);
+      document.querySelector('#job-filter').onchange = e => { state.jobFilter = e.target.value; render(); };
+      panel.querySelector('thead').innerHTML = '<tr><th>Episode</th><th>Status / stage</th><th>Priority / progress</th><th>ETA</th><th>Actual / reserved</th><th>Last update</th><th>Actions</th></tr>';
+      panel.querySelectorAll('tbody tr').forEach((tr,i) => {
+        const j = state.processingActions[i]; if (!j) return;
+        tr.hidden = filter !== 'ALL' && j.state !== filter;
+        tr.cells[2].innerHTML = `${html(j.trigger)} · ${html(j.priority)}<br><small>${html(workLabel(j.work))}</small>`;
+        tr.cells[3].textContent = j.estimatedCompletion?.label || 'ETA unavailable';
+        tr.cells[4].textContent = `$${Number(j.actualCostUsd || 0).toFixed(4)} / $${Number(j.reservedCostUsd || 0).toFixed(4)}`;
+        if(j.state==='QUEUED' && isSuperAdmin()){
+          const button=document.createElement('button');button.className='secondary';button.textContent='Prioritise';button.onclick=async()=>{const reason=prompt('Why should this queued episode take priority?');if(!reason?.trim()||!confirm('Raise queued priority? Active work and all safeguards remain unchanged.'))return;button.disabled=true;
+            try{const r=await api('/api/admin/intelligence/prioritise',{method:'POST',body:JSON.stringify({feedUrl:j.feedUrl,episodeId:j.episodeId,jobId:j.jobId,reason,confirmation:'CONFIRM'})});await load('processing');render();notify(r.outcome.changed);}catch(e){button.disabled=false;notify(e.message);}};tr.cells[6].append(button);
+        }
+      });
+    }
+    if (isSuperAdmin() && d.followedPreparation?.configuration.enabled) {
+      const button = document.createElement('button'); button.className='primary'; button.textContent='Prepare Missing Episodes';
+      button.onclick = async () => { const reason=prompt('Reason to dispatch eligible missing episodes within the existing allowance:'); if(!reason?.trim() || !confirm('Refresh the followed window and dispatch eligible missing work? Existing caches, retries and spending limits are preserved.')) return; button.disabled=true;
+        try { const r=await api('/api/admin/intelligence/followed',{method:'POST',body:JSON.stringify({action:'prepare-missing',reason,confirmation:'CONFIRM'})}); notify(r.outcome.next); await load('processing'); render(); } catch(e){button.disabled=false;notify(e.message);} };
+      document.querySelector('#followed-preparation .row-actions')?.prepend(button);
+    }
+    const cap=d.commandCentre.capacity;
+    content.insertAdjacentHTML('beforeend',`<section class="panel"><h3>Processing capacity</h3><p>Oldest queued: ${when(cap.oldestQueuedAt)} · ${cap.completedLast24Hours} completions in the past 24 hours · ${cap.retries} recorded retries.</p><button class="secondary" id="capacity-details">Worker, SQS and disk evidence</button></section>`);
+    document.querySelector('#capacity-details').onclick=async()=>{state.view='operations';await load();render();};
+  }
+  if (state.view === 'adSkip') {
+    const s=state.skipOperations.commandCentre.adSkip;
+    content.querySelector('.grid').innerHTML = card('Episodes analysed',s.analysedEpisodes,'Persisted analysis records')+card('Candidate intervals',s.candidates,'All recorded decisions')+card('Verified intervals',s.verifiedIntervals,'Independent boundary evidence')+card('Verified coverage',s.verifiedEpisodes,'Eligibility still checked per listen')+card('Skip attempts',s.attempted,'Real-episode telemetry')+card('Confirmed skips',s.confirmed,'Client-confirmed seeks')+card('Undo events',s.undo,'Real-episode telemetry')+card('Incorrect-skip reports',state.adSkip.counts.falsePositiveReports,'Reports, not adjudicated errors')+card('Variant mismatch events',s.variantMismatches,'Recorded events only');
+    content.querySelector('.grid').insertAdjacentHTML('afterend',`<p class="muted">${html(s.note)}</p>`);
+    if (isSuperAdmin()) content.querySelectorAll('.feature-table tbody tr').forEach((tr,i)=>{
+      const item=state.adSkip.intervals[i]; if(!item)return;
+      const cell=tr.insertCell(); cell.innerHTML=['reject','suspend','reverify'].filter(action=>action!=='reverify'||['CANDIDATE','VARIANT_MATCHED'].includes(item.verificationState)).map(action=>`<button class="secondary" data-skip-review="${action}">${{reject:'Reject',suspend:'Suspend',reverify:'Request re-verification'}[action]}</button>`).join(' ');
+      cell.querySelectorAll('button').forEach(button=>button.onclick=async()=>{const action=button.dataset.skipReview,reason=prompt('Record the evidence and reason for this interval decision:');if(!reason?.trim()||!confirm('Apply this interval review? No action can fabricate verification or bypass bounded retries.'))return;button.disabled=true;
+        try{const r=await api('/api/admin/ad-skip/review',{method:'POST',body:JSON.stringify({id:item.id,action,reason,expectedState:item.verificationState,confirmation:'CONFIRM'})});await load('adSkip');render();notify(r.outcome.changed);}catch(e){button.disabled=false;notify(e.message);}});
+    });
+  }
+  if (state.view === 'costs') {
+    const d=state.costs,c=d.commandCentre.cost,a=d.allowance;
+    const metrics=content.querySelectorAll('.grid .metric');metrics[0].textContent='$'+c.actualTodayUsd.toFixed(4);metrics[1].textContent='$'+c.actualMonthUsd.toFixed(4);
+    const notes=content.querySelectorAll('.grid .note');notes[0].textContent='Recorded spend · allowance $'+a.limits.dailyUsd;notes[1].textContent='Recorded spend · allowance $'+a.limits.monthlyUsd;
+    content.insertAdjacentHTML('beforeend',`<section class="panel"><h3>Available processing allowance</h3><dl class="fact-list"><div><dt>Remaining today / month</dt><dd>$${Number(a.remainingDailyUsd).toFixed(4)} / $${Number(a.remainingMonthlyUsd).toFixed(4)}</dd></div><div><dt>Current allowance</dt><dd>$${a.limits.dailyUsd} / day · $${a.limits.monthlyUsd} / month</dd></div><div><dt>Temporary allowance expiry</dt><dd>${a.temporaryExpiresAt?when(a.temporaryExpiresAt):'Standard allowance'}</dd></div><div><dt>Average per generated episode</dt><dd>${c.averagePerProcessedEpisodeUsd == null?'Unavailable':'$'+c.averagePerProcessedEpisodeUsd.toFixed(4)}</dd></div><div><dt>Ad verification cost</dt><dd>Not separately metered</dd></div></dl><p>${html(c.averageNote)} Ledger totals include reservations where applicable; they are not provider invoices. No allowance is changed here.</p></section>`);
+  }
+  if (state.view === 'podcasts') {
+    content.querySelectorAll('.catalogue-table tbody tr').forEach((tr,i)=>{const p=state.podcasts.items[i];if(!p)return;
+      tr.cells[1].innerHTML=`${p.knownEpisodes} known episodes<br><small>Latest: ${html(p.latestEpisode?.title || 'Unavailable')}</small>`;
+      tr.cells[2].innerHTML+=`<br>${intelligenceBadge(p.policy.tier)}<br><small>Latest three: ${p.latestThree.ready}/${p.latestThree.total} ready<br>${p.adSkipCoverage} with verified intervals<br>${p.attentionCount} need attention</small>`;
+    });
+  }
+  // Keep all primary controls keyboard/touch accessible without hiding sign-out.
+  content.querySelectorAll('table').forEach(t=>{t.parentElement.setAttribute('tabindex','0');t.parentElement.setAttribute('aria-label','Scrollable operational records');});
+}
+const workLabel = work => {
+  if (!work) return 'Completed work not recorded';
+  return Object.entries(work).filter(([k,v]) => typeof v==='number' && Number.isFinite(v)).map(([k,v]) => `${k.replace(/([A-Z])/g,' $1')}: ${v}`).join(' · ') || 'Completed work not recorded';
+};
+function render() {
+  ({ overview: commandOverview, attention: attentionInbox, podcasts, podcastDetail, episodeDetail, episodes, processing, listeners, operations, features, rights, policies, blocked, adSkip, intelligence, testing, translate, costs, audit, settings }[state.view] || commandOverview)(); enhanceCommandCentre(); scheduleDetailRefresh();
+  const params=new URLSearchParams({view:state.view});
+  if(state.view==='podcastDetail')params.set('feedUrl',state.podcastDetail.feedUrl);
+  if(state.view==='episodeDetail'){params.set('feedUrl',state.episodeDetail.podcast.feedUrl);params.set('episodeId',state.episodeDetail.episode.id);}
+  if(location.hash!=='#'+params){history.pushState(null,'','#'+params);window.scrollTo({top:0,behavior:'instant'});}
+}
 initialise();

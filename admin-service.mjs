@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { commandCentre } from './admin-command-centre.mjs';
 
 export const AdministratorRole = Object.freeze({
   SUPER_ADMIN: "SUPER_ADMIN",
@@ -55,6 +56,7 @@ const reportStates = new Set(["OPEN", "UNDER_REVIEW", "RESOLVED", "DISMISSED"]);
 const asArray = (store, kind) => store.all(kind).map(([, value]) => value);
 const numeric = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
 const dateMs = (value) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   const parsed = Date.parse(value || "");
   return Number.isFinite(parsed) ? parsed : null;
 };
@@ -255,7 +257,7 @@ export class AdminService {
     };
     const observedInfrastructure = infrastructure ? await infrastructure() : { status: "UNKNOWN", reason: "Infrastructure telemetry is not configured for this server." };
     const attention = [];
-    const addAttention = (item) => attention.push({ id: digest(JSON.stringify([item.kind, item.resource, item.reason])), ...item });
+    const addAttention = (item) => { if (!attention.some(row => row.resource === item.resource && row.reason === item.reason)) attention.push({ id: digest(JSON.stringify([item.kind, item.resource, item.reason])), ...item }); };
     for (const job of failures) addAttention({ kind: "PROCESSING_FAILURE", severity: job.followerImpact ? "HIGH" : "MEDIUM", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: job.reason || "Processing failed without a listener-facing reason.", detectedAt: job.updatedAt, listenerImpact: job.followerImpact, action: job.retryEligible ? "Review and retry the eligible job." : "Inspect the recorded blocker before any new request.", destination: "processing" });
     for (const job of projectedJobs.filter((job) => activeJobStates.has(job.rawState) && dateMs(job.deadlineAt) && dateMs(job.deadlineAt) < now)) addAttention({ kind: "STALLED_PROCESSING", severity: "CRITICAL", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: "The recorded processing deadline has passed.", detectedAt: job.deadlineAt, listenerImpact: job.followerImpact, action: "Open the job and verify its lifecycle before retrying.", destination: "processing" });
     for (const job of projectedJobs.filter((job) => job.state === "BUDGET_PAUSED")) addAttention({ kind: "BUDGET_PAUSED", severity: "HIGH", resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: job.reason || "The paid intelligence allowance prevented this request.", detectedAt: job.updatedAt, listenerImpact: job.followerImpact, action: "Inspect current allowance; do not raise a cap without approval.", destination: "costs" });
@@ -271,7 +273,7 @@ export class AdminService {
     for (const component of observedInfrastructure.components || []) if (["UNAVAILABLE", "DEGRADED"].includes(component.status)) addAttention({ kind: "INFRASTRUCTURE", severity: component.status === "UNAVAILABLE" ? "CRITICAL" : "HIGH", resource: component.name, reason: component.reason || "A measured infrastructure component needs attention.", detectedAt: observedInfrastructure.generatedAt || now, listenerImpact: null, action: "Open Operations and inspect the component evidence.", destination: "operations" });
     attention.sort((a, b) => severityRank[b.severity] - severityRank[a.severity] || (b.listenerImpact || 0) - (a.listenerImpact || 0) || (dateMs(a.detectedAt) || now) - (dateMs(b.detectedAt) || now));
     const knownEpisodeIds = new Set(projectedJobs.map((job) => `${job.feedUrl || ""}:${job.episodeId || ""}`).filter((value) => value !== ":"));
-    return {
+    const result = {
       generatedAt: now,
       dataStatus: "MEASURED",
       summary: {
@@ -291,6 +293,42 @@ export class AdminService {
       attention,
       infrastructure: observedInfrastructure,
     };
+    result.commandCentre = commandCentre(this.store, result, ledger, now);
+    result.processing.jobs = result.commandCentre.processing;
+    for (const record of rightsRecords) {
+      if (!record.feedUrl || !rights?.assessment) continue;
+      for (const advisory of rights.assessment(record.feedUrl,record.episodeId).advisories || []) {
+        addAttention({kind:'RIGHTS_ADVISORY',severity:'MEDIUM',resource:record.episodeTitle || record.podcast || record.feedUrl,feedUrl:record.feedUrl,episodeId:record.episodeId || null,reason:advisory.reason,evidence:advisory.code,features:advisory.features || ['Intelligence'],detectedAt:record.updatedAt || record.createdAt || null,action:advisory.recommendedAction,destination:'rights'});
+      }
+    }
+    for (const job of projectedJobs.filter(j => ['TRANSCRIPT_UNAVAILABLE','TRANSCRIPT_INVALID','LEGAL_BASIS_NOT_ESTABLISHED','RIGHTS_RESTRICTED'].includes(j.code))) {
+      addAttention({ kind: 'PROCESSING_ADVISORY', severity: 'MEDIUM', resource: job.episodeTitle, feedUrl: job.feedUrl, episodeId: job.episodeId, reason: job.reason || job.code, detectedAt: job.updatedAt, action: 'Inspect source evidence and the current enforced decision.', destination: 'processing', features: ['Intelligence'], evidence: job.code });
+    }
+    for (const item of skips?.operations?.().diagnostics || []) {
+      if (!item.code || ['READY','NO_ADVERTS_DETECTED'].includes(item.code)) continue;
+      addAttention({ kind: 'AD_SKIP_ADVISORY', severity: /DISPUT|MISMATCH/.test(item.code) ? 'HIGH' : 'LOW', resource: item.title, feedUrl: item.feedUrl, episodeId: item.episodeId, reason: item.nextAction || item.code, evidence: item.code, detectedAt: item.timeline?.at(-1)?.at || null, features: ['Ad Skip'], action: item.nextAction, destination: 'adSkip' });
+    }
+    result.attention = attention.map(item => {
+      const review = this.store.get('admin-advisory-review', item.id);
+      return { ...item, features: item.features || [item.destination], evidence: item.evidence || item.reason, status: review?.status || 'NEW', version: review?.version || 0, review: review ? { reason: review.reason, updatedAt: review.updatedAt, updatedBy: review.updatedBy } : null };
+    }).sort((a,b) => severityRank[b.severity] - severityRank[a.severity] || (b.listenerImpact || 0) - (a.listenerImpact || 0) || (dateMs(a.detectedAt) || now) - (dateMs(b.detectedAt) || now));
+    return result;
+  }
+  updateAdvisory(input, actor, currentItems) {
+    if (actor?.role !== 'SUPER_ADMIN' || actor.source !== 'session') throw Error('An authenticated Super Admin session is required.');
+    const item = currentItems.find(row => row.id === input.id);
+    if (!item) throw Error('This advisory is no longer active. Refresh the inbox.');
+    if (!['ACKNOWLEDGED','RESOLVED','DISMISSED'].includes(input.status)) throw Error('Choose a valid review outcome.');
+    const reason = safeText(input.reason, 1000);
+    if (!reason) throw Error('Record a review reason.');
+    const previous = this.store.get('admin-advisory-review', item.id);
+    if (input.expectedVersion !== (previous?.version || 0)) throw Error('This advisory changed. Refresh before saving.');
+    const next = { id: item.id, status: input.status, reason, version: (previous?.version || 0) + 1, updatedAt: this.now(), updatedBy: actor.id };
+    this.store.transaction(() => {
+      this.store.set('admin-advisory-review', item.id, next);
+      this.appendAudit({ actor, action: 'advisory-reviewed', resource: item.id, previousState: previous || { status: 'NEW' }, newState: next, reason, outcome: 'ALLOWED' });
+    });
+    return { advisory: next, outcome: { requested: input.status, succeeded: true, changed: 'Advisory review only. No policy or rights decision changed.', affectedEpisodes: 0, processingStarted: false, next: 'Enforced restrictions and processing safeguards remain unchanged.' } };
   }
   updateReport(input, actor) {
     const id = safeText(input?.id, 160);
