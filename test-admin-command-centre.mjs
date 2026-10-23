@@ -71,5 +71,8 @@ try {
   assert.equal(reverify.status,200);assert.equal((await reverify.json()).outcome.processingStarted,false);
   assert.equal(candidateSet.length,2,'re-verification preserves the full canonical input, not a subset that resets retry limits');
   app.skips.scheduleVerification=original;
+  for(const feed of ['https://first.fixture/rss','https://second.fixture/rss'])app.store.set('intelligence',episodeKey(feed,'same-title'),{feedUrl:feed,episodeId:'same-title',jobId:feed,state:'FAILED',reason:'Same provider failure',episode:{title:'Shared episode title'}});
+  const distinct=await(await request('/api/admin/operations')).json();const matching=distinct.attention.filter(a=>a.kind==='PROCESSING_FAILURE'&&a.resource==='Shared episode title');
+  assert.equal(matching.length,2,'same titles in different podcasts remain separate advisories');assert.notEqual(matching[0].id,matching[1].id);
 } finally {await new Promise(r=>app.server.close(r));app.store.close();}
 console.log('Command centre episode counts, evidence, human review, stale updates, CSRF, audit and interval safety passed');
