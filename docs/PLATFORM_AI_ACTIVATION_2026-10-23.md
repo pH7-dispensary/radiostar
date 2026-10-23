@@ -1,6 +1,6 @@
 # Platform AI activation — 23 October 2026
 
-Status: automation deployed and enabled; followed-podcast availability remains rights-blocked. A separate real, explicitly licensed episode completed the automatic audio-to-intelligence pipeline. Final UI/pause follow-ups are committed but deployment is blocked by AWS host-management failures.
+Status: automation deployed and enabled; followed-podcast availability remains rights-blocked. A separate real, explicitly licensed episode completed the automatic audio-to-intelligence pipeline. Final UI/pause follow-ups are committed but not deployed. Following the authorised recovery reboot, the API is unavailable (HTTP 504); boot logs confirm filesystem space exhaustion. Further disk recovery requires additional authorisation.
 
 ## Recorded results
 
@@ -51,14 +51,22 @@ Local and production admin login/rendering were exercised with real browser sess
 AWS account 208096650030 / eu-west-2 verified before deployment. Running release at last check:
 `0892793739f72fd0f5c797137b81231eb5f076d483a05424e8187e1707843ef1` (code through `145a3f7`).
 
-API, SQLite integrity, SQS, empty DLQ and worker verified healthy. Aggregate monitoring remains DEGRADED because CloudWatch delivery and S3 backup freshness are UNKNOWN in the application dashboard. A protected pre-change SQLite backup exists on the instance; previous source releases and S3 rollback archives are retained. AWS incremental billing is not yet established; no new recurring infrastructure was added.
+Before the recovery reboot, API, SQLite integrity, SQS, empty DLQ and worker were verified healthy. Aggregate monitoring was DEGRADED because CloudWatch delivery and S3 backup freshness are UNKNOWN in the application dashboard. A protected pre-change SQLite backup exists on the instance; previous source releases and S3 rollback archives are retained. Post-reboot database integrity cannot yet be checked because management access is unavailable. AWS incremental billing is not yet established; no new recurring infrastructure was added.
 
 Commits: `529a2c9` shared preparation; `0de7255` asynchronous discovery; `145a3f7` RSS scope/performance correction; `6a8b9c1` READY labels/window coverage; `06776d6` pause semantics and independent cached skips.
 
-The last two follow-ups are **not yet verified deployed**. SSM command `b841fa1b-b306-4ca9-bc02-bbbbd0a5f982` reported an IPC worker timeout; subsequent deploy/read-only commands failed. EC2 checks and API remain healthy. Both Session Manager modes fail with missing `InteractiveCommands` / `Standard_Stream` plugins despite the agent reporting Online. Host resource/file-creation failure is possible, not proven. No production files were deleted, host rebooted or volume resized to guess at a repair. A maintenance reboot requires user approval; inspect any abandoned staged release before retrying deployment. Terraform release-object state is not proof of the running application version.
+The last two follow-ups are **not yet verified deployed**. SSM command `b841fa1b-b306-4ca9-bc02-bbbbd0a5f982` reported an IPC worker timeout; subsequent deploy/read-only commands failed. Both Session Manager modes initially failed with missing `InteractiveCommands` / `Standard_Stream` plugins despite the agent reporting Online. Terraform release-object state is not proof of the running application version.
+
+### Authorised reboot and confirmed recovery blocker
+
+- User explicitly authorised a brief reboot, excluding data deletion or storage/spending-limit increases. Reverified account 208096650030, region eu-west-2, instance `i-08537aa0e84163cb9` and `Project=StarCast` ownership. At 09:57:19 UTC, API/database/worker were healthy, no active intelligence jobs existed and both queues were empty.
+- Issued EC2 `RebootInstances` for that exact instance. Boot console output retrieved at 09:58:31 UTC showed repeated `OSError: [Errno 28] No space left on device` while creating `/var/lib/cloud/data/` temporary files, with cloud-init services failing. This confirms filesystem allocation failure; bytes versus inodes and the files responsible remain unmeasured.
+- Root EBS volume `vol-06c0850a7ca6e69e0` is encrypted gp3, 30 GiB, attached, with delete-on-termination disabled. EC2 system/instance/EBS reachability checks pass, but public API returns HTTP 504. Session Manager now returns `TargetNotConnected`; diagnostic Run Command `a3b69250-7de5-4d47-b731-720f10bffea0` remains pending. Serial-console access is not enabled.
+- No production files were deleted, volumes resized, instances replaced, security groups opened or budgets increased. Data retention is not a substitute for a post-recovery integrity check.
+- Next recovery needs explicit approval: snapshot the volume, use a temporary same-account recovery instance if access cannot otherwise be restored, inspect actual disk/inode usage, and clean only verified obsolete deployment artifacts while retaining the database, credentials, current release and a known-good rollback. Temporary compute/snapshot charges apply. Do not infer authority to resize or remove application data. See [AWS filesystem exhaustion recovery guidance](https://www.repost.aws/knowledge-center/ec2-linux-resource-over-utilization).
 
 ## Remaining external decisions
 
-1. Restore AWS host-management access to deploy the final two fixes. No TestFlight build is required.
+1. Authorise controlled disk recovery to restore the API and host-management access, then deploy the final two fixes. No TestFlight build is required.
 2. Establish and record valid processing bases for the 15 unresolved episodes and review the three recorded publisher restrictions. Automatic reassessment does not convert missing evidence into permission.
 3. Real advertisement boundary/variant precision and physical-iPhone skip/Undo validation remain unproven beyond the existing controlled fixture. Do not describe this release as universal intelligence coverage or validated real-world Ad Skip.
