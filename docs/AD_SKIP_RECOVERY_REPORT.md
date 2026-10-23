@@ -1,4 +1,66 @@
-# Ad Skip recovery — 22 October 2026
+# Ad Skip recovery — Phase 4, 23 October 2026
+
+## Current result: PARTIALLY VERIFIED
+
+Backend/admin changes are deployed. **One real, licensed episode now has one short independently audio-verified span, one confirmed browser-media skip and one successful Undo using the shared native execution adapter and live AWS authorisation. This is not a full-ad skip and not physical-iPhone verification.** Three other strong candidates still lack adequate acoustic boundary evidence; public automatic skipping remains disabled.
+
+Repository `/Users/oska/Documents/star-cast`, branch `work`, starting commit `f76179d`. Implementation commits: `b11900d`, `8da990c`, `c625290`, `f26ce7f`. Unrelated untracked files are preserved. No Phase 5, native build, TestFlight submission, budget increase or pH7 change.
+
+### Implemented and verified repairs
+
+- Shared preparation is independent of the listener who won the processing queue. The existing latest-three workflow and transcript-ready callback remain authoritative; briefs/chapters need not complete first. Cached candidate analysis is reused without repeated writes; no duplicate paid job was created.
+- Candidate detection handles split sponsorship/offer language and spoken referral addresses with both an addressed sign-up action and an account offer. A URL, price or ordinary product discussion alone is insufficient. Explicit non-advertising context is rejected. Every candidate retains segment IDs and a decision reason. No vendor-specific or manually labelled timestamps are injected into detection.
+- Audio verification keeps the exact transcript/audio content hash, the same −42 dB/120 ms silence criterion and PCM boundary fingerprints. Coarse transcript timing can now be trimmed **inward only**, at most three seconds and at most one-third of the candidate per side. It never extends a candidate. Uncertain spans remain unverified. Verifier upgrades get a bounded reevaluation; unchanged results do not repeatedly download audio.
+- Verification has persisted retry counts/cooldowns, a two-attempt bound per input/version, restart recovery, and source/permission checks before and after asynchronous work. Disputed/rejected records are not reinstated. Overlapping verified evidence produces only non-overlapping playback leases.
+- **Live security defect found and fixed:** the general `PRIVATE_BETA` flag previously bypassed explicit tester membership when an ordinary beta listener enabled Ad Skip. QA caught this before requesting a lease or performing a seek. Rollout metadata was temporarily contained, then restored after deployment. Every executable lease now requires an active, explicitly enrolled internal tester, independently of generic feature flags. Regression tests enable the ordinary listener's preferences and both PRIVATE_BETA/ENABLED flags; status and authorisation remain denied. Pilot expiry/kill switch remain effective.
+- Existing native panels show checking, verification, unavailable, no-advert and ready states, refresh quietly, and discard stale-source results. Admin diagnostics show verification attempts, retry time, confirmed seeks and Undo/failure counts. The existing layout was preserved and checked for accessibility/status clarity rather than redesigned. These native source changes passed exports but are **not distributed in a new iOS build**.
+
+### Real episode, rights and independent evidence
+
+**Linux Action News 164**, Chris Fisher and Wes Payne, Jupiter Broadcasting, 22 November 2020. The [publisher episode page](https://www.jupiterbroadcasting.com/show/linux-action-news/164/) declares its shows [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The audited assessment is episode-only: internal transcription/analysis and advertisement capability. No channel/future grant, public transcript, captions, dubbing, voice cloning or broader display permission was invented. Attribution and ShareAlike obligations are recorded; publisher audio is unchanged and is not redistributed by this evaluation.
+
+[Kev Quirk's independently published 23 November 2020 labels](https://kevquirk.com/has-jupiter-broadcasting-gone-down-the-pan/) identify Linode at 09:00–12:05 and Ting at 20:35–22:35. [Publisher chapter metadata](https://feeds.fireside.fm/linuxactionnews/json/episodes/615c6587-31a8-41a4-9a7c-e3b88b1df894/chapters) corroborates the 725 s and 1355 s returns to editorial topics. **These historical labels are not hash-bound current-variant ground truth.** The current transcript corroborates the commercial content; no production precision/recall is inferred from this single episode.
+
+Identity: feed `https://linuxactionnews.com/rss`, episode `615c6587-31a8-41a4-9a7c-e3b88b1df894`; job `3a17ddf8-f61b-42a5-a86e-c911b3f33c54`. Measured audio length 1,806,969 ms, 22,046,309 bytes. Current source SHA-256 `d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4` matches the transcription source and the bytes actually played.
+
+At **13:37:58 UTC**, verified interval `f6ae5c5e5e76acbddec74caf6f9edbe060896d4c90e7bdca2b9cbd433165dba9` covered **716,186–720,541 ms (11:56.186–12:00.541)**: only 4.355 seconds within the Linode offer, not the whole 185-second break. Playback entered at 716,191.366 ms; after authorisation, the confirmed seek reached 720,541 ms, skipping **4,016.837 ms** from the then-current position. Playback continued at 1.5×. Undo restored exactly 716,191.366 ms and playback continued at 1.5×. Requested, attempted, confirmed, Undo-requested and Undo-confirmed events are persisted. These remain client-confirmed telemetry, not independent safety certification.
+
+Reproduction: `RADIOSTAR_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node scripts/verify-real-ad-skip.mjs --play fixtures/linux-action-news-164-evaluation.json`. Requires the existing ignored cloud/admin connection files and already-authorised, verified content. It does not start AI processing or approve rights. It creates/revokes its own temporary QA installation, restores tester membership and leaves the user's invitation untouched. Each invocation intentionally records another real test seek; do not treat repeats as distinct accuracy samples.
+
+### Phase 4 measurements
+
+| Requested measure | Evidence |
+|---|---|
+| Episodes analysed | 1 new real episode; 10 persisted episode analyses total (including the existing owned fixture). |
+| Candidates generated | 5 new records: 4 strong commercial spans across the two labelled breaks, plus 1 low-confidence self-promotion cue. |
+| Verified advert intervals | 1 new real interval; 2 total including the previous owned fixture. Three strong real candidates remain VARIANT_MATCHED, not VERIFIED. |
+| Episodes with usable Ad Skip | 1 real episode with a **partial** span; previous controlled fixture remains available. |
+| Automatic seeks attempted | 1 real test seek, confirmed by media events and persisted stage telemetry. |
+| Automatic seeks confirmed | 1 new real seek; 2 cumulative including the old fixture. No failed real seek in this run. |
+| Undo | 1/1 real test restored the exact requested position and retained speed/playback; 2 cumulative including the fixture. |
+| Accuracy | Not production-measured. Candidate spans overlap both historical ad regions, but only 4.355 s is verified; most ad duration is not skipped. No validated precision, recall, boundary-error distribution or general false-positive rate. |
+| Audio variants | Current full-file SHA matched. Deliberately wrong hash denied. The real CDN ignored the deliberately wrong If-Match precondition: one range-proof rejection, safely falling back to an exact 22 MB local copy. No mismatched-source skip. |
+| Technical blockers | Three uncertain boundaries; no whole-break detection/verification proof; CDN conditional streaming unsupported; large sources on such CDNs cannot use the 32 MiB fallback. Physical iPhone/AVPlayer/background/interruption verification outstanding. |
+| Recorded processing cost | **$0.186903**: $0.180800 Whisper (1,808 billed seconds including overlap/rounding) + $0.006103 text. Exactly one job, two audio chunks, one text request; no retranscription for detection/verifier iterations. |
+| AWS deployment | Account 208096650030, eu-west-2; existing EC2/SQS/S3 reused. Final release `3974c28544fd565d5c4c9f8e749022388ccda51f705586d713a1de19546d36ed`, deployed 13:37:02 UTC. |
+| Git | Four implementation commits listed above; reproducible QA and this report committed separately on `work`. |
+| Physical device | **NOT VERIFIED.** Real Chromium media playback + shared native adapter is not native AVPlayer/iPhone testing. No new native build or TestFlight upload. |
+
+### Final validation and operational state
+
+Full `npm test` passes after the security repair; targeted detection/audio/pilot/recovery/latest-three tests, native TypeScript, Expo web and iOS Hermes exports, JavaScript syntax checks and `git diff --check` pass. Mock-paid-provider tests cover hostile/oversized range responses, synthetic 250 MB range proof, source changes, stale leases, disputes, bounded retries, speed/Undo and cache reuse. Browser native checks cover 320/375/390/430 px, light/dark, reduced motion, network states and automatic status refresh. Authenticated live admin checks pass at 1440/768/375 px with no page errors or page-wide overflow, and show the actual real-episode seek/Undo. Unauthenticated admin access returns 403.
+
+SQLite backup `/var/lib/starcast/pre-adskip-phase4-20261023.sqlite` and the final production database both pass integrity checks. About 24 GiB free; no schema migration. HTTPS, worker, SQS and DLQ are healthy; queue counts zero. Idle-guarded restart preserves jobs, verified intervals and expenditure without duplicate processing. The existing operations dashboard still marks unqueried CloudWatch/S3 freshness UNKNOWN; this is not described as fully measured green infrastructure.
+
+Ledger: **$0.998569 today / $1.562445 month-to-date**, 9,578 transcription seconds today, 41 usage records, zero reservations. Standard $5/day, $25/month, three audio hours/day and two-hour source limits unchanged. Existing temporary caps and **2026-10-27T21:53:27.023Z** expiry unchanged; primary tester only after QA cleanup. Translate's independent ledger/access untouched. No new recurring infrastructure; incremental AWS requests/storage/delivery charges are not separately billed yet, so no zero-cost claim.
+
+Terraform final plan has no drift; only release objects and their attribution tags changed. Two local rollback source releases and S3 rollback archives remain available. Bounded retention removed only superseded source directories `previous-1792759412`, `previous-1792760182`, `previous-1792761507`, and `previous-1792762014`, recoverable from their S3 archives. Database, credentials and diagnostic logs were preserved. **Rollback to an older release must retain the temporary zero-percent general Ad Skip flag until the strict tester gate is reapplied**, because earlier code contains the membership bypass.
+
+Phase 4 remains **PARTIALLY VERIFIED**, not complete: next acceptance evidence must establish broader independently labelled current-audio boundaries and confirm actual iPhone/background seek/Undo. Do not lift public safety gates on the strength of this narrow result.
+
+---
+
+## Historical baseline — 22 October 2026
 
 ## Executive result
 

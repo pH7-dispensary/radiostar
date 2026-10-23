@@ -1,0 +1,11 @@
+{
+  "feedUrl": "https://linuxactionnews.com/rss",
+  "episodeId": "615c6587-31a8-41a4-9a7c-e3b88b1df894",
+  "audioUrl": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+  "attribution": "Linux Action News 164, Chris Fisher and Wes Payne, Jupiter Broadcasting, 22 November 2020. Publisher declares shows CC BY-SA 4.0. Audio remains unmodified at publisher source; no media is included in this fixture.",
+  "publisherSource": "https://www.jupiterbroadcasting.com/show/linux-action-news/164/",
+  "licence": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "labelSource": "https://kevquirk.com/has-jupiter-broadcasting-gone-down-the-pan/",
+  "labelLimitations": "Independent historical labels from 23 November 2020, not hash-bound current-variant ground truth. Publisher chapter transitions at 725 and 1355 seconds corroborate the ends. Do not infer production precision or full-ad recall from this one episode.",
+  "labels": [{"startMs":540000,"endMs":725000},{"startMs":1235000,"endMs":1355000}]
+}
