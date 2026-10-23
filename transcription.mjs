@@ -12,6 +12,7 @@ import { downloadPublicAudio, publicUrl } from "./safe-network.mjs";
 import { assessTranscript } from "./transcripts.mjs";
 
 const exec = promisify(execFile);
+export const TRANSCRIPTION_ASSEMBLY_VERSION = "chunk-boundaries-v2";
 export function planAudioSegments({
   durationMs,
   maxSegmentMs = 20 * 60_000,
@@ -56,6 +57,29 @@ export function mergeTranscriptSegments(segments) {
       prior.text.toLowerCase().endsWith(text.toLowerCase())
     )
       continue;
+    // Independently transcribed overlap can put a short tail from chunk N
+    // inside the first segment from chunk N+1. Preserve both observations in
+    // one source interval; do not invent timing or weaken the validator for
+    // malformed/nested segments elsewhere in a chunk.
+    if (prior && Number.isInteger(segment.chunkIndex) && Number.isInteger(prior.chunkIndex) &&
+        segment.chunkIndex !== prior.chunkIndex && segment.startMs < prior.endMs && segment.endMs <= prior.endMs &&
+        Math.max(segment.chunkStartMs, prior.chunkStartMs) < Math.min(segment.chunkEndMs, prior.chunkEndMs)) {
+      const sources = [...(prior.overlapSources || [prior]), { ...segment, text }]
+        .map(({ id, startMs, endMs, text, chunkIndex }) => ({ id, startMs, endMs, text, chunkIndex }))
+        .sort((a, b) => a.chunkIndex - b.chunkIndex || a.startMs - b.startMs);
+      const words = value => value.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").split(/\s+/);
+      let combined = sources[0].text;
+      for (const source of sources.slice(1)) {
+        const left = words(combined), right = words(source.text);
+        let overlap = Math.min(left.length, right.length);
+        while (overlap && left.slice(-overlap).join(" ") !== right.slice(0, overlap).join(" ")) overlap--;
+        combined = overlap === left.length ? source.text : combined + (overlap === right.length ? "" : " " + source.text.split(/\s+/).slice(overlap).join(" "));
+      }
+      prior.text = combined;
+      prior.overlapSources = sources;
+      prior.timestampPrecision = "overlapping_chunk_union";
+      continue;
+    }
     merged.push({ ...segment, text });
   }
   return merged;
@@ -207,15 +231,25 @@ export async function transcribeOnDemand({
       for (const [i, s] of response.segments.entries()) {
         if (s.no_speech_prob > 0.8 || s.avg_logprob < -1) continue;
         const startMs = part.startMs + Math.round(s.start * 1000),
-          endMs = Math.min(durationMs, part.startMs + Math.round(s.end * 1000));
-        if (startMs < part.startMs || endMs > part.endMs + 1000)
+          observedEndMs = part.startMs + Math.round(s.end * 1000);
+        // Whisper can place its final speech segment slightly beyond the
+        // submitted chunk (observed 1.2 s). Clip only bounded terminal drift
+        // to the KNOWN audio extent; larger/invalid timings still fail closed.
+        if (!Number.isFinite(startMs) || !Number.isFinite(observedEndMs) || startMs < part.startMs ||
+            startMs > part.endMs || observedEndMs > part.endMs + 2000 || observedEndMs <= startMs)
           throw Error("Transcription timing failed validation.");
+        const endMs = Math.min(durationMs, part.endMs, observedEndMs);
+        if (startMs === endMs) continue;
         responses.push({
           id: part.index + "-" + i,
           startMs,
           endMs,
+          ...(observedEndMs > endMs ? { timestampPrecision: "clipped_to_chunk_extent", providerEndMs: observedEndMs } : {}),
           text: s.text,
           contentType: "conversation",
+          chunkIndex: part.index,
+          chunkStartMs: part.startMs,
+          chunkEndMs: part.endMs,
         });
       }
       onProgress({ completedChunks: part.index + 1, totalChunks: plan.length, completedSourceMs: part.endMs, sourceDurationMs: durationMs });

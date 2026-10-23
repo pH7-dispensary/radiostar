@@ -59,5 +59,17 @@ try {
   assert.equal(prep.summary().rows.find(r=>r.key===key).state,'BUDGET_PAUSED');
   store.set('intelligence',key,{...failed,state:'PROCESSING',completedAt:null,processingStage:'TRANSCRIBING',work:{completedChunks:1,totalChunks:2}});
   const progress=prep.summary().rows.find(r=>r.key===key);assert.equal(progress.state,'TRANSCRIBING');assert.equal(progress.work.completedChunks,1);assert.equal(progress.queuePosition,null);
+  store.set('intelligence',key,failed);
+  pipeline.client.audio.transcriptions.create=async()=>{paidAudioCalls++;return {segments:[]};};
+  await pipeline.request({feedUrl,episodeId:'fallback',allowAudio:true,retry:true,trigger:'admin'});
+  await pipeline.executeQueued(queued.at(-1));
+  const invalid=pipeline.status(feedUrl,'fallback');assert.equal(invalid.code,'TRANSCRIPT_VALIDATION_FAILED');assert.equal(invalid.retryable,false);
+  const paidBefore=paidAudioCalls;await pipeline.recoverQueued();assert.equal(paidAudioCalls,paidBefore,'invalid saved results are not blindly purchased again');
+  queued.length=0;
+  store.set('intelligence',key,{...failed,transcript:undefined,processingStage:'TRANSCRIBING',code:'ANALYSIS_FAILED',recoveries:2});
+  await pipeline.recoverQueued();assert.equal(queued.length,1,'known pre-fix assembly failure gets one checkpoint-based repair');
+  const repaired=store.get('intelligence',key);assert.equal(repaired.recoveries,2,'ordinary retry cap not reset');
+  queued.length=0;store.set('intelligence',key,{...repaired,state:'FAILED',processingStage:'TRANSCRIBING',code:'ANALYSIS_FAILED',completedAt:new Date(0).toISOString()});
+  await pipeline.recoverQueued();assert.equal(queued.length,0,'software repair cannot replay indefinitely');
 } finally {store.close();}
 console.log('Followed cache/publisher/audio handoff, variant safety, measured progress, SQS redelivery, bounded technical recovery and uncertain-outcome protection passed.');

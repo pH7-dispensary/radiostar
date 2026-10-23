@@ -6,7 +6,7 @@ import {
   createOpenAIClient,
   PROCESSING_VERSION,
 } from "./openai-intelligence.mjs";
-import { prepareAudio, transcribeOnDemand } from "./transcription.mjs";
+import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION } from "./transcription.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
@@ -162,6 +162,12 @@ function failure(error) {
   if (error?.code === "TESTING_EXPIRED") return { code: error.code, reason: "Internal testing has ended or been disabled. Cached intelligence remains available.", retryable: false };
   if (error?.code === "PROVIDER_OUTCOME_UNKNOWN") return { code: error.code, reason: "A provider request has an unknown outcome. An administrator must review it before another paid attempt.", retryable: false };
   const message = String(error?.message || "");
+  if (/Transcription (timing failed validation|quality was insufficient|returned no usable timestamped speech)/i.test(message))
+    return {
+      code: "TRANSCRIPT_VALIDATION_FAILED",
+      reason: "The transcription could not be validated safely. Completed provider responses are preserved for technical review.",
+      retryable: false,
+    };
   if (/incomplete|JSON|source validation/.test(message))
     return {
       code: "SOURCE_VALIDATION_FAILED",
@@ -657,13 +663,19 @@ export class EpisodePipeline {
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
       const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
+      // One bounded software-repair replay of the pre-fix assembly failures.
+      // Reuses paid checkpoints; never resets retry counts or unknown outcomes.
+      const assemblyRecovery = status.platformProcessing && status.state === "FAILED" && status.code === "ANALYSIS_FAILED" &&
+        status.processingStage === "TRANSCRIBING" && !status.transcript && status.transcriptionAssemblyVersion !== TRANSCRIPTION_ASSEMBLY_VERSION &&
+        this.store.all("transcription-checkpoint").some(([id, chunk]) => id.startsWith(key + ":") && chunk.state === "READY");
       const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
         now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
-      if (limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry)) {
+      if (!this.inflight.has(key) && limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
         if (totals.day < limits.dailyUsd && totals.month < limits.monthlyUsd && totals.transcriptionSeconds < limits.dailyTranscriptionSeconds) {
-          const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
+          const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0),
+            ...(assemblyRecovery ? { transcriptionAssemblyVersion: TRANSCRIPTION_ASSEMBLY_VERSION } : {}), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
           this.store.set("processing-outbox", status.jobId, { key, ...resumed });
         } else this.store.set("intelligence", key, { ...status, resumeAfter: new Date(now + 3600000).toISOString() });
       }
