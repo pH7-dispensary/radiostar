@@ -1747,7 +1747,10 @@ export function createStarCastServer({
         if (!actor || req.method === "POST" && actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super administrator access is required for preparation changes." });
         if (req.method === "POST") {
           const input = await body(req);
-          if (input.action === "estimate") await followedPreparation.refresh({ force: true });
+          if (input.action === "estimate") {
+            void followedPreparation.refresh({ force: true }).catch(() => console.error(JSON.stringify({ event: "followed-discovery-failed", code: "SOURCE_UNAVAILABLE" })));
+            return send(res, 202, followedPreparation.summary());
+          }
           else {
             store.transaction(() => {
               const change = followedPreparation.action(input, actor);

@@ -28,6 +28,14 @@ await new Promise(r=>app.server.listen(0,"127.0.0.1",r));
 const origin=`http://127.0.0.1:${app.server.address().port}`;
 try {
   assert.throws(()=>prep.action({action:"activate",reason:"test",confirmation:"CONFIRM",expectedVersion:0},actor),/Estimate/);
+  let releaseDiscovery;
+  const discoveryGate=new Promise(resolve=>{releaseDiscovery=resolve;}), discover=prep.discover;
+  prep.discover=async feed=>{await discoveryGate;return discover(feed);};
+  try {
+    const accepted=await fetch(origin+'/api/admin/intelligence/followed',{method:'POST',headers:{'x-star-cast-admin-token':'admin','content-type':'application/json'},body:JSON.stringify({action:'estimate'}),signal:AbortSignal.timeout(2000)});
+    assert.equal(accepted.status,202);assert.equal((await accepted.json()).refreshInProgress,true);assert.equal(audioCalls,0);
+  } finally {releaseDiscovery();}
+  await prep.refreshing;prep.discover=discover;
   const estimate=await prep.refresh({force:true});
   app.adminService.setFeatureFlag({id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100,reason:'Authorised fixture verification'},actor);
   assert.equal(estimate.snapshot.activeUsers,2);assert.equal(estimate.snapshot.feeds,2);assert.equal(estimate.uniqueEpisodes,6);assert.equal(audioCalls,0);

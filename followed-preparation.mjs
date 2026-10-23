@@ -72,7 +72,7 @@ export class FollowedPreparation {
     const key = episodeKey(feedUrl, episodeId), old = this.store.get("followed-demand", key);
     const row = { ...old, key, feedUrl, episodeId, priority: source === "playing" ? 100 : 80, source, encounterOwner: listenerId, encounteredAt: iso(), createdAt: old?.createdAt || iso() };
     this.put(row);
-    await this.drain();
+    void this.drain().catch(() => {});
   }
   async drain() {
     if (this.draining) return this.draining;
@@ -125,7 +125,7 @@ export class FollowedPreparation {
     const pending = window.filter(v => v.state !== "READY"), estimates = pending.map(v => v.estimate);
     const knownUsd = estimates.reduce((n, v) => n + (v?.audioUsd || 0) + (v?.textUsd || 0), 0);
     const completedLast24Hours = window.filter(v => v.state === "READY" && Date.parse(v.completedAt) >= Date.now() - 86400000).length;
-    return { configuration: this.configuration(), snapshot, counts, uniqueEpisodes: window.length, requiringPreparation: pending.length,
+    return { configuration: this.configuration(), refreshInProgress: Boolean(this.refreshing), snapshot, counts, uniqueEpisodes: window.length, requiringPreparation: pending.length,
       estimate: { knownUsd, unknownEpisodes: estimates.filter(v => v?.audioUsd == null || v?.textUsd == null).length, eligibleKnownUsd: pending.filter(v => v.eligible).reduce((n,v) => n + (v.estimate?.audioUsd || 0) + (v.estimate?.textUsd || 0), 0), completionEta: null, reason: "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable." },
       throughput: { completedLast24Hours, episodesPerHour: completedLast24Hours / 24, observationWindowHours: 24 },
       expenditure: { ...this.ledger.totals(), actualMonthUsd: this.ledger.usage.filter(v => v.at.startsWith(iso().slice(0,7))).reduce((n,v) => n + v.usd, 0), reservedUsd: [...this.ledger.reservations.values()].reduce((n,v) => n + v.usd, 0) }, rows: rows.sort((a,b) => b.priority-a.priority).slice(0, 100), totalRows: rows.length };
@@ -135,6 +135,7 @@ export class FollowedPreparation {
     if (!String(input.reason || "").trim()) throw Error("Provide a reason for this operational change.");
     if (["activate", "suspend"].includes(input.action)) {
       if (!this.store.get(kind, "snapshot")) throw Error("Estimate the followed backlog before activation.");
+      if (input.action === "activate" && this.refreshing) throw Error("Wait for backlog discovery to finish before activation.");
       if (input.confirmation !== "CONFIRM") throw Error("Confirm the platform-wide change.");
       const old = this.configuration();
       if (input.expectedVersion !== old.version) throw Error("Configuration changed. Reload before saving.");

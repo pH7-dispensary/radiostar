@@ -206,7 +206,8 @@ function followedPreparationPanel(d) {
   return `<section class="panel" id="followed-preparation"><div class="panel-head"><div><span class="eyebrow">AI Processing</span><h3>Followed Podcasts</h3><p>Latest three episodes per podcast, shared across listeners.</p></div>${badge(d.configuration.enabled ? "ACTIVE" : "PAUSED")}</div>
     <div class="grid">${card("Followed podcasts", snapshot?.feeds ?? "—", `${snapshot?.activeUsers ?? "—"} active profiles evaluated`)}${card("Ready", d.counts.READY || 0, `${d.uniqueEpisodes} unique episodes`)}${card("Awaiting preparation", d.requiringPreparation, `${d.counts.REVIEW_REQUIRED || 0} need rights review`)}${card("Backlog estimate", `$${d.estimate.knownUsd.toFixed(2)}`, `${d.estimate.unknownEpisodes} unknown estimates; not a spending reservation`)}</div>
     <p class="muted small">Eligible backlog estimate: $${d.estimate.eligibleKnownUsd.toFixed(2)} · Recorded AI spend this month: $${Number(d.expenditure.actualMonthUsd || 0).toFixed(4)} · Reserved: $${Number(d.expenditure.reservedUsd || 0).toFixed(4)} · ${d.throughput.completedLast24Hours} completed in the last 24 hours. ${html(d.estimate.reason)}</p>
-    ${isSuperAdmin() ? `<div class="row-actions"><button class="secondary" data-followed-action="estimate">Refresh estimate</button><button class="secondary" data-followed-action="${d.configuration.enabled ? "suspend" : "activate"}">${d.configuration.enabled ? "Pause new preparation" : "Activate preparation"}</button></div>` : ""}
+    ${d.refreshInProgress ? `<p role="status">Reading publisher feeds… The estimate will update automatically. No paid work starts during discovery.</p>` : ""}
+    ${isSuperAdmin() ? `<div class="row-actions"><button class="secondary" data-followed-action="estimate" ${d.refreshInProgress ? "disabled" : ""}>Refresh estimate</button><button class="secondary" data-followed-action="${d.configuration.enabled ? "suspend" : "activate"}" ${d.refreshInProgress && !d.configuration.enabled ? "disabled" : ""}>${d.configuration.enabled ? "Pause new preparation" : "Activate preparation"}</button></div>` : ""}
     ${snapshot?.errors?.length ? `<p class="error">${snapshot.errors.length} feeds could not be refreshed. Existing results are retained.</p>` : ""}
     <div class="table-wrap"><table><thead><tr><th>Episode</th><th>Preparation</th><th>Priority</th><th>Actions</th></tr></thead><tbody>${rows.length ? rows.map((row,i) => `<tr><td><strong>${html(row.title || row.episodeId)}</strong><br><small>${html(row.podcast || row.feedUrl)}</small></td><td>${badge(row.state)}<br><small>${html(label(row.code || ""))}</small></td><td>${row.priority}</td><td><div class="row-actions"><button class="secondary" data-followed-open="${i}">Inspect</button>${isSuperAdmin() ? ["prioritise", row.paused ? "retry" : "pause", "retry"].filter((v,i,a) => a.indexOf(v) === i).map(action => `<button class="secondary" data-followed-action="${action}" data-followed-index="${i}">${html(label(action))}</button>`).join("") : ""}</div></td></tr>`).join("") : `<tr><td colspan="4" class="empty">${snapshot ? "No eligible followed podcasts are recorded." : "Refresh the estimate to discover the followed-podcast backlog. No paid processing starts during estimation."}</td></tr>`}</tbody></table></div></section>`;
 }
@@ -228,7 +229,7 @@ function processing() {
     button.disabled = true;
     try {
       await api("/api/admin/intelligence/followed", { method: "POST", body: JSON.stringify({ action, key: state.followedActions[Number(button.dataset.followedIndex)]?.key, reason, confirmation: "CONFIRM", expectedVersion: d.followedPreparation.configuration.version }) });
-      await load("processing"); processing();
+      await load("processing"); render();
     } catch(error) { notify(error.message); button.disabled = false; }
   });
 }
@@ -443,7 +444,13 @@ function scheduleDetailRefresh() {
     detailPoll = setTimeout(scheduleDetailRefresh, 5000); return;
   }
   const active = new Set(["PREPARING", "QUEUED"]);
-  if (state.view === "episodeDetail" && active.has(state.episodeDetail?.episode?.state)) {
+  if (state.view === "processing") {
+    detailPoll = setTimeout(async () => {
+      if (state.view !== "processing") return;
+      if (document.hidden || document.querySelector("#followed-preparation:focus-within")) return scheduleDetailRefresh();
+      try { await load("processing"); if (state.view === "processing") render(); } catch { scheduleDetailRefresh(); }
+    }, state.processing?.followedPreparation?.refreshInProgress ? 5000 : 20000);
+  } else if (state.view === "episodeDetail" && active.has(state.episodeDetail?.episode?.state)) {
     const { feedUrl } = state.episodeDetail.podcast, { id } = state.episodeDetail.episode;
     detailPoll = setTimeout(async () => { if (document.querySelector("#rights-workspace:focus-within, #rights-workspace details[open]")) return scheduleDetailRefresh(); if (state.view === "episodeDetail" && state.episodeDetail?.episode?.id === id) { try { await openEpisode(feedUrl, id); } catch {} } }, 5000);
   } else if (state.view === "podcastDetail" && state.podcastDetail?.episodes?.some((episode) => active.has(episode.state))) {
