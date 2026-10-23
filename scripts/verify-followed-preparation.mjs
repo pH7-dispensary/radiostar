@@ -5,6 +5,7 @@ const { chromium } = await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || "pl
 const { app } = createReviewFixture();
 app.store.set("installation", "test", {id:"test",intelligenceEnabled:true});
 await app.followedPreparation.refresh({force:true});
+app.store.set("followed-demand", "ui-ready", {key:"ui-ready",feedUrl:"https://fixture.example/extra",episodeId:"ready",title:"Labelled ready fixture",encounterOwner:"test",state:"READY",priority:80,createdAt:new Date().toISOString()});
 await new Promise(r=>app.server.listen(0,"127.0.0.1",r));
 const origin=`http://127.0.0.1:${app.server.address().port}`, output=".starcast/followed-preparation-visual";
 await mkdir(output,{recursive:true});
@@ -17,6 +18,7 @@ try {
   await page.getByRole("button",{name:"AI Processing",exact:true}).click();
   await page.locator("#followed-preparation").waitFor();
   assert.match(await page.locator("#followed-preparation").innerText(),/3 unique episodes/);
+  assert.doesNotMatch(await page.locator("#followed-preparation tr").filter({hasText:"Labelled ready fixture"}).innerText(),/UNAVAILABLE/);
   await page.getByRole("button",{name:"Refresh estimate",exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('[data-followed-action="estimate"]')?.disabled);
   await page.screenshot({path:output+"/desktop.png",fullPage:true});
