@@ -4,7 +4,7 @@ export function createIntelligenceSession(
   api,
   feed,
   id,
-  { pollMs = 2500, maxWaitMs = 15 * 60 * 1000 } = {},
+  { pollMs = 2500, maxWaitMs = 15 * 60 * 1000, recoveryPollMs = 60000 } = {},
 ) {
   let snapshot = { status: null, busy: false, error: "", paused: false };
   let pending = null,
@@ -36,13 +36,15 @@ export function createIntelligenceSession(
   };
   const schedule = () => {
     clearTimeout(timer);
-    if (!watchers.size || snapshot.paused || !active()) return;
+    const recovering=snapshot.status?.state==="BUDGET_PAUSED" || snapshot.status?.state==="FAILED" && (snapshot.status?.retryEligible || snapshot.status?.retryable) || snapshot.status?.featureStatus?.search?.code==="INDEXING_FAILED";
+    const transientNetwork=snapshot.paused && failures>0 && failures<6;
+    if (!watchers.size || snapshot.paused && !transientNetwork || !active() && !recovering && !transientNetwork) return;
     const serverDeadline = Date.parse(snapshot.status?.deadlineAt || "");
     if (!deadline)
       deadline = Number.isFinite(serverDeadline)
         ? serverDeadline
         : Date.now() + maxWaitMs;
-    if (Date.now() >= deadline) {
+    if (Date.now() >= deadline && !recovering) {
       emit({
         paused: true,
         error:
@@ -52,7 +54,7 @@ export function createIntelligenceSession(
     }
     // Poll more slowly for long-running jobs while retaining a quick first
     // update. This is status delivery, not a cosmetic real-time animation.
-    const wait = Math.min(15_000, pollMs * Math.pow(1.45, Math.floor(pollCount / 4)));
+    const wait = recovering || transientNetwork ? recoveryPollMs : Math.min(15_000, pollMs * Math.pow(1.45, Math.floor(pollCount / 4)));
     timer = setTimeout(() => void refresh(false), wait);
   };
   const run = (operation) => {

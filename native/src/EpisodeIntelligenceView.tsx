@@ -29,6 +29,7 @@ import { LoadingState, useReducedMotion } from "./LoadingState";
 import { EpisodeIntelligenceStatus } from "./EpisodeIntelligenceStatus";
 import { usePlayback } from "./PlaybackProvider";
 import { AdSkipPanel } from "./AdSkipPanel";
+import { intelligenceCapabilities } from "./intelligencePresentation.mjs";
 
 type Panel = "brief" | "explore" | "ads";
 const stamp = (ms: number) =>
@@ -341,7 +342,7 @@ export function EpisodeIntelligenceView({
                   {action("Not now", () => setConsent(null), true)}
                 </View>
               )}
-              {panel === "brief" && (status?.state === "READY" || (status?.state === "PARTIAL_READY" && status.processing === false)) && status?.brief && (
+              {panel === "brief" && intelligenceCapabilities(status).brief && status?.brief && (
                 <Animated.View
                   style={[
                     s.card,
@@ -406,7 +407,7 @@ export function EpisodeIntelligenceView({
                   )}
                 </Animated.View>
               )}
-              {panel === "explore" && (status?.state === "READY" || (status?.state === "PARTIAL_READY" && status.processing === false)) && (
+              {panel === "explore" && intelligenceCapabilities(status).explore && (
                 <>
                   {status?.qualityNote && (
                     <Text style={[s.copy, { color: p.muted }]}>
@@ -463,11 +464,12 @@ export function EpisodeIntelligenceView({
                       </Text>
                     )}
                   {tab === "Topics" &&
-                    status?.brief?.themes.map((theme) => (
+                    (status?.topics?.map(topic=>({label:topic.label,startMs:topic.startMs})) || status?.brief?.themes.map(label=>({label,startMs:null})))?.map((topic) => (
                       <Pressable
                         accessibilityRole="button"
-                        key={theme}
-                        onPress={() => void lookup(theme)}
+                        key={topic.label}
+                        accessibilityLabel={topic.startMs!==null?`Play ${topic.label} from ${stamp(topic.startMs)}`:`Find ${topic.label}`}
+                        onPress={() => topic.startMs!==null ? playAt(topic.startMs) : void lookup(topic.label)}
                         style={[
                           s.row,
                           { backgroundColor: p.surface, borderColor: p.line },
@@ -479,7 +481,7 @@ export function EpisodeIntelligenceView({
                           color={p.accent2}
                         />
                         <Text style={[s.heading, { color: p.text, flex: 1 }]}>
-                          {theme}
+                          {topic.label}
                         </Text>
                         <Ionicons
                           name="arrow-forward"

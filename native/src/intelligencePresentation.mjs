@@ -2,6 +2,7 @@ const stages = new Set(["CHECKING", "QUEUED", "ACQUIRING_TRANSCRIPT", "PREPARING
 const aliases = { DISCOVERING: "CHECKING", UNDERSTANDING: "ANALYSING", ORGANISING: "INDEXING", PROCESSING: "CHECKING", PARTIAL_READY: "ANALYSING" };
 const labels = {
   READY: "Your conversation is ready.",
+  PARTIAL_READY: "Some insights are ready.",
   CHECKING: "Checking this conversation.",
   QUEUED: "Your episode is getting ready.",
   ACQUIRING_TRANSCRIPT: "Preparing the conversation.",
@@ -53,7 +54,7 @@ export function intelligencePresentation(status, { enabled = true, error = "", p
   const completed = status?.state === "READY" || (status?.state === "PARTIAL_READY" && status?.processing === false);
   const stage = status?.processingStage || aliases[status?.state] || status?.state;
   const active = !!status && !completed && status.processing !== false && stages.has(stage) && !["UNAVAILABLE", "BLOCKED", "FAILED", "CANCELLED", "BUDGET_PAUSED"].includes(status.state);
-  let state = completed ? "READY" : active ? stage : status?.state || "WAITING";
+  let state = completed ? status.state : active ? stage : status?.state || "WAITING";
   if (["UNAVAILABLE", "BLOCKED", "CANCELLED", "TRANSCRIPT_READY"].includes(state)) state = "UNAVAILABLE";
   if (code === "BUDGET_LIMIT") state = "BUDGET_PAUSED";
   if (status?.availabilityState === "REVIEW_REQUIRED") state = "REVIEW_REQUIRED";
@@ -71,6 +72,7 @@ export function intelligencePresentation(status, { enabled = true, error = "", p
     : null;
   let explanation = explanations[code] || "AI insights aren't currently available for this episode. You can keep listening.";
   if (state === "READY") explanation = "Your brief, chapters and available moments are ready to explore.";
+  if (state === "PARTIAL_READY") explanation = status.qualityNote || "Use the available insights below. Some features are not ready.";
   else if (state === "DISABLED") explanation = "Turn on intelligence to prepare eligible conversations while you listen.";
   else if (state === "WAITING") explanation = error === "Your listening-service session needs to be restored." || error === "The listening service is temporarily unavailable. Your audio is unaffected."
     ? error
@@ -87,4 +89,12 @@ export function intelligencePresentation(status, { enabled = true, error = "", p
   const count = (done, total, name) => Number.isInteger(done) && Number.isInteger(total) && done >= 0 && total > 0 && done <= total ? `${done} of ${total} ${name} complete.` : null;
   const progress = processing ? state === "TRANSCRIBING" ? count(work?.completedChunks, work?.totalChunks, "audio chunks") : state === "ANALYSING" ? count(work?.completedBatches, work?.totalBatches, "analysis batches") : null : null;
   return { state, label: labels[state] || labels.UNAVAILABLE, explanation, processing, eta, progress, action, ready: completed && state === "READY" };
+}
+// Completed features remain usable while independent stages fail or recover.
+export function intelligenceCapabilities(status) {
+  const permitted=name=>status?.availableFeatures?.[name]!==false;
+  const brief=Boolean(status?.brief && permitted("brief"));
+  const moments=Boolean(permitted("moments") && (status?.availableFeatures?.moments===true || status?.state==="READY"&&status?.transcriptAvailable));
+  const explore=Boolean(moments || permitted("chapters")&&status?.chapters?.length || permitted("topics")&&status?.topics?.length);
+  return {brief,explore,moments};
 }

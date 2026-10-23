@@ -1,4 +1,5 @@
 import type { IntelligenceStatus } from "./api";
+export function intelligenceCapabilities(status: IntelligenceStatus | null): {brief:boolean;explore:boolean;moments:boolean};
 export type IntelligencePresentation = {
   state: string; label: string; explanation: string; processing: boolean;
   progress?: string | null;

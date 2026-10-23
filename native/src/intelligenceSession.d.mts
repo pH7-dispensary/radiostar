@@ -28,5 +28,5 @@ export function createIntelligenceSession(
   },
   feed: string,
   id: string,
-  options?: { pollMs?: number; maxWaitMs?: number },
+  options?: { pollMs?: number; maxWaitMs?: number; recoveryPollMs?: number },
 ): IntelligenceSession;

@@ -110,6 +110,16 @@ try {
         await page.getByRole("button", { name: "Close player" }).click();
         await page.getByRole("button", { name: "Open now playing" }).click();
       };
+      status = {...ready,state:"PARTIAL_READY",processing:false,chapters:[],availableFeatures:{...ready.availableFeatures,chapters:false},qualityNote:"Chapters did not pass validation. The brief and search remain available."};
+      await reopen();
+      await card.getByText("Some insights are ready.").waitFor();
+      await page.getByText(ready.brief.overview,{exact:true}).waitFor();
+      await page.screenshot({path:`${output}/390-light-partial-brief.png`});
+      status = {...ready,state:"FAILED",processing:false,brief:undefined,availableFeatures:{...ready.availableFeatures,brief:false}};
+      await reopen();
+      await page.getByText(ready.chapters[0].title,{exact:true}).waitFor();
+      assert.ok(await page.getByRole("button",{name:"Pause",exact:true}).count(),"partial feature failure does not stop audio");
+      await page.screenshot({path:`${output}/390-light-partial-search.png`});
       for (const [state, label] of [
         ["CHECKING", "Checking this conversation."], ["QUEUED", "Your episode is getting ready."],
         ["TRANSCRIBING", "Preparing the conversation."], ["INDEXING", "Making everything searchable."],

@@ -56,6 +56,8 @@ export type IntelligenceStatus = {
   processing?: boolean;
   phase?: "DISCOVERING" | "TRANSCRIBING" | "UNDERSTANDING" | "ORGANISING";
   transcriptAvailable?: boolean;
+  featureStatus?: Record<string,{state:string;code?:string;candidateCount?:number|null}>;
+  topics?: Array<{id:string;label:string;sourceSegmentIds:string[];startMs:number|null;endMs:number|null;chapterTitle?:string|null;transcriptVersion:string}>;
   qualityNote?: string;
   jobId?: string;
   startedAt?: string | null;
@@ -112,6 +114,7 @@ export type IntelligenceStatus = {
     chapters: boolean;
     topics: boolean;
     moments: boolean;
+    search?: boolean;
   };
   estimatedCompletion?: {
     route: "cache" | "publisher" | "audio";

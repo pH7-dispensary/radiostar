@@ -28,6 +28,7 @@ import {
 import { LoadingState, useReducedMotion } from "./LoadingState";
 import { usePlayback, type Source } from "./PlaybackProvider";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
+import { intelligenceCapabilities } from "./intelligencePresentation.mjs";
 
 type Panel = "brief" | "explore" | "ads";
 type Accordion = Panel | null;
@@ -131,9 +132,9 @@ export function PlayerIntelligenceAccordion({
   const lookupVersion = useRef(0);
   const skip = useAdSkip(source);
   const { status, session, busy, paused } = intelligence;
-  const ready = status?.state === "READY" || (status?.state === "PARTIAL_READY" && status?.processing === false);
-  const hasVerifiedMoments =
-    ready && status?.availableFeatures?.moments !== false && status?.transcriptAvailable !== false;
+  const available = intelligenceCapabilities(status);
+  const ready = available.brief || available.explore;
+  const hasVerifiedMoments = available.moments;
 
   useEffect(() => {
     setOpen(null);
@@ -145,8 +146,8 @@ export function PlayerIntelligenceAccordion({
   }, [source.episodeId, source.feedUrl]);
 
   useEffect(() => {
-    if (ready) setOpen((current) => current || "brief");
-  }, [ready, source.episodeId, source.feedUrl]);
+    if (ready) setOpen((current) => current === "brief" && !available.brief ? "explore" : current === "explore" && !available.explore ? "brief" : current || (available.brief ? "brief" : "explore"));
+  }, [ready, available.brief, available.explore, source.episodeId, source.feedUrl]);
 
   useEffect(() => {
     if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental)
@@ -357,8 +358,8 @@ export function PlayerIntelligenceAccordion({
         detail="Overview and key themes"
         icon="sparkles"
         open={open === "brief"}
-        available={ready}
-        onPress={() => ready && toggle("brief")}
+        available={available.brief}
+        onPress={() => available.brief && toggle("brief")}
       />
       {open === "brief" && content("brief")}
       <Row
@@ -367,8 +368,8 @@ export function PlayerIntelligenceAccordion({
         detail="Chapters, topics and verified moments"
         icon="compass-outline"
         open={open === "explore"}
-        available={ready}
-        onPress={() => ready && toggle("explore")}
+        available={available.explore}
+        onPress={() => available.explore && toggle("explore")}
       />
       {open === "explore" && content("explore")}
       <View style={[styles.adRow, { borderTopColor: p.line }]}>
