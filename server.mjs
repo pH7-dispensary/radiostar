@@ -1186,6 +1186,7 @@ export function createStarCastServer({
   };
   const applyIntelligencePolicy = async (input, actor) => {
     requireHumanPolicyActor(actor);
+    const existingJobIds = new Set(store.all('intelligence').map(([,job])=>job.jobId).filter(Boolean));
     const scope = input.scope === "global" ? "global" : input.scope === "episode" ? "episode" : "podcast";
     if (input.confirmation !== "SAVE POLICY") throw Error("Type SAVE POLICY before changing intelligence automation.");
     if (scope !== "global" && (!publicUrl(input.feedUrl) || !knownPodcastFeeds().some((item) => item.feedUrl === input.feedUrl)))
@@ -1216,10 +1217,12 @@ export function createStarCastServer({
         }
       }
     }
-    const createdJobs = jobs.filter((job) => job.jobId).map((job) => ({ episodeId: job.episodeId, jobId: job.jobId, state: job.state }));
+    const createdJobs = jobs.filter((job) => job.jobId && !existingJobIds.has(job.jobId)).map((job) => ({ episodeId: job.episodeId, jobId: job.jobId, state: job.state }));
     rights.audit("intelligence-policy-changed", policy.id, actor.id, { scope, tier: policy.tier, version: policy.version, affectedEpisodes: jobs.length, jobsCreated: createdJobs.length });
     adminService.appendAudit({ actor, action: "intelligence-policy-changed", resource: policy.id, previousState: { source: previousPolicy.source || scope, tier: previousPolicy.tier, version: previousPolicy.version }, newState: { scope, tier: policy.tier, level: intelligenceLevel(policy.tier).label, version: policy.version, affectedEpisodes, affectedScope: 'Persisted jobs; future eligible episodes also inherit channel/global policy.', jobsCreated: createdJobs }, reason: policy.reason, outcome: "ALLOWED" });
-    return { policy: { ...policy, level: intelligenceLevel(policy.tier) }, jobs, createdJobs, processingStarted: createdJobs.length > 0 };
+    const processingStarted=createdJobs.some(job=>['PROCESSING','DISCOVERING','TRANSCRIBING','UNDERSTANDING','ORGANISING'].includes(job.state));
+    return { policy: { ...policy, level: intelligenceLevel(policy.tier) }, jobs, createdJobs, processingStarted,
+      outcome:{requested:'Change operational intelligence policy',succeeded:true,affectedEpisodes,processingStarted,changed:`${intelligenceLevel(policy.tier).label} policy saved. ${createdJobs.length} new preparation job records; ${jobs.filter(j=>j.state==='READY').length} cached results reused.`,next:'Inspect the queue for actual execution. Existing restrictions, accepted work and spending limits remain in force.'} };
   };
   const resetIntelligencePolicy = (input, actor) => {
     requireHumanPolicyActor(actor);

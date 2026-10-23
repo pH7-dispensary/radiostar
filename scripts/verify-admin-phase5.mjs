@@ -20,11 +20,20 @@ try{
   const headers=gateway?{'x-star-cast-dev-token':gateway}:{};
   assert.equal((await context.request.post(base+'/api/admin/session',{headers,data:{adminToken:admin}})).status(),201);
   csrf=(await context.cookies()).find(c=>c.name==='starcast_admin_csrf')?.value;
+  if(live){
+    assert.equal((await context.request.get(base+'/api/health',{headers})).status(),200);
+    const op=await(await context.request.get(base+'/api/admin/operations',{headers})).json();
+    assert.equal(op.commandCentre.summary.ready,op.commandCentre.funnel.find(s=>s.id==='ready').count,'overview and drill-down reconcile');
+    assert.equal(op.commandCentre.summary.ready,op.processing.counts.READY);
+    assert.equal((await context.request.post(base+'/api/admin/advisories',{headers,data:{}})).status(),403,'missing CSRF cannot mutate live review state');
+    const anonymous=await browser.newContext();try{assert.equal((await anonymous.request.get(base+'/api/admin/operations',{headers})).status(),403);}finally{await anonymous.close();}
+    console.log(JSON.stringify({release:op.infrastructure.release,summary:op.commandCentre.summary,funnel:op.commandCentre.funnel.map(({episodeKeys,...v})=>v),adSkip:op.commandCentre.adSkip,cost:op.commandCentre.cost,followed:{uniqueEpisodes:op.followedPreparation.uniqueEpisodes,counts:op.followedPreparation.counts},infrastructure:op.infrastructure.components.map(({name,status,reason,observedAt,detail})=>({name,status,reason,observedAt,detail}))}));
+  }
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/admin');await page.locator('.command-metrics').waitFor();
   mkdirSync(out,{recursive:true});
   for(const width of [390,768,1024,1440]) {
     await page.setViewportSize({width,height:1000});
-    for(const [name,title] of [['Overview','Overview'],['AI Processing','AI Processing'],['Ad Skip','Ad Skip safety'],['Needs Attention','Needs Attention'],['Costs','Costs'],['Podcasts','Podcasts']]) {
+    for(const [name,title] of [['Overview','Overview'],['AI Processing','AI Processing'],['Ad Skip','Ad Skip safety'],['Needs Attention','Needs Attention'],['Costs','Costs'],['Settings','Settings'],['Podcasts','Podcasts']]) {
       await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('button',{name,exact:true}).click();
       await page.locator('h2').filter({hasText:new RegExp('^'+title+'$')}).waitFor();
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${name} overflow at ${width}`);
@@ -34,7 +43,7 @@ try{
     await page.getByRole('button',{name:'Open podcast',exact:true}).first().click();await page.locator('.podcast-header').waitFor();
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     await page.screenshot({path:`${out}/${width}-podcast-detail.png`});
-    if(!live){await page.getByRole('button',{name:'Open episode',exact:true}).first().click();await page.locator('.episode-hero').waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${out}/${width}-episode-detail.png`});}
+    await page.getByRole('button',{name:'Open episode',exact:true}).first().click();await page.locator('.episode-hero').waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${out}/${width}-episode-detail.png`});
   }
   if(!live){
     await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('button',{name:'Needs Attention',exact:true}).click();await page.locator('#attention-filter').waitFor();

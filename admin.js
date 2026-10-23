@@ -171,7 +171,7 @@ function bindPolicyEditor({ id, feedUrl, episodeId, policy, onSaved }) {
     event.preventDefault(); const confirmation = new FormData(event.currentTarget);
     if (confirmation.get("confirmation") !== "SAVE POLICY") return notify("Type SAVE POLICY before applying the change.");
     const button = event.currentTarget.querySelector("button"); button.disabled = true;
-    try { const result = await api("/api/admin/intelligence/policies", { method: "POST", body: JSON.stringify({ ...state.policyDraft.input, reason: confirmation.get("reason"), confirmation: confirmation.get("confirmation") }) }); state.policyDraft = null; notify(result.createdJobs.length ? `${result.createdJobs.length} recorded preparation job${result.createdJobs.length === 1 ? "" : "s"} started.` : "Policy saved. No new preparation job was created."); await onSaved(); } catch (error) { button.disabled = false; notify(error.message); }
+    try { const result = await api("/api/admin/intelligence/policies", { method: "POST", body: JSON.stringify({ ...state.policyDraft.input, reason: confirmation.get("reason"), confirmation: confirmation.get("confirmation") }) }); state.policyDraft = null; notify(result.outcome?.changed || "Policy saved. Inspect recorded job states before assuming work has started."); await onSaved(); } catch (error) { button.disabled = false; notify(error.message); }
   };
   const resetForm = section.querySelector(".reset-policy-form");
   if (resetForm) resetForm.onsubmit = async (event) => {
@@ -260,6 +260,7 @@ function processing() {
     try {
       await api("/api/admin/intelligence/followed", { method: "POST", body: JSON.stringify({ action, key: state.followedActions[Number(button.dataset.followedIndex)]?.key, reason, confirmation: "CONFIRM", expectedVersion: d.followedPreparation.configuration.version }) });
       await load("processing"); render();
+      notify(action === 'estimate' ? 'Discovery requested. No paid processing starts during estimation.' : 'Operational change recorded. The refreshed queue shows actual execution; accepted work may still finish.');
     } catch(error) { notify(error.message); button.disabled = false; }
   });
 }

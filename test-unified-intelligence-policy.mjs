@@ -78,6 +78,8 @@ try {
   assert.equal(app.pipeline.status(feedUrl, "ready-source").state, "READY");
   assert.equal(app.ledger.totals().transcriptionSeconds, 0, "authorised publisher text does not consume audio-transcription budget");
   assert.ok(app.adminService.audit().some((entry) => entry.action === "intelligence-policy-changed" && Array.isArray(entry.newState?.jobsCreated) && entry.newState.jobsCreated.length === 1), "policy audit carries the bounded actual job result");
+  const cached=await post('/api/admin/intelligence/policies',{scope:'podcast',feedUrl,tier:'LOW',applyToExisting:true,applyToFuture:true,maxEpisodes:1,includeAuthorisedAudio:false,expectedVersion:prepared.policy.version,reason:'Verify reuse without claiming new work.',confirmation:'SAVE POLICY'});
+  assert.equal(cached.status,202);const reused=await cached.json();assert.equal(reused.createdJobs.length,0);assert.equal(reused.processingStarted,false);assert.match(reused.outcome.changed,/1 cached results reused/);
 } finally {
   await new Promise((resolve) => app.server.close(resolve));
   app.store.close();
