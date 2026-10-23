@@ -121,6 +121,10 @@ function feedParts(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
     items = [...channel.matchAll(/<(item|entry)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi)]
       .map((m) => m[0])
       .slice(0, limit);
+  // Channel evidence must not include child episode grants/reservations. Apart
+  // from leaking one episode's terms to siblings, rescanning the full archive
+  // for every episode can block the event loop on large publisher feeds.
+  channel = channel.replace(/<(item|entry)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi, "");
   return { channel, items, feed };
 }
 function episodesFromFeed(xml, feed, limit = MAX_CATALOGUE_EPISODES) {

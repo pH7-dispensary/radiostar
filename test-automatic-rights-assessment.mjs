@@ -13,6 +13,7 @@ const xml = (id, body = "") => `<?xml version="1.0"?><rss><channel><title>Publis
 const fillerItems = Array.from({ length: 85 }, (_, index) => `<item><guid>recent-${index}</guid><title>Recent ${index}</title></item>`).join("");
 const historicalXml = `<?xml version="1.0"?><rss><channel><title>Licensed archive</title><itunes:author>Publisher</itunes:author><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright>${fillerItems}<item><guid>older-licensed</guid><title>Older licensed episode</title><itunes:duration>00:02:00</itunes:duration><podcast:transcript url="${vttUrl}" type="text/vtt"/></item></channel></rss>`;
 const feeds = new Map([
+  ["https://publisher.example/mixed.xml", `<rss><channel><title>Mixed scope fixture</title><item><guid>licensed-child</guid><podcast:license url="https://creativecommons.org/licenses/by/4.0/"/></item><item><guid>restricted-child</guid><rights>No AI processing. All rights reserved.</rights></item><item><guid>unassessed-child</guid></item></channel></rss>`],
   [feedUrl, xml("licensed", '<podcast:license url="https://creativecommons.org/licenses/by/4.0/"/>')],
   [restrictedFeedUrl, xml("restricted", "<rights>All rights reserved. No AI or text and data mining.</rights>")],
   [noBasisFeedUrl, xml("no-basis")],
@@ -50,6 +51,11 @@ const base = `http://127.0.0.1:${app.server.address().port}`;
 const headers = { "content-type": "application/json", "x-star-cast-dev-token": "device-token", "x-star-cast-admin-token": "admin-token" };
 const post = (path, body) => fetch(base + path, { method: "POST", headers, body: JSON.stringify(body) });
 try {
+  const mixedFeed = "https://publisher.example/mixed.xml";
+  const child = async id => (await (await post("/api/intelligence/preflight", {feedUrl:mixedFeed,episodeId:id})).json()).assessment;
+  assert.equal((await child("licensed-child")).classification,"LICENSED","a sibling restriction must not leak to this licensed episode");
+  assert.equal((await child("restricted-child")).blockerCode,"PUBLISHER_RESTRICTION");
+  assert.equal((await child("unassessed-child")).blockerCode,"LEGAL_BASIS_NOT_ESTABLISHED","a sibling licence must not grant channel-wide permission");
   const copyrightEvidence = publisherRightsEvidence({
     feedUrl,
     channelXml: "<channel><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright></channel>",

@@ -1,4 +1,5 @@
 import { episodeKey, durationMs, activeStates } from "./episode-pipeline.mjs";
+import { setImmediate as yieldToRequests } from "node:timers/promises";
 
 const kind = "followed-preparation";
 const iso = () => new Date().toISOString();
@@ -39,6 +40,7 @@ export class FollowedPreparation {
       try {
         const episodes = await this.discover(feedUrl);
         for (const [rank, episode] of episodes.slice(0, 3).entries()) {
+          await yieldToRequests();
           const key = episodeKey(feedUrl, episode.id), old = this.store.get("followed-demand", key);
           windowKeys.push(key);
           const { episode: resolved } = await this.assess(feedUrl, episode.id);
@@ -84,6 +86,7 @@ export class FollowedPreparation {
     const feeds = new Set(this.follows().map(v => v.feedUrl)), listeners = new Set(this.listeners().map(v => v.id));
     let slots = Math.max(0, 2 - this.store.all("intelligence").filter(([, j]) => activeStates.has(j.state) && !j.completedAt).length);
     for (const row of this.rows().sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
+      await yieldToRequests();
       if (row.paused || Date.parse(row.retryAfter || "") > Date.now()) continue;
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
       if (!(row.inWindow && feeds.has(row.feedUrl)) && !recentEncounter) continue;
