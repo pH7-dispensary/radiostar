@@ -73,7 +73,7 @@ export class IntelligencePolicyRegistry {
     };
     this.store.transaction(() => {
       this.store.set("intelligence-policy", id, record);
-      this.store.set("intelligence-policy-audit", randomUUID(), { at, actor, action: "policy-set", feedUrl: record.feedUrl, episodeId: record.episodeId, previousTier: previous?.tier || null, tier: record.tier, version: record.version, reason, applyToExisting: record.applyToExisting, applyToFuture: record.applyToFuture });
+      this.store.set("intelligence-policy-audit", randomUUID(), { at, actor, action: "policy-set", feedUrl: record.feedUrl, episodeId: record.episodeId, previousTier: effectiveBefore.tier, previousSource: effectiveBefore.source, tier: record.tier, version: record.version, reason, applyToExisting: record.applyToExisting, applyToFuture: record.applyToFuture });
     });
     return record;
   }

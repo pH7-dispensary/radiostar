@@ -276,7 +276,13 @@ export function createStarCastServer({
     if (tokenActor) return tokenActor;
     const cookie = cookies(req).starcast_admin;
     const actor = adminService.authenticate(cookie, req.headers["x-star-cast-csrf"], { write });
-    return adminService.can(actor, permission) ? actor : null;
+    return adminService.can(actor, permission) ? { ...actor, source: "session" } : null;
+  };
+  const requireHumanPolicyActor = (actor) => {
+    if (actor?.role !== "SUPER_ADMIN" || actor.source !== "session") {
+      adminService.appendAudit({ actor, action: "operational-policy-change-denied", resource: "intelligence-policy", outcome: "DENIED", reason: "An interactive Super Admin session with CSRF protection is required; automation credentials cannot change operational policies." });
+      throw Object.assign(Error("Sign in as Super Admin to change operational policy. Automation tokens cannot pause or resume podcasts."), { code: "HUMAN_ADMIN_REQUIRED" });
+    }
   };
   async function cached(key, fn, ttl = 300_000) {
     const hit = cache.get(key);
@@ -417,6 +423,7 @@ export function createStarCastServer({
     });
     return { episode, assessment: result.record, reused: result.reused, mandatory: result.mandatory };
   };
+  pipeline.assessEpisodeRights = assessEpisodeRights;
   const listeners = new ListenerService(store, {
     inviteOrigin: env.STARCAST_INVITE_ORIGIN,
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
@@ -434,24 +441,19 @@ export function createStarCastServer({
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
         };
-      const permission = rights.resolve(feedUrl, episodeId);
       const processing = rights.evaluate({
         feature: "intelligence-processing",
         feedUrl,
         episodeId,
       });
-      const display = rights.evaluate({
-        feature: "intelligence-display",
-        feedUrl,
-        episodeId,
-      });
-      if (!rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed || !processing.allowed || !display.allowed || !permission.canTranscribeAudio)
+      const audio = rights.evaluate({ feature: "audio-transcription", feedUrl, episodeId });
+      if (!rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed || !processing.allowed || !audio.allowed)
         return {
           allowed: false,
           reason: !processing.allowed
             ? processing.reason
-            : !display.allowed
-              ? display.reason
+            : !audio.allowed
+              ? audio.reason
               : "Audio verification is not authorised for this episode.",
         };
       return { allowed: true };
@@ -485,6 +487,7 @@ export function createStarCastServer({
     enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
     allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,
     inspect: (feed, id) => skips.inspect(feed, id),
+    status: (feed, id) => intelligenceDimensions(feed, id, true),
   });
   const encounter = async (listenerId, feedUrl, episodeId, source = "opened") => {
     if (followedPreparation.configuration().enabled && valid({ feedUrl, episodeId })) return followedPreparation.encounter(listenerId, feedUrl, episodeId, source);
@@ -500,9 +503,8 @@ export function createStarCastServer({
       store.set("intelligence-encounter", key, { feedUrl, episodeId, source, version: context.version, at: new Date().toISOString() });
       const { episode } = await assessEpisodeRights(feedUrl, episodeId);
       const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
-      const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
-      if (!processing.allowed || !display.allowed) {
-        const decision = !processing.allowed ? processing : display;
+      if (!processing.allowed) {
+        const decision = processing;
         testingMode.attention({ feedUrl, episodeId, podcast: episode.showName, title: episode.title, durationMs: durationMs(episode.duration), decision: { ...decision, rights: rights.resolve(feedUrl, episodeId) } });
         return;
       }
@@ -536,12 +538,11 @@ export function createStarCastServer({
     const assessed = await assessEpisodeRights(feedUrl, episode.id);
     const permission = assessed.assessment;
     const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id, audit: true });
-    const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id, audit: true });
     const operational = intelligencePolicy.allows(feedUrl, episode.id, "intelligence");
     if (intelligencePolicy.effective(feedUrl, episode.id).applyToFuture === false)
       return { state: "BLOCKED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "Automatic future-episode preparation is not enabled for this scope." };
-    if (!permission.canAcquireTranscript || !processing.allowed || !display.allowed || !operational.allowed)
-      return { state: "BLOCKED", code: !operational.allowed ? "INTELLIGENCE_POLICY_HIGH" : !processing.allowed ? processing.code : !display.allowed ? display.code : "TRANSCRIPT_NOT_AUTHORISED", reason: !operational.allowed ? "New intelligence processing is paused by the podcast intelligence policy." : !permission.canAcquireTranscript ? "Transcript acquisition is not authorised by the current assessment." : processing.allowed ? display.reason : processing.reason };
+    if (!permission.canAcquireTranscript || !processing.allowed || !operational.allowed)
+      return { state: "BLOCKED", code: !operational.allowed ? "INTELLIGENCE_POLICY_HIGH" : !processing.allowed ? processing.code : "TRANSCRIPT_NOT_AUTHORISED", reason: !operational.allowed ? "New intelligence processing is paused by the podcast intelligence policy." : !permission.canAcquireTranscript ? "Transcript acquisition is not authorised by the current assessment." : processing.reason };
     // Following is never consent to paid audio. Publisher transcripts only.
     return pipeline.request({ feedUrl, episodeId: episode.id, trigger: "automatic" });
   };
@@ -585,7 +586,7 @@ export function createStarCastServer({
       // for Super Admin review, unlike a reservation, dispute or takedown.
       const mandatory = rightsRecord.id && (rightsRecord.suspendedAt || rightsRecord.deletedAt || rightsRecord.rightsReserved || rightsRecord.classification === "DISPUTED");
       const state = job ? publicIntelligence(job) : null;
-      if (processing.allowed && display.allowed && state?.state !== "BLOCKED") return;
+      if (processing.allowed && display.allowed && (state?.state !== "BLOCKED" || pipeline.rightsRecovery(feedUrl, episodeId))) return;
       const id = `${feedUrl}\u0000${episodeId}`;
       const duration = durationMs(job?.episode?.duration);
       entries.set(id, {
@@ -595,7 +596,7 @@ export function createStarCastServer({
         publisher: rightsRecord.publisher || job?.episode?.publisher || null,
         episodeTitle: rightsRecord.episodeTitle || job?.episode?.title || null,
         currentRestriction: rightsRecord.blockerCode || (rightsRecord.id ? rightsRecord.classification : "UNASSESSED"),
-        refusalReason: state?.reason || (!processing.allowed ? processing.reason : display.reason),
+        refusalReason: !processing.allowed ? processing.reason : !display.allowed ? display.reason : state?.reason,
         processingEligibility: mandatory ? "MANDATORY_RESTRICTION" : !rightsRecord.id ? "ASSESS_ON_REQUEST" : processing.allowed && display.allowed ? "ELIGIBLE" : rightsRecord.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED" ? "LEGAL_BASIS_REQUIRED" : "REQUIRES_APPROVED_BASIS",
         canApprove: !mandatory,
         previousAttempts: job?.attempts || 0,
@@ -692,6 +693,23 @@ export function createStarCastServer({
     if (["QUEUE_TIMEOUT", "PROCESSING_TIMEOUT", "INTERRUPTED"].includes(code)) return "WORKER";
     return "PROCESSING";
   };
+  const intelligenceDimensions = (feedUrl, episodeId, administrative = false) => {
+    const assessment = rights.assessment(feedUrl, episodeId);
+    const policy = intelligencePolicy.effective(feedUrl, episodeId);
+    const job = pipeline.status(feedUrl, episodeId);
+    const recovered = pipeline.rightsRecovery(feedUrl, episodeId);
+    return {
+      operationalPolicy: intelligenceLevel(policy.tier).label,
+      operationalPolicySource: policy.source,
+      automaticPreparationEnabled: policy.tier !== "HIGH" && policy.applyToFuture !== false && followedPreparation.configuration().enabled && featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
+      assessmentStatus: assessment.assessmentStatus,
+      processingEligibility: assessment.processingEligibility,
+      processingExecution: recovered ? "NOT_REQUESTED" : job?.state || "NOT_REQUESTED",
+      processingAvailability: job?.code === "BUDGET_LIMIT" ? "WAITING_FOR_BUDGET" : recovered ? "REASSESSMENT_AVAILABLE" : job?.state === "READY" ? "AVAILABLE" : job?.code || "NOT_CHECKED",
+      advisories: administrative ? assessment.advisories : assessment.advisories.map(({ code, recommendedAction }) => ({ code, recommendedAction })),
+      featureEligibility: assessment.features,
+    };
+  };
   const listenerStatus = (feedUrl, episodeId) => {
     const job = pipeline.status(feedUrl, episodeId) || jobsForEpisode(feedUrl, episodeId)
       .sort((a, b) => Date.parse(b.updatedAt || b.completedAt || b.startedAt || "") - Date.parse(a.updatedAt || a.completedAt || a.startedAt || ""))[0] || null;
@@ -716,6 +734,10 @@ export function createStarCastServer({
     let availabilityCode = job?.availabilityCode || availabilityCodeFor(code);
     let reason = job?.reason || null;
     let rightsCode = null;
+    if (pipeline.rightsRecovery(feedUrl, episodeId)) {
+      projected = { state: "NOT_REQUESTED", stage: null, processing: false };
+      code = null; availabilityCode = null; reason = null;
+    }
     if (!display.allowed || !processing.allowed) {
       projected = { state: "UNAVAILABLE", stage: null, processing: false };
       rightsCode = !processing.allowed ? processing.code : display.code;
@@ -746,6 +768,7 @@ export function createStarCastServer({
       ...safe,
       legacyState: safe.state,
       ...projected,
+      ...intelligenceDimensions(feedUrl, episodeId),
       availabilityState: rightsCode === "LEGAL_BASIS_NOT_ESTABLISHED" ? "REVIEW_REQUIRED" : projected.state,
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episodeId),
       processingStage: projected.stage,
@@ -783,14 +806,15 @@ export function createStarCastServer({
     const recovery = pipeline.transcriptRecovery(feedUrl, episode.id, episode);
     const active = new Set(["QUEUED", "DISCOVERING", "TRANSCRIBING", "UNDERSTANDING", "ORGANISING", "PROCESSING", "PARTIAL_READY"]);
     let state = "NOT_PREPARED", reason = "This episode has not been prepared yet.", code = "NOT_PREPARED";
-    if (!processing.allowed || !display.allowed) [state, reason, code] = ["UNAVAILABLE", !processing.allowed ? processing.reason : display.reason, !processing.allowed ? processing.code : display.code];
+    if (!processing.allowed) [state, reason, code] = ["UNAVAILABLE", processing.reason, processing.code];
     // PAUSED stops new work; it does not make a previously permitted cached
     // result disappear. A distinct state keeps that operational distinction
     // visible without changing the underlying rights decision.
-    else if (publicJob?.state === "READY") [state, reason, code] = ["READY", "Authorised intelligence is ready.", "READY"];
+    else if (publicJob?.state === "READY") [state, reason, code] = ["READY", display.allowed ? "Authorised intelligence is ready." : "Internal analysis is ready; listener display is not authorised.", "READY"];
     else if (!operational.intelligence) [state, reason, code] = ["PAUSED", "New intelligence processing is paused by the podcast intelligence policy.", "INTELLIGENCE_POLICY_HIGH"];
     else if (recovery?.eligible) [state, reason, code] = ["NOT_PREPARED", recovery.reason, "TRANSCRIPT_REASSESSMENT_AVAILABLE"];
     else if (recovery?.stale && recovery.blockerCode) [state, reason, code] = ["UNAVAILABLE", recovery.reason, recovery.blockerCode];
+    else if (pipeline.rightsRecovery(feedUrl, episode.id)) [state, reason, code] = ["NOT_PREPARED", "Current evidence now permits processing; the historical refusal no longer blocks preparation.", "REASSESSMENT_AVAILABLE"];
     else if (publicJob?.state === "FAILED") [state, reason, code] = ["FAILED", publicJob.reason || "The latest preparation attempt failed.", publicJob.code || "ANALYSIS_FAILED"];
     else if (publicJob?.state === "BLOCKED") [state, reason, code] = ["UNAVAILABLE", publicJob.reason || "Preparation is currently unavailable.", publicJob.code || "PROCESSING_BLOCKED"];
     else if (publicJob?.state === "QUEUED") [state, reason, code] = ["QUEUED", "Preparation is waiting for the processing worker.", "QUEUED"];
@@ -848,7 +872,7 @@ export function createStarCastServer({
       ["Topics", statusFor(processing.allowed && display.allowed && topicsDecision.allowed && (operational.topics || ready), Boolean(job?.topics?.length || job?.brief?.themes?.length)), !topicsDecision.allowed ? topicsDecision.reason : ready ? null : intelligenceReason],
       ["Find a moment", statusFor(processing.allowed && display.allowed && momentDecision.allowed && (operational.moments || ready), Boolean(job?.transcript?.segments?.some((segment) => Number.isFinite(segment.startMs)))), !momentDecision.allowed ? momentDecision.reason : ready ? null : intelligenceReason],
       ["Conversation search", statusFor(processing.allowed && display.allowed && search.allowed && (operational.conversationSearch || ready), Boolean(job?.transcript?.segments?.length)), !search.allowed ? search.reason : ready ? null : intelligenceReason],
-      ["Advert detection", statusFor(processing.allowed && display.allowed && adDetectionDecision.allowed && operational.adCandidates, adCandidates.length > 0), !adDetectionDecision.allowed ? adDetectionDecision.reason : intelligenceReason || "Candidate detection never enables automatic skipping."],
+      ["Advert detection", !processing.allowed || !adDetectionDecision.allowed || !operational.adCandidates ? "RESTRICTED" : adCandidates.length ? "READY" : transcriptReady ? "ELIGIBLE" : "AWAITING_TRANSCRIPT", !adDetectionDecision.allowed ? adDetectionDecision.reason : "Candidate detection uses eligible transcript evidence independently of summaries and chapters; it never enables automatic skipping."],
       ["Automatic Ad Skip", autoSkipState, autoSkipReason],
       ["Captions", statusFor(captionDecision.allowed && operational.captions, false), !captionDecision.allowed ? captionDecision.reason : !operational.captions ? "Captions are paused by the podcast intelligence policy." : "Caption delivery has its own rights and policy gate."],
       ["Private AI Dubbing", statusFor(dubbingDecision.allowed && operational.dubbing, false), !dubbingDecision.allowed ? dubbingDecision.reason : !operational.dubbing ? "Private AI Dubbing is paused by the intelligence policy." : "Private AI Dubbing remains separately authorised, beta-only and budget-limited."],
@@ -873,6 +897,7 @@ export function createStarCastServer({
       : "Preparation will reuse a canonical cache where available; audio fallback is never automatic.";
     return {
       ...episode,
+      ...intelligenceDimensions(feedUrl, episode.id, true),
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episode.id),
       state, code, reason, action, job: publicJob, policy: { ...policy, level: intelligenceLevel(policy.tier) }, rights: permissions,
       recovery,
@@ -1117,6 +1142,7 @@ export function createStarCastServer({
     return { status, audioTranscription: "NOT_REQUESTED", estimatedMedianProcessingMs: processingEstimate() };
   };
   const applyIntelligencePolicy = async (input, actor) => {
+    requireHumanPolicyActor(actor);
     const scope = input.scope === "global" ? "global" : input.scope === "episode" ? "episode" : "podcast";
     if (input.confirmation !== "SAVE POLICY") throw Error("Type SAVE POLICY before changing intelligence automation.");
     if (scope !== "global" && (!publicUrl(input.feedUrl) || !knownPodcastFeeds().some((item) => item.feedUrl === input.feedUrl)))
@@ -1136,9 +1162,8 @@ export function createStarCastServer({
       for (const episode of candidates) {
         await assessEpisodeRights(input.feedUrl, episode.id, episode);
         const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
-        const display = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: episode.id, audit: true });
         const permission = rights.resolve(input.feedUrl, episode.id);
-        if (!processing.allowed || !display.allowed) { jobs.push({ episodeId: episode.id, state: "BLOCKED", code: "RIGHTS_RESTRICTED", reason: !processing.allowed ? processing.reason : display.reason }); continue; }
+        if (!processing.allowed) { jobs.push({ episodeId: episode.id, state: "BLOCKED", code: processing.code, reason: processing.reason }); continue; }
         try {
           jobs.push(await pipeline.request({ feedUrl: input.feedUrl, episodeId: episode.id, allowAudio: input.includeAuthorisedAudio === true && permission.canTranscribeAudio === true, trigger: "admin" }));
         } catch (error) {
@@ -1152,6 +1177,7 @@ export function createStarCastServer({
     return { policy: { ...policy, level: intelligenceLevel(policy.tier) }, jobs, createdJobs, processingStarted: createdJobs.length > 0 };
   };
   const resetIntelligencePolicy = (input, actor) => {
+    requireHumanPolicyActor(actor);
     if (input.confirmation !== "RESET POLICY") throw Error("Type RESET POLICY before resetting an override.");
     const scope = input.scope === "episode" ? "episode" : "podcast";
     if (!publicUrl(input.feedUrl) || !knownPodcastFeeds().some((item) => item.feedUrl === input.feedUrl))
@@ -1163,6 +1189,7 @@ export function createStarCastServer({
     return { previous: outcome.previous, effective: { ...outcome.effective, level: intelligenceLevel(outcome.effective.tier) } };
   };
   const rightsReview = (feedUrl, episodeId = "") => ({
+    ...rights.assessment(feedUrl, episodeId),
     feedUrl, episodeId: episodeId || null, canonicalEpisodeId: episodeId ? canonicalEpisodeId(feedUrl, episodeId) : null,
     record: rights.resolve(feedUrl, episodeId),
     revision: rights.assessmentRevision(feedUrl, episodeId),
@@ -1242,6 +1269,7 @@ export function createStarCastServer({
     };
   };
   const approveAndProcess = async (request, actor) => {
+    requireHumanPolicyActor(actor);
     if (request.confirmation !== "APPROVE & PROCESS") throw Object.assign(Error("Type APPROVE & PROCESS before approving content."), { code: "APPROVAL_INVALID" });
     const preview = store.get("processing-approval-preview", String(request.previewId || ""));
     if (!preview || preview.actorId !== actor.id) throw Object.assign(Error("Preview the structured assessment before approving."), { code: "APPROVAL_INVALID" });
@@ -1416,8 +1444,12 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/session" && req.method === "POST") {
         if (!adminLoginRate(req)) return send(res, 429, { error: "Too many administrator login attempts. Please wait before trying again." });
         const input = await body(req);
-        const actor = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
-        if (!actor) return send(res, 401, { error: "Administrator authentication failed." });
+        const verified = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
+        if (!verified) return send(res, 401, { error: "Administrator authentication failed." });
+        // The existing shared operations credential authenticates this account;
+        // it does not identify an individual person. Distinguish interactive
+        // sessions from service-token requests in the audit trail.
+        const actor = { ...verified, id: "operations-super-admin", name: "Operations Super Admin", source: "session" };
         const session = adminService.startSession(actor);
         res.setHeader("set-cookie", [adminCookie(session.id, req), csrfCookie(session.csrf, req)]);
         return send(res, 201, { actor, permissions: adminService.permissionsFor(actor.role), expiresAt: session.expiresAt });
@@ -1759,6 +1791,7 @@ export function createStarCastServer({
             return send(res, 202, followedPreparation.summary());
           }
           else {
+            if (actor.source !== "session") return send(res, 403, { error: "Sign in as Super Admin to change operational preparation controls." });
             store.transaction(() => {
               const change = followedPreparation.action(input, actor);
               adminService.appendAudit({ actor, action: "followed-preparation-" + input.action, resource: input.key || "platform", previousState: change.previous, newState: change.current, reason: input.reason, outcome: "ALLOWED" });
@@ -1945,6 +1978,7 @@ export function createStarCastServer({
         if (input.confirmation !== "ROLLBACK POLICY" || !Number.isInteger(input.expectedVersion) || !String(input.reason || "").trim())
           return send(res, 400, { error: "Confirm ROLLBACK POLICY with a reason and the reviewed current version." });
         try {
+        requireHumanPolicyActor(actor);
         const policy = store.transaction(() => {
         const policy = intelligencePolicy.rollback(input.feedUrl, input.episodeId || "", input.version, { actor: actor.id, reason: input.reason, expectedVersion: input.expectedVersion });
         adminService.appendAudit({ actor, action: "intelligence-policy-rolled-back", resource: policy.id, newState: { tier: policy.tier, version: policy.version }, reason: policy.reason, outcome: "ALLOWED" });
@@ -2047,8 +2081,7 @@ export function createStarCastServer({
         await assessEpisodeRights(input.feedUrl, input.episodeId);
         const permission = rights.resolve(input.feedUrl, input.episodeId);
         const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
-        const display = rights.evaluate({ feature: "intelligence-display", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
-        if (!processing.allowed || !display.allowed) return send(res, 409, { error: "This episode is not currently authorised for retry." });
+        if (!processing.allowed) return send(res, 409, { error: "This episode is not currently authorised for retry.", code: processing.code });
         const status = await pipeline.request({ feedUrl: input.feedUrl, episodeId: input.episodeId, allowAudio: permission.canTranscribeAudio === true, retry: true, trigger: "admin" });
         rights.audit("super-admin-processing-retried", `${input.feedUrl}:${input.episodeId}`, actor.id, { jobId: status.jobId || null, status: status.state });
         adminService.appendAudit({ actor, action: "super-admin-processing-retried", resource: `${input.feedUrl}:${input.episodeId}`, newState: { status: status.state }, outcome: "ALLOWED" });

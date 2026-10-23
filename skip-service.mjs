@@ -227,7 +227,7 @@ export class SkipService {
     const exactSource = typeof audioUrl === "string" && Boolean(value?.episode?.audioUrl) && audioUrl === value.episode.audioUrl;
     const verification = this.verification(episodeKey(feed, episode));
     const variant = verification?.state === "READY" ? verification.variant : null;
-    const displayAllowed = !this.pipeline.rights || this.pipeline.rights.evaluate({ feature: "intelligence-display", feedUrl: feed, episodeId: episode }).allowed;
+    const displayAllowed = !this.pipeline.rights || ["intelligence-display", "automatic-skipping"].every(feature => this.pipeline.rights.evaluate({ feature, feedUrl: feed, episodeId: episode }).allowed);
     const permitted = exactSource && displayAllowed && inspection.state !== "UNAVAILABLE" && this.automaticEnabled(listener) && preferences.adSkipEnabled === true;
     const sourceMatched = Boolean(permitted && variant?.audioVariantFingerprint && audioVariantFingerprint === variant.audioVariantFingerprint);
     const activeIntervals = sourceMatched ? this.store.all("skip-interval").map(([, item]) => item)

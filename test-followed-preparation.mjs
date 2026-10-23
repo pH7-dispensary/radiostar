@@ -22,7 +22,7 @@ app.rights.set({feedUrl:feeds[1],episodeId:"episode-2",classification:"DISPUTED"
 const user = app.listeners.register("ordinary-user-credential-at-least-32-characters");
 const other = app.listeners.register("other-user-credential-at-least-32-characters");
 for(const listener of [user,other]) for(const feedUrl of feeds) app.listeners.follow(listener,{feedUrl,following:true});
-const actor={id:"test-admin",role:"SUPER_ADMIN"}, prep=app.followedPreparation;
+const actor={id:"test-admin",role:"SUPER_ADMIN",source:"session"}, prep=app.followedPreparation;
 const settle = async () => { for(let i=0;i<5;i++){await prep.drain();await Promise.all(app.pipeline.inflight.values());} };
 await new Promise(r=>app.server.listen(0,"127.0.0.1",r));
 const origin=`http://127.0.0.1:${app.server.address().port}`;

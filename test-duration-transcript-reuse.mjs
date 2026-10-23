@@ -168,7 +168,7 @@ try {
     rightsReserved: true,
   });
   const restricted = await pipeline.request({ feedUrl: feed, episodeId: "restricted" });
-  assert.equal(restricted.code, "RIGHTS_RESTRICTED");
+  assert.equal(restricted.code, "PUBLISHER_RESTRICTION");
   assert.equal(providerCalls, 3);
 
   // F: an OPEN/ZERO intelligence policy is operational only; it never supplies a rights basis.
@@ -179,7 +179,7 @@ try {
     reason: "Explicit test of policy separation.",
   });
   const noBasis = await pipeline.request({ feedUrl: noBasisFeed, episodeId: "no-basis" });
-  assert.equal(noBasis.code, "RIGHTS_RESTRICTED");
+  assert.equal(noBasis.code, "LEGAL_BASIS_NOT_ESTABLISHED");
   assert.equal(providerCalls, 3);
 
   // G: a completed request is a cache hit and does not repeat generation.

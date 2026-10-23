@@ -53,6 +53,12 @@ const optionalFeatures = Object.freeze({
   conversationSearch: true,
 });
 const featurePermission = Object.freeze({
+  "transcript-acquisition": ["canAcquireTranscript", "canRetain"],
+  "audio-transcription": ["canTranscribeAudio", "canRetain"],
+  // There is no public transcript permission in this product. An internal
+  // acquisition grant must never accidentally authorise distribution.
+  "transcript-distribution": ["canDistributeFullTranscript"],
+  "automatic-skipping": ["canDetectAdvertisements", "canDisplayDerivedIntelligence"],
   "intelligence-processing": ["canProcessForAi", "canRetain"],
   "intelligence-display": ["canDisplayDerivedIntelligence"],
   "conversation-search": ["canDisplayDerivedIntelligence", "canSearchConversations"],
@@ -419,8 +425,10 @@ export class RightsRegistry {
     // A documented channel approval supersedes an automatic missing-basis
     // assessment, never an explicit episode restriction or human assessment.
     const automaticMissing = episode?.assessmentSource?.startsWith("publisher-rss-") && episode?.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED";
+    const documentedChannel = podcast?.legalBasis && podcast?.assessmentEvidence?.length &&
+      podcast?.canProcessForAi && podcast?.assessmentStatus === RightsAssessmentStatus.APPROVED;
     const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast
-      : covered && podcast?.approvalAssessment && automaticMissing ? podcast : episode || (covered ? podcast : null);
+      : covered && (podcast?.approvalAssessment || documentedChannel) && automaticMissing ? podcast : episode || (covered ? podcast : null);
     return (
       normaliseRecord(selected) || {
         id: null,
@@ -475,6 +483,35 @@ export class RightsRegistry {
     const decision = { allowed, code, reason, feature, mode, policyVersion: policy.version, outputProfile, classification: rights.classification, testMode: policy.testMode?.enabled === true, rights, override: override ? { id: override.id, scope: override.episodeId ? "episode" : "publisher" } : null };
     if (audit) this.auditDecision(decision, { feedUrl, episodeId });
     return decision;
+  }
+  // One projection of the authoritative evaluator, not a parallel policy.
+  // Advisories report evidence quality; they never grant rights or pause work.
+  assessment(feedUrl, episodeId = "") {
+    const record = this.resolve(feedUrl, episodeId);
+    const features = Object.fromEntries(Object.keys(featurePermission).map(feature => {
+      const { allowed, code, reason } = this.evaluate({ feature, feedUrl, episodeId });
+      return [feature, { allowed, code, reason }];
+    }));
+    const advisories = [];
+    const add = (code, reason, action) => advisories.push({
+      id: `${record.id || key(feedUrl, episodeId)}:${code}`, code, feedUrl, episodeId: episodeId || null,
+      source: record.assessmentSource || "rights-registry", evidence: record.assessmentEvidence || [],
+      features: Object.keys(features), severity: "REVIEW", reason, recommendedAction: action,
+      timestamp: record.updatedAt || null, blocking: false,
+    });
+    if (!record.id) add("ASSESSMENT_PENDING", "Publisher evidence has not been assessed yet.", "Request preparation to run automatic assessment.");
+    else if (record.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED") add("EVIDENCE_INCOMPLETE", "Available evidence does not establish a processing basis; this is not a discovered prohibition.", "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.");
+    else if (!record.assessmentEvidence?.length) add("EVIDENCE_INCOMPLETE", "The existing rights record has no structured evidence references.", "Review and supplement the existing record; this advisory does not revoke its permissions.");
+    if (record.assessmentSource?.startsWith("publisher-rss-") && this.now() - record.updatedAt > 30 * 86400000)
+      add("ASSESSMENT_OUTDATED", "Publisher evidence has not been reviewed recently.", "Refresh publisher evidence; unchanged evidence is reused without another paid request.");
+    const processing = features["intelligence-processing"];
+    const decision = !record.id ? "ASSESSMENT_PENDING" : processing.allowed
+      ? record.classification === RightsClassification.TDM_ELIGIBLE ? "APPLICABLE_EXCEPTION" : "DOCUMENTED_PERMISSION"
+      : processing.code;
+    return { assessmentStatus: record.id ? "ASSESSED" : "ASSESSMENT_PENDING", decision,
+      processingEligibility: processing.allowed ? "ELIGIBLE" : !record.id ? "ASSESSMENT_PENDING" : processing.code === "LEGAL_BASIS_NOT_ESTABLISHED" ? "UNRESOLVED" : "RESTRICTED",
+      features, advisories, evidence: record.assessmentEvidence || [], assessedAt: record.updatedAt || null,
+      assessmentRevision: this.assessmentRevision(feedUrl, episodeId) };
   }
   previewPolicy(input = {}) {
     const current = this.policy();
@@ -609,9 +646,20 @@ export class RightsRegistry {
     const prior = this.resolve(input.feedUrl, input.episodeId);
     const mandatory = prior.id && mandatoryRestriction(prior);
     if (mandatory) return { record: prior, reused: true, mandatory: true };
+    // A historical technical finding of missing evidence is not an enduring
+    // denial of a subsequently documented publisher grant. Keep the old row
+    // (and its history) while recording the new, independently evidenced scope.
+    // Human permissions, revocations, reservations and explicit feature holds
+    // are not overwritten by this narrow recovery path.
+    const newlyDocumented = prior.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED" &&
+      prior.assessmentSource === "super-admin-technical-review" && !prior.approvalAssessment &&
+      !prior.reservedFeatures?.length && prior.assessmentEvidence?.some(item => item.type === "EVIDENCE_REVIEW_NO_BASIS") &&
+      input.assessmentSource?.startsWith("publisher-rss-") && input.classification === RightsClassification.LICENSED &&
+      input.canProcessForAi === true && input.legalBasis && input.licence &&
+      input.assessmentEvidence?.some(item => item.type === "PUBLISHER_LICENSE");
     // Human-entered rights records remain authoritative. Automatic evidence may
     // refresh only a prior automatic assessment for the same episode.
-    if (prior.id && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
+    if (prior.id && !newlyDocumented && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
       return { record: prior, reused: true, mandatory: false };
     if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint && prior.assessmentVersion === input.assessmentVersion)
       return { record: prior, reused: true, mandatory: false };

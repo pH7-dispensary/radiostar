@@ -48,10 +48,11 @@ const app = createStarCastServer({
 });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;
+const session = app.adminService.startSession({ id: "human-reviewer", role: "SUPER_ADMIN" });
 const headers = {
   "content-type": "application/json",
   "x-star-cast-dev-token": "device-token",
-  "x-star-cast-admin-token": "admin-token",
+  cookie: `starcast_admin=${session.id}`, "x-star-cast-csrf": session.csrf,
 };
 const post = (path, input) => fetch(base + path, { method: "POST", headers, body: JSON.stringify(input) });
 try {

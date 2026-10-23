@@ -20,7 +20,8 @@ app.store.set("follow", "unified-policy-follow", { id: "unified-policy-follow", 
 app.rights.set({ feedUrl, episodeId: "ready-source", classification: RightsClassification.LICENSED, assessmentStatus: "APPROVED", explicitAuthorisation: true, canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true, podcast: "Unified & policy fixture", publisher: "Fixture Publisher" });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;
-const headers = { "content-type": "application/json", "x-star-cast-admin-token": "admin-token" };
+const session = app.adminService.startSession({ id: "human-reviewer", role: "SUPER_ADMIN" });
+const headers = { "content-type": "application/json", cookie: `starcast_admin=${session.id}`, "x-star-cast-csrf": session.csrf };
 const get = (path, extra = {}) => fetch(base + path, { headers: { ...headers, ...extra } });
 const post = (path, value, extra = {}) => fetch(base + path, { method: "POST", headers: { ...headers, ...extra }, body: JSON.stringify(value) });
 

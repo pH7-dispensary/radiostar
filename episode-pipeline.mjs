@@ -412,7 +412,6 @@ export class EpisodePipeline {
     // reassessed. A current duration refusal is not an unlimited retry token.
     const stale = !previous.transcriptChecks?.publisherTranscriptChecked && !previous.reassessedFromJobId;
     const processing = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
-    const display = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
     const permissions = this.rights?.resolve(feedUrl, episodeId);
     // Reopening old failures is a new processing decision, not a licence
     // inferred from a legacy approval checkbox or an administrator's assertion.
@@ -424,16 +423,16 @@ export class EpisodePipeline {
     this.ledger.refresh();
     const totals = this.ledger.totals();
     const budgetAvailable = this.ledger.controls.enabled && totals.day < this.ledger.controls.dailyUsd && totals.month < this.ledger.controls.monthlyUsd;
-    const eligible = stale && documentedBasis && processing?.allowed !== false && display?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
+    const eligible = stale && documentedBasis && processing?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
     return {
       historicalFailure: { jobId: previous.jobId, code: previous.code, reason: previous.reason, at: previous.completedAt || previous.startedAt },
       stale, eligible, documentedBasis,
-      blockerCode: processing?.allowed === false ? processing.code : display?.allowed === false ? display.code
+      blockerCode: processing?.allowed === false ? processing.code
         : !documentedBasis ? "LEGAL_BASIS_NOT_ESTABLISHED"
         : operational?.allowed === false ? "INTELLIGENCE_POLICY_HIGH"
         : !this.enabled || !this.configured ? "SERVER_UNAVAILABLE"
         : !budgetAvailable ? "BUDGET_LIMIT" : null,
-      reason: processing?.allowed === false ? processing.reason : display?.allowed === false ? display.reason
+      reason: processing?.allowed === false ? processing.reason
         : !documentedBasis ? "The historical approval has no supporting permission evidence. Record an independently supported basis before reassessment."
         : operational?.allowed === false ? "New intelligence processing is paused by policy."
         : !this.enabled || !this.configured ? "Episode analysis is temporarily unavailable."
@@ -442,6 +441,12 @@ export class EpisodePipeline {
         : previous.reason || "Audio transcription exceeds the current duration limit.",
       sources: { canonicalOrMatchingAudioCache: cacheFound ? "FOUND" : "UNAVAILABLE", publisherTranscript: publisherReference ? "REFERENCE_FOUND" : "UNAVAILABLE", publisherTranscriptFetched: "NOT_CHECKED", audioFallback: "NOT_REQUESTED" },
     };
+  }
+  rightsRecovery(feedUrl, episodeId) {
+    const previous = this.store.get("intelligence", episodeKey(feedUrl, episodeId));
+    const refusalCodes = new Set(["LEGAL_BASIS_NOT_ESTABLISHED", "RIGHTS_RESTRICTED", "FEATURE_NOT_AUTHORISED", "ASSESSMENT_REQUIRED", "EXPLICIT_AUTHORISATION_REQUIRED", "SCOPED_PUBLISHER_RESTRICTION", "PUBLISHER_RESTRICTION", "RIGHTS_RESERVED", "TAKEDOWN_OR_SUSPENSION"]);
+    return previous && ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state) && refusalCodes.has(previous.code) &&
+      this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId }).allowed ? previous : null;
   }
   async request(input) {
     const key = episodeKey(input.feedUrl, input.episodeId);
@@ -462,6 +467,12 @@ export class EpisodePipeline {
     platformProcessing = false,
   }) {
     const key = episodeKey(feedUrl, episodeId);
+    // Re-evaluate publisher evidence before consulting historical failures.
+    // The registry deduplicates identical evidence and preserves human holds.
+    await this.assessEpisodeRights?.(feedUrl, episodeId);
+    const processingDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId, audit: true });
+    if (processingDecision && !processingDecision.allowed)
+      return { state: "BLOCKED", code: processingDecision.code, reason: processingDecision.reason, retryable: false };
     if (!this.testingMode?.limits(testingContext).dailyUsd) testingContext = null;
     // Global activation is never consent to pay for audio or retry failed work.
     if (trigger === "automatic") {
@@ -470,6 +481,12 @@ export class EpisodePipeline {
     }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
+    const rightsRecovery = this.rightsRecovery(feedUrl, episodeId);
+    if (rightsRecovery) {
+      // A rights refusal spent no provider attempt. A newly permitted attempt
+      // gets the normal retry cap; a subsequent technical failure does not.
+      previous = null;
+    }
     let recovery = null;
     if (previous?.code === "DURATION_LIMIT" && ["FAILED", "BLOCKED"].includes(previous.state)) {
       recovery = this.transcriptRecovery(feedUrl, episodeId, await this.resolveEpisode(feedUrl, episodeId));
@@ -544,15 +561,6 @@ export class EpisodePipeline {
         reason: "New intelligence processing is paused by the podcast intelligence policy.",
         retryable: false,
       };
-    const processingDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId, audit: true });
-    const displayDecision = this.rights?.evaluate({ feature: "intelligence-display", feedUrl, episodeId, audit: true });
-    if ((processingDecision && !processingDecision.allowed) || (displayDecision && !displayDecision.allowed))
-      return {
-        state: "BLOCKED",
-        code: "RIGHTS_RESTRICTED",
-        reason: processingDecision?.allowed === false ? processingDecision.reason : displayDecision.reason,
-        retryable: false,
-      };
     const attempts = (completed(previous) ? 0 : previous?.attempts || 0) + 1;
     const initial = {
       state: "QUEUED",
@@ -570,7 +578,7 @@ export class EpisodePipeline {
       priority: testingContext || platformProcessing ? Math.max(0, Math.min(100, Number(priority) || 0)) : 0,
       feedUrl,
       episodeId,
-      reassessedFromJobId: recovery?.eligible ? previous.jobId : undefined,
+      reassessedFromJobId: rightsRecovery?.jobId || (recovery?.eligible ? previous.jobId : undefined),
       deadlineAt: new Date(Date.now() + (testingContext ? 2 * 3600000 : this.jobTimeoutMs)).toISOString(),
       refreshBaseJobId: forcePublisherRefresh && completed(previous) ? null : undefined,
     };
@@ -864,7 +872,7 @@ export class EpisodePipeline {
           processingStage: "ACQUIRING_TRANSCRIPT",
           transcriptChecks,
         });
-        if (rights && !rights.canAcquireTranscript)
+        if (rights && !this.rights.evaluate({ feature: "transcript-acquisition", feedUrl, episodeId }).allowed)
           throw Error("Rights permission does not allow transcript acquisition for this episode.");
         for (const ref of episode.refs || []) {
           controller.signal.throwIfAborted();
@@ -912,7 +920,7 @@ export class EpisodePipeline {
           });
           return;
         }
-        if (rights && !rights.canTranscribeAudio) {
+        if (rights && !this.rights.evaluate({ feature: "audio-transcription", feedUrl, episodeId }).allowed) {
           update({
             state: "BLOCKED",
             attempts: Math.max(0, value.attempts - 1),
@@ -986,7 +994,7 @@ export class EpisodePipeline {
                 canPersist: rightsAllowed,
                 checkpointPrefix: audio.contentHash ? `${key}:${audio.contentHash}` : null,
                 beforePaid: () => {
-                  if (!rightsAllowed() || (this.rights && !this.rights.resolve(feedUrl, episodeId).canTranscribeAudio)) throw Error("Rights permission no longer allows audio transcription.");
+                  if (!rightsAllowed() || (this.rights && !this.rights.evaluate({ feature: "audio-transcription", feedUrl, episodeId }).allowed)) throw Error("Rights permission no longer allows audio transcription.");
                   if (initial.testingContext && !initial.platformProcessing && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
                 },
                 onProgress: recordWork,

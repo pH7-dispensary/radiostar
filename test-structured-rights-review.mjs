@@ -11,7 +11,8 @@ const path = join(directory, "review.sqlite");
 const { app, providerCalls } = createReviewFixture(new LocalStore(path));
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const origin = `http://127.0.0.1:${app.server.address().port}`;
-const headers = { "content-type": "application/json", "x-star-cast-admin-token": "phase3-test-admin", "x-star-cast-dev-token": "phase3-test-listener" };
+const reviewerSession = app.adminService.startSession({ id: "human-reviewer", role: "SUPER_ADMIN" });
+const headers = { "content-type": "application/json", cookie: `starcast_admin=${reviewerSession.id}`, "x-star-cast-csrf": reviewerSession.csrf, "x-star-cast-dev-token": "phase3-test-listener" };
 const post = async (route, input, auth = headers) => {
   const response = await fetch(origin + route, { method: "POST", headers: auth, body: JSON.stringify(input) });
   return { status: response.status, body: await response.json() };

@@ -24,6 +24,14 @@ try {
   await workspace.getByRole("heading", { name: "No assessment completed" }).waitFor();
   await workspace.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/desktop-evidence.png` });
+  await workspace.getByText("Feature-specific eligibility", { exact: true }).click();
+  assert.equal(await workspace.getByRole("cell", { name: "transcript distribution", exact: true }).count(), 1);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await workspace.getByRole("heading", { name: "Review advisories" }).scrollIntoViewIfNeeded();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+  await page.screenshot({ path: `${output}/mobile-advisories.png` });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await workspace.getByText("Feature-specific eligibility", { exact: true }).click();
   await workspace.getByText("Review or correct this assessment", { exact: true }).click();
   const form = page.locator("#assessment-form");
   await form.getByLabel("Processing basis", { exact: true }).selectOption("OWNED");

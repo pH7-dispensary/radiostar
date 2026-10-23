@@ -8,8 +8,8 @@ const waitCodes = new Set(["BUDGET_LIMIT", "SERVER_BUSY", "SERVER_UNAVAILABLE"])
 // Durable demand, not a second AI pipeline. Every dispatch uses the canonical
 // pipeline and its transactional outbox, rights checks and shared cost ledger.
 export class FollowedPreparation {
-  constructor({ store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect }) {
-    Object.assign(this, { store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect });
+  constructor({ store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
+    Object.assign(this, { store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
     this.refreshing = null; this.draining = null;
   }
   configuration() { return this.store.get(kind, "configuration") || { enabled: false, version: 0 }; }
@@ -45,8 +45,7 @@ export class FollowedPreparation {
           windowKeys.push(key);
           const { episode: resolved } = await this.assess(feedUrl, episode.id);
           const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id });
-          const display = this.rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId: episode.id });
-          const decision = !processing.allowed ? processing : display;
+          const decision = processing;
           const cached = this.pipeline.status(feedUrl, episode.id);
           const sourceNeedsRefresh = cached?.state === "READY" && (cached.episode?.audioUrl !== resolved.audioUrl || JSON.stringify(cached.episode?.refs) !== JSON.stringify(resolved.refs) || Date.now() - Date.parse(cached.sourceCheckedAt || cached.completedAt) >= 86400000);
           const seconds = durationMs(resolved.duration) / 1000 || null;
@@ -55,7 +54,9 @@ export class FollowedPreparation {
           this.put({ ...old, key, feedUrl, episodeId: episode.id, title: resolved.title, podcast: resolved.showName,
             rank, inWindow: true, sourceNeedsRefresh, priority: Math.max(old?.manualPriority || 0, newlyFollowed === feedUrl ? 90 - rank : 70 - rank * 10),
             source: newlyFollowed === feedUrl ? "new-follow" : "followed", assessedAt: iso(), createdAt: old?.createdAt || iso(),
-            eligible: processing.allowed && display.allowed, decision: { code: decision.code, reason: decision.reason, evidence: this.rights.resolve(feedUrl, episode.id).assessmentEvidence || [] },
+            eligible: processing.allowed, retryAfter: processing.allowed && old?.eligible === false ? null : old?.retryAfter,
+            ...(processing.allowed && old?.eligible === false ? { state: "NOT_REQUESTED", code: null, reason: null } : {}),
+            decision: { code: decision.code, reason: decision.reason, evidence: this.rights.resolve(feedUrl, episode.id).assessmentEvidence || [] },
             // Planning estimate, not a reservation. Publisher references may fail;
             // actual fallback is still atomically budgeted before any paid call.
             estimate: { audioUsd, textUsd: cached?.state === "READY" ? 0 : seconds ? Math.max(0.01, seconds / 3600 * 0.05) : null, basis: "RSS duration; Whisper $0.006/min; planning text allowance $0.05/hour; publisher references assumed usable" },
@@ -100,9 +101,8 @@ export class FollowedPreparation {
       try {
         const { episode } = await this.assess(row.feedUrl, row.episodeId);
         const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl: row.feedUrl, episodeId: row.episodeId });
-        const display = this.rights.evaluate({ feature: "intelligence-display", feedUrl: row.feedUrl, episodeId: row.episodeId });
-        const decision = !processing.allowed ? processing : display;
-        if (!processing.allowed || !display.allowed) {
+        const decision = processing;
+        if (!processing.allowed) {
           this.testingMode.attention({ ...row, title: episode.title, podcast: episode.showName, decision: { ...decision, rights: this.rights.resolve(row.feedUrl, row.episodeId) } });
           this.put({ ...row, eligible: false, state: "REVIEW_REQUIRED", code: decision.code, reason: decision.reason, retryAfter: new Date(Date.now() + 3600000).toISOString() });
           continue;
@@ -120,8 +120,9 @@ export class FollowedPreparation {
     this.ledger.refresh();
     const snapshot = this.store.get(kind, "snapshot"), rows = this.rows().filter(v => v.inWindow || v.encounterOwner).map(row => {
       const job = this.pipeline.status(row.feedUrl, row.episodeId);
-      const state = row.paused ? "PAUSED" : row.eligible === false ? "REVIEW_REQUIRED" : job?.code === "BUDGET_LIMIT" ? "WAITING" : job?.state || row.state || "QUEUED";
-      return { ...row, state, code: row.eligible === false ? row.code || row.decision?.code : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
+      const recovered = this.pipeline.rightsRecovery?.(row.feedUrl, row.episodeId);
+      const state = row.paused ? "PAUSED" : row.eligible === false ? "REVIEW_REQUIRED" : recovered ? "NOT_REQUESTED" : job?.code === "BUDGET_LIMIT" ? "WAITING" : job?.state || row.state || "NOT_REQUESTED";
+      return { ...row, ...this.status?.(row.feedUrl, row.episodeId), state, code: row.eligible === false ? row.decision?.code || row.code : recovered || job?.state === "READY" ? null : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
     });
     const window = rows.filter(v => v.inWindow), counts = {};
     for (const row of window) counts[row.state] = (counts[row.state] || 0) + 1;
@@ -135,6 +136,7 @@ export class FollowedPreparation {
   }
   action(input, actor) {
     if (actor.role !== "SUPER_ADMIN") throw Error("Super administrator access is required.");
+    if (actor.source !== "session") throw Error("An interactive Super administrator session is required for operational controls.");
     if (!String(input.reason || "").trim()) throw Error("Provide a reason for this operational change.");
     if (["activate", "suspend"].includes(input.action)) {
       if (!this.store.get(kind, "snapshot")) throw Error("Estimate the followed backlog before activation.");
