@@ -8,10 +8,18 @@ import { skipDiagnostics } from "./skip-diagnostics.mjs";
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
 const categories = new Set(["advert", "intro", "title_sequence", "preview", "outro"]);
-const candidateVersion = "transcript-candidates-v5";
+const candidateVersion = "transcript-candidates-v6";
 const sponsorLanguage = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|made possible by|thanks to .{1,50} for sponsoring)\b/i;
 const commercialOffer = /\b(promo code|discount code|use (?:the )?code|free trial|percent off|visit .{1,80}(?: to |sign up|signup)|go to .{1,60} for|sign up at|get started at|head (?:over )?to .{1,70} (?:for|to))\b|\d+% off/i;
 const sponsorshipDenial = /\b(?:not sponsored|(?:no|without) (?:a )?sponsors?|isn't (?:a )?sponsor|not (?:an? )?(?:ad|advertisement))\b/i;
+// Spoken referral addresses are often split from the account offer. A URL or
+// price alone is never enough; require an addressed action AND account offer.
+// "calm" is a common ASR rendering of "com", not a resolved/trusted hostname.
+const referralAddress = /\b[a-z][\w-]*(?:\.(?:com|net|org|io)\b|\s+dot\s+(?:com|net|org|io)\b|\s+dot\s+[\w-]+\s+(?:dot\s+)?(?:com|calm|net|org|io)\b)/i;
+const accountOffer = /\b(?:credit (?:towards|for)|new account|create an? account|free trial|discount code|promo code)\b/i;
+const addressedAction = /\b(?:go there to|go to|start by going to|get started at|sign up at)\b|\bget (?:a|an|your) .{0,80}\bcredit\b/i;
+const directResponseOffer = text => referralAddress.test(text) && accountOffer.test(text) && addressedAction.test(text);
+const strongAdvertText = text => !sponsorshipDenial.test(text) && ((sponsorLanguage.test(text) && commercialOffer.test(text)) || directResponseOffer(text));
 const verificationInput = (value, candidates) => hash(JSON.stringify([value?.transcript?.audioContentHash || null, value?.transcript?.transcriptVersion, value?.transcript?.audioVariant, value?.episode?.audioUrl, candidates.map(row => [row.id,row.startMs,row.endMs])]));
 const validEventId = (value) =>
   typeof value === "string" && /^[a-zA-Z0-9_-]{8,120}$/.test(value);
@@ -22,13 +30,14 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
   const text = String(segment.text || "");
   const sponsorship = sponsorLanguage.test(text);
   const cta = commercialOffer.test(text);
+  const directOffer = directResponseOffer(text);
   const denied = sponsorshipDenial.test(text);
   const early = segment.startMs < 180000;
   const late = Number.isFinite(transcript.durationMs) && segment.startMs > transcript.durationMs * 0.8;
-  const type = sponsorship || cta ? "advert" : early && /\[(?:opening |theme |intro )music\]/i.test(text) ? "title_sequence" : (early || late) && /\b(coming up (?:next|on)|in (?:our|the) next episode)\b/i.test(text) ? "preview" : early && /\b(hello and welcome to|welcome back to (?:the|our))\b/i.test(text) ? "intro" : late && /\b(thanks? (?:you )?for listening|that'?s all for (?:today|this episode))\b/i.test(text) ? "outro" : null;
+  const type = sponsorship || cta || directOffer ? "advert" : early && /\[(?:opening |theme |intro )music\]/i.test(text) ? "title_sequence" : (early || late) && /\b(coming up (?:next|on)|in (?:our|the) next episode)\b/i.test(text) ? "preview" : early && /\b(hello and welcome to|welcome back to (?:the|our))\b/i.test(text) ? "intro" : late && /\b(thanks? (?:you )?for listening|that'?s all for (?:today|this episode))\b/i.test(text) ? "outro" : null;
   if (!type) return null;
   const disputed = previous.some((item) => item.disputed && (item.sourceVariantKey || item.audioVariant) === transcript.audioVariant && item.startMs < segment.endMs && item.endMs > segment.startMs);
-  const transcriptConfidence = sponsorship && cta ? 0.95 : 0.62;
+  const transcriptConfidence = strongAdvertText(text) ? 0.95 : 0.62;
   return {
     id: hash(`${key}:${transcript.transcriptVersion || transcript.contentHash}:${segment.id}`),
     episodeKey: key,
@@ -42,12 +51,12 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
     verificationState: disputed ? Verification.DISPUTED : denied ? Verification.REJECTED : Verification.CANDIDATE,
     disputed,
     processingVersion: candidateVersion,
-    qualifiesForAudioVerification: !denied && type === "advert" && sponsorship && cta,
-    decisionReason: denied ? "Explicit non-advertising context; not eligible for automatic verification." : sponsorship && cta ? "Sponsor declaration and commercial offer; independent audio evidence still required." : "Single contextual cue only; insufficient evidence for automatic verification.",
+    qualifiesForAudioVerification: type === "advert" && strongAdvertText(text),
+    decisionReason: denied ? "Explicit non-advertising context; not eligible for automatic verification." : directOffer ? "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required." : sponsorship && cta ? "Sponsor declaration and commercial offer; independent audio evidence still required." : "Single contextual cue only; insufficient evidence for automatic verification.",
     evidence: [
       {
         source: "transcript",
-        signal: denied ? "editorial_sponsorship_context" : sponsorship && cta ? "sponsorship_and_offer" : sponsorship ? "sponsorship_language" : cta ? "offer_call_to_action" : `${type}_language`,
+        signal: denied ? "editorial_sponsorship_context" : directOffer ? "referral_address_account_offer_and_action" : sponsorship && cta ? "sponsorship_and_offer" : sponsorship ? "sponsorship_language" : cta ? "offer_call_to_action" : `${type}_language`,
         confidence: denied ? 0.5 : transcriptConfidence,
         sourceSegmentIds: segment.sourceSegmentIds || [segment.id],
         provenance: transcript.provenance || null,
@@ -116,12 +125,12 @@ export class SkipService {
     // only adjacent short speech spans, retaining every original citation.
     for (let index = 0; needsAnalysis && index < transcript.segments.length; index++) {
       const first = transcript.segments[index];
-      if (!sponsorLanguage.test(first.text || "") || sponsorshipDenial.test(first.text || "") || commercialOffer.test(first.text || "")) continue;
+      if (!(sponsorLanguage.test(first.text || "") || referralAddress.test(first.text || "")) || sponsorshipDenial.test(first.text || "") || strongAdvertText(first.text || "")) continue;
       const group = [first];
       for (const next of transcript.segments.slice(index + 1, index + 33)) {
         if (!Number.isFinite(next.startMs) || !Number.isFinite(next.endMs) || next.startMs < group.at(-1).endMs || next.startMs - group.at(-1).endMs > 3000 || next.endMs - first.startMs > 120000) break;
         group.push(next);
-        if (commercialOffer.test(next.text || "")) {
+        if (strongAdvertText(group.map(row => row.text).join(" "))) {
           segments.push({ ...first, id: group.map(row => row.id).join(":"), sourceSegmentIds: group.map(row => row.id), endMs: next.endMs, text: group.map(row => row.text).join(" ") }); break;
         }
       }
@@ -251,7 +260,11 @@ export class SkipService {
     const sourceMatched = Boolean(permitted && variant?.audioVariantFingerprint && audioVariantFingerprint === variant.audioVariantFingerprint);
     const activeIntervals = sourceMatched ? this.store.all("skip-interval").map(([, item]) => item)
       .filter((item) => item.episodeKey === episodeKey(feed, episode) && categories.has(item.type) && preferences[item.type] === true && intervalDecision({ interval: item, variantFingerprint: audioVariantFingerprint, durationMs: variant.durationMs, positionMs: item.startMs, flags: { ad_skip: "on", intro_skip: "on", title_sequence_skip: "on", preview_skip: "on", outro_skip: "on" } }).skip)
-      .map(({ id, type, startMs, endMs }) => ({ id, type, startMs, endMs, targetMs: endMs })) : [];
+      .map(({ id, type, startMs, endMs }) => ({ id, type, startMs, endMs, targetMs: endMs }))
+      // Keep source evidence separate, but never send overlapping execution
+      // leases which could immediately re-skip the same break after Undo.
+      .sort((a,b) => a.startMs-b.startMs || b.endMs-a.endMs || a.id.localeCompare(b.id))
+      .reduce((selected,row) => { if (!selected.length || row.startMs>=selected.at(-1).endMs) selected.push(row); return selected; }, []) : [];
     const matchFailure = ["AUDIO_PRECONDITION_UNSUPPORTED", "AUDIO_VARIANT_CHANGED", "AUDIO_WITNESS_MISMATCH", "AUDIO_MATCH_FAILED", "BOUNDED_PROOF_UNAVAILABLE"].includes(audioMatchCode) ? audioMatchCode : null;
     const code = !displayAllowed ? "DISPLAY_NOT_AUTHORISED" : !this.automaticEnabled(listener) ? "PILOT_DISABLED" : preferences.adSkipEnabled !== true ? "PREFERENCE_DISABLED" : !exactSource ? "SOURCE_URL_MISMATCH" : !variant ? inspection.code : !audioVariantFingerprint ? matchFailure || "AUDIO_MATCH_NOT_CHECKED" : !sourceMatched ? "VARIANT_MISMATCH" : !activeIntervals.length ? "NO_ELIGIBLE_INTERVALS" : "READY";
     if (this.automaticEnabled(listener)) {

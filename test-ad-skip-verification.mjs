@@ -56,6 +56,10 @@ const preferences = { adSkipEnabled: true, advert: true, intro: false, title_seq
 assert.equal(skip.playback(feedUrl, episodeId, { audioUrl, preferences }).automaticSkipping, false, "a URL alone never proves the played bytes");
 const input = { audioUrl, preferences, listener, audioVariantFingerprint: "actual-audio-content-hash" };
 assert.equal(skip.playback(feedUrl, episodeId, input).automaticSkipping, true);
+const persisted=store.get('skip-interval',status.intervals[0].id);
+store.set('skip-interval','overlapping-evidence',{...persisted,id:'overlapping-evidence',startMs:persisted.startMs+100,endMs:persisted.endMs-100});
+assert.equal(skip.playback(feedUrl,episodeId,input).activeIntervals.length,1,'overlapping evidence must not produce a second executable skip after Undo');
+store.delete('skip-interval','overlapping-evidence');
 assert.equal(skip.playback(feedUrl, episodeId, { audioUrl: audioUrl + "?dynamic=1", preferences }).automaticSkipping, false, "a changed source URL is never treated as the verified variant");
 const interval = status.intervals[0];
 const lease = skip.authorise(listener, feedUrl, episodeId, { ...input, intervalId: interval.id, positionMs: 10_120 }, preferences);

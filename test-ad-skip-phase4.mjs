@@ -53,6 +53,23 @@ const rejectedStore=new LocalStore(':memory:');
 const rejectedService=new SkipService(rejectedStore,{status:()=>({...value,transcript:{...transcript,segments:[transcript.segments[3]]}})});
 assert.equal(rejectedService.inspect(feed,episode).state,'NO_VERIFIED_INTERVALS','rejected editorial cues must not be advertised as usable candidates');
 rejectedStore.close();
+const offerStore=new LocalStore(':memory:');
+const offerTranscript={...transcript,segments:[
+ {id:'url',startMs:1000,endMs:2500,text:'Example dot com slash radio.'},
+ {id:'offer',startMs:2500,endMs:5000,text:'Go there to get a one hundred dollar credit towards your new account.'},
+ {id:'editorial',startMs:10000,endMs:13000,text:'We compared the new account pricing at example.com with its competition.'},
+ {id:'mobile',startMs:20000,endMs:25000,text:'Start by going to radio dot example calm.'},
+ {id:'signup',startMs:25000,endMs:30000,text:'Check your phone and create an account to choose your plan.'},
+ {id:'denial',startMs:40000,endMs:45000,text:'This is not an advertisement. Go to example.com and create an account.'},
+]};
+const offerService=new SkipService(offerStore,{status:()=>({...value,transcript:offerTranscript})});
+offerService.inspect(feed,episode);
+const offers=offerStore.all('skip-interval').map(([,v])=>v);
+assert(offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.join(',')==='url,offer'));
+assert(offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.join(',')==='mobile,signup'));
+assert(!offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.includes('editorial')));
+assert(!offers.some(v=>v.qualifiesForAudioVerification&&v.evidence[0].sourceSegmentIds.includes('denial')));
+offerStore.close();
 assert.match(adSkipStatusText({state:'CANDIDATES_FOUND'},true),/awaiting verification/);
 assert.match(adSkipStatusText({state:'READY',verifiedCount:1,automaticSkipping:true},false),/is off/);
 assert.equal(adSkipStatusText({state:'READY',verifiedCount:1,automaticSkipping:true},true),'Ad Skip ready');
