@@ -56,8 +56,10 @@ try {
   const key=episodeKey(feeds[0],'episode-4');prep.action({key,action:'pause',reason:'test pause'},actor);assert.equal(prep.summary().rows.find(r=>r.key===key).state,'PAUSED');prep.action({key,action:'prioritise',reason:'test priority'},actor);assert.equal(prep.summary().rows.find(r=>r.key===key).priority,95);
   prep.action({action:'suspend',reason:'rollback test',confirmation:'CONFIRM',expectedVersion:1},actor);
   latest=5;await prep.refresh({force:true});await settle();assert.equal(audioCalls,7);
+  const pausedFollow=await fetch(origin+'/api/listener/follow',{method:'POST',headers:{'x-star-cast-dev-token':'device',authorization:'Bearer ordinary-user-credential-at-least-32-characters','content-type':'application/json'},body:JSON.stringify({feedUrl:feeds[0],following:true})});
+  assert.equal((await pausedFollow.json()).processing.code,'AUTOMATIC_PREPARATION_DISABLED','platform pause must not fall back to legacy paid preparation');
   app.listeners.privacy(other,{intelligenceEnabled:false});assert.equal(prep.listeners().length,1);
-  assert.equal(app.skips.automaticEnabled(user),false);prep.action({action:'activate',reason:'test',confirmation:'CONFIRM',expectedVersion:2},actor);assert.equal(app.skips.automaticEnabled(user),true);assert.equal(app.skips.automaticEnabled(null),false);
+  assert.equal(app.skips.automaticEnabled(user),true,'pausing preparation does not disable verified cached skips');prep.action({action:'activate',reason:'test',confirmation:'CONFIRM',expectedVersion:2},actor);assert.equal(app.skips.automaticEnabled(user),true);assert.equal(app.skips.automaticEnabled(null),false);
   const budgetKey=episodeKey(feeds[0],'capacity-wait'), queued=[];
   store.set('intelligence',budgetKey,{jobId:'capacity-job',feedUrl:feeds[0],episodeId:'capacity-wait',state:'BLOCKED',code:'BUDGET_LIMIT',platformProcessing:true,testingContext:{platform:true,version:999},priority:95,allowAudio:true,attempts:1,resumeAfter:new Date(0).toISOString(),completedAt:new Date().toISOString()});
   const ledger=store.get('budget','ledger');ledger.usage.push({id:'test-exhaustion',usd:5,at:new Date().toISOString(),kind:'text'});store.set('budget','ledger',ledger);

@@ -423,7 +423,7 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
-    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && (featureEnabled("adSkip") && store.get("followed-preparation", "configuration")?.enabled === true || testingMode.adSkipAllowed(listener.id))),
+    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && (featureEnabled("adSkip") || testingMode.adSkipAllowed(listener.id))),
     testingContext: (listener) => testingMode.context(listener?.id),
     maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
@@ -488,6 +488,7 @@ export function createStarCastServer({
   });
   const encounter = async (listenerId, feedUrl, episodeId, source = "opened") => {
     if (followedPreparation.configuration().enabled && valid({ feedUrl, episodeId })) return followedPreparation.encounter(listenerId, feedUrl, episodeId, source);
+    if (followedPreparation.configuration().version > 0) return; // Explicit pause must not fall through to the legacy scheduler.
     const context = testingMode.context(listenerId);
     if (!context || !valid({ feedUrl, episodeId }) || !featureEnabled("automaticProcessing") || adminService.configuration().values.processing?.automaticFollowPreparation === false || intelligencePolicy.effective(feedUrl, episodeId).applyToFuture === false) return;
     const key = episodeKey(feedUrl, episodeId);
@@ -519,6 +520,7 @@ export function createStarCastServer({
       void followedPreparation.refresh({ newlyFollowed: feedUrl }).then(() => followedPreparation.drain()).catch(() => {});
       return { state: "PREPARING", code: "DISCOVERING_FOLLOWED_EPISODES", reason: "Checking the latest episodes; individual episode status shows eligibility and preparation." };
     }
+    if (followedPreparation.configuration().version > 0) return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "New automatic preparation is paused by an administrator." };
     if (adminService.configuration().values.processing?.automaticFollowPreparation === false)
       return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "Automatic preparation is currently paused by an administrator." };
     if (!featureEnabled("automaticProcessing")) return { state: "DISABLED", code: "FEATURE_DISABLED" };
@@ -1284,6 +1286,7 @@ export function createStarCastServer({
     let legacyRefreshAt = 0;
     const refresh = () => {
       if (followedPreparation.configuration().enabled) return followedPreparation.refresh().then(() => followedPreparation.drain()).catch(() => {});
+      if (followedPreparation.configuration().version > 0) return;
       if (Date.now() - legacyRefreshAt < 6 * 3600000) return;
       legacyRefreshAt = Date.now();
       return Promise.allSettled([...new Set([
