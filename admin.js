@@ -199,6 +199,17 @@ function episodes() {
   document.querySelectorAll("[data-open-podcast]").forEach((button) => button.onclick = async () => { try { await openPodcast(button.dataset.openPodcast); } catch (error) { notify(error.message); } });
 }
 
+function followedPreparationPanel(d) {
+  if (!d) return "";
+  const rows = d.rows || [], snapshot = d.snapshot;
+  state.followedActions = rows;
+  return `<section class="panel" id="followed-preparation"><div class="panel-head"><div><span class="eyebrow">AI Processing</span><h3>Followed Podcasts</h3><p>Latest three episodes per podcast, shared across listeners.</p></div>${badge(d.configuration.enabled ? "ACTIVE" : "PAUSED")}</div>
+    <div class="grid">${card("Followed podcasts", snapshot?.feeds ?? "—", `${snapshot?.activeUsers ?? "—"} active profiles evaluated`)}${card("Ready", d.counts.READY || 0, `${d.uniqueEpisodes} unique episodes`)}${card("Awaiting preparation", d.requiringPreparation, `${d.counts.REVIEW_REQUIRED || 0} need rights review`)}${card("Backlog estimate", `$${d.estimate.knownUsd.toFixed(2)}`, `${d.estimate.unknownEpisodes} unknown estimates; not a spending reservation`)}</div>
+    <p class="muted small">Eligible backlog estimate: $${d.estimate.eligibleKnownUsd.toFixed(2)} · Recorded AI spend this month: $${Number(d.expenditure.actualMonthUsd || 0).toFixed(4)} · Reserved: $${Number(d.expenditure.reservedUsd || 0).toFixed(4)} · ${d.throughput.completedLast24Hours} completed in the last 24 hours. ${html(d.estimate.reason)}</p>
+    ${isSuperAdmin() ? `<div class="row-actions"><button class="secondary" data-followed-action="estimate">Refresh estimate</button><button class="secondary" data-followed-action="${d.configuration.enabled ? "suspend" : "activate"}">${d.configuration.enabled ? "Pause new preparation" : "Activate preparation"}</button></div>` : ""}
+    ${snapshot?.errors?.length ? `<p class="error">${snapshot.errors.length} feeds could not be refreshed. Existing results are retained.</p>` : ""}
+    <div class="table-wrap"><table><thead><tr><th>Episode</th><th>Preparation</th><th>Priority</th><th>Actions</th></tr></thead><tbody>${rows.length ? rows.map((row,i) => `<tr><td><strong>${html(row.title || row.episodeId)}</strong><br><small>${html(row.podcast || row.feedUrl)}</small></td><td>${badge(row.state)}<br><small>${html(label(row.code || ""))}</small></td><td>${row.priority}</td><td><div class="row-actions"><button class="secondary" data-followed-open="${i}">Inspect</button>${isSuperAdmin() ? ["prioritise", row.paused ? "retry" : "pause", "retry"].filter((v,i,a) => a.indexOf(v) === i).map(action => `<button class="secondary" data-followed-action="${action}" data-followed-index="${i}">${html(label(action))}</button>`).join("") : ""}</div></td></tr>`).join("") : `<tr><td colspan="4" class="empty">${snapshot ? "No eligible followed podcasts are recorded." : "Refresh the estimate to discover the followed-podcast backlog. No paid processing starts during estimation."}</td></tr>`}</tbody></table></div></section>`;
+}
 function processing() {
   const d = state.processing, p = d.processing, jobs = p.jobs || [];
   state.processingActions = jobs.slice(0, 100);
@@ -207,6 +218,19 @@ function processing() {
   page("AI Processing", "A live view of durable job state. Times appear only when the server recorded comparable work; progress is never inferred from a timer.", `<div class="grid">${card("Queued", p.counts?.QUEUED || 0, "Awaiting the worker")}${card("Active", p.counts?.PROCESSING || 0, "Recorded lifecycle work")}${card("Failed", p.counts?.FAILED || 0, "Review before retry")}${card("Cache reuse", perf.cacheHitRate == null ? "Not available" : `${Math.round(perf.cacheHitRate * 100)}%`, "Measured job records")}</div><section class="panel"><div class="panel-head"><div><span class="eyebrow">Measured performance</span><h3>Processing evidence</h3><p>Publisher transcript, audio transcription and cache reuse remain separate workloads.</p></div>${badge(d.infrastructure.status)}</div><div class="coverage-grid"><div><strong>${perf.averageQueueWaitMs == null ? "—" : elapsed(perf.averageQueueWaitMs)}</strong><span>Average queue wait</span></div><div><strong>${perf.medianProcessingMs == null ? "—" : elapsed(perf.medianProcessingMs)}</strong><span>Median processing</span></div><div><strong>${perf.p95ProcessingMs == null ? "—" : elapsed(perf.p95ProcessingMs)}</strong><span>P95 processing</span></div><div><strong>${perf.successRate == null ? "—" : `${Math.round(perf.successRate * 100)}%`}</strong><span>Completed successfully</span></div></div></section><section class="panel"><div class="panel-head"><div><h3>Jobs</h3><p>Open an episode to inspect rights, provenance, policy and its recorded timeline.</p></div><button class="secondary" data-view="podcasts">Browse podcasts</button></div><div class="table-wrap"><table><thead><tr><th>Episode</th><th>State</th><th>Route</th><th>Elapsed</th><th>Measured duration</th><th>Last event</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`);
   document.querySelectorAll("[data-job-open]").forEach((button) => button.onclick = () => openProcessingJob(state.processingActions[Number(button.dataset.jobOpen)]));
   document.querySelectorAll("[data-job-cancel]").forEach((button) => button.onclick = () => cancelProcessingJob(state.processingActions[Number(button.dataset.jobCancel)], button));
+  document.querySelector(".content .topline").insertAdjacentHTML("afterend", followedPreparationPanel(d.followedPreparation));
+  document.querySelectorAll("[data-followed-open]").forEach(button => button.onclick = () => openProcessingJob(state.followedActions[Number(button.dataset.followedOpen)]));
+  document.querySelectorAll("[data-followed-action]").forEach(button => button.onclick = async () => {
+    const action = button.dataset.followedAction;
+    const reason = action === "estimate" ? "Refresh backlog estimate" : prompt("Reason for this preparation change:");
+    if (!reason) return;
+    if (["activate", "suspend"].includes(action) && !confirm("Apply this platform-wide change? Existing rights, spending and verified-seek controls remain in force. Accepted jobs may finish.")) return;
+    button.disabled = true;
+    try {
+      await api("/api/admin/intelligence/followed", { method: "POST", body: JSON.stringify({ action, key: state.followedActions[Number(button.dataset.followedIndex)]?.key, reason, confirmation: "CONFIRM", expectedVersion: d.followedPreparation.configuration.version }) });
+      await load("processing"); processing();
+    } catch(error) { notify(error.message); button.disabled = false; }
+  });
 }
 
 function listeners() {

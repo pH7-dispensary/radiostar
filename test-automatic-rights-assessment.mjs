@@ -60,6 +60,11 @@ try {
   const historicalBody = await historical.json();
   assert.equal(historical.status, 200, "an explicitly requested older episode is resolved from the bounded publisher history");
   assert.equal(historicalBody.assessment.classification, "LICENSED");
+  assert.equal(historicalBody.assessment.canTranscribeAudio, true, "an explicit podcast licence supports private internal transcription without a redundant episode approval");
+  assert.equal(historicalBody.assessment.canDisplayCaptions, false);
+  assert.equal(historicalBody.assessment.canGenerateDubbedAudio, false);
+  const upgraded = app.rights.assessAutomatic({ ...historicalBody.assessment, assessmentVersion: "publisher-rss-test-new-version", assessmentSource: "publisher-rss-test-new-version" });
+  assert.equal(upgraded.reused, false, "assessor version changes re-evaluate evidence, retaining history");
   const missing = await post("/api/intelligence/preflight", { feedUrl: historicalFeedUrl, episodeId: "not-in-feed" });
   assert.equal(missing.status, 404, "a removed episode gets a specific source response instead of a generic processing failure");
   assert.equal((await missing.json()).code, "EPISODE_NOT_FOUND");
@@ -75,7 +80,7 @@ try {
   await Promise.all(app.pipeline.inflight.values());
   const rights = app.rights.resolve(feedUrl, "licensed");
   assert.equal(rights.assessmentStatus, "APPROVED");
-  assert.equal(rights.assessmentSource, "publisher-rss-v2");
+  assert.equal(rights.assessmentSource, "publisher-rss-v3");
   assert.equal(rights.canGenerateBrief && rights.canGenerateChapters && rights.canGenerateTopics && rights.canSearchMoments, true, "core derived intelligence permissions are independently recorded");
   assert.equal(rights.canDisplayCaptions || rights.canGenerateDubbedAudio || rights.canCloneSpeakerVoice, false, "captions, dubbing and voice replication stay independently blocked");
   assert.equal(app.pipeline.status(feedUrl, "licensed").state, "READY", "the eligible episode reaches READY through the real pipeline");

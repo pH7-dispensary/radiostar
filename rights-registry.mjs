@@ -613,7 +613,7 @@ export class RightsRegistry {
     // refresh only a prior automatic assessment for the same episode.
     if (prior.id && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
       return { record: prior, reused: true, mandatory: false };
-    if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint)
+    if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint && prior.assessmentVersion === input.assessmentVersion)
       return { record: prior, reused: true, mandatory: false };
     const record = this.set({ ...input, episodeId: input.episodeId }, { actor });
     this.audit("rights-assessed-automatically", record.id, actor, {

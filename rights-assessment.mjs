@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 // A public feed, a transcript link, or the absence of a reservation is never
 // treated as permission.  It can establish bounded intelligence only when the
 // publisher has supplied a recognised, machine-readable licence.
-export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v2";
+export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v3";
 
 const text = (value) => String(value || "")
   .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
@@ -38,7 +38,7 @@ const canonicalLicence = (value) => {
     const path = url.pathname.replace(/\/+$/, "/").toLowerCase();
     if (!/(^|\.)creativecommons\.org$/.test(host)) return null;
     if (/^\/publicdomain\/zero\/1\.0\/$/.test(path)) return { url: url.toString(), kind: "CC0" };
-    if (/^\/licenses\/by\/(?:[\d.]+)\/$/.test(path)) return { url: url.toString(), kind: "CC-BY" };
+    if (/^\/licenses\/by\/(?:1\.0|2\.0|2\.5|3\.0|4\.0)\/$/.test(path)) return { url: url.toString(), kind: "CC-BY" };
   } catch {
     // Invalid publisher metadata is evidence for neither a grant nor a block.
   }
@@ -157,10 +157,10 @@ export function assessPublisherRights({ feedUrl, episode, evidence } = {}) {
     licence: licence.url,
     canAcquireTranscript: true,
     canProcessForAi: true,
-    // Channel-level licences do not automatically establish that the specific
-    // audio variant can be copied for paid transcription. A direct episode
-    // licence is required, and callers must still opt in to paid audio.
-    canTranscribeAudio: licence.scope === "episode",
+    // A publisher licence expressly applied to the podcast covers internal
+    // reproduction too. Episode reservations above and authoritative registry
+    // restrictions still win; this does not enable transcript distribution.
+    canTranscribeAudio: true,
     canDisplayDerivedIntelligence: true,
     canRetain: true,
     canRegenerate: true,

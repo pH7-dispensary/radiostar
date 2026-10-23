@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { FollowedPreparation } from "./followed-preparation.mjs";
 import { readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -281,9 +282,10 @@ export function createStarCastServer({
     if (cache.size > 500) cache.delete(cache.keys().next().value);
     return value;
   }
-  async function feedXml(feed) {
+  async function feedXml(feed, fresh = false) {
     if (!publicUrl(feed))
       throw Error("A public HTTPS publisher feed is required.");
+    if (fresh) cache.delete("feed:" + feed);
     return cached(
       "feed:" + feed,
       async () => {
@@ -417,9 +419,9 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
-    automaticEnabled: (listener) => testingMode.adSkipAllowed(listener?.id),
+    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && (featureEnabled("adSkip") && store.get("followed-preparation", "configuration")?.enabled === true || testingMode.adSkipAllowed(listener.id))),
     testingContext: (listener) => testingMode.context(listener?.id),
-    maxAudioSeconds: (value) => testingMode.limits(testingMode.context(value?.testingContext?.listenerId)).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
+    maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
         return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
@@ -466,7 +468,22 @@ export function createStarCastServer({
     return device && !device.revokedAt && Date.parse(device.expiresAt) > Date.now() && testingMode.allowed(device.listenerId) ? device.listenerId : null;
   };
   const encounters = new Map();
+  const authenticatedListenerId = (req) => {
+    const bearer = listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, ""));
+    if (bearer) return bearer.id;
+    const token = req.headers["x-star-cast-pilot-token"];
+    const device = typeof token === "string" && token.length >= 32 ? store.get("pilot-device", tokenHash(token)) : null;
+    return device && !device.revokedAt && Date.parse(device.expiresAt) > Date.now() ? device.listenerId : null;
+  };
+  const followedPreparation = new FollowedPreparation({ store, pipeline, ledger, testingMode, rights,
+    discover: async feedUrl => [...episodesFromFeed(await feedXml(feedUrl, true), feedUrl).episodes].filter(v => v.id).sort((a,b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0)),
+    assess: assessEpisodeRights,
+    enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
+    allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,
+    inspect: (feed, id) => skips.inspect(feed, id),
+  });
   const encounter = async (listenerId, feedUrl, episodeId, source = "opened") => {
+    if (followedPreparation.configuration().enabled && valid({ feedUrl, episodeId })) return followedPreparation.encounter(listenerId, feedUrl, episodeId, source);
     const context = testingMode.context(listenerId);
     if (!context || !valid({ feedUrl, episodeId }) || !featureEnabled("automaticProcessing") || adminService.configuration().values.processing?.automaticFollowPreparation === false || intelligencePolicy.effective(feedUrl, episodeId).applyToFuture === false) return;
     const key = episodeKey(feedUrl, episodeId);
@@ -494,6 +511,10 @@ export function createStarCastServer({
   };
   const backgroundEncounter = (...args) => encounter(...args).catch(() => console.error(JSON.stringify({ event: "internal-encounter-deferred", code: "SOURCE_UNAVAILABLE" })));
   const scheduleFollowedFeed = async (feedUrl, listenerId = null) => {
+    if (followedPreparation.configuration().enabled) {
+      void followedPreparation.refresh({ newlyFollowed: feedUrl }).then(() => followedPreparation.drain()).catch(() => {});
+      return { state: "PREPARING", code: "DISCOVERING_FOLLOWED_EPISODES", reason: "Checking the latest episodes; individual episode status shows eligibility and preparation." };
+    }
     if (adminService.configuration().values.processing?.automaticFollowPreparation === false)
       return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "Automatic preparation is currently paused by an administrator." };
     if (!featureEnabled("automaticProcessing")) return { state: "DISABLED", code: "FEATURE_DISABLED" };
@@ -1256,14 +1277,20 @@ export function createStarCastServer({
   };
   let followMonitor = null, followStartup = null;
   {
-    const refresh = () => Promise.allSettled([...new Set([
+    let legacyRefreshAt = 0;
+    const refresh = () => {
+      if (followedPreparation.configuration().enabled) return followedPreparation.refresh().then(() => followedPreparation.drain()).catch(() => {});
+      if (Date.now() - legacyRefreshAt < 6 * 3600000) return;
+      legacyRefreshAt = Date.now();
+      return Promise.allSettled([...new Set([
       ...(env.STARCAST_FOLLOW_MONITOR === "enabled" ? listeners.followedFeeds() : []),
       ...intelligencePolicy.records().filter((policy) => !policy.episodeId && policy.automaticPreparation && policy.applyToFuture && policy.tier !== "HIGH").map((policy) => policy.feedUrl),
     ])].map((feedUrl) => {
       const owner = store.all("follow").find(([, follow]) => follow.feedUrl === feedUrl && follow.intelligenceEnabled !== false && testingMode.allowed(follow.owner))?.[1]?.owner;
       return scheduleFollowedFeed(feedUrl, owner);
     }));
-    followMonitor = setInterval(refresh, 6 * 60 * 60 * 1000);
+    };
+    followMonitor = setInterval(refresh, 60 * 1000);
     followMonitor.unref?.();
     followStartup = setTimeout(refresh, 5_000);
     followStartup.unref?.();
@@ -1579,8 +1606,10 @@ export function createStarCastServer({
           return send(res, 401, {
             error: "Reconnect your listener profile to continue.",
           });
-        if (url.pathname === "/api/listener/summary" && req.method === "GET")
+        if (url.pathname === "/api/listener/summary" && req.method === "GET") {
+          if (followedPreparation.configuration().enabled) void followedPreparation.refresh().then(() => followedPreparation.drain()).catch(() => {});
           return send(res, 200, listeners.summary(listener));
+        }
         if (url.pathname === "/api/listener/subscriptions" && req.method === "GET")
           return send(res, 200, subscriptions.config(listener));
         if (url.pathname === "/api/listener/translation" && req.method === "GET")
@@ -1711,7 +1740,23 @@ export function createStarCastServer({
       }
       if (url.pathname === "/api/admin/operations" && req.method === "GET") {
         if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
-        return send(res, 200, await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }));
+        return send(res, 200, { ...await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }), followedPreparation: followedPreparation.summary() });
+      }
+      if (url.pathname === "/api/admin/intelligence/followed" && ["GET", "POST"].includes(req.method)) {
+        const actor = adminActor(req, "intelligence:read", { write: req.method === "POST" });
+        if (!actor || req.method === "POST" && actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super administrator access is required for preparation changes." });
+        if (req.method === "POST") {
+          const input = await body(req);
+          if (input.action === "estimate") await followedPreparation.refresh({ force: true });
+          else {
+            store.transaction(() => {
+              const change = followedPreparation.action(input, actor);
+              adminService.appendAudit({ actor, action: "followed-preparation-" + input.action, resource: input.key || "platform", previousState: change.previous, newState: change.current, reason: input.reason, outcome: "ALLOWED" });
+            });
+            void followedPreparation.drain().catch(() => {});
+          }
+        }
+        return send(res, 200, followedPreparation.summary());
       }
       if (url.pathname === "/api/admin/costs" && req.method === "GET") {
         if (!adminActor(req, "finance:read")) return send(res, 403, { error: "Finance administrator access is required." });
@@ -2116,7 +2161,7 @@ export function createStarCastServer({
         if (!valid({ feedUrl: feed, episodeId: id }))
           return send(res, 400, { error: "A valid publisher episode is required." });
         const source = ["saved", "followed", "playing"].includes(url.searchParams.get("source")) ? url.searchParams.get("source") : "opened";
-        await backgroundEncounter(testListener(req), feed, id, source);
+        await backgroundEncounter(authenticatedListenerId(req), feed, id, source);
         return send(res, 200, {
           status: listenerStatus(feed, id),
           features: listenerFeatures(),
@@ -2140,7 +2185,7 @@ export function createStarCastServer({
           return send(res, 400, {
             error: "A valid question and podcast scope are required.",
           });
-        const internalListener = testListener(req);
+        const internalListener = authenticatedListenerId(req);
         if (internalListener) {
           const followed = store.all("follow").map(([, item]) => item).filter((item) => item.owner === internalListener && item.intelligenceEnabled !== false).slice(0, 3);
           for (const follow of followed) void scheduleFollowedFeed(follow.feedUrl, internalListener).catch(() => {});
@@ -2177,7 +2222,9 @@ export function createStarCastServer({
         if (!featureEnabled(featureForCapability[input.capability]))
           return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
         const requested = await pipeline.request({
-          ...input,
+          feedUrl: input.feedUrl,
+          episodeId: input.episodeId,
+          platformProcessing: false,
           testingContext: testingMode.context(testListener(req)),
           priority: testListener(req) ? 80 : 0,
           allowAudio: input.allowAudio === true || Boolean(testListener(req)),
@@ -2262,7 +2309,7 @@ export function createStarCastServer({
       code: error?.name || "QUEUE_STOPPED",
     })));
   }
-  return { server, store, ledger, pipeline, listeners, skips, rights, intelligencePolicy, adminService, subscriptions, translation, queue };
+  return { server, store, ledger, pipeline, listeners, skips, rights, intelligencePolicy, adminService, subscriptions, translation, queue, followedPreparation };
 }
 if (
   process.argv[1] &&

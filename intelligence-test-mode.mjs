@@ -16,8 +16,10 @@ export class IntelligenceTestMode {
     return config.active && (version === null || version === config.version) && config.listenerIds.includes(id) && this.eligibleListener(id);
   }
   context(id) { return this.allowed(id) ? { listenerId: id, version: this.configuration().version } : null; }
+  // One global allowance, with the existing expiry; not a per-user budget.
+  platformContext() { const c = this.configuration(); return c.active ? { platform: true, version: c.version } : null; }
   adSkipAllowed(id) { return this.allowed(id) && this.configuration().adSkipPilotEnabled === true; }
-  limits(context) { return context && this.allowed(context.listenerId, context.version) ? testingLimits : {}; }
+  limits(context) { return context && (context.platform === true ? this.configuration().active && context.version === this.configuration().version : this.allowed(context.listenerId, context.version)) ? testingLimits : {}; }
   set(input, actor) {
     return this.store.transaction(() => {
       const prior = this.configuration();

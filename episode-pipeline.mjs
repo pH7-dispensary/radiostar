@@ -265,7 +265,7 @@ export class EpisodePipeline {
         // A durable queued job has not started and can be recovered by the
         // single consumer. In-progress work remains failed on restart because
         // its provider outcome may be unknown and must not be retried blindly.
-        if (this.queue && value.testingContext && this.testingMode?.limits(value.testingContext).dailyUsd && (value.recoveries || 0) < 2 && value.state !== "QUEUED") {
+        if (this.queue && (value.platformProcessing || value.testingContext && this.testingMode?.limits(value.testingContext).dailyUsd) && (value.recoveries || 0) < 2 && value.state !== "QUEUED") {
           const recovered = this.transition(key, value, { state: "QUEUED", processingStage: "QUEUED", recoveries: (value.recoveries || 0) + 1, deadlineAt: new Date(Date.now() + 2 * 3600000).toISOString() }, { force: true });
           this.store.set("processing-outbox", value.jobId, { key, ...recovered });
         } else if (!(this.queue && value.state === "QUEUED"))
@@ -459,13 +459,14 @@ export class EpisodePipeline {
     trigger = "manual",
     testingContext = null,
     priority = 0,
+    platformProcessing = false,
   }) {
     const key = episodeKey(feedUrl, episodeId);
     if (!this.testingMode?.limits(testingContext).dailyUsd) testingContext = null;
     // Global activation is never consent to pay for audio or retry failed work.
     if (trigger === "automatic") {
-      allowAudio = Boolean(testingContext);
-      retry = false;
+      allowAudio = platformProcessing ? allowAudio : Boolean(testingContext);
+      retry = platformProcessing && retry;
     }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
@@ -490,7 +491,7 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(testingContext && (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code) || (previous.code === "TESTING_EXPIRED" && previous.testingContext?.version !== testingContext.version)))
+      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(platformProcessing && (retry && previous.retryable || ["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "AUDIO_TRANSCRIPTION_NOT_AUTHORISED", "RIGHTS_RESTRICTED", "LEGAL_BASIS_NOT_ESTABLISHED", "TESTING_EXPIRED"].includes(previous.code))) && !(testingContext && (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code) || (previous.code === "TESTING_EXPIRED" && previous.testingContext?.version !== testingContext.version)))
     )
       return publicIntelligence(previous);
     if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)
@@ -565,7 +566,8 @@ export class EpisodePipeline {
       trigger,
       allowAudio,
       testingContext,
-      priority: testingContext ? Math.max(0, Math.min(100, Number(priority) || 0)) : 0,
+      platformProcessing,
+      priority: testingContext || platformProcessing ? Math.max(0, Math.min(100, Number(priority) || 0)) : 0,
       feedUrl,
       episodeId,
       reassessedFromJobId: recovery?.eligible ? previous.jobId : undefined,
@@ -642,7 +644,7 @@ export class EpisodePipeline {
     if (!this.queue) return;
     const now = Date.now();
     for (const [key, status] of this.store.all("intelligence")) {
-      const limits = status.testingContext && this.testingMode?.limits(status.testingContext);
+      const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
       const safeRetry = status.state === "FAILED" && ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT"].includes(status.code) && (status.recoveries || 0) < 2;
       if (limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry)) {
         this.ledger.refresh();
@@ -985,7 +987,7 @@ export class EpisodePipeline {
                 checkpointPrefix: audio.contentHash ? `${key}:${audio.contentHash}` : null,
                 beforePaid: () => {
                   if (!rightsAllowed() || (this.rights && !this.rights.resolve(feedUrl, episodeId).canTranscribeAudio)) throw Error("Rights permission no longer allows audio transcription.");
-                  if (initial.testingContext && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
+                  if (initial.testingContext && !initial.platformProcessing && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
                 },
                 onProgress: recordWork,
               });
@@ -1081,7 +1083,7 @@ export class EpisodePipeline {
         checkpointPrefix: key,
         beforePaid: () => {
           if (!rightsAllowed()) throw Error("Rights permission no longer allows AI analysis.");
-          if (initial.testingContext && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
+          if (initial.testingContext && !initial.platformProcessing && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
         },
         onProgress: recordWork,
         onProviderResponse: (response) => {
