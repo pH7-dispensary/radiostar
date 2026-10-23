@@ -38,6 +38,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: width === 320 ? "reduce" : "no-preference" });
     let status = { state: "ANALYSING", processing: true };
     let statusReads = 0;
+    let skipStatus = { state: "NO_VERIFIED_INTERVALS", automaticSkipping: false, verifiedCount: 0, intervals: [], activeIntervals: [] };
     let offline = false;
     let failAudio = false;
     let releaseAudio = null;
@@ -66,7 +67,7 @@ try {
         }
         else if (url.pathname === "/api/intelligence/request") throw Error("Visual verification must not start processing");
         else if (url.pathname === "/api/listener/summary") body = { preferences: { adSkipEnabled: false }, monthlyMinutes: 600, remainingMinutes: 600 };
-        else if (url.pathname === "/api/skips/status") body = { state: "NO_VERIFIED_INTERVALS", automaticSkipping: false, verifiedCount: 0, intervals: [], activeIntervals: [] };
+        else if (url.pathname === "/api/skips/status") body = skipStatus;
         else if (url.pathname === "/api/catalogue/search") body = { results: [] };
         else if (url.pathname === "/api/catalogue/feed") body = { feed: { title: "Fixture", episodes: [] } };
         return route.fulfill({ json: body, headers });
@@ -170,6 +171,12 @@ try {
       await page.getByRole("button", { name: "Open now playing" }).click();
       await page.getByTestId("episode-intelligence-status").getByText("Your conversation is ready.").waitFor();
       assert.equal(await page.getByRole("button", { name: "Got it" }).count(), 0, "contextual introduction stays dismissed after restart");
+      for (const [state, text] of [['CANDIDATES_FOUND','Advertisements detected · awaiting verification'],['VERIFYING','Verification underway'],['NO_ADVERTS_DETECTED','No adverts detected after analysis']]) {
+        skipStatus = { ...skipStatus, state };
+        await page.getByRole('button',{name:'Ad Skip details',exact:true}).getByText(text,{exact:true}).waitFor({timeout:15000});
+        await page.getByRole('button',{name:'Ad Skip details',exact:true}).scrollIntoViewIfNeeded();
+        await page.screenshot({path:`${output}/390-light-adskip-${state.toLowerCase()}.png`});
+      }
     }
     assert.deepEqual(errors, []);
     results.push({ width, theme: dark ? "dark" : "light", reducedMotion: width === 320, motionVerified: true, statusReads, readyWithoutRefresh: true, playbackContinued: true });

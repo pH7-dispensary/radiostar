@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AdSkipPanel } from "./AdSkipPanel";
+import { adSkipStatusText } from "./adSkipStatus.mjs";
 import {
   findEpisodeMoment,
   type EpisodeMoment,
@@ -50,7 +51,12 @@ function useAdSkip(source: Source) {
     alive.current = true;
     setStatus(null);
     setMessage("");
-    const refresh = () => Promise.all([
+    setBusy(false);
+    let loading = false;
+    const refresh = async () => {
+      if (loading) return;
+      loading = true;
+      return Promise.all([
       listenerRequest("/api/skips/status", {
         feedUrl: source.feedUrl,
         episodeId: source.episodeId,
@@ -62,12 +68,14 @@ function useAdSkip(source: Source) {
       .then(([nextStatus, listener]) => {
         if (!alive.current || currentRevision !== revision.current) return;
         setStatus(nextStatus);
+        setMessage("");
         setEnabled(listener.preferences.adSkipEnabled === true);
       })
       .catch(() => {
         if (alive.current && currentRevision === revision.current)
           setMessage("Ad Skip preferences are unavailable right now.");
-      });
+      }).finally(() => { loading = false; });
+    };
     void refresh();
     const timer = setInterval(() => void refresh(), 10000);
     return () => {
@@ -322,22 +330,12 @@ export function PlayerIntelligenceAccordion({
         >
           <Text style={{ color: p.accent2, fontSize: 14, fontWeight: "700" }}>{adSettingsOpen ? "Hide advanced settings" : "Advanced settings"}</Text>
         </Pressable>
-        {adSettingsOpen ? <AdSkipPanel source={source} p={p} onPlay={onPlay} showMasterToggle={false} /> : null}
+        {adSettingsOpen ? <AdSkipPanel key={`${source.feedUrl}:${source.episodeId}:${source.url}`} source={source} p={p} onPlay={onPlay} showMasterToggle={false} /> : null}
       </View>
     );
   };
 
-  const adSkipDetail = skip.status
-    ? skip.status.state === "NO_ADVERTS_DETECTED"
-      ? "No adverts detected after analysis"
-      : skip.status.state === "VERIFYING"
-        ? "Checking verified boundaries"
-        : skip.status.state === "UNAVAILABLE"
-          ? skip.status.reason || "Not available for this episode"
-          : skip.status.verifiedCount
-            ? skip.status.automaticSkipping ? "Ad Skip ready" : skip.status.pilotEnabled ? "Audio matching required on next play" : "Internal pilot only"
-            : "No verified intervals in this episode"
-    : skip.message || "Checking verified intervals";
+  const adSkipDetail = adSkipStatusText(skip.status, skip.enabled, skip.message);
 
   return (
     <View>

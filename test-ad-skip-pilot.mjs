@@ -18,6 +18,7 @@ app.listeners.register(ordinaryCredential);
 store.set("pilot-device", "owned-pilot-fixture", { listenerId: listener.id, expiresAt: new Date(Date.now() + 86400000).toISOString() });
 const testing = new IntelligenceTestMode(store);
 const configuration = testing.set({ enabled: true, adSkipPilotEnabled: true, listenerIds: [listener.id], expectedVersion: 0, reason: "Owned evaluation", confirmation: "ENABLE TESTING" }, "fixture-admin");
+assert.equal(testing.adSkipPreparationAllowed(),true,"shared verification does not need the winning listener's context");
 const feedUrl = "https://owned.example/feed.xml", episodeId = adSkipFixture.episodeId, audioUrl = "https://owned.example/audio.mp3", manifest = adSkipFixture.manifest();
 const rights = { feedUrl, classification: "LICENSED", legalBasis: "Original authored fixture", assessmentEvidence: [{ type: "OWNED", source: "fixture author", value: "Original test script and generated audio" }], canProcessForAi: true, canRetain: true, canDisplayDerivedIntelligence: true, canTranscribeAudio: true, canDetectAdvertisements: true };
 app.rights.set(rights);
@@ -50,6 +51,7 @@ try {
   await call("/api/skips/events", { ...event, eventId: "duplicate-new-event-id" });
   assert.equal(app.skips.operations().counts.automaticSkips, 1);
   const disabled = testing.set({ enabled: true, adSkipPilotEnabled: false, expectedVersion: configuration.version, confirmation: "ENABLE TESTING", reason: "Verify kill switch" }, "fixture-admin");
+  assert.equal(testing.adSkipPreparationAllowed(),false,"kill switch also stops new verification");
   assert.equal(disabled.expiresAt, configuration.expiresAt, "pilot toggle never extends testing expiry");
   assert.equal((await (await call("/api/skips/status", input)).json()).automaticSkipping, false);
   assert.equal((await call("/api/skips/authorise", { ...input, intervalId: interval.id, positionMs: interval.startMs })).status, 400);

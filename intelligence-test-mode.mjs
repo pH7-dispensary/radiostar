@@ -19,6 +19,9 @@ export class IntelligenceTestMode {
   // One global allowance, with the existing expiry; not a per-user budget.
   platformContext() { const c = this.configuration(); return c.active ? { platform: true, version: c.version } : null; }
   adSkipAllowed(id) { return this.allowed(id) && this.configuration().adSkipPilotEnabled === true; }
+  // Preparation is shared across eligible episodes, not tied to the listener
+  // whose encounter won the queue race. Execution remains tester-specific.
+  adSkipPreparationAllowed() { const c=this.configuration();return c.active && c.adSkipPilotEnabled===true && c.listenerIds.some(id=>this.allowed(id)); }
   limits(context) { return context && (context.platform === true ? this.configuration().active && context.version === this.configuration().version : this.allowed(context.listenerId, context.version)) ? testingLimits : {}; }
   set(input, actor) {
     return this.store.transaction(() => {

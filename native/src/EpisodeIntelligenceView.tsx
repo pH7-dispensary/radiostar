@@ -286,7 +286,7 @@ export function EpisodeIntelligenceView({
         >
           {headerContent}
           {panel === "ads" ? (
-            <AdSkipPanel source={source} p={p} onPlay={onPlay} />
+            <AdSkipPanel key={`${source.feedUrl}:${source.episodeId}:${source.url}`} source={source} p={p} onPlay={onPlay} />
           ) : !enabled ? (
             <LinearGradient
               colors={[p.wash, p.surfaceStrong]}

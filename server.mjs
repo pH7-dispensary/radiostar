@@ -437,7 +437,7 @@ export function createStarCastServer({
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
         return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
-      if (!featureEnabled("adSkip") && !testingMode.allowed(value?.testingContext?.listenerId))
+      if (!featureEnabled("adSkip") && !testingMode.adSkipPreparationAllowed())
         return {
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",

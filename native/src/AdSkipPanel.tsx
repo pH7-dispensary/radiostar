@@ -12,6 +12,7 @@ import { usePlayback, type Source } from "./PlaybackProvider";
 import { LoadingState } from "./LoadingState";
 import type { StarTheme } from "./design";
 import { feedback } from "./feedback";
+import { adSkipStatusText } from "./adSkipStatus.mjs";
 const labels: Record<SkipCategory, string> = {
   advert: "Advertisements",
   intro: "Introductions",
@@ -41,33 +42,44 @@ export function AdSkipPanel({
     [message, setMessage] = useState(""),
     [returnTo, setReturnTo] = useState<number | null>(null);
   const alive = useRef(true);
+  const reading = useRef(false);
+  const revision = useRef(0);
   const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint };
-  const refresh = async () => {
-    setBusy(true);
-    setMessage("");
+  const refresh = async (silent = false) => {
+    if (reading.current) return;
+    reading.current = true;
+    const requestRevision = revision.current;
+    if (!silent) { setBusy(true); setMessage(""); }
     try {
       const [result, listener] = await Promise.all([
         listenerRequest("/api/skips/status", episode),
         loadListenerSummary(),
       ]);
-      if (alive.current) {
+      if (alive.current && requestRevision === revision.current) {
         setStatus(result);
         setPreferences(listener.preferences);
       }
     } catch {
-      if (alive.current)
+      if (alive.current && requestRevision === revision.current)
         setMessage("Could not load skip preferences. Reconnect and try again.");
     } finally {
-      if (alive.current) setBusy(false);
+      reading.current = false;
+      if (!silent && alive.current && requestRevision === revision.current) setBusy(false);
     }
   };
   useEffect(() => {
     alive.current = true;
+    revision.current++;
+    setBusy(false);
+    setStatus(null);
     void refresh();
+    const timer = setInterval(() => void refresh(true), 10000);
     return () => {
       alive.current = false;
+      revision.current++;
+      clearInterval(timer);
     };
-  }, [source.feedUrl, source.episodeId, source.url]);
+  }, [source.feedUrl, source.episodeId, source.url, audioVariantFingerprint]);
   const report = async (kind: string, intervalId?: string) => {
     if (busy) return;
     setBusy(true);
@@ -102,6 +114,7 @@ export function AdSkipPanel({
         Skip verified adverts
       </Text>
       <Text style={copy}>Keep conversations uninterrupted.</Text>
+      <Text accessibilityLiveRegion="polite" style={copy}>{adSkipStatusText(status, preferences.adSkipEnabled === true)}</Text>
       {showMasterToggle && (
         <View
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 56, borderBottomWidth: 0.5, borderColor: p.line }}
