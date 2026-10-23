@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, utimesSync, rmSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { releaseRetentionPlan, assertDeploymentCapacity } from "./scripts/cloud/release-maintenance.mjs";
+import { execFileSync } from "node:child_process";
 const root = mkdtempSync(join(realpathSync(tmpdir()), "starcast-retention-"));
 try {
   const create = (name, old = true, project = "star-cast") => {
@@ -22,5 +23,8 @@ try {
   assert.throws(()=>assertDeploymentCapacity(root,()=>({bavail:1,bsize:4096,ffree:1e6})),/Deployment refused/);
   assert.throws(()=>assertDeploymentCapacity(root,()=>({bavail:1e7,bsize:4096,ffree:100})),/Deployment refused/);
   assertDeploymentCapacity(root,()=>({bavail:1e7,bsize:4096,ffree:1e6}));
+  const cache = join(root,".npm-cache","xdg");
+  const resolvedCache = execFileSync(process.execPath,["-e","Object.defineProperty(process,'platform',{value:'linux'});process.stdout.write(require('env-paths')('ffmpeg-static').cache)"],{encoding:"utf8",env:{...process.env,XDG_CACHE_HOME:cache}});
+  assert.ok(resolvedCache.startsWith(cache+"/"), "Linux binary download cache stays inside the disposable deployment cache");
   console.log("Release retention: active/data/symlinks/unknown projects/recent stages protected; two rollbacks retained; byte/inode capacity guards passed.");
 } finally { rmSync(root,{recursive:true}); }

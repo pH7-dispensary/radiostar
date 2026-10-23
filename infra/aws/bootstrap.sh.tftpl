@@ -15,7 +15,7 @@ aws s3 cp s3://${bucket}/${release_key} /opt/starcast/release.tar.gz --region eu
 echo '${release_sha}  /opt/starcast/release.tar.gz' | sha256sum -c -
 tar -xzf /opt/starcast/release.tar.gz -C /opt/starcast/app
 cd /opt/starcast/app
-npm ci --omit=dev --no-audit --no-fund --cache /opt/starcast/app/.npm-cache
+XDG_CACHE_HOME=/opt/starcast/app/.npm-cache/xdg npm ci --omit=dev --no-audit --no-fund --cache /opt/starcast/app/.npm-cache
 rm -rf -- /opt/starcast/app/.npm-cache
 cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast

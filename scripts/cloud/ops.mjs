@@ -63,7 +63,7 @@ aws s3 cp ${uri} /opt/starcast/update.tar.gz --region eu-west-2 --only-show-erro
 echo '${sha}  /opt/starcast/update.tar.gz' | sha256sum -c -
 tar -xzf /opt/starcast/update.tar.gz -C ${staged}
 cd ${staged}
-npm ci --omit=dev --no-audit --no-fund --cache ${staged}/.npm-cache
+XDG_CACHE_HOME=${staged}/.npm-cache/xdg npm ci --omit=dev --no-audit --no-fund --cache ${staged}/.npm-cache
 rm -rf -- ${staged}/.npm-cache
 node -e "const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});"
 dnf install -y logrotate

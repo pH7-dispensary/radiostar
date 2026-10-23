@@ -106,9 +106,18 @@ resource "aws_s3_object" "seed" {
   source_hash = filesha256("../../.starcast/aws-seed.sqlite")
   lifecycle { prevent_destroy = true }
 }
+variable "recovery_instance_type" {
+  type        = string
+  default     = null
+  description = "Temporary same-size x86 recovery fallback when t3a.small capacity is unavailable. Clear only during an approved maintenance window."
+  validation {
+    condition     = var.recovery_instance_type == null || var.recovery_instance_type == "t3.small"
+    error_message = "Only the same-size t3.small recovery fallback is permitted."
+  }
+}
 resource "aws_instance" "backend" {
   ami                         = data.aws_ssm_parameter.ami.value
-  instance_type               = "t3a.small"
+  instance_type               = coalesce(var.recovery_instance_type, "t3a.small")
   subnet_id                   = aws_subnet.backend.id
   vpc_security_group_ids      = [aws_security_group.backend.id]
   associate_public_ip_address = true # outbound HTTPS without NAT; ingress restricted above
