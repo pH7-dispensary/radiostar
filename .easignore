@@ -14,6 +14,8 @@ native/google-cloud-sdk/
 native/google-cloud-cli-darwin-arm.tar.gz
 native/*.ipa
 infra/
+/app.json
+/RADIO_STAR_FORENSIC_AUDIT.md
 *.log
 *.p8
 *.p12
