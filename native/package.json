@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "expo": "~57.0.30",
+    "expo": "~57.0.31",
     "expo-asset": "57.0.20",
     "expo-audio": "~57.0.5",
     "expo-blur": "~57.0.3",

@@ -39,6 +39,19 @@ try {
   assert.equal(pipeline.moments(feedUrl,"one","reliable evidence")[0].episode.id,"one");
   assert.equal(publicIntelligence(ready).transcript,undefined);
   const paid=calls,usd=pipeline.ledger.totals().month;
+  // Pre-delivery jobs stored canonical identity only inside episode metadata.
+  const legacy = { ...ready }; delete legacy.feedUrl; delete legacy.episodeId; delete legacy.featureStatus;
+  store.set('intelligence', episodeKey(feedUrl,'one'), legacy);
+  store.delete('search-index', episodeKey(feedUrl,'one'));
+  const restored=pipeline.status(feedUrl,'one');
+  assert.equal(restored.state,'READY');assert.equal(restored.feedUrl,feedUrl);
+  assert.equal(restored.featureStatus.brief.state,'READY');
+  assert(pipeline.moments(feedUrl,'one','reliable evidence').length);
+  assert.equal(calls,paid);assert.equal(pipeline.ledger.totals().month,usd);
+  store.set('intelligence',episodeKey(feedUrl,'wrong-key'),legacy);
+  assert.equal(pipeline.status(feedUrl,'wrong-key').code,'EPISODE_IDENTITY_MISMATCH');
+  assert.equal(pipeline.moments(feedUrl,'wrong-key','reliable evidence').length,0);
+  store.delete('intelligence',episodeKey(feedUrl,'wrong-key'));
   await Promise.all([pipeline.request({feedUrl,episodeId:"one"}),pipeline.request({feedUrl,episodeId:"one"})]);assert.equal(calls,paid);
   // Index failure is isolated; retrying the local stage never buys analysis.
   store.delete("search-index",episodeKey(feedUrl,"one"));

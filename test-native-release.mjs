@@ -18,9 +18,10 @@ exports.resumeLocalWrites();
 await exports.writeLocalDocument("new-session","allowed");
 assert.equal(values.get("new-session"),"allowed");
 const walk = path => readdirSync(path,{withFileTypes:true}).flatMap(item=>item.isDirectory()?walk(`${path}/${item.name}`):[`${path}/${item.name}`]);
-assert.ok(existsSync("native/dist/metadata.json"),"export iOS before the release scan");
+const exportDirectory = process.env.RADIOSTAR_EXPORT_DIR || "native/dist";
+assert.ok(existsSync(`${exportDirectory}/metadata.json`),"export iOS before the release scan");
 const envText=existsSync("native/.env")?readFileSync("native/.env","utf8"):"";
 const secret=envText.match(/^EXPO_PUBLIC_DEV_INTELLIGENCE_TOKEN\s*=\s*["']?([^\r\n"']+)/m)?.[1]?.trim();
-if(secret && secret.length>=12) for(const file of walk("native/dist"))
+if(secret && secret.length>=12) for(const file of walk(exportDirectory))
   assert.equal(readFileSync(file).includes(Buffer.from(secret)),false,`Shared development credential found in ${file}`);
 console.log("PASS: local deletion, late-write suppression and exported iOS development-token scan (no secret values printed).");

@@ -383,10 +383,23 @@ export class EpisodePipeline {
       this.store.set("intelligence", key, value);
     }
     if (value?.processingVersion !== PROCESSING_VERSION) return null;
-    return this.deliver(value);
+    return this.deliver(value, key);
   }
-  deliver(value) {
-    if (!value?.transcript?.segments?.length || !value.feedUrl || !value.episodeId) return value;
+  deliver(value, storedKey = null) {
+    if (!value?.transcript?.segments?.length) return value;
+    // Older completed jobs stored identity only in episode metadata. Recover
+    // that shape without changing identity, re-buying analysis or trusting a
+    // conflicting record. Transcript and output citations are still validated.
+    const feedUrl = value?.feedUrl || value?.episode?.feedUrl;
+    const episodeId = value?.episodeId || value?.episode?.id;
+    if (feedUrl && episodeId && (!storedKey || storedKey === episodeKey(feedUrl, episodeId)) &&
+      (!value.episode?.feedUrl || value.episode.feedUrl === feedUrl) &&
+      (!value.episode?.id || value.episode.id === episodeId)) {
+      value = { ...value, feedUrl, episodeId };
+    } else if (value) {
+      return { ...value, state: 'PARTIAL_READY', featureStatus: {}, code: 'EPISODE_IDENTITY_MISMATCH',
+        reason: 'Cached episode identity requires repair before intelligence can be delivered.' };
+    }
     if (this.rights && !this.rights.evaluate({ feature:"intelligence-processing", feedUrl:value.feedUrl, episodeId:value.episodeId }).allowed) return value;
     const key=episodeKey(value.feedUrl,value.episodeId), transcript=value.transcript;
     let index=this.store.get("search-index",key), derived;
@@ -700,8 +713,8 @@ export class EpisodePipeline {
     for (const [key, status] of this.store.all("intelligence")) {
       // Repair missing derived indexes/topics without buying analysis again.
       if(status.transcript && status.processingVersion===PROCESSING_VERSION) {
-        this.deliver(status);
-        try { await this.onTranscriptReady?.({feedUrl:status.feedUrl,episodeId:status.episodeId,intelligence:status}); }
+        const delivered = this.deliver(status, key);
+        try { if (delivered.code !== 'EPISODE_IDENTITY_MISMATCH') await this.onTranscriptReady?.({feedUrl:delivered.feedUrl,episodeId:delivered.episodeId,intelligence:delivered}); }
         catch { console.error(JSON.stringify({event:"transcript-candidate-inspection-failed",code:"RECOVERY_INSPECTION_FAILED"})); }
       }
       const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
