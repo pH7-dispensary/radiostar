@@ -1,0 +1,1355 @@
+{
+  "verifiedAt": "2026-10-26T18:37:46.693Z",
+  "implementationCommit": "ff3056c",
+  "humanReviewed": false,
+  "baseline24": {
+    "samples": 24,
+    "supportedSamples": 22,
+    "absentSamples": 2,
+    "recallAt5": 0.7386363636363636,
+    "mrr": 0.7424242424242423,
+    "abstentionAccuracy": 1,
+    "multilingualRecallAt5": 0.42857142857142855,
+    "meanCachedRetrievalComputeMs": 0.18298099999999926
+  },
+  "unicode24": {
+    "samples": 24,
+    "supportedSamples": 22,
+    "absentSamples": 2,
+    "recallAt5": 0.7727272727272727,
+    "mrr": 0.7727272727272727,
+    "abstentionAccuracy": 1,
+    "multilingualRecallAt5": 1,
+    "meanCachedRetrievalComputeMs": 0.8679531666666662
+  },
+  "expanded30": {
+    "unicodeLexical": {
+      "samples": 30,
+      "supportedSamples": 27,
+      "absentSamples": 3,
+      "recallAt5": 0.7407407407407407,
+      "mrr": 0.7407407407407407,
+      "abstentionAccuracy": 1,
+      "multilingualRecallAt5": 1,
+      "meanCachedRetrievalComputeMs": 8.67698023333299
+    },
+    "semantic": {
+      "samples": 30,
+      "supportedSamples": 27,
+      "absentSamples": 3,
+      "recallAt5": 0.9629629629629629,
+      "mrr": 0.9228395061728394,
+      "abstentionAccuracy": 1,
+      "multilingualRecallAt5": 1,
+      "meanCachedRetrievalComputeMs": 38.430626333333414
+    },
+    "weightedHybrid": {
+      "samples": 30,
+      "supportedSamples": 27,
+      "absentSamples": 3,
+      "recallAt5": 0.8888888888888888,
+      "mrr": 0.8888888888888888,
+      "abstentionAccuracy": 1,
+      "multilingualRecallAt5": 1,
+      "meanCachedRetrievalComputeMs": 38.05143510000004
+    },
+    "selectedMode": "semantic-with-lexical-fallback",
+    "threshold": 0.35,
+    "semanticTrain": {
+      "samples": 15,
+      "supportedSamples": 15,
+      "absentSamples": 0,
+      "recallAt5": 0.9666666666666667,
+      "mrr": 0.9555555555555555,
+      "abstentionAccuracy": null,
+      "multilingualRecallAt5": 1,
+      "meanCachedRetrievalComputeMs": 42.506785200000074
+    },
+    "semanticHeldOut": {
+      "samples": 15,
+      "supportedSamples": 12,
+      "absentSamples": 3,
+      "recallAt5": 0.9583333333333334,
+      "mrr": 0.8819444444444443,
+      "abstentionAccuracy": 1,
+      "multilingualRecallAt5": 1,
+      "meanCachedRetrievalComputeMs": 41.01745186666685
+    }
+  },
+  "labelledQueries": [
+    {
+      "id": "q1",
+      "category": "exact",
+      "query": "strategic deception",
+      "relevant": [
+        "owned-en:s4"
+      ],
+      "returned": [
+        "owned-en:s4",
+        "owned-en:s3"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q2",
+      "category": "paraphrase",
+      "query": "How can we undo what an automated system did?",
+      "relevant": [
+        "owned-en:s4",
+        "owned-long:l2"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-187",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-166",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-178",
+        "owned-en:s4",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-179"
+      ],
+      "recall": 0.5,
+      "reciprocalRank": 0.25,
+      "abstained": false
+    },
+    {
+      "id": "q3",
+      "category": "paraphrase",
+      "query": "Machines misleading their supervisors",
+      "relevant": [
+        "owned-en:s4",
+        "owned-en:s3"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-88",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-178",
+        "owned-en:s3",
+        "owned-en:s4",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-95"
+      ],
+      "recall": 1,
+      "reciprocalRank": 0.3333333333333333,
+      "abstained": false
+    },
+    {
+      "id": "q4",
+      "category": "topic",
+      "query": "energy and compute",
+      "relevant": [
+        "owned-en:s6"
+      ],
+      "returned": [
+        "owned-zh:zh2",
+        "owned-partial:p1",
+        "owned-en:s6",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-44"
+      ],
+      "recall": 1,
+      "reciprocalRank": 0.3333333333333333,
+      "abstained": false
+    },
+    {
+      "id": "q5",
+      "category": "opinions",
+      "query": "Compare arguments for and against the regulation proposal",
+      "relevant": [
+        "owned-debate:d1",
+        "owned-debate:d2"
+      ],
+      "returned": [
+        "owned-debate:d1",
+        "owned-debate:d2",
+        "owned-debate:d3",
+        "owned-long:l2"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q6",
+      "category": "speaker",
+      "query": "What does Bruno say about regulation?",
+      "relevant": [
+        "owned-debate:d2"
+      ],
+      "returned": [
+        "owned-debate:d2",
+        "owned-debate:d1",
+        "owned-en:s6",
+        "owned-en:s4",
+        "owned-long:l2"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q7",
+      "category": "comparison",
+      "query": "Compare views on oversight and regulation",
+      "relevant": [
+        "owned-en:s2",
+        "owned-en:s6",
+        "owned-debate:d1",
+        "owned-debate:d2"
+      ],
+      "returned": [
+        "owned-debate:d1",
+        "owned-long:l2",
+        "owned-en:s6",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-210",
+        "owned-en:s4"
+      ],
+      "recall": 0.5,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q8",
+      "category": "absent",
+      "query": "Which medicine cures pancreatic cancer?",
+      "relevant": [],
+      "returned": [],
+      "recall": null,
+      "reciprocalRank": null,
+      "abstained": true
+    },
+    {
+      "id": "q9",
+      "category": "uncertain",
+      "query": "Did trials prove the proposal reduces accidents?",
+      "relevant": [
+        "owned-debate:d3"
+      ],
+      "returned": [
+        "owned-debate:d3",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-79",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-77",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-87",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-25"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q10",
+      "category": "zh",
+      "query": "人工智能安全",
+      "relevant": [
+        "owned-zh:zh1"
+      ],
+      "returned": [
+        "owned-zh:zh1",
+        "owned-pt:pt1",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-180",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-193",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-23"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q11",
+      "category": "zh",
+      "query": "智能安全研究",
+      "relevant": [
+        "owned-zh:zh1"
+      ],
+      "returned": [
+        "owned-zh:zh1",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-180",
+        "owned-pt:pt1",
+        "owned-en:s6",
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-10"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q12",
+      "category": "zh",
+      "query": "人类监督",
+      "relevant": [
+        "owned-zh:zh1"
+      ],
+      "returned": [
+        "owned-zh:zh1",
+        "owned-pt:pt1",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-180"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q13",
+      "category": "zh",
+      "query": "可再生能源",
+      "relevant": [
+        "owned-zh:zh2"
+      ],
+      "returned": [
+        "owned-zh:zh2",
+        "owned-pt:pt2"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q14",
+      "category": "pt",
+      "query": "inteligência artificial",
+      "relevant": [
+        "owned-pt:pt1"
+      ],
+      "returned": [
+        "owned-pt:pt1",
+        "owned-zh:zh1"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q15",
+      "category": "pt",
+      "query": "inteligencia artificial",
+      "relevant": [
+        "owned-pt:pt1"
+      ],
+      "returned": [
+        "owned-pt:pt1",
+        "owned-zh:zh1"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q16",
+      "category": "pt",
+      "query": "transparência nas decisões",
+      "relevant": [
+        "owned-pt:pt1"
+      ],
+      "returned": [
+        "owned-pt:pt1",
+        "owned-debate:d1",
+        "owned-pt:pt3",
+        "owned-en:s4"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q17",
+      "category": "recommendation",
+      "query": "Que livro recomenda a equipa?",
+      "relevant": [
+        "owned-pt:pt2"
+      ],
+      "returned": [
+        "owned-pt:pt2"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q18",
+      "category": "long",
+      "query": "reversible deployment",
+      "relevant": [
+        "owned-long:l2"
+      ],
+      "returned": [
+        "owned-long:l2",
+        "owned-long:l1",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-129",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-131",
+        "owned-en:s4"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q19",
+      "category": "partial",
+      "query": "electricity demand data centres",
+      "relevant": [
+        "owned-partial:p1"
+      ],
+      "returned": [
+        "owned-partial:p1",
+        "owned-zh:zh2"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q20",
+      "category": "absent",
+      "query": "Who won the lunar chess championship?",
+      "relevant": [],
+      "returned": [],
+      "recall": null,
+      "reciprocalRank": null,
+      "abstained": true
+    },
+    {
+      "id": "q21",
+      "category": "exact",
+      "query": "twenty tomato seedlings",
+      "relevant": [
+        "owned-debate:d4"
+      ],
+      "returned": [
+        "owned-debate:d4"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q22",
+      "category": "uncertain",
+      "query": "Who said we do not yet have trial results?",
+      "relevant": [
+        "owned-debate:d3"
+      ],
+      "returned": [
+        "owned-debate:d3",
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-48"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q23",
+      "category": "paraphrase",
+      "query": "Why could smaller organisations struggle to comply?",
+      "relevant": [
+        "owned-debate:d2"
+      ],
+      "returned": [
+        "owned-debate:d2",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-92",
+        "owned-debate:d1"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "q24",
+      "category": "paraphrase",
+      "query": "A machine hiding how it achieved its objective",
+      "relevant": [
+        "owned-en:s4"
+      ],
+      "returned": [
+        "owned-en:s4",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-201"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real1",
+      "category": "exact",
+      "query": "safety is not security",
+      "relevant": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-29"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-29",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-47",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-180",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-231",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-173"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real2",
+      "category": "definition",
+      "query": "absence of loss events",
+      "relevant": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-35"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-35",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-86",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-40",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-117",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-80"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real3",
+      "category": "paraphrase",
+      "query": "How does the guest define being safe in terms of avoiding losses?",
+      "relevant": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-35"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-35",
+        "owned-en:s4",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-29",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-108",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-77"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real4",
+      "category": "date",
+      "query": "When did the open source security podcast start?",
+      "relevant": [
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-39"
+      ],
+      "returned": [
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-39",
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-3",
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-7",
+        "d04532a8-4020-449e-acd6-98fa8a1b6159:seg-58",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-14"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real5",
+      "category": "paraphrase",
+      "query": "Different people mean different things by safety",
+      "relevant": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-31"
+      ],
+      "returned": [
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-31",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-24",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-35",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-46",
+        "b866917c-0245-4bcf-a06a-83f55ea44ca6:seg-63"
+      ],
+      "recall": 1,
+      "reciprocalRank": 1,
+      "abstained": false
+    },
+    {
+      "id": "real6",
+      "category": "absent",
+      "query": "Which cancer treatment achieved a guaranteed cure?",
+      "relevant": [],
+      "returned": [],
+      "recall": null,
+      "reciprocalRank": null,
+      "abstained": true
+    }
+  ],
+  "groundTruth": [
+    {
+      "episodeId": "owned-en",
+      "segmentId": "s2",
+      "startMs": 92000,
+      "endMs": 318000
+    },
+    {
+      "episodeId": "owned-en",
+      "segmentId": "s3",
+      "startMs": 318000,
+      "endMs": 497000
+    },
+    {
+      "episodeId": "owned-en",
+      "segmentId": "s4",
+      "startMs": 497000,
+      "endMs": 691000
+    },
+    {
+      "episodeId": "owned-en",
+      "segmentId": "s6",
+      "startMs": 774000,
+      "endMs": 1011000
+    },
+    {
+      "episodeId": "owned-pt",
+      "segmentId": "pt1",
+      "startMs": 10000,
+      "endMs": 25000
+    },
+    {
+      "episodeId": "owned-pt",
+      "segmentId": "pt2",
+      "startMs": 25000,
+      "endMs": 40000
+    },
+    {
+      "episodeId": "owned-zh",
+      "segmentId": "zh1",
+      "startMs": 30000,
+      "endMs": 45000
+    },
+    {
+      "episodeId": "owned-zh",
+      "segmentId": "zh2",
+      "startMs": 45000,
+      "endMs": 60000
+    },
+    {
+      "episodeId": "owned-debate",
+      "segmentId": "d1",
+      "startMs": 0,
+      "endMs": 20000
+    },
+    {
+      "episodeId": "owned-debate",
+      "segmentId": "d2",
+      "startMs": 20000,
+      "endMs": 40000
+    },
+    {
+      "episodeId": "owned-debate",
+      "segmentId": "d3",
+      "startMs": 40000,
+      "endMs": 60000
+    },
+    {
+      "episodeId": "owned-debate",
+      "segmentId": "d4",
+      "startMs": 60000,
+      "endMs": 80000
+    },
+    {
+      "episodeId": "owned-partial",
+      "segmentId": "p1",
+      "startMs": 0,
+      "endMs": 20000
+    },
+    {
+      "episodeId": "owned-long",
+      "segmentId": "l2",
+      "startMs": 9000000,
+      "endMs": 9030000
+    },
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "segmentId": "seg-29",
+      "startMs": 181085,
+      "endMs": 187565
+    },
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "segmentId": "seg-31",
+      "startMs": 192965,
+      "endMs": 203425
+    },
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "segmentId": "seg-35",
+      "startMs": 219851,
+      "endMs": 232319
+    },
+    {
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "segmentId": "seg-39",
+      "startMs": 151188,
+      "endMs": 154840
+    }
+  ],
+  "claims": [
+    {
+      "id": "swapped",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "negated",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "qualified",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "numeric",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "cure",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "uncertain-speaker",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "paraphrase",
+      "expected": true,
+      "accepted": true,
+      "correct": true
+    },
+    {
+      "id": "paraphrase2",
+      "expected": true,
+      "accepted": true,
+      "correct": true
+    },
+    {
+      "id": "negation-preserved",
+      "expected": true,
+      "accepted": true,
+      "correct": true
+    },
+    {
+      "id": "causal",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "date",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    },
+    {
+      "id": "opinion",
+      "expected": false,
+      "accepted": false,
+      "correct": true
+    }
+  ],
+  "realBriefReviews": [
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "claims": 27,
+      "supported": 7,
+      "briefMode": "verified_partial",
+      "chapters": 7,
+      "generatedChapters": 0
+    },
+    {
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "claims": 28,
+      "supported": 23,
+      "briefMode": "verified_partial",
+      "chapters": 8,
+      "generatedChapters": 5
+    }
+  ],
+  "live": {
+    "at": "2026-10-26T18:37:32.835Z",
+    "queries": [
+      {
+        "kind": "exact",
+        "query": "safety is not security",
+        "ms": 677.1833749999998,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-29",
+            "startMs": 181085,
+            "endMs": 187565
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-47",
+            "startMs": 288461,
+            "endMs": 290543
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-180",
+            "startMs": 1025981,
+            "endMs": 1027211
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-231",
+            "startMs": 1247709,
+            "endMs": 1252932
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-173",
+            "startMs": 1000885,
+            "endMs": 1008745
+          },
+          {
+            "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+            "segmentId": "seg-33",
+            "startMs": 131575,
+            "endMs": 138081
+          },
+          {
+            "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+            "segmentId": "0-0",
+            "startMs": 0,
+            "endMs": 5360
+          },
+          {
+            "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+            "segmentId": "0-6",
+            "startMs": 34240,
+            "endMs": 38640
+          }
+        ]
+      },
+      {
+        "kind": "paraphrase",
+        "query": "How does the guest define being safe in terms of avoiding losses?",
+        "ms": 681.1197079999997,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-35",
+            "startMs": 219851,
+            "endMs": 232319
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-29",
+            "startMs": 181085,
+            "endMs": 187565
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-108",
+            "startMs": 652701,
+            "endMs": 656001
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-77",
+            "startMs": 454864,
+            "endMs": 466436
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-72",
+            "startMs": 424235,
+            "endMs": 432260
+          }
+        ]
+      },
+      {
+        "kind": "Portuguese",
+        "query": "Como é definida a segurança em termos de ausência de perdas?",
+        "ms": 668.679584,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-35",
+            "startMs": 219851,
+            "endMs": 232319
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-86",
+            "startMs": 503077,
+            "endMs": 507631
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-180",
+            "startMs": 1025981,
+            "endMs": 1027211
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-108",
+            "startMs": 652701,
+            "endMs": 656001
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-29",
+            "startMs": 181085,
+            "endMs": 187565
+          }
+        ]
+      },
+      {
+        "kind": "Chinese",
+        "query": "安全与信息安全之间有什么区别？",
+        "ms": 738.9338750000002,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-29",
+            "startMs": 181085,
+            "endMs": 187565
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-180",
+            "startMs": 1025981,
+            "endMs": 1027211
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-67",
+            "startMs": 407402,
+            "endMs": 412462
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-49",
+            "startMs": 293145,
+            "endMs": 297969
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-47",
+            "startMs": 288461,
+            "endMs": 290543
+          },
+          {
+            "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+            "segmentId": "seg-10",
+            "startMs": 33489,
+            "endMs": 42235
+          }
+        ]
+      },
+      {
+        "kind": "absent",
+        "query": "Who won the lunar chess championship?",
+        "ms": 693.3431659999997,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "NO_EVIDENCE",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": []
+      },
+      {
+        "kind": "fresh-paraphrase",
+        "query": "How does the guest explain safety as freedom from unwanted losses?",
+        "ms": 778.5056670000004,
+        "matched": true,
+        "previouslyRecorded": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-29",
+            "startMs": 181085,
+            "endMs": 187565
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-35",
+            "startMs": 219851,
+            "endMs": 232319
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-173",
+            "startMs": 1000885,
+            "endMs": 1008745
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-77",
+            "startMs": 454864,
+            "endMs": 466436
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-49",
+            "startMs": 293145,
+            "endMs": 297969
+          },
+          {
+            "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+            "segmentId": "seg-25",
+            "startMs": 96144,
+            "endMs": 105469
+          }
+        ]
+      },
+      {
+        "kind": "provider-cache-miss",
+        "query": "How does Thomas define safety using the concept of loss events?",
+        "ms": 1535.2945,
+        "matched": true,
+        "previouslyRecorded": false,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 2
+        },
+        "matches": [
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-35",
+            "startMs": 219851,
+            "endMs": 232319
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-72",
+            "startMs": 424235,
+            "endMs": 432260
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-46",
+            "startMs": 283387,
+            "endMs": 287660
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-41",
+            "startMs": 246463,
+            "endMs": 254166
+          },
+          {
+            "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+            "segmentId": "seg-108",
+            "startMs": 652701,
+            "endMs": 656001
+          }
+        ]
+      }
+    ],
+    "cachedEpisodes": [
+      {
+        "id": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 7,
+        "topics": 8,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      },
+      {
+        "id": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 8,
+        "topics": 13,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      }
+    ],
+    "warmQueryMs": 653.7135830000007,
+    "momentTimestampMs": 219851,
+    "liveQueryCostUsd": 2.399999999985747e-7,
+    "totalEvaluationUsd": 0.026238240000000003,
+    "controls": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "reservations": 0,
+    "embeddingUsage": [
+      {
+        "source": "batch5-owned:owned-en",
+        "usd": 0.000002,
+        "inputTokens": 107
+      },
+      {
+        "source": "batch5-owned:owned-pt",
+        "usd": 0.000001,
+        "inputTokens": 66
+      },
+      {
+        "source": "batch5-owned:owned-zh",
+        "usd": 0.000002,
+        "inputTokens": 88
+      },
+      {
+        "source": "batch5-owned:owned-debate",
+        "usd": 0.000001,
+        "inputTokens": 62
+      },
+      {
+        "source": "batch5-owned:owned-partial",
+        "usd": 0,
+        "inputTokens": 11
+      },
+      {
+        "source": "batch5-owned:owned-long",
+        "usd": 0,
+        "inputTokens": 25
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000012,
+        "inputTokens": 624
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000011,
+        "inputTokens": 555
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000011,
+        "inputTokens": 532
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000012,
+        "inputTokens": 585
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000011,
+        "inputTokens": 539
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000007,
+        "inputTokens": 339
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000008,
+        "inputTokens": 413
+      },
+      {
+        "source": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "usd": 0.000005,
+        "inputTokens": 247
+      },
+      {
+        "source": "1cf79928164d453cc83b1fe7cae051caeb34a83f6398c4bb5d9e073b84938f1c",
+        "usd": 0.00001,
+        "inputTokens": 521
+      },
+      {
+        "source": "1cf79928164d453cc83b1fe7cae051caeb34a83f6398c4bb5d9e073b84938f1c",
+        "usd": 0.000008,
+        "inputTokens": 413
+      },
+      {
+        "source": "1cf79928164d453cc83b1fe7cae051caeb34a83f6398c4bb5d9e073b84938f1c",
+        "usd": 0.000003,
+        "inputTokens": 159
+      },
+      {
+        "source": "query",
+        "usd": 0.000004,
+        "inputTokens": 198
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 5
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 13
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 17
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 15
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 7
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 12
+      },
+      {
+        "source": "query",
+        "usd": 0,
+        "inputTokens": 5
+      },
+      {
+        "source": "query",
+        "usd": 2.4e-7,
+        "inputTokens": 12
+      }
+    ],
+    "health": {
+      "service": "star-cast",
+      "backend": "ready",
+      "openai": {
+        "configured": true,
+        "enabled": true,
+        "audioEnabled": true,
+        "textModel": "gpt-4.1-mini",
+        "transcriptionModel": "whisper-1"
+      },
+      "persistence": "sqlite",
+      "features": {
+        "episodeBriefs": false,
+        "exploreEpisode": false,
+        "momentSearch": false,
+        "conversationSearch": false,
+        "adSkip": false
+      },
+      "providerVerified": true
+    },
+    "allExpectedQueriesMatched": true
+  },
+  "production": {
+    "at": "2026-10-26T18:37:46.693Z",
+    "integrity": "ok",
+    "canonicalTranscriptsUnchanged": 18,
+    "workerRunning": true,
+    "freeBytes": 25711026176,
+    "release": {
+      "releaseSha": "b9eb8af6b36968cb30da5b5d4909a4275105e55a955f35e15da89f3eaf290913",
+      "previousReleaseSha": "2c80ea33553f782a6bd03eeb6a3e742a6882f55752beaefa898f7a8c683d3db5",
+      "deployedAt": "2026-10-26T18:36:17.098Z",
+      "rollbackAvailable": true
+    },
+    "roundingAdjustmentUsd": 0.00000756,
+    "derivedRecordedUsd": 0.026245800000000003,
+    "tokenPricedDerivedUsd": 0.026241319999999988,
+    "reservations": 0,
+    "unknownDerivedOutcomes": 0,
+    "semanticIndexes": [
+      {
+        "key": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 241
+      },
+      {
+        "key": "1cf79928164d453cc83b1fe7cae051caeb34a83f6398c4bb5d9e073b84938f1c",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 74
+      },
+      {
+        "key": "batch5-owned:owned-debate",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 4
+      },
+      {
+        "key": "batch5-owned:owned-en",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 4
+      },
+      {
+        "key": "batch5-owned:owned-long",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 2
+      },
+      {
+        "key": "batch5-owned:owned-partial",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 1
+      },
+      {
+        "key": "batch5-owned:owned-pt",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 3
+      },
+      {
+        "key": "batch5-owned:owned-zh",
+        "state": "READY",
+        "version": "embedding-3-small-512-v2",
+        "segments": 3
+      }
+    ],
+    "derivedUsd": 80,
+    "temporaryEvaluationDirectoryRemoved": true,
+    "temporaryS3ArtifactsRemoved": true
+  },
+  "limitations": [
+    "Engineering labels; not an independent human-labelled benchmark.",
+    "Only two real episodes have semantic indexes; all other eligible caches retain lexical retrieval.",
+    "Literal excerpt/citation consistency is verified; real-world answer completeness and audio boundary precision require listening review."
+  ]
+}
