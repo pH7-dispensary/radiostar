@@ -20,6 +20,16 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
   const previousManualRevision = useRef(manualSeekRevision);
   const prefetched = useRef<{ id: string; lease: any; revision: number; preferenceRevision: number } | null>(null);
   const prefetching = useRef<string | null>(null);
+  const [boundaryTick, setBoundaryTick] = useState(0);
+  const nearBoundary = Boolean(snapshot.playing && status?.automaticSkipping && status.activeIntervals?.some(item =>
+    !consumed.current.has(item.id) && snapshot.positionMs >= item.startMs-5000 && snapshot.positionMs < item.endMs));
+  useEffect(() => {
+    if (!nearBoundary) return;
+    // Poll only this small runtime near a known break. Do not drive the whole
+    // player/UI at 10 Hz. Suspension can delay timers; leases still fail closed.
+    const timer = setInterval(() => setBoundaryTick(value => value+1), 100);
+    return () => clearInterval(timer);
+  }, [nearBoundary, identity]);
 
   useEffect(() => {
     let stopped = false, loading = false;
@@ -46,17 +56,18 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
 
   useEffect(() => {
     if (!source?.feedUrl || !audioVariantFingerprint || !status?.automaticSkipping || !snapshot.playing || busy.current || Date.now() < manualUntil.current) return;
-    const ahead = status.activeIntervals?.find(item => !consumed.current.has(item.id) && snapshot.positionMs < item.startMs && item.startMs - snapshot.positionMs <= Math.min(5000, 2000 * snapshot.speed));
+    const positionMs = getPositionMs();
+    const ahead = status.activeIntervals?.find(item => !consumed.current.has(item.id) && positionMs < item.startMs && item.startMs - positionMs <= Math.min(5000, 2000 * snapshot.speed));
     if (ahead && !prefetching.current && (attempts.current.get(`prefetch:${ahead.id}`)?.count || 0) < 2 && (attempts.current.get(`prefetch:${ahead.id}`)?.after || 0) <= Date.now() && (!prefetched.current || prefetched.current.id !== ahead.id || prefetched.current.lease.expiresAt <= Date.now() + 1000)) {
       const requestedIdentity = identity, requestedRevision = manualSeekRevision, requestedPreference = refreshRevision.current;
       prefetching.current = ahead.id;
       const attemptKey = `prefetch:${ahead.id}`;
       attempts.current.set(attemptKey, { count: (attempts.current.get(attemptKey)?.count || 0) + 1, after: Date.now() + 3000 });
-      void listenerRequest("/api/skips/authorise", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, intervalId: ahead.id, positionMs: snapshot.positionMs, prefetch: true })
+      void listenerRequest("/api/skips/authorise", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, intervalId: ahead.id, positionMs, prefetch: true })
         .then(lease => { if (activeIdentity.current === requestedIdentity && live.current.manualSeekRevision === requestedRevision && refreshRevision.current === requestedPreference) prefetched.current = { id: ahead.id, lease, revision: requestedRevision, preferenceRevision: requestedPreference }; })
         .catch(() => {}).finally(() => { if (activeIdentity.current === requestedIdentity) prefetching.current = null; });
     }
-    const interval = status.activeIntervals?.find(item => !consumed.current.has(item.id) && (attempts.current.get(item.id)?.count || 0) < 2 && (attempts.current.get(item.id)?.after || 0) <= Date.now() && snapshot.positionMs >= item.startMs && snapshot.positionMs < item.endMs);
+    const interval = status.activeIntervals?.find(item => !consumed.current.has(item.id) && (attempts.current.get(item.id)?.count || 0) < 2 && (attempts.current.get(item.id)?.after || 0) <= Date.now() && positionMs >= item.startMs && positionMs < item.endMs);
     if (!interval) return;
     const revision = manualSeekRevision, preferenceRevision = refreshRevision.current, playbackRevision = getPlaybackRevision();
     const current = () => activeIdentity.current === identity && live.current.getPlaybackRevision() === playbackRevision && live.current.manualSeekRevision === revision && refreshRevision.current === preferenceRevision;
@@ -64,8 +75,8 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
     attempts.current.set(interval.id, { count: (attempts.current.get(interval.id)?.count || 0) + 1, after: Date.now() + 10_000 }); busy.current = true;
     const report = (kind: string, positionMs: number, authorisationId?: string, code?: string) => listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind, positionMs, authorisationId, code }).catch(() => null);
     let leaseId: string | undefined;
-    void report("skip_requested", snapshot.positionMs);
-    void executeVerifiedSkip({ interval, positionMs: snapshot.positionMs, durationMs: snapshot.durationMs || 0,
+    void report("skip_requested", positionMs);
+    void executeVerifiedSkip({ interval, positionMs, durationMs: snapshot.durationMs || 0,
       current: () => current() && live.current.snapshot.playing && Boolean(eligibility.current?.automaticSkipping && eligibility.current.activeIntervals?.some(row => row.id === interval.id && row.startMs === interval.startMs && row.endMs === interval.endMs)),
       getPosition: () => live.current.getPositionMs(),
       onStage: (stage, detail) => { leaseId = detail.lease.authorisationId; void report(stage, detail.positionMs, leaseId); },
@@ -97,6 +108,6 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
       } });
       setTimeout(() => { if (activeIdentity.current === identity) onNotice(value => value?.id === interval.id ? null : value); }, 8000);
     }).catch(error => { void report("seek_failed", live.current.snapshot.positionMs, leaseId, error?.code || (leaseId ? "SEEK_NOT_CONFIRMED" : "AUTHORISATION_FAILED")); }).finally(() => { if (activeIdentity.current === identity) busy.current = false; });
-  }, [identity, snapshot.positionMs, snapshot.playing, status, manualSeekRevision]);
+  }, [identity, snapshot.positionMs, snapshot.playing, status, manualSeekRevision, boundaryTick]);
   return null;
 }
