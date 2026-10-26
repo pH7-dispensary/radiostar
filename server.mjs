@@ -1715,7 +1715,7 @@ export function createStarCastServer({
             const paused = !followedPreparation.configuration().enabled && followedPreparation.configuration().version > 0;
             const rows = followedPreparation.rows().filter(row => row.feedUrl === input.feedUrl && row.inWindow);
             const processing = paused ? { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED" }
-              : rows.length ? { state: rows.every(row => row.state === "READY") ? "READY" : rows.some(row => ["QUEUED","PROCESSING"].includes(row.state)) ? "QUEUED" : "UNAVAILABLE", code: "FOLLOW_CONFIRMED" }
+              : rows.length ? { state: rows.every(row => row.state === "READY") ? "READY" : rows.some(row => ["READY","PARTIAL_READY"].includes(row.state)) ? "PARTIAL_READY" : rows.some(row => ["QUEUED","PROCESSING","PREPARING","DISCOVERING","TRANSCRIBING","UNDERSTANDING","ORGANISING"].includes(row.state)) ? "QUEUED" : "UNAVAILABLE", code: "FOLLOW_CONFIRMED" }
               : { state: "UNAVAILABLE", code: "PREPARATION_NOT_YET_DISCOVERED" };
             return send(res, 200, { ...result, processing });
           }

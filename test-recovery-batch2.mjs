@@ -76,6 +76,15 @@ try {
   const credential='batch-two-isolated-listener-credential';app.listeners.register(credential);
   const follow=async (feedUrl,following,version)=>{const r=await fetch(origin+'/api/listener/follow',{method:'POST',headers:{'content-type':'application/json','x-star-cast-dev-token':'test-device',authorization:'Bearer '+credential},body:JSON.stringify({feedUrl,following,version})});assert([200,202].includes(r.status));return r.json();};
   assert.equal((await follow(feed,true,1)).feedUrl,other);
+  // Reconciliation must preserve usable partial results rather than describing
+  // a confirmed follow as unavailable. No new dispatch is allowed on retries.
+  const actualRows=app.followedPreparation.rows;
+  try {
+    for(const [states,expected] of [[['PARTIAL_READY','READY'],'PARTIAL_READY'],[['READY','READY'],'READY'],[['READY','REVIEW_REQUIRED'],'PARTIAL_READY'],[['TRANSCRIBING'],'QUEUED'],[['REVIEW_REQUIRED'],'UNAVAILABLE']]) {
+      app.followedPreparation.rows=()=>states.map((state,i)=>({feedUrl:other,episodeId:String(i),inWindow:true,state}));
+      const retry=await follow(other,true,1);assert.equal(retry.changed,false);assert.equal(retry.processing.state,expected);
+    }
+  } finally {app.followedPreparation.rows=actualRows;}
   assert.equal((await follow(other,false,2)).following,false);
   assert.equal((await follow(feed,true,1)).following,false);
   assert.equal(apiStore.all('follow').length,0);
