@@ -1,8 +1,8 @@
 /** Single playback adapter shared by the native runtime and real-audio tests. */
 export async function executeVerifiedSkip({ interval, positionMs, durationMs, authorise, seek, current, getPosition = () => positionMs, onStage = () => {} }) {
-  if (!current() || !Number.isFinite(durationMs) || interval.endMs >= durationMs || positionMs < interval.startMs || positionMs >= interval.endMs) throw Error("Unsafe skip position");
+  if (!current() || !interval || !Number.isFinite(positionMs) || !Number.isFinite(durationMs) || !Number.isFinite(interval.startMs) || !Number.isFinite(interval.endMs) || interval.startMs < 0 || interval.endMs <= interval.startMs || interval.endMs >= durationMs || positionMs < interval.startMs || positionMs >= interval.endMs) throw Error("Unsafe skip position");
   const lease = await authorise({ intervalId: interval.id, positionMs });
-  if (!current() || lease.expiresAt <= Date.now() || lease.id !== interval.id || lease.targetMs !== interval.endMs) throw Error("Stale skip authorisation");
+  if (!current() || !lease || !Number.isFinite(lease.expiresAt) || lease.expiresAt <= Date.now() || lease.id !== interval.id || lease.targetMs !== interval.endMs) throw Error("Stale skip authorisation");
   const beforeSeek = getPosition();
   if (!Number.isFinite(beforeSeek) || beforeSeek < interval.startMs || beforeSeek >= interval.endMs) throw Object.assign(Error("Playback left the advert while authorising"), { code: "INTERVAL_PASSED" });
   onStage("seek_attempted", { lease, positionMs: beforeSeek });

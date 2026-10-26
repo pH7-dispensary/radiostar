@@ -5,6 +5,10 @@ import {createReadStream} from 'node:fs';
 import {createHash,randomBytes} from 'node:crypto';
 import {resolve,join,dirname} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import ffmpeg from 'ffmpeg-static';
+import {parseTranscript} from '../transcripts.mjs';
 import {corpusDirectory,reviewAnnotation,currentReviews,corpusMetrics,appendReviewEvent,verifyReviewChain} from '../ad-skip-corpus.mjs';
 const assets=join(dirname(fileURLToPath(import.meta.url)),'corpus-review');
 export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={}){
@@ -13,6 +17,25 @@ export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={
  const pinned=new Map();
  for(const ep of manifest.episodes){if(!/^[a-z0-9-]+$/.test(ep.id))throw Error('Invalid episode ID');const path=await realpath(join(root,ep.audioPath));if(!path.startsWith(root+'/'))throw Error('Audio outside corpus');const h=createHash('sha256');for await(const bytes of createReadStream(path))h.update(bytes);if(h.digest('hex')!==ep.audioContentHash)throw Error('Pinned audio changed: '+ep.id);const info=await stat(path);pinned.set(ep.id,{path,mtimeMs:info.mtimeMs,size:info.size});}
  const auditPath=join(root,'reviews.json');let events=[];if((await readdir(root)).includes('reviews.json'))events=JSON.parse(await readFile(auditPath,'utf8'));verifyReviewChain(events);
+ let priorityClips=[];try{priorityClips=JSON.parse(await readFile(join(root,'review-clips.json'),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
+ const contextCache=new Map();let contextBusy=false;
+ async function context(id,startMs,endMs){
+  const ep=manifest.episodes.find(e=>e.id===id),item=pinned.get(id);
+  if(!ep||!Number.isFinite(startMs)||!Number.isFinite(endMs)||startMs<0||endMs<=startMs||endMs>ep.durationMs||endMs-startMs>300000)throw Error('Choose a review window of at most five minutes within the pinned audio.');
+  const info=await stat(item.path);if(info.mtimeMs!==item.mtimeMs||info.size!==item.size)throw Error('Pinned audio changed');
+  const key=JSON.stringify([id,startMs,endMs]);if(contextCache.has(key))return contextCache.get(key);
+  if(contextBusy)throw Object.assign(Error('Audio context is preparing; retry shortly.'),{status:429});contextBusy=true;
+  try{
+   let segments=[];const names=await readdir(root);
+   if(names.includes(id+'-cache.json')){const cached=JSON.parse(await readFile(join(root,id+'-cache.json'),'utf8'));if(cached.transcript.audioContentHash!==ep.audioContentHash)throw Error('Transcript belongs to another variant');segments=cached.transcript.segments;if(createHash('sha256').update(JSON.stringify(segments)).digest('hex')!==ep.transcriptHash)throw Error('Cached transcript changed');}
+   else if(names.includes(id+'.vtt')){const vtt=await readFile(join(root,id+'.vtt'),'utf8');if(createHash('sha256').update(vtt).digest('hex')!==ep.transcriptHash)throw Error('Publisher transcript changed');segments=parseTranscript(vtt,'text/vtt');}
+   const nearby=segments.filter(s=>s.startMs<endMs&&s.endMs>startMs);
+   const {stdout}=await promisify(execFile)(ffmpeg,['-v','error','-ss',String(startMs/1000),'-protocol_whitelist','file,pipe','-i',item.path,'-t',String((endMs-startMs)/1000),'-vn','-ac','1','-ar','8000','-f','s16le','pipe:1'],{encoding:'buffer',maxBuffer:6*1024*1024,timeout:30000});
+   const samples=Math.floor(stdout.length/2),peaks=Array(400).fill(0);for(let i=0;i<samples;i++){const bin=Math.min(399,Math.floor(i*400/samples));peaks[bin]=Math.max(peaks[bin],Math.abs(stdout.readInt16LE(i*2))/32768);}
+   const value={audioContentHash:ep.audioContentHash,startMs,endMs,peaks,transcriptAlignment:ep.transcriptAlignment,transcript:nearby.slice(0,100).map(s=>({id:s.id,startMs:s.startMs,endMs:s.endMs,text:s.text.slice(0,400)})),truncated:nearby.length>100};
+   if(contextCache.size>=20)contextCache.delete(contextCache.keys().next().value);contextCache.set(key,value);return value;
+  }finally{contextBusy=false;}
+ }
  const boot=randomBytes(32).toString('hex'),cookie=randomBytes(32).toString('hex'),csrf=randomBytes(24).toString('hex');let bootUsed=false,origin,tail=Promise.resolve();const expires=Date.now()+8*3600000;
  const json=(res,status,data)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data));};
  async function save(input){
@@ -46,7 +69,8 @@ export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={
    const input=JSON.parse(body);const work=tail.then(()=>save(input));tail=work.catch(()=>{});return json(res,200,await work);
   }
   if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
-  if(url.pathname==='/manifest')return json(res,200,{...manifest,episodes:manifest.episodes.map(ep=>({...ep,review:currentReviews(events,ep)})),metrics:corpusMetrics(manifest.episodes,events),csrf});
+  if(url.pathname==='/manifest')return json(res,200,{...manifest,priorityClips,episodes:manifest.episodes.map(ep=>({...ep,review:currentReviews(events,ep)})),metrics:corpusMetrics(manifest.episodes,events),csrf});
+  if(url.pathname.startsWith('/context/'))return json(res,200,await context(decodeURIComponent(url.pathname.slice(9)),Number(url.searchParams.get('startMs')),Number(url.searchParams.get('endMs'))));
   if(url.pathname==='/metrics')return json(res,200,corpusMetrics(manifest.episodes,events));
   if(url.pathname.startsWith('/audio/')){
    const item=pinned.get(decodeURIComponent(url.pathname.slice(7)));if(!item)return json(res,404,{error:'Unknown audio'});const info=await stat(item.path);if(info.size!==item.size||info.mtimeMs!==item.mtimeMs)return json(res,409,{error:'Pinned audio changed'});

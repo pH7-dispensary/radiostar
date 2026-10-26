@@ -31,6 +31,11 @@ try{
  assert.equal((await post({...body,expectedVersion:1,action:'complete',fullEpisodeReviewed:true})).status,200);
  assert.equal((await(await fetch(app.origin+'/metrics',{headers})).json()).recall,1);
  const range=await fetch(app.origin+'/audio/owned',{headers:{...headers,range:'bytes=0-31'}});assert.equal(range.status,206);assert.equal((await range.arrayBuffer()).byteLength,32);
+ assert.equal((await fetch(app.origin+'/context/owned?startMs=0&endMs=1000')).status,401);
+ assert.equal((await fetch(app.origin+'/context/owned?startMs=-1&endMs=1000',{headers})).status,400);
+ assert.equal((await fetch(app.origin+'/context/owned?startMs=0&endMs=300001',{headers})).status,400);
+ const context=await(await fetch(app.origin+'/context/owned?startMs=0&endMs=1000',{headers})).json();assert.equal(context.audioContentHash,hash);assert.equal(context.peaks.length,400);assert(context.peaks.every(p=>p>=0&&p<=1));assert.deepEqual(context.transcript,[]);
+ assert.deepEqual(await(await fetch(app.origin+'/context/owned?startMs=0&endMs=1000',{headers})).json(),context,'cached bounded context');
  assert.equal((await fetch(app.origin+'/audio/owned',{headers:{...headers,range:'bytes=999999999-'}})).status,416);
  assert.equal((await fetch(app.origin+'/audio/unknown',{headers})).status,404);
  assert.equal((await post({...body,expectedVersion:2,action:'annotation',notes:'<img src=x onerror=alert(1)>',startMs:2000,endMs:3000,kind:'uncertain',candidateIds:[]})).status,200);

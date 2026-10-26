@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "createdAt": "2026-10-26T19:47:50.625Z",
+  "createdAt": "2026-10-26T21:18:39.370Z",
   "purpose": "Private evaluation; not production skip authorisation",
   "publisherAttribution": "Jupiter Broadcasting — original episode titles and source links retained. Audio unmodified; review excerpts are cropped. CC BY-SA 4.0.",
   "episodes": [
@@ -40,8 +40,8 @@
           "reason": "Opening sample only; absence of candidates is not proof of no adverts."
         }
       ],
-      "analysisMs": 14.377832999999782,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 20.813583000000108,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": []
@@ -82,8 +82,8 @@
           "reason": "Opening sample only; absence of candidates is not proof of no adverts."
         }
       ],
-      "analysisMs": 4.308416999999963,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 5.023417000000336,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": []
@@ -136,43 +136,151 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 7.954791999999998,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 9.995167000000038,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "406bfedc07c62a17f91fe2f856ac79cc730cb07a15d6b1db193851ddf9b8284d",
+          "episodeKey": "58c69a0f27bf49a44f1679405cc1d1fb059a2ead56d619955ad33ddbf498e07b",
           "type": "advert",
           "startMs": 2709983,
           "endMs": 2713231,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/70466ce1-26d3-4c42-bca8-eb6c90454974.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-806"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/51033de6-ccde-4a4b-a0ed-686d254d44a6.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:37.575Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "a6a16fcfcd037cce711b2f878b0315994178e19d239f7a68435209af1115fe73",
+          "episodeKey": "58c69a0f27bf49a44f1679405cc1d1fb059a2ead56d619955ad33ddbf498e07b",
           "type": "advert",
           "startMs": 2787679,
           "endMs": 2790547,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/70466ce1-26d3-4c42-bca8-eb6c90454974.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-828"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/51033de6-ccde-4a4b-a0ed-686d254d44a6.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:37.575Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "c49d234206014c07080cc721a4a95c00cfc3adc13de45251801b442758bac311",
+          "episodeKey": "58c69a0f27bf49a44f1679405cc1d1fb059a2ead56d619955ad33ddbf498e07b",
           "type": "advert",
           "startMs": 2806213,
           "endMs": 2808738,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/70466ce1-26d3-4c42-bca8-eb6c90454974.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-833"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/51033de6-ccde-4a4b-a0ed-686d254d44a6.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:37.575Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -212,8 +320,8 @@
           "reason": "Opening sample only; absence of candidates is not proof of no adverts."
         }
       ],
-      "analysisMs": 5.687540999999783,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 6.605791999999838,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": []
@@ -265,32 +373,104 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 4.905708999999661,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 5.461542000000009,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "969d5673bb477cd50ab1f7f2af975b93d8a8c5055dd2e8b69ecb5a1b49972520",
+          "episodeKey": "532ee3adebd79ca1283b3a8e072e7b8aa60b008366e8c25a20da2dc383ab6fe8",
           "type": "advert",
           "startMs": 174858,
           "endMs": 180598,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/46d31f99-243e-48be-98d8-c92b4b2cddeb.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-53"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/3aad9cb2-68c5-40cb-a288-bdcf1776ac84.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.040Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "3dc111c58433b8be180162221c7e8d099fa7cd8fc94151f219be3f84a8db2c02",
+          "episodeKey": "532ee3adebd79ca1283b3a8e072e7b8aa60b008366e8c25a20da2dc383ab6fe8",
           "type": "advert",
           "startMs": 2398845,
           "endMs": 2401385,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/46d31f99-243e-48be-98d8-c92b4b2cddeb.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-668"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/3aad9cb2-68c5-40cb-a288-bdcf1776ac84.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.041Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -330,8 +510,8 @@
           "reason": "Opening sample only; absence of candidates is not proof of no adverts."
         }
       ],
-      "analysisMs": 5.365917000000081,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 6.627790999999888,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": []
@@ -374,21 +554,57 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 4.423209000000043,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 4.787499999999909,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "76cba5fb4850571a9be5e73eb6570c23b325f26e44cb09ce39d3c04749e5e201",
+          "episodeKey": "d9c6e04a5ece7feb5508012d1b2595d5be641f4305cb06535e6be7fe73e1186c",
           "type": "advert",
           "startMs": 75555,
           "endMs": 79675,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/184d4a6d-92f6-4e3f-b10c-3b29b91aa414.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-22"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/fcdad81b-eb1f-4e06-8465-169f8e8f4100.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.494Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_pre_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -444,87 +660,356 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 3.918999999999869,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 4.605125000000044,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "4d90e08af1d20dd5dbd4b75c7d6721fd767332e9aa4f7e962bc613c7612f2cb3",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 1959785,
           "endMs": 1965065,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "sponsorship_language",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-390"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.686Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "possible_host_read",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "3d19eb8253f16f0c3c77e1f9f92bfe93bbbc072485932fa74c3987285f6160bd",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 2015425,
           "endMs": 2022665,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-403"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.686Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "4a12b10be8097538fe44bc094a4cbbf6b6371ae7e9fcbe7117134b5d5cd2f60b",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 2036445,
           "endMs": 2040625,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-408"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.686Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "cd41b670aec90a14c2472231a67ba6f6abd2b705323a24b393c02ecebe60a46a",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 2040625,
           "endMs": 2044165,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-409"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.686Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "2107c8110bf06f4c92044979a6354decc8dd704e4151f07811884462e66201be",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 3205328,
           "endMs": 3209088,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-647"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.686Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "faa675151cb20696f068b022ab6605700e5d2c883017687d401193b60241db06",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 1959785,
           "endMs": 2022665,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "sponsorship_and_offer",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "seg-390",
+                "seg-391",
+                "seg-392",
+                "seg-393",
+                "seg-394",
+                "seg-395",
+                "seg-396",
+                "seg-397",
+                "seg-398",
+                "seg-399",
+                "seg-400",
+                "seg-401",
+                "seg-402",
+                "seg-403"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.687Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "possible_host_read",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "09df13c7bc73a2c8b0c93f828ddb4268f766186e6997c7b7e36eb133d9374a32",
+          "episodeKey": "e31f98d1c6d475005b23c4deffb5ecb40adadde07dd63aefc56eeaa553a1d693",
           "type": "advert",
           "startMs": 2032265,
           "endMs": 2051245,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "referral_address_account_offer_and_action",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "seg-407",
+                "seg-408",
+                "seg-409",
+                "seg-410",
+                "seg-411"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.687Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -566,21 +1051,57 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 5.493499999999585,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 6.3064580000000205,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "ec20232d7eb49d841b6f1d881e3df7ef43055e4f13f8c76c97e5555680d64da3",
+          "episodeKey": "5dad66636f6afea926427a0245b6ddc0c6ecb6bea88653ecc5001063a74c282a",
           "type": "advert",
           "startMs": 118692,
           "endMs": 123932,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/d1586243-878d-4de5-b900-a68287b71838.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-21"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/62834d7c-515b-4ad9-9614-221ea0fce7ba.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:38.895Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_pre_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -622,21 +1143,57 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 5.666416999999456,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 7.9669999999996435,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "b6d9778e7da25f4af9abfc637269a94bad1b0b2ece232a9bd20e8f1cf0805fb4",
+          "episodeKey": "a91f674d06fe5506fd38c74c1ec270817a0dc2ed5d95c4ad58a20a2aed50c509",
           "type": "advert",
           "startMs": 160218,
           "endMs": 164838,
+          "sourceVariantKey": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/53d2fbd8-255e-4d8b-9be9-58ad7b9aaec0.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "seg-39"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": "https://feeds.jupiterbroadcasting.com/transcripts/lup/d7cb9739-9767-4628-adad-da7ce1988763.vtt"
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxunplugged.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.143Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
-          "transcriptAlignment": "UNVERIFIED"
+          "transcriptAlignment": "UNVERIFIED",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     },
@@ -676,7 +1233,7 @@
           "reason": "Opening sample only; absence of candidates is not proof of no adverts."
         }
       ],
-      "analysisMs": 0.09774999999990541,
+      "analysisMs": 0.15391699999963748,
       "detectorVersion": null,
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
@@ -748,65 +1305,261 @@
           "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
         }
       ],
-      "analysisMs": 2.5900000000001455,
-      "detectorVersion": "transcript-candidates-v9",
+      "analysisMs": 5.400124999999207,
+      "detectorVersion": "transcript-candidates-v10",
       "reviewStatus": "PENDING",
       "fullEpisodeReviewed": false,
       "candidates": [
         {
           "id": "2193726de8a5be3abedec2c16564001ecae1e4cafbd4841e5e221f7d93fed3ad",
+          "episodeKey": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
           "type": "advert",
           "startMs": 1755980,
           "endMs": 1762260,
+          "sourceVariantKey": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.62,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": false,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "offer_call_to_action",
+              "confidence": 0.62,
+              "sourceSegmentIds": [
+                "1-117"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": null
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxactionnews.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.370Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
-          "transcriptAlignment": "HASH_BOUND_CACHE"
+          "transcriptAlignment": "HASH_BOUND_CACHE",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_post_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "7fb5dd23005536d92b24fd9c73555e732caca607293344b7ca349096458ff93a",
+          "episodeKey": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
           "type": "advert",
           "startMs": 541940,
           "endMs": 546380,
+          "sourceVariantKey": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "referral_address_account_offer_and_action",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "0-121",
+                "0-122"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": null
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxactionnews.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.370Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
-          "transcriptAlignment": "HASH_BOUND_CACHE"
+          "transcriptAlignment": "HASH_BOUND_CACHE",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "082e4c1f90289ca0f55bb8978bf8434a48d07f6349ed265782eda8a7fb07a0f3",
+          "episodeKey": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
           "type": "advert",
           "startMs": 715020,
           "endMs": 723020,
+          "sourceVariantKey": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "referral_address_account_offer_and_action",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "0-170",
+                "0-171"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": null
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxactionnews.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.370Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
-          "transcriptAlignment": "HASH_BOUND_CACHE"
+          "transcriptAlignment": "HASH_BOUND_CACHE",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "7a1a539d6fa39de5dae458631fd04b6186526cf9f44158c31e132db17440fc3e",
+          "episodeKey": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
           "type": "advert",
           "startMs": 1236780,
           "endMs": 1301600,
+          "sourceVariantKey": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "referral_address_account_offer_and_action",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "1-8",
+                "1-9",
+                "1-10",
+                "1-11",
+                "1-12",
+                "1-13",
+                "1-14",
+                "1-15",
+                "1-16",
+                "1-17",
+                "1-18",
+                "1-19",
+                "1-20",
+                "1-21"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": null
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxactionnews.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.370Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
-          "transcriptAlignment": "HASH_BOUND_CACHE"
+          "transcriptAlignment": "HASH_BOUND_CACHE",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         },
         {
           "id": "71e2d3a2325af312ce2587fd8d49e9174cda43dd7ce2d59cfb891736d95df6e2",
+          "episodeKey": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
           "type": "advert",
           "startMs": 1293660,
           "endMs": 1301600,
+          "sourceVariantKey": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+          "audioVariantFingerprint": null,
+          "confidence": 0.95,
           "verificationState": "CANDIDATE",
+          "disputed": false,
+          "processingVersion": "transcript-candidates-v10",
+          "breakCandidate": false,
+          "reviewOnly": false,
+          "qualifiesForAudioVerification": true,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required.",
+          "evidence": [
+            {
+              "source": "transcript",
+              "signal": "referral_address_account_offer_and_action",
+              "confidence": 0.95,
+              "sourceSegmentIds": [
+                "1-20",
+                "1-21"
+              ],
+              "provenance": {
+                "sourceType": "publisher",
+                "sourceUri": null
+              }
+            }
+          ],
+          "publisherFeed": "https://linuxactionnews.com/rss",
+          "boundaryVerified": false,
+          "createdAt": "2026-10-26T21:18:39.370Z",
           "independent": false,
           "reviewStatus": "UNREVIEWED",
           "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
-          "transcriptAlignment": "HASH_BOUND_CACHE"
+          "transcriptAlignment": "HASH_BOUND_CACHE",
+          "provisionalLabels": {
+            "kind": "possible_advert",
+            "placement": "possible_mid_roll",
+            "format": "unknown",
+            "music": "unknown",
+            "dynamicInsertion": "unknown",
+            "consecutiveSponsors": "unknown",
+            "note": "Transcript-only hypotheses. Placement, speakers, music, ad insertion and editorial boundaries require listening; no-advert status cannot be inferred."
+          }
         }
       ]
     }

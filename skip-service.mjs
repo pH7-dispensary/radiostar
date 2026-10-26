@@ -5,12 +5,12 @@ import { intervalDecision } from "./ad-skip.mjs";
 import { ListenerError } from "./listener-service.mjs";
 import { skipDiagnostics } from "./skip-diagnostics.mjs";
 import { adSkipAudioVerificationVersion } from "./ad-skip-verification.mjs";
-import { groupCommercialSpans } from "./ad-breaks.mjs";
+import { groupCommercialSpans, proposeCompleteBreaks } from "./ad-breaks.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
 const categories = new Set(["advert", "intro", "title_sequence", "preview", "outro"]);
-const candidateVersion = "transcript-candidates-v9";
+const candidateVersion = "transcript-candidates-v10";
 const sponsorLanguage = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|made possible by|thanks to .{1,50} for sponsoring)\b/i;
 const commercialOffer = /\b(promo code|discount code|use (?:the )?code|free trial|percent off|visit .{1,80}(?: to |sign up|signup)|go to .{1,60} for|sign up at|get started at|head (?:over )?to .{1,70} (?:for|to))\b|\d+% off/i;
 const sponsorshipDenial = /\b(?:not sponsored|(?:no|without) (?:a )?sponsors?|isn't (?:a )?sponsor|not (?:an? )?(?:ad|advertisement))\b/i;
@@ -42,7 +42,7 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
   const type = sponsorship || cta || directOffer ? "advert" : early && /\[(?:opening |theme |intro )music\]/i.test(text) ? "title_sequence" : (early || late) && /\b(coming up (?:next|on)|in (?:our|the) next episode)\b/i.test(text) ? "preview" : early && /\b(hello and welcome to|welcome back to (?:the|our))\b/i.test(text) ? "intro" : late && /\b(thanks? (?:you )?for listening|that'?s all for (?:today|this episode))\b/i.test(text) ? "outro" : null;
   if (!type) return null;
   const disputed = previous.some((item) => item.disputed && (item.sourceVariantKey || item.audioVariant) === transcript.audioVariant && item.startMs < segment.endMs && item.endMs > segment.startMs);
-  const transcriptConfidence = strongAdvertText(text) ? 0.95 : 0.62;
+  const transcriptConfidence = segment.reviewOnly ? 0.8 : strongAdvertText(text) ? 0.95 : 0.62;
   return {
     id: hash(`${key}:${transcript.transcriptVersion || transcript.contentHash}:${segment.id}`),
     episodeKey: key,
@@ -57,8 +57,9 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
     disputed,
     processingVersion: candidateVersion,
     breakCandidate: segment.breakCandidate === true,
-    qualifiesForAudioVerification: type === "advert" && strongAdvertText(text),
-    decisionReason: denied ? "Explicit non-advertising context; not eligible for automatic verification." : directOffer ? "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required." : sponsorship && cta ? "Sponsor declaration and commercial offer; independent audio evidence still required." : "Single contextual cue only; insufficient evidence for automatic verification.",
+    reviewOnly: segment.reviewOnly === true,
+    qualifiesForAudioVerification: !segment.reviewOnly && type === "advert" && strongAdvertText(text),
+    decisionReason: segment.reviewOnly ? "Sponsor opening, offer and explicit editorial return bound a provisional complete-break proposal. Intervening speech and boundaries require independent review." : denied ? "Explicit non-advertising context; not eligible for automatic verification." : directOffer ? "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required." : sponsorship && cta ? "Sponsor declaration and commercial offer; independent audio evidence still required." : "Single contextual cue only; insufficient evidence for automatic verification.",
     evidence: [
       {
         source: "transcript",
@@ -144,6 +145,7 @@ export class SkipService {
       }
     }
     if (needsAnalysis) segments.push(...groupCommercialSpans(segments.filter(row => strongAdvertText(row.text || "")), transcript.segments));
+    if (needsAnalysis) segments.push(...proposeCompleteBreaks(transcript.segments, {opens:text=>sponsorLanguage.test(text),qualifies:strongAdvertText,denies:text=>sponsorshipDenial.test(text)||nonCommercialDirection.test(text)}));
     const activeIntervalIds = needsAnalysis ? [] : cachedAnalysis?.activeIntervalIds;
     if (transcript?.segments?.length) for (const segment of segments) {
       const candidate = candidateForSegment({ segment, transcript, feed, key, previous: prior, all });

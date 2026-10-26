@@ -7,13 +7,18 @@
     "endMs": 34500,
     "targetMs": 34500
   },
-  "originMs": 15215.268999999998,
+  "originMs": 15207.691,
   "targetMs": 34500,
-  "skippedDurationMs": 19284.731,
-  "restoredMs": 15215.268999999998,
+  "skippedDurationMs": 19292.309,
+  "restoredMs": 15207.691,
   "undoSeeks": 1,
   "paused": true,
   "rate": 1.5,
-  "playPromiseMs": 1.0999999940395355,
+  "playPromiseMs": 0.8999999910593033,
+  "authorisationRoundTripMs": 27.600000008940697,
+  "seekConfirmationMs": 4.4000000059604645,
+  "undoConfirmationMs": 0.8999999910593033,
+  "entryDelaySourceMs": 6.4210000000002765,
+  "pollIntervalMs": 10,
   "device": "Chromium, not a physical iPhone"
 }

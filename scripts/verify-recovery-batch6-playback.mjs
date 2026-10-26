@@ -66,17 +66,19 @@ try {
   const seek=ms=>new Promise((resolve,reject)=>{seeks++;const timeout=setTimeout(()=>reject(Error('Seek timeout')),3000);audio.addEventListener('seeked',()=>{clearTimeout(timeout);resolve(audio.currentTime*1000);},{once:true});audio.currentTime=ms/1000;});
   await seek(interval.startMs-1000);audio.playbackRate=1.5;
   const start=performance.now();await audio.play();const playPromiseMs=performance.now()-start;
-  const lease=await window.authorise({intervalId:interval.id,positionMs:audio.currentTime*1000,prefetch:true});
+  const authorisationStart=performance.now();const lease=await window.authorise({intervalId:interval.id,positionMs:audio.currentTime*1000,prefetch:true});const authorisationRoundTripMs=performance.now()-authorisationStart;
   await new Promise(resolve=>{const poll=()=>audio.currentTime*1000>=interval.startMs?resolve():setTimeout(poll,10);poll();});
   const positionMs=audio.currentTime*1000;
-  const skipped=await executeVerifiedSkip({interval,positionMs,durationMs:audio.duration*1000,current:()=>true,getPosition:()=>audio.currentTime*1000,authorise:async()=>lease,seek});
+  const seekStarted=performance.now();let attemptReceipt;
+  const skipped=await executeVerifiedSkip({interval,positionMs,durationMs:audio.duration*1000,current:()=>true,getPosition:()=>audio.currentTime*1000,authorise:async()=>lease,seek,onStage:(_,detail)=>{attemptReceipt=window.receipt({intervalId:interval.id,eventId:'browser-phase2-attempt',kind:'seek_attempted',positionMs:detail.positionMs,authorisationId:lease.authorisationId});}});const seekConfirmationMs=performance.now()-seekStarted;await attemptReceipt;
   await window.receipt({intervalId:interval.id,eventId:'browser-batch6-skip',kind:'automatic_skip',positionMs:skipped.positionMs,originMs:skipped.originMs,authorisationId:lease.authorisationId});
   audio.pause(); // Undo must preserve pause and 1.5x and needs no further authorisation.
-  const beforeUndoSeeks=seeks;const restored=await Promise.all([skipped.undo(),skipped.undo()]);
+  const beforeUndoSeeks=seeks,undoStarted=performance.now();const restored=await Promise.all([skipped.undo(),skipped.undo()]);const undoConfirmationMs=performance.now()-undoStarted;
   await window.receipt({intervalId:interval.id,eventId:'browser-batch6-undo',kind:'undo',positionMs:restored[0],authorisationId:lease.authorisationId});
-  return {audioHash:hash,interval,originMs:skipped.originMs,targetMs:skipped.positionMs,skippedDurationMs:skipped.durationMs,restoredMs:restored[0],undoSeeks:seeks-beforeUndoSeeks,paused:audio.paused,rate:audio.playbackRate,playPromiseMs,device:'Chromium, not a physical iPhone'};
+  return {audioHash:hash,interval,originMs:skipped.originMs,targetMs:skipped.positionMs,skippedDurationMs:skipped.durationMs,restoredMs:restored[0],undoSeeks:seeks-beforeUndoSeeks,paused:audio.paused,rate:audio.playbackRate,playPromiseMs,authorisationRoundTripMs,seekConfirmationMs,undoConfirmationMs,entryDelaySourceMs:positionMs-interval.startMs,pollIntervalMs:10,device:'Chromium, not a physical iPhone'};
  },{interval,hash:manifest.audioContentHash});
  assert.equal(result.undoSeeks,1);assert(result.paused);assert.equal(result.rate,1.5);assert(Math.abs(result.restoredMs-result.originMs)<=350);
  assert.equal(app.skips.operations().counts.automaticSkips,1);assert.equal(app.skips.operations().counts.undoEvents,1);
+ assert.equal(app.skips.operations().diagnostics.reduce((n,r)=>n+r.attempts,0),1);
  writeFileSync('evals/recovery-batch6-playback.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 }finally{await browser?.close();await new Promise(resolve=>media.close(resolve));await new Promise(resolve=>app.server.close(resolve));store.close();}

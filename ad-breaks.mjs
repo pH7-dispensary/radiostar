@@ -18,3 +18,29 @@ export function groupCommercialSpans(spans, originals) {
     text: originals.filter(row => group.sourceSegmentIds.includes(row.id)).map(row => row.text).join(" "),
   }));
 }
+
+/** A sponsor opening plus a commercial offer and an explicit editorial return
+ * can bound a review proposal. Intervening narration is NOT independent evidence:
+ * these wider spans must never inherit eligibility from a short verified member. */
+export function proposeCompleteBreaks(segments, { opens, qualifies, denies }) {
+  const returns = /\b(?:back to (?:our|the) (?:show|news|discussion|conversation)|return(?:ing)? to (?:our|the) (?:show|news|discussion)|now (?:let's|we) (?:discuss|return))\b/i;
+  const proposals = [];
+  for (let i = 0; i < segments.length; i++) {
+    const first = segments[i];
+    if (!opens(first.text || '') || denies(first.text || '') || !Number.isFinite(first.startMs)) continue;
+    const members = [first];
+    for (const next of segments.slice(i + 1, i + 121)) {
+      const previous = members.at(-1);
+      if (!Number.isFinite(next.startMs) || !Number.isFinite(next.endMs) || next.startMs < previous.endMs || next.startMs - previous.endMs > 3000 || next.endMs - first.startMs > 240000) break;
+      if (returns.test(next.text || '')) {
+        if (members.length > 1 && qualifies(members.map(s => s.text).join(' '))) {
+          proposals.push({...first,id:'review-break:'+members.map(s=>s.id).join(':'),endMs:previous.endMs,text:members.map(s=>s.text).join(' '),sourceSegmentIds:members.map(s=>s.id),breakCandidate:true,reviewOnly:true});
+        }
+        break; // Never include the return-to-editorial sentence.
+      }
+      if (denies(next.text || '')) break;
+      members.push(next);
+    }
+  }
+  return proposals.filter((p,i,all)=>!all.some((q,j)=>j!==i&&q.startMs<=p.startMs&&q.endMs>=p.endMs&&(q.startMs<p.startMs||j<i)));
+}
