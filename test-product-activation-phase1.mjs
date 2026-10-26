@@ -10,9 +10,9 @@ const store=new LocalStore(':memory:'),ledger=new BudgetLedger({enabled:true},st
 const feed='https://owned.example/canonical',alias='https://owned.example/old';
 rights.set({feedUrl:feed,classification:'LICENSED',legalBasis:'Original test fixture',assessmentEvidence:[{type:'OWNED',source:'test author',value:'Original fixture'}],canProcessForAi:true,canAcquireTranscript:true,canTranscribeAudio:true,canRetain:true});
 for(const id of ['a','b']){store.set('installation',id,{id});store.set('follow',id,{owner:id,feedUrl:id==='a'?alias:feed});}
-let outage=true,requests=[],inspections=0;const episode=id=>({id,title:id,publishedAt:`2026-01-0${4-Number(id)}T00:00:00Z`,duration:'60',audioUrl:`https://owned.example/${id}.mp3`,refs:[]});
+let outage=true,requests=[],inspections=0,derived=0;const episode=id=>({id,title:id,publishedAt:`2026-01-0${4-Number(id)}T00:00:00Z`,duration:'60',audioUrl:`https://owned.example/${id}.mp3`,refs:[]});
 const pipeline={status:(f,id)=>store.get('intelligence',episodeKey(f,id)),request:async input=>{requests.push(input);const job={...input,jobId:'job-'+input.episodeId,state:'QUEUED'};store.set('intelligence',episodeKey(input.feedUrl,input.episodeId),job);return job;}};
-const prep=new FollowedPreparation({store,ledger,rights,testingMode,pipeline,resolveFeedIdentity:f=>f===alias?feed:f,canonicalFeed:async()=>feed,discover:async()=>['1','2','3'].map(episode),assess:async(f,id)=>{if(outage&&id==='1')throw Error('Temporary publisher outage');return {episode:episode(id)};},enabled:()=>true,allowed:(f,id)=>policy.allows(f,id).allowed,inspect:()=>{inspections++;}});
+const prep=new FollowedPreparation({store,ledger,rights,testingMode,pipeline,resolveFeedIdentity:f=>f===alias?feed:f,canonicalFeed:async()=>feed,discover:async()=>['1','2','3'].map(episode),assess:async(f,id)=>{if(outage&&id==='1')throw Error('Temporary publisher outage');return {episode:episode(id)};},enabled:()=>true,allowed:(f,id)=>policy.allows(f,id).allowed,inspect:()=>{inspections++;},resumeDerived:async()=>{derived++;}});
 try{
  assert.equal(policy.global().tier,'ZERO');
  store.set('followed-demand','retired',{key:'retired',feedUrl:feed,episodeId:'retired',inWindow:true,createdAt:new Date().toISOString()});
@@ -22,7 +22,10 @@ try{
  await prep.drain();assert.deepEqual(requests.map(r=>r.episodeId),['2','3']);assert(requests.every(r=>r.feedUrl===feed&&r.allowAudio&&r.platformProcessing&&r.trigger==='automatic'));assert.equal(policy.records().length,0,'Automatic evidence cannot write operational pauses');
  // Finished partial outputs are cache hits, not a demand for paid regeneration.
  for(const id of ['2','3'])store.set('intelligence',episodeKey(feed,id),{...pipeline.status(feed,id),state:'PARTIAL_READY',completedAt:new Date().toISOString(),episode:episode(id),transcript:{segments:[{text:'owned transcript'}]}});
- requests=[];await prep.refresh({force:true});await prep.drain();assert.equal(requests.length,0);assert(inspections>=2);result=prep.summary();assert.equal(result.acquisition.intelligenceCacheHits,2);assert.equal(result.counts.PARTIAL_READY,2);assert.equal(result.estimate.knownUsd,0,'unassessed missing duration is unknown, not a guessed charge');assert.equal(result.estimate.unknownEpisodes,1);
+ requests=[];await prep.refresh({force:true});await prep.drain();assert.equal(requests.length,0);assert(inspections>=2);assert.equal(derived,2,'Existing derived checkpoints resume without another listener request');result=prep.summary();assert.equal(result.acquisition.intelligenceCacheHits,2);assert.equal(result.counts.PARTIAL_READY,2);assert.equal(result.estimate.knownUsd,0,'unassessed missing duration is unknown, not a guessed charge');assert.equal(result.estimate.unknownEpisodes,1);
+ const allowed=prep.allowed,evaluate=rights.evaluate;
+ try {prep.allowed=()=>false;await prep.drain();assert.equal(derived,2,'Human operational pause stops paid derived recovery');prep.allowed=allowed;rights.evaluate=()=>({allowed:false});await prep.drain();assert.equal(derived,2,'Revoked processing rights stop derived recovery too');}
+ finally {prep.allowed=allowed;rights.evaluate=evaluate;}
  outage=false;await prep.refresh({force:true});await prep.drain();assert.deepEqual(requests.map(r=>r.episodeId),['1'],'Recovered evidence proceeds without a new human approval');
  // Retaining only the historical alias must not remove the canonical window.
  store.delete('follow','b');assert.equal(prep.summary().uniqueEpisodes,3);

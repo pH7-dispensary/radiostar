@@ -497,6 +497,13 @@ export function createStarCastServer({
     enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
     allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,
     inspect: (feed, id) => skips.inspect(feed, id),
+    resumeDerived: async (feed,id) => {
+      const key=episodeKey(feed,id),semantic=store.get("semantic-index",key),index=store.get("search-index",key);
+      // Continue only an already-started canonical index. Existing request
+      // deduplication, provider checkpoints, rights and budget checks apply.
+      if(pipeline.semanticSearch && semantic?.state === "BUILDING" && index && semantic.fingerprint === index.fingerprint)
+        await pipeline.semanticSearch.build(index,{key,maxBatches:8});
+    },
     status: (feed, id) => intelligenceDimensions(feed, id, true),
   });
   const encounter = async (listenerId, feedUrl, episodeId, source = "opened") => {

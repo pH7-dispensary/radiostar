@@ -22,8 +22,8 @@ const priorityFor = (row, listeners) => Math.max(row.manualPriority || 0,
 // Durable demand, not a second AI pipeline. Every dispatch uses the canonical
 // pipeline and its transactional outbox, rights checks and shared cost ledger.
 export class FollowedPreparation {
-  constructor({ audienceEligible = () => true, canonicalFeed = async feed => feed, resolveFeedIdentity = feed => feed, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
-    Object.assign(this, { audienceEligible, canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
+  constructor({ audienceEligible = () => true, canonicalFeed = async feed => feed, resolveFeedIdentity = feed => feed, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, resumeDerived, status }) {
+    Object.assign(this, { audienceEligible, canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, resumeDerived, status });
     this.refreshing = null; this.draining = null;
   }
   configuration() { return this.store.get(kind, "configuration") || { enabled: false, version: 0 }; }
@@ -126,7 +126,14 @@ export class FollowedPreparation {
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
       if (!(row.inWindow && feeds.has(row.feedUrl)) && !recentEncounter) continue;
       const cached = this.pipeline.status(row.feedUrl, row.episodeId);
-      if (completed(cached) && !row.sourceNeedsRefresh) { this.inspect(row.feedUrl, row.episodeId); continue; }
+      if (completed(cached) && !row.sourceNeedsRefresh) {
+        this.inspect(row.feedUrl, row.episodeId);
+        if (this.allowed(row.feedUrl,row.episodeId) && this.rights.evaluate({feature:"intelligence-processing",feedUrl:row.feedUrl,episodeId:row.episodeId}).allowed) {
+          try { await this.resumeDerived?.(row.feedUrl,row.episodeId); }
+          catch { console.error(JSON.stringify({event:"automatic-search-index-deferred",code:"DERIVED_PROCESSING_PENDING"})); }
+        }
+        continue;
+      }
       if (activeStates.has(cached?.state) && !cached.completedAt) {
         if ((cached.priority || 0) < row.priority) this.store.set("intelligence", row.key, { ...cached, priority: row.priority });
         continue;
