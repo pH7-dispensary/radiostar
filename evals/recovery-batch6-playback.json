@@ -7,13 +7,13 @@
     "endMs": 34500,
     "targetMs": 34500
   },
-  "originMs": 15209.42,
+  "originMs": 15215.268999999998,
   "targetMs": 34500,
-  "skippedDurationMs": 19290.58,
-  "restoredMs": 15209.42,
+  "skippedDurationMs": 19284.731,
+  "restoredMs": 15215.268999999998,
   "undoSeeks": 1,
   "paused": true,
   "rate": 1.5,
-  "playPromiseMs": 1.2999999970197678,
+  "playPromiseMs": 1.0999999940395355,
   "device": "Chromium, not a physical iPhone"
 }

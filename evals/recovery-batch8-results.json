@@ -1,0 +1,650 @@
+{
+  "verifiedAt": "2026-10-26T20:21:59.996Z",
+  "sourceCommit": "7e9bfc6",
+  "release": {
+    "status": "HEALTHY",
+    "releaseSha": "ad2dff0d3ef8292b57df1cdee275754187a14622de63bef8c23d8e2314f4a456",
+    "deployedAt": "2026-10-26T20:21:14.283Z",
+    "previousReleaseSha": "61fc2b499f8ef2b91886defa0ce35ab84e4d431f3694bed4d1ec7ab6d3ff21d7",
+    "rollbackAvailable": true,
+    "reason": "Release metadata was read from the protected server record."
+  },
+  "health": {
+    "service": "star-cast",
+    "backend": "ready",
+    "openai": {
+      "configured": true,
+      "enabled": true,
+      "audioEnabled": true,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1"
+    },
+    "persistence": "sqlite",
+    "features": {
+      "episodeBriefs": false,
+      "exploreEpisode": false,
+      "momentSearch": false,
+      "conversationSearch": false,
+      "adSkip": false
+    },
+    "providerVerified": true
+  },
+  "followed": {
+    "baseline": {
+      "activeProfiles": 5,
+      "feeds": 7,
+      "latestEpisodes": 21,
+      "ready": 0
+    },
+    "current": {
+      "activeProfiles": 2,
+      "feeds": 6,
+      "latestEpisodes": 18,
+      "ready": 0,
+      "counts": {
+        "REVIEW_REQUIRED": 18
+      },
+      "estimate": {
+        "knownUsd": 22.782333333333334,
+        "unknownEpisodes": 0,
+        "eligibleKnownUsd": 0,
+        "completionEta": null,
+        "reason": "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable."
+      }
+    },
+    "controlled": {
+      "cachedLatestThree": [
+        {
+          "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        }
+      ],
+      "duplicateAcceptedWithoutNewJobs": true
+    }
+  },
+  "discovery": {
+    "keys": [
+      "episodes",
+      "coverage",
+      "generatedAt"
+    ],
+    "episodes": [
+      {
+        "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+        "title": "Dependency attacks in 2026 with James Matchett"
+      },
+      {
+        "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+        "title": "Sovereignty, policy, and OpenUK with Amanda Brock"
+      },
+      {
+        "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+        "title": "The curl summer of Bliss with Daniel and Stefan"
+      },
+      {
+        "id": "b82291a4-5712-4a68-a623-2a3a7a9953b9",
+        "title": "(Episode 172) Authorship Uncovered: Who Gets the Credit?"
+      },
+      {
+        "id": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+        "title": "Finding difficult vulnerabilities with Jaya Baloo from AISLE"
+      },
+      {
+        "id": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+        "title": "Forking Open Source Projects with Sheogorath"
+      },
+      {
+        "id": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+        "title": "Safety vs Security with Thomas Depierre"
+      },
+      {
+        "id": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+        "title": "The Future of Open Source Security"
+      }
+    ]
+  },
+  "cachedEpisodes": [
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "state": "PARTIAL_READY",
+      "briefMode": "verified_partial",
+      "chapters": 7,
+      "topics": 8,
+      "features": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    },
+    {
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "state": "PARTIAL_READY",
+      "briefMode": "verified_partial",
+      "chapters": 8,
+      "topics": 13,
+      "features": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    }
+  ],
+  "search": [
+    {
+      "kind": "exact",
+      "matched": true,
+      "answerState": "SUPPORTED_EXCERPTS",
+      "retrieval": {
+        "mode": "semantic-with-lexical-fallback",
+        "semanticEpisodes": 2
+      },
+      "sourceCount": 8
+    },
+    {
+      "kind": "paraphrase",
+      "matched": true,
+      "answerState": "SUPPORTED_EXCERPTS",
+      "retrieval": {
+        "mode": "semantic-with-lexical-fallback",
+        "semanticEpisodes": 2
+      },
+      "sourceCount": 5
+    },
+    {
+      "kind": "Portuguese",
+      "matched": true,
+      "answerState": "SUPPORTED_EXCERPTS",
+      "retrieval": {
+        "mode": "semantic-with-lexical-fallback",
+        "semanticEpisodes": 2
+      },
+      "sourceCount": 5
+    },
+    {
+      "kind": "Chinese",
+      "matched": true,
+      "answerState": "SUPPORTED_EXCERPTS",
+      "retrieval": {
+        "mode": "semantic-with-lexical-fallback",
+        "semanticEpisodes": 2
+      },
+      "sourceCount": 6
+    },
+    {
+      "kind": "absent",
+      "matched": true,
+      "answerState": "NO_EVIDENCE",
+      "retrieval": {
+        "mode": "semantic-with-lexical-fallback",
+        "semanticEpisodes": 2
+      },
+      "sourceCount": 0
+    }
+  ],
+  "momentTimestampMs": 219851,
+  "admin": {
+    "emergencyLogin": true,
+    "individualMembers": 0,
+    "migration": {
+      "individualSuperAdminConfigured": false,
+      "individualSuperAdminVerified": false,
+      "emergencyRecoveryAvailable": true
+    },
+    "sessionHours": 8,
+    "proxy": "cloudfront-vpc",
+    "csrf": "rejected",
+    "anonymous": "rejected"
+  },
+  "costs": {
+    "controls": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "usageEntries": 121,
+    "recordedUsd": 1.5886908000000002,
+    "reservations": 0,
+    "additionalPaidCalls": 0
+  },
+  "adSkip": {
+    "counts": {
+      "candidates": 1,
+      "variantMatched": 4,
+      "verified": 2,
+      "disputed": 0,
+      "rejected": 0,
+      "processing": 0,
+      "failed": 0,
+      "automaticSkips": 3,
+      "undoEvents": 3,
+      "falsePositiveReports": 0,
+      "missedAdvertReports": 1
+    },
+    "release": {
+      "evaluationSkips": 1,
+      "evaluationUndos": 1,
+      "realEpisodeSkips": 2,
+      "eventProvenance": "Client-confirmed seek telemetry; not independent accuracy ground truth.",
+      "productionAutomaticSkipping": false,
+      "criteria": {
+        "labelledEpisodes": 30,
+        "verifiedIntervals": 1000,
+        "precision": 0.995,
+        "conversationSkips": 0,
+        "mismatchedVariantSkips": 0,
+        "p95DecisionMs": 500,
+        "undoRestorationRate": 1
+      },
+      "measured": null,
+      "status": "NOT_EVALUATED"
+    },
+    "episodes": [
+      {
+        "title": "Linux Action News 164",
+        "candidates": 5,
+        "verified": 1,
+        "successes": 2,
+        "undos": 2,
+        "verifiedDurationMs": 4355,
+        "completeBreakCoverage": null
+      },
+      {
+        "title": "Owned fixture: sponsorship break and product discussion",
+        "candidates": 1,
+        "verified": 1,
+        "successes": 1,
+        "undos": 1,
+        "verifiedDurationMs": 19300,
+        "completeBreakCoverage": null
+      }
+    ]
+  },
+  "nativeWeb": {
+    "at": "2026-10-26T20:12:25.121Z",
+    "followedFeedsRefreshed": 35,
+    "publisherFailureCachePreserved": true,
+    "savedCollisionRecordsPreserved": 2,
+    "offlineFollowRestart": true,
+    "offlineUnfollowRestart": true,
+    "confirmedWrites": 2,
+    "overflow": false,
+    "errors": []
+  },
+  "lexicalBenchmark": {
+    "samples": 24,
+    "supportedSamples": 22,
+    "absentSamples": 2,
+    "recallAt5": 0.7727272727272727,
+    "mrr": 0.7727272727272727,
+    "abstentionAccuracy": 1,
+    "multilingualRecallAt5": 1,
+    "meanLatencyMs": 0.6638818750000007,
+    "queryProviderCostUsd": 0,
+    "provenance": {
+      "kind": "owned_synthetic",
+      "humanReviewed": false,
+      "limitations": "Engineering-labelled source references; authored multilingual fixtures test language handling. Not representative human-labelled real-world semantic quality."
+    }
+  },
+  "timings": [
+    {
+      "path": "/api/admin/intelligence",
+      "ms": 675
+    },
+    {
+      "path": "/api/admin/operations",
+      "ms": 771
+    },
+    {
+      "path": "/api/admin/administrators",
+      "ms": 37
+    },
+    {
+      "path": "/api/admin/features",
+      "ms": 40
+    },
+    {
+      "path": "/api/admin/configuration",
+      "ms": 38
+    },
+    {
+      "path": "/api/admin/intelligence/testing",
+      "ms": 143
+    },
+    {
+      "path": "/api/admin/ad-skip",
+      "ms": 57
+    },
+    {
+      "path": "/api/admin/session",
+      "ms": 37
+    },
+    {
+      "path": "/api/intelligence/status",
+      "ms": 160
+    },
+    {
+      "path": "/api/intelligence/status",
+      "ms": 585
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 1342
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 689
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 655
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 752
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 648
+    },
+    {
+      "path": "/api/intelligence/moment",
+      "ms": 226
+    },
+    {
+      "path": "/api/intelligence/ready",
+      "ms": 470
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 562
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 2288
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 1099
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 663
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 704
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 1774
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 599
+    },
+    {
+      "path": "/api/catalogue/feed",
+      "ms": 406
+    },
+    {
+      "path": "/api/listener/follow",
+      "ms": 44
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 797
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 3113
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 1087
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 651
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 1015
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 860
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 1105
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 915
+    },
+    {
+      "path": "/api/listener/follow",
+      "ms": 482
+    },
+    {
+      "path": "/api/listener/follow",
+      "ms": 41
+    },
+    {
+      "path": "/api/listener/follow",
+      "ms": 38
+    },
+    {
+      "path": "/api/admin/intelligence/followed",
+      "ms": 596
+    },
+    {
+      "path": "/api/admin/intelligence",
+      "ms": 682
+    },
+    {
+      "path": "/api/health",
+      "ms": 1765
+    }
+  ],
+  "ios": {
+    "bundle": "app.radiostar.ios",
+    "version": "1.0.0",
+    "build": "13",
+    "name": "Radio Star",
+    "team": "69F2T3M9C4",
+    "signature": "strict/deep passed",
+    "backgroundModes": [
+      "audio"
+    ],
+    "debugEntitlement": false,
+    "provisioningExpires": "2027-10-19 15:34:06",
+    "nativeSleepLinked": true,
+    "awsBackendEmbedded": true,
+    "icons": {
+      "CFBundlePrimaryIcon": {
+        "CFBundleIconFiles": [
+          "AppIcon60x60"
+        ],
+        "CFBundleIconName": "AppIcon"
+      }
+    },
+    "ipaSha256": "93eff0e428e0f463ff3a5759c5ff732ab342e75eaeac3f811b82657ff4b565f4",
+    "ipaBytes": 12243253,
+    "credentialScan": "passed",
+    "filesScanned": 58,
+    "easBuildId": "bc729b2b-07c3-4d0c-b942-7fee5c1b7860",
+    "submissionId": "433473b2-10cb-43db-9f55-f4951601d07d",
+    "approvedIconSourceSha256": "a4f00926754d36a335619fd5a299d7c5d0fdf062632a2b3c8e85d434efa2562d",
+    "iconSourceMatchesArchiveAndIPA": true,
+    "submissionState": "IN_QUEUE",
+    "appleBuild13Observed": false
+  },
+  "finalProduction": {
+    "at": "2026-10-26T20:21:59.996Z",
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "ad2dff0d3ef8292b57df1cdee275754187a14622de63bef8c23d8e2314f4a456",
+      "deployedAt": "2026-10-26T20:21:14.283Z",
+      "previousReleaseSha": "61fc2b499f8ef2b91886defa0ce35ab84e4d431f3694bed4d1ec7ab6d3ff21d7",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    },
+    "readyCount": 8,
+    "followedCounts": {
+      "REVIEW_REQUIRED": 18
+    },
+    "costs": {
+      "controls": {
+        "enabled": true,
+        "dailyUsd": 5,
+        "monthlyUsd": 25,
+        "dailyTranscriptionSeconds": 10800,
+        "maxEpisodeSeconds": 7200,
+        "textModel": "gpt-4.1-mini",
+        "transcriptionModel": "whisper-1",
+        "audioAnalysisEnabled": true
+      },
+      "usageEntries": 121,
+      "recordedUsd": 1.5886908000000002,
+      "reservations": 0,
+      "additionalPaidCalls": 0
+    },
+    "components": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY",
+        "reason": "This authenticated operations request reached the active backend.",
+        "observedAt": "2026-10-26T20:22:01.047Z"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY",
+        "reason": "SQLite quick check passed for the active server store."
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY",
+        "reason": "20% used \u00b7 23.9 GiB available; deployments require 3 GiB headroom.",
+        "detail": {
+          "totalBytes": 32132542464,
+          "availableBytes": 25625923584,
+          "usedPercent": 20
+        },
+        "observedAt": "2026-10-26T20:22:01.047Z"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED",
+        "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+        "detail": {
+          "retained": 3,
+          "limit": 2,
+          "protectedLegacy": 1
+        },
+        "observedAt": "2026-10-26T20:22:01.047Z"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY",
+        "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+        "observedAt": "2026-10-26T20:21:19.814Z"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY",
+        "reason": "SQS queue attributes were read successfully.",
+        "observedAt": "2026-10-26T20:22:01.047Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY",
+        "reason": "No messages are waiting in the dead-letter queue.",
+        "observedAt": "2026-10-26T20:22:01.047Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY",
+        "reason": "The single durable queue consumer is running."
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN",
+        "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN",
+        "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY",
+        "reason": "Release metadata was read from the protected server record.",
+        "observedAt": "2026-10-26T20:21:14.283Z",
+        "detail": {
+          "releaseSha": "ad2dff0d3ef8292b57df1cdee275754187a14622de63bef8c23d8e2314f4a456",
+          "previousReleaseSha": "61fc2b499f8ef2b91886defa0ce35ab84e4d431f3694bed4d1ec7ab6d3ff21d7",
+          "rollbackAvailable": true
+        }
+      }
+    ]
+  },
+  "alarms": {
+    "count": 12,
+    "allOK": true,
+    "operationsEmail": "PendingConfirmation"
+  },
+  "controlledFollowAfterStatusFix": {
+    "cachedLatestThree": [
+      {
+        "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      },
+      {
+        "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      },
+      {
+        "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      }
+    ],
+    "duplicateAcceptedWithoutNewJobs": true
+  },
+  "finalBackendSourceCommit": "98d2ade"
+}

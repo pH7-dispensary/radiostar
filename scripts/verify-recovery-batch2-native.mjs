@@ -3,7 +3,7 @@ import {createServer} from 'node:http';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
 const {chromium}=await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || 'playwright');
-const root=resolve('/tmp/starcast-batch2-web'),out=resolve('.starcast/batch2-visual');await mkdir(out,{recursive:true});
+const root=resolve(process.env.RADIOSTAR_WEB_EXPORT||'/tmp/starcast-batch2-web'),out=resolve(process.env.RADIOSTAR_VISUAL_OUTPUT||'.starcast/batch2-visual');await mkdir(out,{recursive:true});
 const server=createServer(async(req,res)=>{const path=resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(path!==root&&!path.startsWith(root+sep))return res.writeHead(403).end();try{const file=path===root?resolve(root,'index.html'):path;res.setHeader('content-type',({'.html':'text/html','.js':'application/javascript','.ttf':'font/ttf','.png':'image/png'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));}catch{res.writeHead(404).end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
 const browser=await chromium.launch({headless:true});
