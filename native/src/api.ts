@@ -17,6 +17,16 @@ export type CatalogueEpisode = {
   audioUrl: string;
   hasPublisherTranscript?: boolean;
 };
+export type ReadyEpisode = CatalogueEpisode & {
+  feedUrl: string;
+  showName: string;
+  publisher?: string;
+  artworkUrl?: string;
+  availableFeatures: { brief: boolean; chapters: boolean; topics: boolean; moments: boolean; search: boolean };
+};
+export async function loadReadyEpisodes(): Promise<{ episodes: ReadyEpisode[] }> {
+  return request("/api/intelligence/ready");
+}
 export type IntelligenceStatus = {
   state:
     | "NOT_REQUESTED"

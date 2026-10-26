@@ -909,6 +909,7 @@ function TimerSheet({
 function PlayerSheet({
   visible,
   onClose,
+  onDiscover,
   enabled,
   onEnable,
   p,
@@ -916,6 +917,7 @@ function PlayerSheet({
 }: {
   visible: boolean;
   onClose: () => void;
+  onDiscover: () => void;
   p: Theme;
   enabled: boolean;
   onEnable: () => void;
@@ -1339,6 +1341,7 @@ function PlayerSheet({
                 intelligence={intelligence}
                 onPlay={(ms) => play({ ...source, startPositionMs: ms })}
                 onOpenPanel={setPanel}
+                onDiscover={onDiscover}
               />}
               <ProblemReport p={p} compact />
               <Pressable
@@ -2763,6 +2766,7 @@ function AppContent({
         }
         visible={playerOpen}
         onClose={() => setPlayerOpen(false)}
+        onDiscover={() => { setPlayerOpen(false); selectTab("Search"); }}
         p={p}
         adSkipNotice={adSkipNotice}
       />

@@ -49,10 +49,11 @@ export function ProcessingMark({ p, stage, active, ready }: {
   );
 }
 
-export function EpisodeIntelligenceStatus({ p, status, enabled = true, error = "", paused = false, busy = false, onAction, introduction = false, sourceAvailable = true }: {
+export function EpisodeIntelligenceStatus({ p, status, enabled = true, error = "", paused = false, busy = false, onAction, onDiscover, introduction = false, sourceAvailable = true }: {
   p: StarTheme; status: IntelligenceStatus | null; enabled?: boolean; error?: string; paused?: boolean; busy?: boolean;
   onAction?: (action: "enable" | "refresh" | "prepare" | "retry" | "audio") => void; introduction?: boolean;
   sourceAvailable?: boolean;
+  onDiscover?: () => void;
 }) {
   const model = intelligencePresentation(status, { enabled, error, paused, sourceAvailable });
   const [expanded, setExpanded] = useState(false);
@@ -93,6 +94,10 @@ export function EpisodeIntelligenceStatus({ p, status, enabled = true, error = "
       )}
       {model.action && onAction && <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => onAction(model.action!)} style={[styles.action, { borderColor: p.line, opacity: busy ? 0.55 : 1 }]}>
         <Text style={[styles.linkText, { color: p.accent2 }]}>{busy ? "Checking…" : actionLabels[model.action]}</Text>
+      </Pressable>}
+      {!model.processing && !model.ready && onDiscover && <Pressable accessibilityRole="button" accessibilityLabel="Explore AI-ready episodes" onPress={onDiscover} style={styles.link}>
+        <Text style={[styles.linkText, { color: p.accent2 }]}>Explore AI-ready episodes</Text>
+        <Ionicons name="arrow-forward" size={16} color={p.accent2} />
       </Pressable>}
       {showIntroduction && <View style={[styles.introduction, { borderTopColor: p.line }]}>
         <Text style={[styles.detail, { color: p.muted }]}>Radio Star prepares AI insights for eligible conversations. Your podcast keeps playing while intelligence is prepared.</Text>

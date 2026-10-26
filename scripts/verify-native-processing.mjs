@@ -101,7 +101,7 @@ try {
     await page.screenshot({ path: `${output}/${width}-${dark ? "dark" : "light"}-preparing.png` });
     await page.getByRole("dialog").getByRole("button", { name: "Play", exact: true }).click();
     status = ready;
-    await card.getByText("Your conversation is ready.").waitFor({ timeout: 20000 });
+    await card.getByText("AI Ready", { exact: true }).waitFor({ timeout: 20000 });
     await page.getByText(ready.brief.overview, { exact: true }).waitFor();
     assert.ok(await page.getByRole("button", { name: "Pause", exact: true }).count(), "READY does not pause playback");
     await card.scrollIntoViewIfNeeded();
@@ -122,7 +122,7 @@ try {
       assert.ok(await page.getByRole("button",{name:"Pause",exact:true}).count(),"partial feature failure does not stop audio");
       await page.screenshot({path:`${output}/390-light-partial-search.png`});
       for (const [state, label] of [
-        ["CHECKING", "Checking this conversation."], ["QUEUED", "Your episode is getting ready."],
+        ["CHECKING", "Checking this conversation."], ["QUEUED", "Waiting for Capacity"],
         ["TRANSCRIBING", "Preparing the conversation."], ["INDEXING", "Making everything searchable."],
       ]) {
         status = { state, processing: true };
@@ -150,7 +150,7 @@ try {
       offline = false;
       status = ready;
       await card.getByRole("button", { name: "Check status" }).click();
-      await card.getByText("Your conversation is ready.").waitFor();
+      await card.getByText("AI Ready", { exact: true }).waitFor();
       // Exercise the real load timeout, not a synthetic media error event:
       // Expo's web adapter does not expose native media errors or buffering.
       failAudio = true;
@@ -169,7 +169,7 @@ try {
       await page.getByRole("dialog").getByRole("button", { name: "Pause", exact: true }).waitFor();
       await page.reload();
       await page.getByRole("button", { name: "Open now playing" }).click();
-      await page.getByTestId("episode-intelligence-status").getByText("Your conversation is ready.").waitFor();
+      await page.getByTestId("episode-intelligence-status").getByText("AI Ready", { exact: true }).waitFor();
       assert.equal(await page.getByRole("button", { name: "Got it" }).count(), 0, "contextual introduction stays dismissed after restart");
       for (const [state, text] of [['CANDIDATES_FOUND','Advertisements detected · awaiting verification'],['VERIFYING','Verification underway'],['NO_ADVERTS_DETECTED','No adverts detected after analysis']]) {
         skipStatus = { ...skipStatus, state };

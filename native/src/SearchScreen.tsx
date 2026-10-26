@@ -29,6 +29,7 @@ import {
 import type { StarTheme } from "./design";
 import { updateFollow } from "./listenerApi";
 import { PodcastArtwork } from "./PodcastArtwork";
+import { ReadyEpisodes } from "./ReadyEpisodes";
 import {
   catalogueCategories,
   recentFollowedEpisodes,
@@ -672,6 +673,7 @@ export function SearchScreen({
       )}
       {!busy && !submitted && (
         <>
+          <ReadyEpisodes active={active} p={p} onPlay={onPlay} />
           {state.historyEnabled && Boolean(state.recentSearches?.length) && (
             <View style={{ gap: 8 }}>
               <View style={s.historyHeading}>

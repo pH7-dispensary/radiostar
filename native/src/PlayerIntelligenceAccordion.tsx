@@ -120,6 +120,7 @@ export function PlayerIntelligenceAccordion({
   intelligence,
   onPlay,
   onOpenPanel,
+  onDiscover,
 }: {
   source: Source;
   p: StarTheme;
@@ -128,6 +129,7 @@ export function PlayerIntelligenceAccordion({
   intelligence: ReturnType<typeof useEpisodeIntelligence>;
   onPlay(ms: number): Promise<unknown>;
   onOpenPanel(panel: Panel): void;
+  onDiscover?: () => void;
 }) {
   const reduced = useReducedMotion();
   const [open, setOpen] = useState<Accordion>(null);
@@ -340,7 +342,7 @@ export function PlayerIntelligenceAccordion({
   return (
     <View>
     <EpisodeIntelligenceStatus
-      p={p} status={status} enabled={enabled} error={intelligence.error} paused={paused} sourceAvailable={!!source.feedUrl}
+      p={p} status={status} enabled={enabled} error={intelligence.error} paused={paused} sourceAvailable={!!source.feedUrl} onDiscover={onDiscover}
       busy={busy} introduction onAction={(action) => {
         if (action === "enable") onEnable();
         else if (action === "refresh") void session?.refresh();

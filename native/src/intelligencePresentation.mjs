@@ -1,17 +1,17 @@
 const stages = new Set(["CHECKING", "QUEUED", "ACQUIRING_TRANSCRIPT", "PREPARING_AUDIO", "TRANSCRIBING", "ANALYSING", "INDEXING"]);
 const aliases = { DISCOVERING: "CHECKING", UNDERSTANDING: "ANALYSING", ORGANISING: "INDEXING", PROCESSING: "CHECKING", PARTIAL_READY: "ANALYSING" };
 const labels = {
-  READY: "Your conversation is ready.",
+  READY: "AI Ready",
   PARTIAL_READY: "Some insights are ready.",
   CHECKING: "Checking this conversation.",
-  QUEUED: "Your episode is getting ready.",
+  QUEUED: "Waiting for Capacity",
   ACQUIRING_TRANSCRIPT: "Preparing the conversation.",
   PREPARING_AUDIO: "Preparing the conversation.",
   TRANSCRIBING: "Preparing the conversation.",
   ANALYSING: "Finding the interesting moments.",
   INDEXING: "Making everything searchable.",
   UNAVAILABLE: "AI insights aren't available for this episode.",
-  REVIEW_REQUIRED: "This conversation needs a rights review.",
+  REVIEW_REQUIRED: "Unavailable — processing basis not established",
   FAILED: "Preparation was interrupted.",
   BUDGET_PAUSED: "Preparation is temporarily paused.",
   NOT_REQUESTED: "This conversation hasn't been prepared.",
@@ -29,6 +29,7 @@ const explanations = {
   LEGAL_BASIS_NOT_ESTABLISHED: "A suitable basis for preparing and displaying AI insights hasn't been established. You can keep listening.",
   RIGHTS_RESTRICTED: "The current rights assessment doesn't allow these insights. You can keep listening.",
   PUBLISHER_RESTRICTION: "The publisher has restricted this use. You can keep listening.",
+  SCOPED_PUBLISHER_RESTRICTION: "A publisher reservation applies to this feature. You can keep listening and use other available features.",
   RIGHTS_RESERVED: "A recorded rights reservation prevents this use.",
   FEATURE_NOT_AUTHORISED: "The current assessment doesn't authorise this feature.",
   TAKEDOWN: "These insights are unavailable following a removal request.",
