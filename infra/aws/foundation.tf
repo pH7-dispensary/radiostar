@@ -83,6 +83,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "objects" {
   bucket     = aws_s3_bucket.objects.id
   depends_on = [aws_s3_bucket_versioning.objects]
   rule {
+    id = "retain-latest-recovery-point"
+    status = "Enabled"
+    filter { prefix = "recovery/" }
+    noncurrent_version_expiration { noncurrent_days = 7 }
+    abort_incomplete_multipart_upload { days_after_initiation = 1 }
+  }
+  rule {
     id     = "bound-old-backups"
     status = "Enabled"
     filter { prefix = "backups/" }

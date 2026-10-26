@@ -1,0 +1,20 @@
+[Unit]
+Description=Radio Star isolated health and capacity measurements
+After=network-online.target
+[Service]
+Type=oneshot
+User=starcast
+Group=starcast
+WorkingDirectory=/opt/starcast/app
+Environment=NODE_OPTIONS=--max-old-space-size=128
+ExecStart=/usr/local/bin/node operations-monitor.mjs
+TimeoutStartSec=20
+MemoryMax=192M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/starcast
+UMask=0077
+StandardOutput=append:/var/log/starcast/backend.log
+StandardError=append:/var/log/starcast/backend.log

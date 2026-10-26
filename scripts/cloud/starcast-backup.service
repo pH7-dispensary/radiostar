@@ -1,0 +1,23 @@
+[Unit]
+Description=Radio Star isolated consistent SQLite backup
+After=network-online.target
+[Service]
+Type=oneshot
+User=starcast
+Group=starcast
+WorkingDirectory=/opt/starcast/app
+Environment=AWS_REGION=eu-west-2
+Environment=NODE_OPTIONS=--max-old-space-size=256
+ExecStart=/usr/bin/flock -n /var/lib/starcast/backup-worker.lock /usr/local/bin/node backup-worker.mjs
+TimeoutStartSec=240
+KillMode=control-group
+MemoryMax=384M
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/starcast /var/log/starcast
+UMask=0077
+StandardOutput=append:/var/log/starcast/backend.log
+StandardError=append:/var/log/starcast/backend.log

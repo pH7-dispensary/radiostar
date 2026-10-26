@@ -12,7 +12,15 @@ export class LocalStore {
     this.db = new DatabaseSync(path);
     if (path !== ":memory:") chmodSync(path, 0o600);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
-      CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind,id));`);
+      CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind,id));
+      CREATE INDEX IF NOT EXISTS records_episode_feed ON records(kind,json_extract(payload,'$.feedUrl'))
+      WHERE kind IN ('intelligence-history','intelligence');`);
+  }
+  episodeJobs(feedUrl, episodeId) {
+    return this.db.prepare(`SELECT payload FROM records WHERE kind IN ('intelligence-history','intelligence')
+      AND json_extract(payload,'$.feedUrl')=?
+      AND (json_extract(payload,'$.episodeId')=? OR json_extract(payload,'$.episode.id')=?)
+      ORDER BY CASE kind WHEN 'intelligence-history' THEN 0 ELSE 1 END,id`).all(feedUrl,episodeId,episodeId).map(row=>JSON.parse(row.payload));
   }
   get(kind, id) {
     const row = this.db

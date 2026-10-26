@@ -87,6 +87,7 @@ chmod 644 /etc/logrotate.d/starcast
 install -m 644 scripts/cloud/starcast-logrotate.service scripts/cloud/starcast-logrotate.timer /etc/systemd/system/
 mkdir -p /etc/systemd/journald.conf.d
 install -m 644 scripts/cloud/journald-limits.conf /etc/systemd/journald.conf.d/starcast.conf
+for name in starcast-backup.service starcast-backup.timer starcast-monitor.service starcast-monitor.timer; do install -m 644 ${staged}/scripts/cloud/$name /etc/systemd/system/$name; done
 systemctl daemon-reload
 systemctl enable --now starcast-logrotate.timer
 systemctl restart systemd-journald
@@ -110,6 +111,8 @@ if ! curl -fsS --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:4
   systemctl start starcast
   exit 1
 fi
+systemctl enable --now starcast-backup.timer starcast-monitor.timer
+systemctl start starcast-backup.service starcast-monitor.service
 rm -f "$metadata_backup"
 node --input-type=module -e ${quote(maintenanceSource + "\nmaintainReleases({apply:true});")}
 echo 'Release ${sha} healthy; previous source retained for rollback.'`];

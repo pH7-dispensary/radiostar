@@ -80,7 +80,7 @@ resource "aws_iam_role_policy" "backend" {
     Version = "2012-10-17"
     Statement = [
       { Effect = "Allow", Action = ["s3:GetObject"], Resource = ["${aws_s3_bucket.objects.arn}/releases/*", "${aws_s3_bucket.objects.arn}/seed/*"] },
-      { Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/backups/*"] },
+      { Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/backups/*", "${aws_s3_bucket.objects.arn}/recovery/latest.sqlite"] },
       { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject"], Resource = ["${aws_s3_bucket.objects.arn}/translation-cache/*"] },
       { Effect = "Allow", Action = ["polly:SynthesizeSpeech", "translate:TranslateText"], Resource = "*" },
       { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.backend.arn },

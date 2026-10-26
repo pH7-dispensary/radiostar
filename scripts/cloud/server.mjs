@@ -1,7 +1,7 @@
 import { cloudFrontProxyRanges } from "../../cloudfront-proxy.mjs";
 import { execFileSync } from "node:child_process";
-import { backup, DatabaseSync } from "node:sqlite";
-import { unlink, writeFile, rename } from "node:fs/promises";
+import { atomicJson } from "../../backup-worker.mjs";
+import { monitorEventLoopDelay } from "node:perf_hooks";
 import { createStarCastServer } from "../../server.mjs";
 import { acquireServerLock } from "../../server-lock.mjs";
 
@@ -41,36 +41,16 @@ process.env.STARCAST_TRUSTED_PROXY_CIDRS = ["10.46.1.0/24", ...await cloudFrontP
 process.env.NODE_ENV = "production";
 process.env.STARCAST_PRIVATE_PILOT = "enabled";
 acquireServerLock("/var/lib/starcast/backend.lock");
-const { server, store } = createStarCastServer();
+const { server, store, queue } = createStarCastServer();
 const check = store.db.prepare("PRAGMA quick_check").get();
 if (Object.values(check)[0] !== "ok") throw Error("Database integrity check failed");
 server.listen(4173, "0.0.0.0", () => console.log(JSON.stringify({ event: "cloud-ready", paid: process.env.STARCAST_PAID_INTELLIGENCE === "enabled" })));
-let backingUp = false;
-async function saveBackup() {
-  if (backingUp) return;
-  backingUp = true;
-  const name = `backend-${new Date().toISOString().replaceAll(":", "-")}.sqlite`;
-  const path = `/var/lib/starcast/${name}`;
-  try {
-    await backup(store.db, path);
-    const copy = new DatabaseSync(path, { readOnly: true });
-    let integrity;
-    try { integrity = Object.values(copy.prepare('PRAGMA integrity_check').get())[0]; } finally { copy.close(); }
-    if (integrity !== 'ok') throw Error('Backup integrity check failed');
-    execFileSync("aws", ["s3", "cp", path, `s3://${process.env.STARCAST_BACKUP_BUCKET}/backups/${name}`,
-      "--region", "eu-west-2", "--only-show-errors"], { stdio: ["ignore", "pipe", "pipe"], timeout: 60000 });
-    await writeFile('/var/lib/starcast/backup-verification.json.tmp', JSON.stringify({ integrity, verifiedAt: new Date().toISOString(), uploaded: true, object: name }), { mode: 0o600 });
-    await rename('/var/lib/starcast/backup-verification.json.tmp', '/var/lib/starcast/backup-verification.json');
-    console.log(JSON.stringify({ event: "backup-complete" }));
-  } catch {
-    console.error(JSON.stringify({ event: "backup-failed" }));
-  } finally {
-    await unlink(path).catch(() => {});
-    backingUp = false;
-  }
-}
-setInterval(saveBackup, 15 * 60 * 1000).unref();
-void saveBackup();
+// The backup and observer run in separate bounded systemd jobs. This heartbeat
+// records only process health, never listener or episode identifiers.
+const loop=monitorEventLoopDelay({resolution:20});loop.enable();
+let writingHeartbeat=false;
+async function heartbeat(){if(writingHeartbeat)return;writingHeartbeat=true;try{await atomicJson('/var/lib/starcast/runtime-health.json',{at:Date.now(),workerRunning:queue?.running===true,eventLoopP99Ms:Number(loop.percentile(99)/1e6)});loop.reset();}finally{writingHeartbeat=false;}}
+setInterval(()=>void heartbeat().catch(()=>{}),30000).unref();void heartbeat().catch(()=>{});
 process.on("SIGTERM", () => {
   server.close(() => { store.close(); process.exit(0); });
   setTimeout(() => process.exit(0), 25000).unref();

@@ -70,3 +70,6 @@ systemctl enable --now starcast-logrotate.timer
 systemctl restart systemd-journald
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 systemctl enable --now starcast
+for name in starcast-backup.service starcast-backup.timer starcast-monitor.service starcast-monitor.timer; do install -m 644 scripts/cloud/$name /etc/systemd/system/$name; done
+systemctl daemon-reload
+systemctl enable --now starcast-backup.timer starcast-monitor.timer

@@ -344,6 +344,10 @@ export function createStarCastServer({
         backup = { name: 'Last verified backup', status: uploaded ? Date.now()-Date.parse(record.verifiedAt) > 3600000 ? 'DEGRADED' : 'HEALTHY' : 'UNKNOWN', reason: uploaded ? 'SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.' : 'No verified upload is recorded.', observedAt: record.verifiedAt };
       }
     } catch { /* Only report verified evidence. */ }
+    try {
+      const attempt=JSON.parse(readFileSync('/var/lib/starcast/backup-state.json','utf8'));
+      if(attempt.state==='FAILED')backup={...backup,status:'DEGRADED',reason:'The latest isolated backup attempt failed. The previous verified recovery point is preserved; inspect the backup service.',lastAttemptAt:attempt.failedAt};
+    } catch { /* Older releases have no attempt record. */ }
     const components = [
       { name: "Backend API", status: "HEALTHY", reason: "This authenticated operations request reached the active backend.", observedAt: new Date().toISOString() },
       database,
@@ -670,9 +674,7 @@ export function createStarCastServer({
     return [...feeds.values()];
   };
   const followedCount = (feedUrl) => store.all("follow").filter(([, value]) => value.feedUrl === feedUrl).length;
-  const jobsForEpisode = (feedUrl, episodeId) => [...store.all("intelligence-history"), ...store.all("intelligence")]
-    .map(([, job]) => job)
-    .filter((job) => job.feedUrl === feedUrl && (job.episodeId === episodeId || job.episode?.id === episodeId));
+  const jobsForEpisode = (feedUrl, episodeId) => store.episodeJobs(feedUrl,episodeId);
   const failureCategory = (code) => {
     if (!code) return null;
     if (["RIGHTS_RESTRICTED", "LEGAL_BASIS_NOT_ESTABLISHED", "AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "AUDIO_TRANSCRIPTION_NOT_AUTHORISED", "DURATION_LIMIT", "DURATION_UNKNOWN", "AUDIO_FORMAT_UNSUPPORTED", "TRANSCRIPT_INVALID", "TRANSCRIPT_UNAVAILABLE", "TRANSCRIPT_TOO_LARGE", "FEATURE_DISABLED"].includes(code)) return "UNAVAILABLE";

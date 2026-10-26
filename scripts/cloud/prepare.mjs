@@ -49,6 +49,7 @@ const tracked = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" }).sp
 const selected = tracked.filter(p => (/^[^/]+\.(mjs|js|html|css)$/.test(p) && !p.startsWith("test-")) || ["package.json", "package-lock.json"].includes(p));
 selected.push("scripts/cloud/server.mjs", "scripts/cloud/logrotate.conf");
 selected.push("scripts/cloud/release-maintenance.mjs", "scripts/cloud/starcast-logrotate.service", "scripts/cloud/starcast-logrotate.timer", "scripts/cloud/journald-limits.conf");
+selected.push(...["starcast-backup.service","starcast-backup.timer","starcast-monitor.service","starcast-monitor.timer"].map(name=>"scripts/cloud/"+name));
 selected.push("fixtures/ad-skip-owned-v1.mp3", "fixtures/ad-skip-owned-v1.json");
 execFileSync("tar", ["--no-xattrs", "-czf", join(projectRoot, ".starcast/aws-release.tar.gz"), "--null", "-T", "-"], { input: selected.join("\0") + "\0", stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, COPYFILE_DISABLE: "1" } });
 console.log("Backend archive prepared from an explicit source allowlist; credentials and native files excluded.");
