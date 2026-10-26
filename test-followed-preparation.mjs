@@ -47,7 +47,7 @@ try {
   } finally {releaseDiscovery();}
   await prep.refreshing;prep.discover=discover;
   const estimate=await prep.refresh({force:true});
-  app.adminService.setFeatureFlag({id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100,reason:'Authorised fixture verification'},actor);
+  app.adminService.setFeatureFlag({id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100,reason:'Authorised fixture verification',confirmation:'CONFIRM',expectedVersion:1},actor);
   assert.equal(estimate.snapshot.activeUsers,2);assert.equal(estimate.snapshot.feeds,2);assert.equal(estimate.uniqueEpisodes,6);assert.equal(audioCalls,0);
   assert.equal(estimate.counts.REVIEW_REQUIRED,1);assert(estimate.estimate.knownUsd>0);
   assert.equal(estimate.acquisition.requiringAudio,6);assert.equal(estimate.acquisition.eligibleRequiringAudio,5);

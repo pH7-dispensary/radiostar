@@ -32,6 +32,10 @@ try {
   console.error("Cloud credentials unavailable; refusing to start.");
   process.exit(1);
 }
+// Verified dedicated VPC origin: backend SG accepts port 4173 only from the
+// CloudFront VPCOrigins service SG in 10.46.1.0/24; no intermediary proxy.
+process.env.STARCAST_TRUST_CLOUDFRONT_VPC = "enabled";
+process.env.STARCAST_TRUSTED_PROXY_CIDR = "10.46.1.0/24";
 process.env.NODE_ENV = "production";
 process.env.STARCAST_PRIVATE_PILOT = "enabled";
 acquireServerLock("/var/lib/starcast/backend.lock");

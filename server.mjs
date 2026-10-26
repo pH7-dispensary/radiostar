@@ -1,3 +1,4 @@
+import { RequestLimits, viewerIdentity } from "./request-limits.mjs";
 import { FeedIdentity } from "./feed-identity.mjs";
 import { parseFeed } from "./catalogue-feed.mjs";
 import { createServer } from "node:http";
@@ -179,16 +180,20 @@ export function createStarCastServer({
   const adminService = new AdminService(store);
   // A zero-percent rollout is an actual server-side off switch. Client UI must
   // never make a disabled rollout available by itself.
-  const featureEnabled = (id) => {
-    const feature = adminService.featureFlags().find((candidate) => candidate.id === id);
-    return Boolean(feature && feature.state !== "DISABLED" && feature.rolloutPercent > 0);
+  const featureEnabled = (id, listenerId = undefined) => {
+    if (listenerId === undefined) return adminService.featureOperational(id); // Operational summaries, never listener delivery.
+    const device = store.all("pilot-device").some(([,d])=>d.listenerId===listenerId && !d.revokedAt && Date.parse(d.expiresAt)>Date.now());
+    const translateTester = id === "privateTranslate" && store.get("translation-beta",listenerId)?.enabled === true;
+    return adminService.featureDecision(id, { id: listenerId,
+      internal: testingMode.allowed(listenerId) || translateTester,
+      privateBeta: device || (env.NODE_ENV !== "production" && env.STARCAST_PRIVATE_PILOT !== "enabled") }).allowed;
   };
-  const listenerFeatures = () => ({
-    episodeBriefs: featureEnabled("episodeBrief"),
-    exploreEpisode: featureEnabled("smartChapters"),
-    momentSearch: featureEnabled("findMoment"),
-    conversationSearch: featureEnabled("conversationSearch"),
-    adSkip: featureEnabled("adSkip"),
+  const listenerFeatures = (listenerId = undefined) => ({
+    episodeBriefs: featureEnabled("episodeBrief", listenerId),
+    exploreEpisode: featureEnabled("smartChapters", listenerId),
+    momentSearch: featureEnabled("findMoment", listenerId),
+    conversationSearch: featureEnabled("conversationSearch", listenerId),
+    adSkip: featureEnabled("adSkip", listenerId),
   });
   const trusted = (req) => {
     const expected = env.STARCAST_DEV_INTELLIGENCE_TOKEN,
@@ -223,11 +228,13 @@ export function createStarCastServer({
     return at < 0 ? [item, ""] : [item.slice(0, at), decodeURIComponent(item.slice(at + 1))];
   }));
   const adminActor = (req, permission, { write = false } = {}) => {
+    const requestId = req.adminRequestId ||= randomUUID();
     const tokenActor = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, req.headers["x-star-cast-admin-token"]);
-    if (tokenActor) return tokenActor;
+    if (tokenActor) return adminService.can(tokenActor, permission) ? {...tokenActor,requestId} : null;
     const cookie = cookies(req).starcast_admin;
     const actor = adminService.authenticate(cookie, req.headers["x-star-cast-csrf"], { write });
-    return adminService.can(actor, permission) ? { ...actor, source: "session" } : null;
+    if (actor && !adminService.can(actor,permission)) adminService.appendAudit({actor,action:'administrator-access-denied',resource:new URL(req.url,'http://localhost').pathname,reason:permission,outcome:'DENIED',requestId});
+    return adminService.can(actor, permission) ? { ...actor, source: "session",requestId } : null;
   };
   const requireHumanPolicyActor = (actor) => {
     if (actor?.role !== "SUPER_ADMIN" || actor.source !== "session") {
@@ -404,7 +411,7 @@ export function createStarCastServer({
     // A generic PRIVATE_BETA/ENABLED flag is not tester membership or a
     // measured public safety release. Until that gate exists, leases are
     // available exclusively to the explicitly enrolled, unexpired pilot.
-    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && testingMode.adSkipAllowed(listener.id)),
+    automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && testingMode.adSkipAllowed(listener.id) && featureEnabled("adSkip", listener.id)),
     testingContext: (listener) => testingMode.context(listener?.id),
     maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
@@ -455,7 +462,9 @@ export function createStarCastServer({
     const device = typeof token === "string" && token.length >= 32 ? store.get("pilot-device", tokenHash(token)) : null;
     return device && !device.revokedAt && Date.parse(device.expiresAt) > Date.now() ? device.listenerId : null;
   };
+  const audienceId = req => authenticatedListenerId(req) || (env.NODE_ENV !== "production" && trusted(req) ? "local-development" : null);
   const followedPreparation = new FollowedPreparation({
+    audienceEligible: listener => featureEnabled("automaticProcessing", listener.id),
     canonicalFeed, resolveFeedIdentity: feed => feedIdentity.resolve(feed), store, pipeline, ledger, testingMode, rights,
     discover: async feedUrl => {
       const xml = await feedXml(feedUrl, true);
@@ -472,7 +481,7 @@ export function createStarCastServer({
     if (followedPreparation.configuration().enabled && valid({ feedUrl, episodeId })) return followedPreparation.encounter(listenerId, feedUrl, episodeId, source);
     if (followedPreparation.configuration().version > 0) return; // Explicit pause must not fall through to the legacy scheduler.
     const context = testingMode.context(listenerId);
-    if (!context || !valid({ feedUrl, episodeId }) || !featureEnabled("automaticProcessing") || adminService.configuration().values.processing?.automaticFollowPreparation === false || intelligencePolicy.effective(feedUrl, episodeId).applyToFuture === false) return;
+    if (!context || !valid({ feedUrl, episodeId }) || !featureEnabled("automaticProcessing", listenerId) || adminService.configuration().values.processing?.automaticFollowPreparation === false || intelligencePolicy.effective(feedUrl, episodeId).applyToFuture === false) return;
     const key = episodeKey(feedUrl, episodeId);
     if (encounters.has(key)) return encounters.get(key);
     const previous = store.get("intelligence-encounter", key);
@@ -504,7 +513,7 @@ export function createStarCastServer({
     if (followedPreparation.configuration().version > 0) return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "New automatic preparation is paused by an administrator." };
     if (adminService.configuration().values.processing?.automaticFollowPreparation === false)
       return { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED", reason: "Automatic preparation is currently paused by an administrator." };
-    if (!featureEnabled("automaticProcessing")) return { state: "DISABLED", code: "FEATURE_DISABLED" };
+    if (!featureEnabled("automaticProcessing", listenerId)) return { state: "DISABLED", code: "FEATURE_DISABLED" };
     const parsed = episodesFromFeed(await feedXml(feedUrl), feedUrl);
     const episode = [...parsed.episodes]
       .filter((item) => item.id)
@@ -689,14 +698,14 @@ export function createStarCastServer({
       featureEligibility: assessment.features,
     };
   };
-  const listenerStatus = (feedUrl, episodeId) => {
+  const listenerStatus = (feedUrl, episodeId, listenerId = undefined) => {
     const job = pipeline.status(feedUrl, episodeId) || jobsForEpisode(feedUrl, episodeId)
       .sort((a, b) => Date.parse(b.updatedAt || b.completedAt || b.startedAt || "") - Date.parse(a.updatedAt || a.completedAt || a.startedAt || ""))[0] || null;
     const safe = publicIntelligence(job);
     const processing = rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
     const display = rights.evaluate({ feature: "intelligence-display", feedUrl, episodeId });
     const operational = intelligencePolicy.allows(feedUrl, episodeId, "intelligence");
-    const flags = listenerFeatures();
+    const flags = listenerFeatures(listenerId);
     const featureAllowed = (feature) => processing.allowed && display.allowed && rights.evaluate({ feature, feedUrl, episodeId }).allowed;
     const validated = name => ["READY","PARTIAL_READY"].includes(job?.featureStatus?.[name]?.state);
     const availableFeatures = {
@@ -1331,8 +1340,6 @@ export function createStarCastServer({
     followStartup.unref?.();
   }
   const captionWindows = new Map();
-  const enrollmentWindows = new Map();
-  const adminLoginWindows = new Map();
   const captionRate = (listener) => {
     const now = Date.now();
     const windows = (captionWindows.get(listener.id) || []).filter((at) => now - at < 60_000);
@@ -1341,36 +1348,10 @@ export function createStarCastServer({
     captionWindows.set(listener.id, windows);
     return true;
   };
-  function rate(req) {
-    const key = req.socket.remoteAddress || "unknown",
-      now = Date.now(),
-      list = (windows.get(key) || []).filter((t) => now - t < 60_000);
-    if (list.length >= 120) return false;
-    list.push(now);
-    windows.set(key, list);
-    if (windows.size > 2000)
-      for (const [k, v] of windows)
-        if (v.at(-1) < now - 60_000) windows.delete(k);
-    return true;
-  }
-  const enrollmentRate = (req) => {
-    const key = req.socket.remoteAddress || "unknown";
-    const now = Date.now();
-    const attempts = (enrollmentWindows.get(key) || []).filter(
-      (at) => now - at < 15 * 60_000,
-    );
-    if (attempts.length >= 8) return false;
-    attempts.push(now);
-    enrollmentWindows.set(key, attempts);
-    return true;
-  };
-  const adminLoginRate = (req) => {
-    const key = req.socket.remoteAddress || "unknown", now = Date.now();
-    const attempts = (adminLoginWindows.get(key) || []).filter((at) => now - at < 15 * 60_000);
-    if (attempts.length >= 8) return false;
-    attempts.push(now); adminLoginWindows.set(key, attempts);
-    return true;
-  };
+  const requestLimits = new RequestLimits();
+  const rate = req => requestLimits.permit(req, { env, listenerId: authenticatedListenerId(req) });
+  const enrollmentRate = req => requestLimits.permit(req, { env, kind: "enrollment" });
+  const adminLoginRate = req => requestLimits.permit(req, { env, kind: "admin-login" });
   // CloudFront terminates viewer TLS before its private HTTP origin, so the
   // origin socket is not encrypted even though the browser connection is.
   const secureCookie = (req) => env.NODE_ENV === "production" || req.socket.encrypted || req.headers["x-forwarded-proto"] === "https" || req.headers["cloudfront-forwarded-proto"] === "https";
@@ -1444,22 +1425,37 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/session" && req.method === "POST") {
         if (!adminLoginRate(req)) return send(res, 429, { error: "Too many administrator login attempts. Please wait before trying again." });
         const input = await requestBody(req);
-        const verified = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
-        if (!verified) return send(res, 401, { error: "Administrator authentication failed." });
-        // The existing shared operations credential authenticates this account;
-        // it does not identify an individual person. Distinguish interactive
-        // sessions from service-token requests in the audit trail.
-        const actor = { ...verified, id: "operations-super-admin", name: "Operations Super Admin", source: "session" };
-        const session = adminService.startSession(actor);
-        res.setHeader("set-cookie", [adminCookie(session.id, req), csrfCookie(session.csrf, req)]);
+        let actor;
+        if (input.login !== undefined) actor = await adminService.authenticateMember(input.login, input.password);
+        else {
+          const verified = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
+          if (verified && (!adminService.migrationStatus().individualSuperAdminVerified || input.emergency === true))
+            actor = { ...verified, id: "operations-super-admin", name: "Emergency recovery", source: "session", emergency: true };
+        }
+        if (!actor) {
+          adminService.appendAudit({actor:null,action:"administrator-login-denied",resource:"session",outcome:"DENIED"});
+          return send(res, 401, { error: "Administrator authentication failed." });
+        }
+        actor.requestId = req.adminRequestId ||= randomUUID();
+        const session = adminService.startSession(actor), maxAge = Math.max(0, Math.floor((session.expiresAt - adminService.now())/1000));
+        res.setHeader("set-cookie", [adminCookie(session.id, req, maxAge), csrfCookie(session.csrf, req, maxAge)]);
         return send(res, 201, { actor, permissions: adminService.permissionsFor(actor.role), expiresAt: session.expiresAt });
       }
       if (url.pathname === "/api/admin/session" && req.method === "GET") {
+        if (!rate(req)) return send(res, 429, { error: "Please retry later." });
         const actor = adminActor(req, "overview:read");
         if (!actor) return send(res, 401, { error: "Administrator authentication is required." });
-        return send(res, 200, { actor, permissions: adminService.permissionsFor(actor.role) });
+        const session = adminService.session(cookies(req).starcast_admin);
+        if (session) {
+          const remaining=Math.max(0,Math.floor((session.expiresAt-adminService.now())/1000));
+          res.setHeader('set-cookie',[adminCookie(session.id,req,remaining),csrfCookie(cookies(req).starcast_admin_csrf || '',req,remaining)]);
+        }
+        return send(res, 200, { actor, permissions: adminService.permissionsFor(actor.role), expiresAt: session?.expiresAt || null,
+          migration: actor.role === "SUPER_ADMIN" ? adminService.migrationStatus() : undefined,
+          viewerIdentification: viewerIdentity(req,env).source });
       }
       if (url.pathname === "/api/admin/session" && req.method === "DELETE") {
+        if (!rate(req)) return send(res, 429, { error: "Please retry later." });
         const actor = adminActor(req, "overview:read", { write: true });
         if (!actor) return send(res, 403, { error: "A valid administrator session and CSRF token are required." });
         adminService.revokeSession(cookies(req).starcast_admin, actor);
@@ -1559,7 +1555,7 @@ export function createStarCastServer({
           backend: "ready",
           openai: openAIStatus(env),
           persistence: "sqlite",
-          features: listenerFeatures(),
+          features: listenerFeatures(audienceId(req)),
           providerVerified: ledger.usage.some(
             (x) => !x.failed && !x.uncertain && x.kind === "text",
           ),
@@ -1655,9 +1651,9 @@ export function createStarCastServer({
         if (url.pathname === "/api/listener/subscriptions" && req.method === "GET")
           return send(res, 200, subscriptions.config(listener));
         if (url.pathname === "/api/listener/translation" && req.method === "GET")
-          return translation.visible(listener) ? send(res, 200, translation.config(listener)) : send(res, 404, { error: "Not found." });
+          return (translation.visible(listener) && featureEnabled("privateTranslate", listener.id)) ? send(res, 200, translation.config(listener)) : send(res, 404, { error: "Not found." });
         if (url.pathname === "/api/listener/translation/audio" && req.method === "GET") {
-          if (!translation.visible(listener)) return send(res, 404, { error: "Not found." });
+          if (!(translation.visible(listener) && featureEnabled("privateTranslate", listener.id))) return send(res, 404, { error: "Not found." });
           const identity = fixtureIdentity();
           if (url.searchParams.get("feedUrl") !== identity.feedUrl || url.searchParams.get("episodeId") !== identity.episodeId)
             return send(res, 404, { error: "Not found." });
@@ -1682,7 +1678,7 @@ export function createStarCastServer({
         if (url.pathname === "/api/listener/preferences")
           return send(res, 200, listeners.preferences(listener, input));
         if (url.pathname === "/api/listener/translation") {
-          if (!translation.visible(listener)) return send(res, 404, { error: "Not found." });
+          if (!(translation.visible(listener) && featureEnabled("privateTranslate", listener.id))) return send(res, 404, { error: "Not found." });
           if (input.listeningLanguage !== undefined && !validLanguage(input.listeningLanguage))
             return send(res, 400, { error: "Choose a supported listening language." });
           const preference = listeners.languagePreferences(listener, input);
@@ -1766,6 +1762,7 @@ export function createStarCastServer({
           return send(res, 400, { error: "A valid playing episode and position are required." });
         if (!captionRate(listener))
           return send(res, 429, { error: "Caption updates are temporarily limited. Keep listening and try again shortly." });
+        if (!featureEnabled("captions",listener.id)) return send(res,200,{available:false,reason:"Captions are not available for this listener.",code:"FEATURE_DISABLED"});
         const permission = rights.resolve(input.feedUrl, input.episodeId);
         const captionDecision = rights.evaluate({ feature: "captions", feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         const operational = intelligencePolicy.allows(input.feedUrl, input.episodeId, "captions");
@@ -1789,8 +1786,16 @@ export function createStarCastServer({
         return send(res, 200, await adminService.overview({ ledger, pipeline, rights, translation, skips, infrastructure: infrastructureStatus }));
       }
       if (url.pathname === "/api/admin/operations" && req.method === "GET") {
-        if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
-        return send(res, 200, { ...await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }), followedPreparation: followedPreparation.summary() });
+        const actor=adminActor(req, "overview:read");
+        if (!actor) return send(res, 403, { error: "Administrator access is required." });
+        const result={ ...await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus }), followedPreparation: followedPreparation.summary() };
+        if(!adminService.can(actor,'support:read'))result.listeners.reports=[];
+        if(!adminService.can(actor,'intelligence:read')) {
+          result.processing.jobs=[];result.commandCentre.processing=[];result.commandCentre.episodes=[];
+          result.commandCentre.funnel=result.commandCentre.funnel.map(({episodeKeys,...stage})=>({...stage,episodeKeys:[]}));
+          result.attention=[];result.followedPreparation.rows=[];
+        }
+        return send(res, 200, result);
       }
       if (url.pathname === '/api/admin/advisories' && req.method === 'POST') {
         const actor = adminActor(req, 'configuration:write', { write: true });
@@ -1961,10 +1966,12 @@ export function createStarCastServer({
       }
       if (url.pathname === "/api/admin/administrators" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "administrators:read" : "administrators:write", { write: req.method === "POST" });
-        if (!actor) return send(res, 403, { error: "Super administrator access and CSRF validation are required." });
-        if (req.method === "GET") return send(res, 200, { administrators: adminService.members() });
-        return send(res, 201, { administrator: adminService.addMember(await requestBody(req), actor) });
+        if (!actor) return send(res, 403, {error:"Super Admin access is required."});
+        if (req.method === "GET") return send(res,200,{administrators:adminService.members(),migration:adminService.migrationStatus()});
+        const input=await requestBody(req);
+        return send(res, input.id?200:201, {administrator:await adminService.provisionMember(input,actor)});
       }
+
       if (url.pathname === "/api/admin/intelligence" && req.method === "GET") {
         if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
         ledger.refresh();
@@ -1973,7 +1980,7 @@ export function createStarCastServer({
             ...ledger.controls,
             audioAnalysisEnabled: pipeline.audioEnabled,
           },
-          features: listenerFeatures(),
+          features: listenerFeatures(audienceId(req)),
           usage: ledger.usage,
           reservations: [...ledger.reservations.values()],
           totals: ledger.totals(),
@@ -2272,7 +2279,7 @@ export function createStarCastServer({
         return send(res, 200, { record, removed });
       }
       if (url.pathname === "/api/intelligence/ready" && req.method === "GET") {
-        return send(res, 200, readyDiscovery({ store, status: listenerStatus }));
+        return send(res, 200, readyDiscovery({ store, status: (feed,id) => listenerStatus(feed,id,audienceId(req)) }));
       }
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
         const feed = await canonicalFeed(url.searchParams.get("feedUrl")),
@@ -2282,15 +2289,15 @@ export function createStarCastServer({
         const source = ["saved", "followed", "playing"].includes(url.searchParams.get("source")) ? url.searchParams.get("source") : "opened";
         await backgroundEncounter(authenticatedListenerId(req), feed, id, source);
         return send(res, 200, {
-          status: listenerStatus(feed, id),
-          features: listenerFeatures(),
+          status: listenerStatus(feed, id, audienceId(req)),
+          features: listenerFeatures(audienceId(req)),
         });
       }
       if (req.method !== "POST")
         return send(res, 405, { error: "Method not allowed." });
       const input = await requestBody(req);
       if (url.pathname === "/api/search/conversations") {
-        if (!featureEnabled(input.mode === "Moments" ? "findMoment" : "conversationSearch"))
+        if (!featureEnabled(input.mode === "Moments" ? "findMoment" : "conversationSearch", audienceId(req)))
           return send(res, 403, { error: "This search feature is currently unavailable.", code: "FEATURE_DISABLED" });
         if (
           typeof input.query !== "string" ||
@@ -2336,10 +2343,10 @@ export function createStarCastServer({
         const rightsFeatureForCapability = { brief: "episode-brief", chapters: "smart-chapters", moment: "find-moment" };
         const capabilityDecision = rights.evaluate({ feature: rightsFeatureForCapability[input.capability], feedUrl: input.feedUrl, episodeId: input.episodeId, audit: true });
         if (!decision.allowed || !capabilityDecision.allowed)
-          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
+          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId, audienceId(req)) });
         const featureForCapability = { brief: "episodeBrief", chapters: "smartChapters", moment: "findMoment" };
-        if (!featureEnabled(featureForCapability[input.capability]))
-          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId) });
+        if (!featureEnabled(featureForCapability[input.capability], audienceId(req)))
+          return send(res, 200, { status: listenerStatus(input.feedUrl, input.episodeId, audienceId(req)) });
         const requested = await pipeline.request({
           feedUrl: input.feedUrl,
           episodeId: input.episodeId,
@@ -2355,7 +2362,7 @@ export function createStarCastServer({
         // use the status endpoint for the current state on their next poll.
         // Keeping this acknowledgement stable avoids conflating acceptance
         // with a claim that completed intelligence is already available.
-        const current = listenerStatus(input.feedUrl, input.episodeId);
+        const current = listenerStatus(input.feedUrl, input.episodeId, audienceId(req));
         const accepted = requested.state === "QUEUED" ? listenerProcessingStatus(requested) : null;
         const status = {
           ...current,
@@ -2375,7 +2382,7 @@ export function createStarCastServer({
         return send(res, requested.state === "QUEUED" ? 202 : 200, { status });
       }
       if (url.pathname === "/api/intelligence/moment") {
-        if (!featureEnabled("findMoment")) return send(res, 403, { error: "This feature is currently unavailable.", code: "FEATURE_DISABLED" });
+        if (!featureEnabled("findMoment", audienceId(req))) return send(res, 403, { error: "This feature is currently unavailable.", code: "FEATURE_DISABLED" });
         if (
           typeof input.query !== "string" ||
           input.query.trim().length < 2 ||
@@ -2385,7 +2392,7 @@ export function createStarCastServer({
             error: "Enter a question about this episode.",
           });
         return send(res, 200, {
-          status: listenerStatus(input.feedUrl, input.episodeId),
+          status: listenerStatus(input.feedUrl, input.episodeId, audienceId(req)),
           moments: pipeline.moments(
             input.feedUrl,
             input.episodeId,
@@ -2409,8 +2416,8 @@ export function createStarCastServer({
         code: error?.name || "REQUEST_FAILED",
         reason: String(error?.message || "Unknown server error").slice(0, 500),
       }));
-      return send(res, 400, {
-        error: "This request could not be completed. Please try again.",
+      return send(res, error.status === 409 ? 409 : 400, {
+        error: "This request could not be completed. Please refresh and try again.",
       });
     }
   });

@@ -18,7 +18,7 @@ const browser=await chromium.launch({headless:true}),context=await browser.newCo
 try{
   await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue({headers:{...route.request().headers(),...(gateway?{'x-star-cast-dev-token':gateway}:{})}}):route.abort());
   const headers=gateway?{'x-star-cast-dev-token':gateway}:{};
-  assert.equal((await context.request.post(base+'/api/admin/session',{headers,data:{adminToken:admin}})).status(),201);
+  assert.equal((await context.request.post(base+'/api/admin/session',{headers,data:{adminToken:admin,emergency:true}})).status(),201);
   csrf=(await context.cookies()).find(c=>c.name==='starcast_admin_csrf')?.value;
   if(live){
     assert.equal((await context.request.get(base+'/api/health',{headers})).status(),200);

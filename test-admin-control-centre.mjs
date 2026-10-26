@@ -32,9 +32,9 @@ try {
   const csrf = cookie.match(/starcast_admin_csrf=([^;]+)/)?.[1];
   const noCsrf = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "PRIVATE_BETA", rolloutPercent: 0, reason: "test" }) });
   assert.equal(noCsrf.status, 403, "state changes require CSRF validation");
-  const saved = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "x-star-cast-csrf": csrf, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "PRIVATE_BETA", rolloutPercent: 0, reason: "authorised test" }) });
+  const saved = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "x-star-cast-csrf": csrf, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "PRIVATE_BETA", rolloutPercent: 0, reason: "authorised test", confirmation: "CONFIRM", expectedVersion: 1 }) });
   assert.equal(saved.status, 200);
-  const disabled = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "x-star-cast-csrf": csrf, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "DISABLED", rolloutPercent: 0, reason: "authorised test", confirmation: "CONFIRM" }) });
+  const disabled = await fetch(base + "/api/admin/features", { method: "POST", headers: { cookie, "x-star-cast-csrf": csrf, "content-type": "application/json" }, body: JSON.stringify({ id: "episodeBrief", state: "DISABLED", rolloutPercent: 0, reason: "authorised test", confirmation: "CONFIRM", expectedVersion: 2 }) });
   assert.equal(disabled.status, 200);
   const listenerView = await fetch(base + "/api/intelligence/status?feedUrl=https%3A%2F%2Fpublisher.example%2Ffeed.xml&episodeId=episode", { headers: { "x-star-cast-dev-token": "device-token" } });
   assert.equal((await listenerView.json()).features.episodeBriefs, false, "feature settings change the enforced listener capability map");

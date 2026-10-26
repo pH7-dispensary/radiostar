@@ -21,14 +21,14 @@ const priorityFor = (row, listeners) => Math.max(row.manualPriority || 0,
 // Durable demand, not a second AI pipeline. Every dispatch uses the canonical
 // pipeline and its transactional outbox, rights checks and shared cost ledger.
 export class FollowedPreparation {
-  constructor({ canonicalFeed = async feed => feed, resolveFeedIdentity = feed => feed, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
-    Object.assign(this, { canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
+  constructor({ audienceEligible = () => true, canonicalFeed = async feed => feed, resolveFeedIdentity = feed => feed, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
+    Object.assign(this, { audienceEligible, canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
     this.refreshing = null; this.draining = null;
   }
   configuration() { return this.store.get(kind, "configuration") || { enabled: false, version: 0 }; }
   listeners() {
     const devices = this.store.all("pilot-device").map(([, v]) => v);
-    return this.store.all("installation").map(([, v]) => v).filter(v => !v.revokedAt && v.intelligenceEnabled !== false &&
+    return this.store.all("installation").map(([, v]) => v).filter(v => !v.revokedAt && v.intelligenceEnabled !== false && this.audienceEligible(v) &&
       (!devices.some(d => d.listenerId === v.id) || devices.some(d => d.listenerId === v.id && !d.revokedAt && Date.parse(d.expiresAt) > Date.now())));
   }
   follows() {

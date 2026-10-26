@@ -1,4 +1,6 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
+const derivePassword = promisify(scrypt);
+import { createHash, randomBytes, timingSafeEqual, scrypt } from "node:crypto";
 import { commandCentre } from './admin-command-centre.mjs';
 
 export const AdministratorRole = Object.freeze({
@@ -96,6 +98,19 @@ export class AdminService {
     this.store = store;
     this.now = now;
     this.sessionTtlMs = sessionTtlMs;
+    this.migrateLegacyAudience();
+  }
+  migrateLegacyAudience() {
+    // Exact production description recovered during preflight. These safety
+    // conditions already run independently in AdSkipService; this migration
+    // makes the existing beta audience explicit without granting skip safety.
+    this.store.transaction(()=>{
+      const prior=this.store.get('feature-flag','adSkip');
+      if(prior?.eligibilityRules !== 'Authenticated installations with listener Ad Skip enabled; independently verified exact-variant intervals only.' || prior.audience) return;
+      const next={...prior,audience:prior.state==='INTERNAL_TESTING'?'INTERNAL_TESTERS':prior.state==='PRIVATE_BETA'?'PRIVATE_BETA':'AUTHENTICATED',eligibilityRules:null,version:(prior.version||1)+1,updatedAt:this.now(),updatedBy:'system:batch3-audience-migration'};
+      this.store.set('feature-flag','adSkip',next);
+      this.appendAudit({actor:{id:'system:batch3-audience-migration',name:'Existing Ad Skip audience migration',role:'SYSTEM'},action:'feature-audience-migrated',resource:'adSkip',previousState:prior,newState:next,reason:'Replace the known descriptive audience with enforced scope; preserve state, percentage, listener opt-in, pilot, rights and independent audio verification.'});
+    });
   }
   permissionsFor(role) { return Object.keys(permissions).filter((permission) => permissions[permission].includes(role)); }
   can(actor, permission) { return Boolean(actor && permissions[permission]?.includes(actor.role)); }
@@ -106,15 +121,25 @@ export class AdminService {
   }
   startSession(actor) {
     const id = sessionId(), csrf = sessionId(), at = this.now();
-    this.store.set("admin-session", digest(id), { idHash: digest(id), csrfHash: digest(csrf), actor, createdAt: at, expiresAt: at + this.sessionTtlMs, revokedAt: null });
+    const ttl = this.sessionLifetimeMs();
+    this.store.set("admin-session", digest(id), { idHash: digest(id), csrfHash: digest(csrf), actor, createdAt: at, expiresAt: at + ttl, revokedAt: null });
     this.appendAudit({ actor, action: "administrator-session-created", resource: actor.id, outcome: "ALLOWED" });
-    return { id, csrf, expiresAt: at + this.sessionTtlMs };
+    return { id, csrf, expiresAt: at + ttl };
   }
   session(id) {
     if (typeof id !== "string" || id.length < 32) return null;
     const record = this.store.get("admin-session", digest(id));
-    if (!record || record.revokedAt || record.expiresAt <= this.now()) return null;
-    return { ...record, id };
+    if (!record || record.revokedAt) return null;
+    const expiresAt = Math.min(record.expiresAt, record.createdAt + this.sessionLifetimeMs());
+    if (expiresAt < record.expiresAt) this.store.set('admin-session',digest(id),{...record,expiresAt});
+    if (expiresAt <= this.now()) return null;
+    let actor = record.actor;
+    if (actor.memberId) {
+      const member = this.store.get("administrator", actor.memberId);
+      if (!member?.active || !member.credential || member.version !== actor.memberVersion) return null;
+      actor = { id: member.id, memberId: member.id, memberVersion: member.version, name: member.name, role: member.role, source: "session" };
+    }
+    return { ...record, actor, expiresAt, id };
   }
   authenticate(id, csrf, { write = false } = {}) {
     const session = this.session(id);
@@ -129,39 +154,112 @@ export class AdminService {
     this.appendAudit({ actor: actor || record.actor, action: "administrator-session-revoked", resource: record.actor.id, outcome: "ALLOWED" });
     return true;
   }
-  members() { return this.store.all("administrator").map(([, member]) => ({ ...member, roles: [member.role] })).sort((a, b) => a.name.localeCompare(b.name)); }
-  addMember(input, actor) {
-    const name = safeText(input?.name, 120), role = input?.role;
-    if (!name || !roles.has(role)) throw Error("An administrator name and valid role are required.");
-    const member = { id: memberId(), name, role, active: input.active !== false, createdAt: this.now(), updatedAt: this.now(), createdBy: actor.id };
-    this.store.set("administrator", member.id, member);
-    this.appendAudit({ actor, action: "administrator-created", resource: member.id, newState: { name: member.name, role: member.role }, outcome: "ALLOWED" });
-    return member;
+  sessionLifetimeMs() {
+    const configured = this.store.get("admin-configuration", "global")?.values?.security?.adminSessionHours;
+    return configured === undefined ? this.sessionTtlMs : configured * 3600000;
   }
+  publicMember(member) { const { credential, ...safe } = member; return { ...safe, version: member.version || 1, credentialConfigured: Boolean(credential), roles: [member.role] }; }
+  members() { return this.store.all("administrator").map(([, member]) => this.publicMember(member)).sort((a, b) => a.name.localeCompare(b.name)); }
+  addMember(input, actor) {
+    if (!this.can(actor,"administrators:write")) throw Error("Super Admin access is required.");
+    const name = safeText(input?.name, 120), role = input?.role;
+    const login = safeText(input.login,100).toLowerCase();
+    if (!name || !roles.has(role) || (login && !/^[a-z0-9][a-z0-9@._+-]{2,99}$/.test(login))) throw Error("An administrator name, valid login and role are required.");
+    if (login && this.store.all("administrator").some(([,m])=>m.login===login)) throw Error("Administrator login already exists.");
+    const member = { id: memberId(), name, login: login || null, role, version:1, active: input.active !== false, createdAt: this.now(), updatedAt: this.now(), createdBy: actor.id };
+    this.store.transaction(()=>{this.store.set("administrator", member.id, member);this.appendAudit({ actor, action: "administrator-created", resource: member.id, newState: this.publicMember(member), reason:input.reason || "Member added; credentials pending", outcome: "ALLOWED" });});
+    return this.publicMember(member);
+  }
+  async passwordRecord(password) {
+    if (typeof password !== "string" || password.length < 16 || password.length > 256) throw Error("Use a password of 16–256 characters.");
+    const salt=randomBytes(32).toString('hex');
+    const hash=await derivePassword(password,salt,64,{N:32768,r:8,p:1,maxmem:64*1024*1024});
+    return {salt,hash:hash.toString('hex'),algorithm:'scrypt-N32768-r8-p1'};
+  }
+  async provisionMember(input,actor) {
+    if (!this.can(actor,"administrators:write") || actor.source !== 'session') throw Error("A protected Super Admin session is required.");
+    if (!safeText(input.reason,1000) || input.confirmation !== 'CONFIRM') throw Error("A reason and CONFIRM are required.");
+    const credential=input.password ? await this.passwordRecord(input.password) : null;
+    return this.store.transaction(()=>{
+      if(actor.memberId) { const current=this.store.get('administrator',actor.memberId); if(!current?.active || current.version!==actor.memberVersion || current.role!=='SUPER_ADMIN') throw Error('Administrator access changed. Sign in again.'); }
+      if (input.bootstrap && this.members().some(m=>m.role==='SUPER_ADMIN'&&m.credentialConfigured)) throw Object.assign(Error('An individual Super Admin already exists.'),{status:409});
+      let prior=input.id ? this.store.get('administrator',input.id) : null;
+      if(input.id && !prior) throw Error('Administrator not found.');
+      if(prior && input.expectedVersion !== (prior.version||1)) throw Object.assign(Error('Administrator changed elsewhere. Refresh before saving.'),{status:409});
+      if(!prior) {
+        if(!credential)throw Error('A password is required for an individual login.');
+        const created=this.addMember({...input,role:input.bootstrap?'SUPER_ADMIN':input.role},actor);
+        prior=this.store.get('administrator',created.id);
+      }
+      const role=input.bootstrap?'SUPER_ADMIN':input.role||prior.role;
+      if(!roles.has(role))throw Error('Choose a valid role.');
+      const active=input.active === undefined ? prior.active : input.active;
+      if(typeof active!=='boolean')throw Error('Choose an active or inactive status.');
+      const login = input.login === undefined ? prior.login : safeText(input.login,100).toLowerCase();
+      if (!login || !/^[a-z0-9][a-z0-9@._+-]{2,99}$/.test(login) || this.store.all('administrator').some(([,m])=>m.id!==prior.id&&m.login===login)) throw Error('A valid unique individual login is required.');
+      const next={...prior,login,role,active,credential:credential||prior.credential,version:(prior.version||1)+1,updatedAt:this.now(),updatedBy:actor.id};
+      if(!next.login)throw Error('An individual login is required.');
+      this.store.set('administrator',next.id,next);
+      this.appendAudit({actor,action:credential?'administrator-credential-provisioned':'administrator-updated',resource:next.id,previousState:this.publicMember(prior),newState:this.publicMember(next),reason:input.reason});
+      return this.publicMember(next);
+    });
+  }
+  async authenticateMember(login,password) {
+    const normalized=safeText(login,100).toLowerCase();
+    const member=this.store.all('administrator').map(([,m])=>m).find(m=>m.login===normalized);
+    // Unknown and revoked identities take the same derivation path.
+    const record=member?.credential || {salt:'0'.repeat(64),hash:'0'.repeat(128)};
+    if(typeof password!=='string'||password.length>256)return null;
+    const hash=await derivePassword(password,record.salt,64,{N:32768,r:8,p:1,maxmem:64*1024*1024});
+    if(!timingSafeEqual(hash,Buffer.from(record.hash,'hex')) || !member?.active)return null;
+    const fresh=this.store.get('administrator',member.id);
+    if(!fresh?.active || fresh.version!==member.version)return null;
+    const actor={id:member.id,memberId:member.id,memberVersion:member.version,name:member.name,role:member.role,source:'session'};
+    if(!member.verifiedAt) this.store.set('administrator',member.id,{...member,verifiedAt:this.now()});
+    return actor;
+  }
+  migrationStatus() { return { individualSuperAdminConfigured:this.members().some(m=>m.role==='SUPER_ADMIN'&&m.active&&m.credentialConfigured), individualSuperAdminVerified:this.members().some(m=>m.role==='SUPER_ADMIN'&&m.active&&m.verifiedAt), emergencyRecoveryAvailable:true }; }
   configuration() {
     const stored = this.store.get("admin-configuration", "global");
     return { version: 1, updatedAt: null, updatedBy: "system", values: { notificationPreferences: { budgetAlerts: true, queueAlerts: true }, security: { adminSessionHours: 8 }, processing: { automaticFollowPreparation: true } }, ...(stored || {}) };
   }
-  setConfiguration(input, actor) {
+  setConfiguration(input, actor) { return this.store.transaction(()=>this.changeConfiguration(input,actor)); }
+  changeConfiguration(input, actor) {
+    if(!this.can(actor,"configuration:write"))throw Error("Configuration access denied.");
     if (!input || typeof input !== "object" || typeof input.values !== "object" || Array.isArray(input.values)) throw Error("Configuration values are required.");
     const previous = this.configuration();
-    if (input.expectedVersion !== undefined && input.expectedVersion !== previous.version) throw Error("Configuration changed elsewhere. Refresh before saving.");
+    if (input.expectedVersion !== previous.version) throw Object.assign(Error("Configuration changed elsewhere. Refresh before saving."),{status:409});
     const reason = safeText(input.reason, 1000);
     if (!reason) throw Error("A reason is required for configuration changes.");
     if (input.confirmation !== "CONFIRM") throw Error("Type CONFIRM before changing global configuration.");
-    const values = { ...previous.values, ...input.values };
+    const schema={security:['adminSessionHours'],processing:['automaticFollowPreparation'],notificationPreferences:['budgetAlerts','queueAlerts']};
+    for(const [category, patch] of Object.entries(input.values)) {
+      if(!schema[category] || !patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key=>!schema[category].includes(key))) throw Error('Unsupported configuration setting.');
+      if(category !== 'security' && Object.values(patch).some(value=>typeof value!=='boolean'))throw Error('Configuration switches must be boolean.');
+    }
+    const values = { ...previous.values, ...Object.fromEntries(Object.entries(input.values).map(([key,value])=>[key,{...previous.values[key],...value}])) };
     if (values.security?.adminSessionHours !== undefined && (!Number.isInteger(values.security.adminSessionHours) || values.security.adminSessionHours < 1 || values.security.adminSessionHours > 24)) throw Error("Administrator session duration must be between 1 and 24 hours.");
     const record = { version: previous.version + 1, values, updatedAt: this.now(), updatedBy: actor.id, reason };
-    this.store.transaction(() => { this.store.set("admin-configuration", "global", record); this.appendAudit({ actor, action: "configuration-changed", resource: "global", previousState: { version: previous.version }, newState: { version: record.version }, reason, outcome: "ALLOWED" }); });
+    this.store.transaction(() => { this.store.set("admin-configuration", "global", record);
+      for(const [id,session] of this.store.all('admin-session')) {
+        const expiresAt=Math.min(session.expiresAt,session.createdAt+this.sessionLifetimeMs());
+        if(expiresAt<session.expiresAt)this.store.set('admin-session',id,{...session,expiresAt});
+      }
+      this.appendAudit({ actor, action: "configuration-changed", resource: "global", previousState: previous, newState: record, reason, outcome: "ALLOWED" }); });
     return record;
   }
   featureFlags() {
     return featureDefinitions.map(([id, name, dependencies, defaultState]) => {
       const prior = this.store.get("feature-flag", id);
-      return { id, name, state: defaultState, rolloutPercent: defaultState === "DISABLED" ? 0 : 100, eligibilityRules: null, dependencies, environment: "production", updatedAt: null, updatedBy: "system", version: 1, ...(prior || {}) };
+      return { id, name, state: defaultState, rolloutPercent: defaultState === "DISABLED" ? 0 : 100, eligibilityRules: null, dependencies, audience: defaultState === "INTERNAL_TESTING" ? "INTERNAL_TESTERS" : "PRIVATE_BETA", editable: !["aiSleep","referrals","subscriptions"].includes(id), enforcement: ["aiSleep","referrals","subscriptions"].includes(id) ? "Dedicated existing controls; this row is informational" : "Server audience and deterministic cohort", environment: "production", updatedAt: null, updatedBy: "system", version: 1, ...(prior || {}),
+        audience: (prior?.state || defaultState)==='INTERNAL_TESTING' || ['internal-only','Internal testers only'].includes(prior?.eligibilityRules) ? 'INTERNAL_TESTERS' : (prior?.state || defaultState)==='PRIVATE_BETA' && prior?.audience!=='INTERNAL_TESTERS' ? 'PRIVATE_BETA' : prior?.audience || 'AUTHENTICATED',
+        editable: !["aiSleep","referrals","subscriptions"].includes(id),
+        ...(prior?.eligibilityRules && !['internal-only','Internal testers only'].includes(prior.eligibilityRules) ? {enforcement:'Blocked legacy rule: choose a supported audience before enabling delivery'} : {}) };
     });
   }
-  setFeatureFlag(input, actor) {
+  setFeatureFlag(input, actor) { return this.store.transaction(()=>this.changeFeatureFlag(input,actor)); }
+  changeFeatureFlag(input, actor) {
+    if(!this.can(actor,"features:write"))throw Error("Feature access denied.");
     const id = safeText(input?.id, 100), state = input?.state;
     if (!featureDefinitions.some(([candidate]) => candidate === id) || !states.has(state)) throw Error("A valid feature and state are required.");
     const rolloutPercent = input.rolloutPercent === undefined ? 0 : Number(input.rolloutPercent);
@@ -169,14 +267,34 @@ export class AdminService {
     if (state === "ENABLED" && rolloutPercent !== 100) throw Error("An enabled feature requires a 100% rollout.");
     const reason = safeText(input.reason, 1000);
     if (!reason) throw Error("A reason is required for a feature change.");
-    if (["ENABLED", "DISABLED"].includes(state) && input.confirmation !== "CONFIRM") throw Error("Type CONFIRM before making this high-impact feature change.");
-    const prior = this.featureFlags().find((flag) => flag.id === id), record = { ...prior, state, rolloutPercent, eligibilityRules: safeText(input.eligibilityRules, 1000) || null, version: prior.version + 1, updatedAt: this.now(), updatedBy: actor.id, reason };
-    this.store.transaction(() => { this.store.set("feature-flag", id, record); this.appendAudit({ actor, action: "feature-flag-changed", resource: id, previousState: { state: prior.state, rolloutPercent: prior.rolloutPercent }, newState: { state, rolloutPercent }, reason, outcome: "ALLOWED" }); });
+    if (input.confirmation !== "CONFIRM") throw Error("Type CONFIRM before making this high-impact feature change.");
+    const prior = this.featureFlags().find((flag) => flag.id === id);
+    if (input.expectedVersion !== prior.version) throw Object.assign(Error("Feature changed elsewhere. Refresh before saving."),{status:409});
+    if (!prior.editable) throw Error("This capability is governed by its dedicated controls, not a feature rollout.");
+    const audience = input.audience || prior.audience;
+    if (!['AUTHENTICATED','PRIVATE_BETA','INTERNAL_TESTERS'].includes(audience)) throw Error('Choose a supported audience.');
+    if (input.eligibilityRules && !['internal-only','Internal testers only'].includes(input.eligibilityRules)) throw Error('Free-text eligibility rules are not supported.');
+    const effectiveAudience = state === 'INTERNAL_TESTING' || input.eligibilityRules ? 'INTERNAL_TESTERS' : state === 'PRIVATE_BETA' ? (audience === 'INTERNAL_TESTERS' ? audience : 'PRIVATE_BETA') : audience;
+    const record = { ...prior, state, rolloutPercent, audience: effectiveAudience, eligibilityRules: null, version: prior.version + 1, updatedAt: this.now(), updatedBy: actor.id, reason };
+    this.store.transaction(() => { this.store.set("feature-flag", id, record); this.appendAudit({ actor, action: "feature-flag-changed", resource: id, previousState: prior, newState: record, reason, outcome: "ALLOWED" }); });
     return record;
   }
-  appendAudit({ actor, action, resource, previousState = null, newState = null, reason = null, outcome = "ALLOWED", requestId = null }) {
+  featureOperational(id) { const flag=this.featureFlags().find(f=>f.id===id);return !!flag && flag.state!=='DISABLED' && flag.rolloutPercent>0; }
+  featureDecision(id, context={}) {
+    const flag=this.featureFlags().find(f=>f.id===id);
+    if(!flag || !flag.editable || !states.has(flag.state) || !Number.isInteger(flag.rolloutPercent) || flag.rolloutPercent<0 || flag.rolloutPercent>100 || flag.state==='DISABLED'||!context.id) return {allowed:false,code:'FEATURE_DISABLED'};
+    const rule=flag.eligibilityRules;
+    if(rule && !['internal-only','Internal testers only'].includes(rule))return {allowed:false,code:'UNSUPPORTED_ELIGIBILITY'};
+    const audience=flag.state==='INTERNAL_TESTING'||rule?'INTERNAL_TESTERS':flag.state==='PRIVATE_BETA'&&flag.audience!=='INTERNAL_TESTERS'?'PRIVATE_BETA':flag.audience;
+    if(!['AUTHENTICATED','PRIVATE_BETA','INTERNAL_TESTERS'].includes(audience))return {allowed:false,code:'UNSUPPORTED_ELIGIBILITY'};
+    if(audience==='INTERNAL_TESTERS'&&!context.internal || audience==='PRIVATE_BETA'&&!context.privateBeta)return {allowed:false,code:'AUDIENCE_INELIGIBLE'};
+    const bucket=Number.parseInt(digest(`radio-star-rollout-v1:${id}:${context.id}`).slice(0,8),16)%10000;
+    return {allowed:bucket<flag.rolloutPercent*100,code:bucket<flag.rolloutPercent*100?'ROLLOUT_ELIGIBLE':'OUTSIDE_ROLLOUT',audience,version:flag.version};
+  }
+  appendAudit(input) { return this.store.transaction(()=>this.writeAudit(input)); }
+  writeAudit({ actor, action, resource, previousState = null, newState = null, reason = null, outcome = "ALLOWED", requestId = null }) {
     const previous = this.store.get("admin-audit-head", "global"), at = this.now();
-    const entry = { id: memberId(), at, actor: actor ? { id: actor.id, name: actor.name, role: actor.role } : null, action, resource, previousState, newState, reason: safeText(reason, 1000) || null, outcome, requestId, previousHash: previous?.hash || null };
+    const entry = { id: memberId(), at, actor: actor ? { id: actor.id, name: actor.name, role: actor.role } : null, action, resource, previousState, newState, reason: safeText(reason, 1000) || null, outcome, requestId: requestId || actor?.requestId || null, previousHash: previous?.hash || null };
     const hash = digest(JSON.stringify(entry));
     this.store.set("admin-audit", entry.id, { ...entry, hash });
     this.store.set("admin-audit-head", "global", { id: entry.id, hash, at });
