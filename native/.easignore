@@ -10,3 +10,7 @@ web-dist/
 google-cloud-sdk/
 google-cloud-cli-darwin-arm.tar.gz
 *.ipa
+
+# Recovery exports and unrelated local audit notes are not release inputs.
+dist-batch7/
+dist-batch8/

@@ -20,3 +20,9 @@ infra/
 *.p8
 *.p12
 *.mobileprovision
+
+# Recovery exports and unrelated local audit notes are not release inputs.
+native/dist-batch7/
+native/dist-batch8/
+docs/RADIO_STAR_RECOVERY_EXECUTION_PLAN.md
+docs/RADIO_STAR_RED_TEAM_1000.md
