@@ -1,7 +1,8 @@
+import { sameEpisode, migrateListenerIdentity, sameShow, setNativeFeedAliases } from "../../episode-identity.mjs";
 import { readLocalDocument, writeLocalDocument } from "./localStorage";
 import type { CatalogueEpisode, CatalogueShow } from "./api";
 
-const KEY = "star-cast-listener-state-v1";
+const KEY = "star-cast-listener-state-v2";
 export type StoredEpisode = CatalogueEpisode & {
   showId: string;
   showName: string;
@@ -49,9 +50,10 @@ export const emptyListenerState = (): ListenerState => ({
 });
 export async function loadListenerState(): Promise<ListenerState> {
   try {
-    let raw = await readLocalDocument(KEY);
+    setNativeFeedAliases(JSON.parse(await readLocalDocument("star-cast-feed-aliases-v1") || "{}"));
+    let raw = await readLocalDocument(KEY) || await readLocalDocument("star-cast-listener-state-v1");
     if (!raw) return emptyListenerState();
-    let value = JSON.parse(raw);
+    let value = migrateListenerIdentity(JSON.parse(raw));
     return {
       ...emptyListenerState(),
       ...value,
@@ -84,8 +86,8 @@ export async function saveListenerState(value: ListenerState) {
   await writeLocalDocument(KEY, JSON.stringify(value));
 }
 export function toggleById<T extends { id: string }>(items: T[], item: T) {
-  return items.some((x) => x.id === item.id)
-    ? items.filter((x) => x.id !== item.id)
+  return items.some((x) => sameShow(x, item))
+    ? items.filter((x) => !sameShow(x, item))
     : [item, ...items];
 }
 export function recordHistory(
@@ -98,10 +100,14 @@ export function recordHistory(
       positionMs: undefined,
       listenedMs:
         episode.positionMs ??
-        history.find((x) => x.id === episode.id)?.listenedMs,
+        history.find((x) => sameEpisode(x, episode))?.listenedMs,
       playedAt: Date.now(),
-      playCount: (history.find((x) => x.id === episode.id)?.playCount || 0) + 1,
+      playCount: (history.find((x) => sameEpisode(x, episode))?.playCount || 0) + 1,
     },
-    ...history.filter((x) => x.id !== episode.id),
+    ...history.filter((x) => !sameEpisode(x, episode)),
   ].slice(0, 100);
+}
+
+export function toggleEpisode(items: StoredEpisode[], episode: StoredEpisode) {
+  return items.some(x => sameEpisode(x, episode)) ? items.filter(x => !sameEpisode(x, episode)) : [episode, ...items];
 }

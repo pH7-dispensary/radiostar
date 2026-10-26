@@ -75,7 +75,7 @@ export class ListenerService {
   }
   deleteProfile(listener) {
     return this.store.transaction(() => {
-      const ownedKinds = ["invite-code", "allowance-ledger", "follow", "listening-event",
+      const ownedKinds = ["invite-code", "allowance-ledger", "follow", "follow-operation", "listening-event",
         "listening-session", "offline-listening", "problem-report", "verified-subject", "qualification-audit", "subscription", "skip-authorisation"];
       for (const kind of ownedKinds)
         for (const [id, record] of this.store.all(kind))
@@ -204,23 +204,25 @@ export class ListenerService {
       return languagePreferences;
     });
   }
-  follow(listener, { feedUrl, following }) {
-    if (typeof feedUrl !== "string" || !feedUrl || typeof following !== "boolean")
+  follow(listener, { feedUrl, following, version }) {
+    if (typeof feedUrl !== "string" || !feedUrl || typeof following !== "boolean" || (version !== undefined && (!Number.isSafeInteger(version) || version < 1)))
       throw new ListenerError("A valid podcast follow update is required.");
     const id = `follow:${listener.id}:${digest(feedUrl)}`;
-    if (!following) {
-      this.store.delete("follow", id);
-      return { following: false, feedUrl };
-    }
-    this.store.set("follow", id, {
-      id,
-      owner: listener.id,
-      feedUrl,
-      createdAt: this.now(),
-      updatedAt: this.now(),
-      intelligenceEnabled: this.store.get("installation", listener.credentialHash)?.intelligenceEnabled !== false,
+    return this.store.transaction(() => {
+      const previous = this.store.get("follow-operation", id);
+      const existing = this.store.get("follow", id);
+      // Once a client opts into ordered operations, unversioned delayed requests
+      // cannot undo its tombstone. Older installations retain legacy behaviour.
+      if (previous && (version === undefined || version <= previous.version))
+        return { ...previous, accepted: version === previous.version && following === previous.following, changed: false };
+      const result = { feedUrl, following, ...(version !== undefined ? { version } : {}) };
+      if (version !== undefined) this.store.set("follow-operation", id, { ...result, owner: listener.id });
+      if (!following) this.store.delete("follow", id);
+      else this.store.set("follow", id, { id, owner: listener.id, feedUrl,
+        createdAt: existing?.createdAt || this.now(), updatedAt: this.now(),
+        intelligenceEnabled: this.store.get("installation", listener.credentialHash)?.intelligenceEnabled !== false });
+      return { ...result, accepted: true, changed: !!existing !== following };
     });
-    return { following: true, feedUrl };
   }
   followedFeeds() {
     return [...new Set(this.store.all("follow").filter(([, record]) => record.intelligenceEnabled !== false).map(([, record]) => record.feedUrl))];

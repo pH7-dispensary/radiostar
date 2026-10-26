@@ -1,3 +1,4 @@
+import { sameShow } from "../../episode-identity.mjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingState } from "./LoadingState";
 import {
@@ -321,13 +322,13 @@ export function SearchScreen({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${state.following.some((x) => x.id === show.id) ? "Unfollow" : "Follow"} ${show.name}`}
+        accessibilityLabel={`${state.following.some((x) => sameShow(x, show)) ? "Unfollow" : "Follow"} ${show.name}`}
         onPress={() => {
           feedback.selection();
-          const following = state.following.some((item) => item.id === show.id);
+          const following = state.following.some((item) => sameShow(item, show));
           setState((v) => ({ ...v, following: toggleById(v.following, show) }));
           if (show.feedUrl)
-            void updateFollow(show.feedUrl, !following)
+            void updateFollow(show.feedUrl, !following, show)
               .then((result) =>
                 setState((v) => ({
                   ...v,
@@ -342,7 +343,7 @@ export function SearchScreen({
         style={[s.follow, { borderColor: p.line }]}
       >
         <Text style={[s.followText, { color: p.text }]}>
-          {state.following.some((x) => x.id === show.id)
+          {state.following.some((x) => sameShow(x, show))
             ? "Following ✓"
             : "+ Follow"}
         </Text>

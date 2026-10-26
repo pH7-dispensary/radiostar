@@ -42,7 +42,7 @@ export function publicUrl(value) {
     return null;
   }
 }
-async function streamPublic(value, redirects = 0) {
+async function streamPublic(value, redirects = 0, trail = []) {
   const url = publicUrl(value);
   if (!url || redirects > 5)
     throw Error("A public HTTPS publisher source is required.");
@@ -79,13 +79,14 @@ async function streamPublic(value, redirects = 0) {
     return streamPublic(
       new URL(response.headers.location, url).href,
       redirects + 1,
+      [...trail, { from: url.href, to: new URL(response.headers.location, url).href, status: response.statusCode }],
     );
   }
   if (response.statusCode !== 200) {
     response.resume();
     throw Error("Publisher source is unavailable.");
   }
-  return { response, url: url.href };
+  return { response, url: url.href, redirects: trail };
 }
 function limiter(maxBytes) {
   let bytes = 0;
@@ -109,6 +110,7 @@ export async function fetchPublicText(url, maxBytes = 2_000_000) {
   });
   return {
     text: Buffer.concat(chunks).toString("utf8"),
+    redirects: result.redirects,
     url: result.url,
     type: result.response.headers["content-type"] || "text/plain",
   };

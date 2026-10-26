@@ -1,3 +1,4 @@
+import { queueFollow } from "./followSync";
 import * as Crypto from "expo-crypto";
 import { request, developmentHeaders, endPilotSession } from "./api";
 import { getIdentity, setIdentity, eraseLocalListenerData } from "./localStorage";
@@ -76,8 +77,7 @@ export const loadListenerSummary = (): Promise<ListenerSummary> =>
   listenerRequest("/api/listener/summary");
 export const attributeInvite = (code: string) =>
   listenerRequest("/api/listener/attribute", { code: code.trim() });
-export const updateFollow = (feedUrl: string, following: boolean) =>
-  listenerRequest("/api/listener/follow", { feedUrl, following }) as Promise<FollowResult>;
+export const updateFollow = queueFollow;
 export async function updateAdSkipPreferences(
   patch: Partial<Record<SkipCategory, boolean> & { adSkipEnabled: boolean }>,
 ) {

@@ -13,7 +13,7 @@ export async function eraseLocalListenerData() {
   writesPaused = true;
   privacyRevision++;
   await pending;
-  const documents = ["star-cast-listener-state-v1", "star-cast-native-playback-v1",
+  const documents = ["star-cast-feed-aliases-v1", "star-cast-listener-state-v2", "star-cast-native-playback-v2", "star-cast-native-playback-v2-positions", "star-cast-follow-outbox-v1", "star-cast-listener-state-v1", "star-cast-native-playback-v1",
     "star-cast-native-playback-v1-positions", "star-cast-offline-reports",
     "star-cast-invite-message", "star-cast-listener-summary", "star-cast-sleep-learning-v1",
     "star-cast-intelligence-introduction-v1", "star-cast-sleep-session-v1"];

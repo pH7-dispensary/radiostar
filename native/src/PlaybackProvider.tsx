@@ -1,3 +1,5 @@
+import { nativeEpisodeKey, migratePositions, positionForEpisode } from "../../episode-identity.mjs";
+import { loadListenerState } from "./listenerState";
 import {
   createContext,
   useContext,
@@ -45,7 +47,7 @@ type PlaybackContextValue = {
   fadeAndPause: (durationMs: number) => Promise<number>;
   cancelFade: () => void;
 };
-const KEY = "star-cast-native-playback-v1";
+const KEY = "star-cast-native-playback-v2";
 const PlaybackContext = createContext<PlaybackContextValue | null>(null);
 
 export function usePlayback() {
@@ -89,7 +91,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const persistPosition = async (positionMs: number) => {
     const currentSource = sourceRef.current;
     if (!currentSource) return;
-    positions.current[currentSource.episodeId] = positionMs;
+    positions.current[nativeEpisodeKey(currentSource)] = positionMs;
     await writeLocalDocument(
       KEY + "-positions",
       JSON.stringify(positions.current),
@@ -113,7 +115,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       try {
         const savedPositions = await readLocalDocument(KEY + "-positions");
         if (savedPositions) positions.current = JSON.parse(savedPositions);
-        let raw = await readLocalDocument(KEY);
+        let raw = await readLocalDocument(KEY) || await readLocalDocument("star-cast-native-playback-v1");
+        if (!savedPositions) {
+          const legacy = JSON.parse(await readLocalDocument("star-cast-native-playback-v1-positions") || "{}");
+          const state = await loadListenerState();
+          const saved = raw ? JSON.parse(raw) : null;
+          positions.current = migratePositions(legacy, [...state.saved, ...state.history, ...state.moments, ...Object.values(state.feedEpisodes).flat()], saved?.source, saved?.snapshot?.positionMs) as Record<string, number>;
+          await writeLocalDocument(KEY + "-positions", JSON.stringify(positions.current));
+        }
         if (!raw || cancelled) return;
         let stored = JSON.parse(raw) as Persisted;
         if (!stored.source?.url || operation.current > 0) return;
@@ -172,7 +181,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!source || Date.now() - lastWrite.current < 5_000) return;
     lastWrite.current = Date.now();
-    positions.current[source.episodeId] = snapshot.positionMs;
+    positions.current[nativeEpisodeKey(source)] = snapshot.positionMs;
     void writeLocalDocument(
       KEY + "-positions",
       JSON.stringify(positions.current),
@@ -198,7 +207,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       setPlaybackError(null);
       fadeOperation.current++;
       player.volume = 1;
-      const switching = sourceRef.current?.url !== next.url;
+      const switching = sourceRef.current?.url !== next.url || !sourceRef.current || nativeEpisodeKey(sourceRef.current) !== nativeEpisodeKey(next);
       const reload = switching || !player.isLoaded || audio.state === "FAILED" || (!audioVariantFingerprint && !player.playing);
       if (reload) {
         setConnecting(true);
@@ -229,7 +238,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
       const target =
         next.startPositionMs ??
-        (switching ? positions.current[next.episodeId] : reload ? snapshot.positionMs : undefined);
+        (switching ? positionForEpisode(positions.current, next) : reload ? snapshot.positionMs : undefined);
       if (target !== undefined) await player.seekTo(Math.max(0, target) / 1000);
       if (next.startPositionMs !== undefined)
         setManualSeekRevision((revision) => revision + 1);
@@ -258,7 +267,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       player.pause();
       player.volume = 1;
       if (sourceRef.current) {
-        positions.current[sourceRef.current.episodeId] =
+        positions.current[nativeEpisodeKey(sourceRef.current)] =
           player.currentTime * 1000;
         await writeLocalDocument(
           KEY + "-positions",

@@ -21,8 +21,8 @@ const priorityFor = (row, listeners) => Math.max(row.manualPriority || 0,
 // Durable demand, not a second AI pipeline. Every dispatch uses the canonical
 // pipeline and its transactional outbox, rights checks and shared cost ledger.
 export class FollowedPreparation {
-  constructor({ store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
-    Object.assign(this, { store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
+  constructor({ canonicalFeed = async feed => feed, resolveFeedIdentity = feed => feed, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status }) {
+    Object.assign(this, { canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, status });
     this.refreshing = null; this.draining = null;
   }
   configuration() { return this.store.get(kind, "configuration") || { enabled: false, version: 0 }; }
@@ -44,13 +44,17 @@ export class FollowedPreparation {
   }
   async plan({ force, newlyFollowed }) {
     const prior = this.store.get(kind, "snapshot");
-    const follows = this.follows(), feeds = [...new Set(follows.map(v => v.feedUrl))].sort();
+    const follows = this.follows().map(follow => ({...follow, feedUrl: this.resolveFeedIdentity(follow.feedUrl)})), feeds = [...new Set(follows.map(v => v.feedUrl))].sort();
     const signature = JSON.stringify(follows.map(v => [v.owner, v.feedUrl]).sort());
     if (!force && !newlyFollowed && prior?.signature === signature && Date.now() - Date.parse(prior.at) < (prior.errors?.length ? 300000 : 3600000)) return this.summary();
     const errors = [], windowKeys = [];
     // Serial feed discovery bounds RSS and assessment traffic as well as memory.
-    for (const feedUrl of feeds) {
+    const visited = new Set();
+    for (let feedUrl of feeds) {
       try {
+        feedUrl = await this.canonicalFeed(feedUrl);
+        if (visited.has(feedUrl)) continue;
+        visited.add(feedUrl);
         const episodes = latestPublishedEpisodes(await this.discover(feedUrl));
         for (const [rank, episode] of episodes.entries()) {
           await yieldToRequests();

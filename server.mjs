@@ -1,3 +1,5 @@
+import { FeedIdentity } from "./feed-identity.mjs";
+import { parseFeed } from "./catalogue-feed.mjs";
 import { createServer } from "node:http";
 import { FollowedPreparation } from "./followed-preparation.mjs";
 import { readFile } from "node:fs/promises";
@@ -32,24 +34,7 @@ import { AdminService } from "./admin-service.mjs";
 import { IntelligenceTestMode, testingLimits } from "./intelligence-test-mode.mjs";
 import { adSkipFixture } from "./ad-skip-fixture.mjs";
 
-export const decodeHtmlEntity = (value) =>
-  String(value || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, token) => {
-    const named = { amp: "&", quot: '"', apos: "'", nbsp: " ", lt: "<", gt: ">" };
-    if (named[token.toLowerCase()] !== undefined) return named[token.toLowerCase()];
-    const code = token[1]?.toLowerCase() === "x" ? Number.parseInt(token.slice(2), 16) : token[0] === "#" ? Number.parseInt(token.slice(1), 10) : NaN;
-    return Number.isInteger(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
-  });
-export const cleanMetadata = (s) =>
-  decodeHtmlEntity(String(s || "")
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, ""))
-    .trim();
-const tag = (xml, name) =>
-  cleanMetadata(
-    (xml.match(
-      new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"),
-    ) || [])[1],
-  );
+export { decodeHtmlEntity, cleanMetadata } from "./catalogue-metadata.mjs";
 async function appleSearch(query, limit = 12) {
   let url = new URL("https://itunes.apple.com/search");
   url.searchParams.set("media", "podcast");
@@ -117,43 +102,7 @@ class PublisherEpisodeError extends Error {
   }
 }
 
-function feedParts(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
-  let channel = xml.match(/<channel[\s\S]*?<\/channel>/i)?.[0] || xml,
-    items = [...channel.matchAll(/<(item|entry)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi)]
-      .map((m) => m[0])
-      .slice(0, limit);
-  // Channel evidence must not include child episode grants/reservations. Apart
-  // from leaking one episode's terms to siblings, rescanning the full archive
-  // for every episode can block the event loop on large publisher feeds.
-  channel = channel.replace(/<(item|entry)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi, "");
-  return { channel, items, feed };
-}
-function episodesFromFeed(xml, feed, limit = MAX_CATALOGUE_EPISODES) {
-  let { channel, items } = feedParts(xml, feed, limit);
-  return {
-    title: tag(channel, "title"),
-    publisher: tag(channel, "itunes:author") || tag(channel, "author"),
-    art: (channel.match(/<itunes:image[^>]+href=["']([^"']+)/i) || [])[1],
-    episodes: items.map((item) => {
-      let enclosure = (item.match(/<enclosure[^>]+url=["']([^"']+)/i) ||
-          item.match(/<link\b(?=[^>]*rel=["']enclosure["'])[^>]*href=["']([^"']+)/i) ||
-          [])[1],
-        guid = tag(item, "guid") || tag(item, "id") || enclosure || null,
-        refs = transcriptRefsFromItem(item);
-      return {
-        id: guid,
-        title: tag(item, "title") || "Untitled episode",
-        publishedAt: tag(item, "pubDate") || tag(item, "published"),
-        duration: tag(item, "itunes:duration"),
-        description: tag(item, "description"),
-        audioUrl: enclosure || null,
-        withdrawn: /^(true|yes|1)$/i.test(tag(item, "podcast:withdrawn") || tag(item, "withdrawn")),
-        hasPublisherTranscript: refs.length > 0,
-        rightsEvidence: publisherRightsEvidence({ channelXml: channel, itemXml: item, feedUrl: feed }),
-      };
-    }),
-  };
-}
+const episodesFromFeed = parseFeed;
 async function body(req) {
   let chunks = [],
     size = 0;
@@ -286,13 +235,33 @@ export function createStarCastServer({
       throw Object.assign(Error("Sign in as Super Admin to change operational policy. Automation tokens cannot pause or resume podcasts."), { code: "HUMAN_ADMIN_REQUIRED" });
     }
   };
+  const pendingFetches = new Map();
   async function cached(key, fn, ttl = 300_000) {
     const hit = cache.get(key);
     if (hit && hit.until > Date.now()) return hit.value;
-    const value = await fn();
-    cache.set(key, { value, until: Date.now() + ttl });
-    if (cache.size > 500) cache.delete(cache.keys().next().value);
-    return value;
+    if (pendingFetches.has(key)) return pendingFetches.get(key);
+    const pending = (async () => {
+      const value = await fn();
+      cache.set(key, { value, until: Date.now() + ttl });
+      if (cache.size > 500) cache.delete(cache.keys().next().value);
+      return value;
+    })();
+    pendingFetches.set(key, pending);
+    try { return await pending; } finally { pendingFetches.delete(key); }
+  }
+  const feedIdentity = new FeedIdentity(store);
+  async function canonicalFeed(feed) {
+    if (!publicUrl(feed)) return feed;
+    if (store.get("feed-identity-conflict", feed)) throw Object.assign(Error("This publisher redirect needs identity review."), { code: "IDENTITY_CONFLICT", status: 409 });
+    if (store.get("feed-observation", feed)) return feedIdentity.resolve(feed);
+    try { await feedXml(feed); } catch (error) { if(error.code === "IDENTITY_CONFLICT") throw error; }
+    return feedIdentity.resolve(feed);
+  }
+  async function requestBody(req) {
+    const input = await body(req);
+    if (input && typeof input.feedUrl === "string") input.feedUrl = trusted(req) || administrator(req) ? await canonicalFeed(input.feedUrl) : feedIdentity.resolve(input.feedUrl);
+    if (Array.isArray(input?.feedUrls)) input.feedUrls = [...new Set(input.feedUrls.map(feed=>feedIdentity.resolve(feed)))];
+    return input;
   }
   async function feedXml(feed, fresh = false) {
     if (!publicUrl(feed))
@@ -301,49 +270,28 @@ export function createStarCastServer({
     return cached(
       "feed:" + feed,
       async () => {
-        const value = fetchFeed
-          ? await fetchFeed(feed)
-          : (await fetchPublicText(feed, 8_000_000)).text;
-        return String(value || "");
+        const response = fetchFeed ? await fetchFeed(feed) : await fetchPublicText(feed, 8_000_000);
+        const result = typeof response === "string" ? { text: response, url: feed } : response;
+        const value = String(result?.text || "");
+        parseFeed(value, feed, 0); // Validate before accepting redirect evidence.
+        feedIdentity.observe(feed, result || {});
+        if (store.get("feed-identity-conflict", feed)) {
+          const error = new Error("This redirect joins existing podcast records and needs identity review.");
+          error.code = "IDENTITY_CONFLICT"; throw error;
+        }
+        store.set("feed-observation", feed, { canonicalFeedUrl: feedIdentity.resolve(feed), at: new Date().toISOString() });
+        return value;
       },
       600_000,
     );
   }
   async function resolve(feed, id) {
-    const xml = await feedXml(feed),
-      parts = feedParts(xml, feed, MAX_RESOLVABLE_EPISODES),
-      items = parts.items,
-      parsed = episodesFromFeed(xml, feed, MAX_RESOLVABLE_EPISODES),
-      index = parsed.episodes.findIndex((x) => x.id === id);
-    if (index < 0)
-      throw new PublisherEpisodeError("This episode is no longer available in the publisher feed's supported history.");
-    const item = items[index],
-      refs = transcriptRefsFromItem(item);
-    // Explicit publisher transcript links, without scraping arbitrary page navigation.
-    for (const match of item.matchAll(
-      /<a\b[^>]*href=["']([^"']+)["'][^>]*>[^<]*transcript[^<]*<\/a>/gi,
-    )) {
-      const url = cleanMetadata(match[1]);
-      if (publicUrl(url))
-        refs.push({
-          url,
-          type: /\.vtt(?:\?|$)/i.test(url)
-            ? "text/vtt"
-            : /\.srt(?:\?|$)/i.test(url)
-              ? "application/x-subrip"
-              : "text/html",
-          language: "und",
-        });
-    }
-    return {
-      ...parsed.episodes[index],
-      showName: parsed.title,
-      publisher: parsed.publisher,
-      artworkUrl: parsed.art,
-      refs,
-      ...(feed === `${env.STARCAST_TEST_CORPUS_ORIGIN}${adSkipFixture.feedPath}` && id === adSkipFixture.episodeId ? { ownedFixtureAudioHash: adSkipFixture.manifest().audioContentHash } : {}),
-      rightsEvidence: publisherRightsEvidence({ channelXml: parts.channel, itemXml: item, feedUrl: feed }),
-    };
+    const parsed = episodesFromFeed(await feedXml(feed), feed, MAX_RESOLVABLE_EPISODES);
+    const episode = parsed.episodes.find(x => x.id === id);
+    if (!episode) throw new PublisherEpisodeError("This episode is no longer available in the publisher feed's supported history.");
+    if (episode.identityConflict) throw new PublisherEpisodeError("The publisher reused this identifier for conflicting audio sources.", "IDENTITY_CONFLICT");
+    return { ...episode, showName: parsed.title, publisher: parsed.publisher, artworkUrl: parsed.art,
+      ...(feed === `${env.STARCAST_TEST_CORPUS_ORIGIN}${adSkipFixture.feedPath}` && id === adSkipFixture.episodeId ? { ownedFixtureAudioHash: adSkipFixture.manifest().audioContentHash } : {}) };
   }
   const queue = processingQueueFromEnv(env);
   const releaseMetadata = () => {
@@ -409,6 +357,8 @@ export function createStarCastServer({
     store,
     ledger,
     resolveEpisode: resolveEpisode || resolve,
+    canonicalFeed,
+    resolveFeedIdentity: feed => feedIdentity.resolve(feed),
     enabled: ledger.controls.enabled,
     audioEnabled: env.STARCAST_AUDIO_TRANSCRIPTION === "enabled",
     configured: Boolean(env.OPENAI_API_KEY),
@@ -505,7 +455,8 @@ export function createStarCastServer({
     const device = typeof token === "string" && token.length >= 32 ? store.get("pilot-device", tokenHash(token)) : null;
     return device && !device.revokedAt && Date.parse(device.expiresAt) > Date.now() ? device.listenerId : null;
   };
-  const followedPreparation = new FollowedPreparation({ store, pipeline, ledger, testingMode, rights,
+  const followedPreparation = new FollowedPreparation({
+    canonicalFeed, resolveFeedIdentity: feed => feedIdentity.resolve(feed), store, pipeline, ledger, testingMode, rights,
     discover: async feedUrl => {
       const xml = await feedXml(feedUrl, true);
       if (!/<(rss|feed)\b[^>]*>[\s\S]*<\/\1\s*>/i.test(xml)) throw new PublisherEpisodeError("Publisher feed is temporarily invalid.", "SOURCE_UNAVAILABLE");
@@ -1483,16 +1434,16 @@ export function createStarCastServer({
       const url = new URL(req.url, "http://localhost");
       if (url.pathname === "/api/apple/notifications" && req.method === "POST") {
         if (!rate(req)) return send(res, 429, { error: "Please retry later." });
-        return send(res, 200, await subscriptions.notification((await body(req)).signedPayload));
+        return send(res, 200, await subscriptions.notification((await requestBody(req)).signedPayload));
       }
       if (url.pathname === "/api/pilot/enroll" && req.method === "POST") {
         if (!enrollmentRate(req)) return send(res, 429, { error: "Too many enrollment attempts. Please wait before trying again." });
-        const enrollment = enrollPilot(await body(req));
+        const enrollment = enrollPilot(await requestBody(req));
         return send(res, 201, enrollment);
       }
       if (url.pathname === "/api/admin/session" && req.method === "POST") {
         if (!adminLoginRate(req)) return send(res, 429, { error: "Too many administrator login attempts. Please wait before trying again." });
-        const input = await body(req);
+        const input = await requestBody(req);
         const verified = adminService.actorForToken(env.STARCAST_ADMIN_TOKEN, input.adminToken);
         if (!verified) return send(res, 401, { error: "Administrator authentication failed." });
         // The existing shared operations credential authenticates this account;
@@ -1637,15 +1588,17 @@ export function createStarCastServer({
       if (url.pathname === "/api/catalogue/feed" && req.method === "GET") {
         const feed = url.searchParams.get("url");
         try {
-          const parsed = episodesFromFeed(await feedXml(feed), feed);
+          const parsed = episodesFromFeed(await feedXml(feed), feedIdentity.resolve(feed));
+          parsed.feedAliases = feedIdentity.aliases(feed);
           const newest = [...parsed.episodes].sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
           if (newest?.id) void backgroundEncounter(testListener(req), feed, newest.id, "podcast-detail");
           return send(res, 200, {
-            feed: parsed,
+            feed: { ...parsed, episodes: parsed.episodes.map(({ refs, ...episode }) => episode) },
           });
-        } catch {
+        } catch (error) {
           return send(res, 502, {
-            error: "This publisher feed is unavailable or could not be read.",
+            error: error.code === "MALFORMED_FEED" ? error.message : "This publisher feed is temporarily unavailable.",
+            code: error.code || "PUBLISHER_UNAVAILABLE",
           });
         }
       }
@@ -1655,7 +1608,7 @@ export function createStarCastServer({
           code: "DEVICE_UNAUTHORISED",
         });
       if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|captions|reports)(\/|$)/.test(url.pathname)) {
-        const payload = req.method === "POST" ? await body(req) : undefined;
+        const payload = req.method === "POST" ? await requestBody(req) : undefined;
         const upstream = await fetch(env.STARCAST_CLOUD_API_URL + url.pathname + url.search, {
           method: req.method,
           headers: { "content-type": "application/json", "x-star-cast-dev-token": env.STARCAST_CLOUD_DEVICE_TOKEN,
@@ -1670,7 +1623,7 @@ export function createStarCastServer({
           return send(res, 503, {
             error: "Verified installation enrollment is not configured.",
           });
-        const input = await body(req);
+        const input = await requestBody(req);
         const deviceId = typeof req.headers["x-star-cast-pilot-token"] === "string"
           ? tokenHash(req.headers["x-star-cast-pilot-token"]) : null;
         const device = deviceId ? store.get("pilot-device", deviceId) : null;
@@ -1712,7 +1665,7 @@ export function createStarCastServer({
         }
         if (req.method !== "POST")
           return send(res, 405, { error: "Method not allowed." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, "")))
           return send(res, 401, { error: "This listener profile is no longer active." });
         if (url.pathname === "/api/listener/subscriptions/verify")
@@ -1741,6 +1694,14 @@ export function createStarCastServer({
             return send(res, 400, { error: "A public publisher feed is required." });
           const result = listeners.follow(listener, input);
           if (!result.following) return send(res, 200, result);
+          if (!result.changed) {
+            const paused = !followedPreparation.configuration().enabled && followedPreparation.configuration().version > 0;
+            const rows = followedPreparation.rows().filter(row => row.feedUrl === input.feedUrl && row.inWindow);
+            const processing = paused ? { state: "DISABLED", code: "AUTOMATIC_PREPARATION_DISABLED" }
+              : rows.length ? { state: rows.every(row => row.state === "READY") ? "READY" : rows.some(row => ["QUEUED","PROCESSING"].includes(row.state)) ? "QUEUED" : "UNAVAILABLE", code: "FOLLOW_CONFIRMED" }
+              : { state: "UNAVAILABLE", code: "PREPARATION_NOT_YET_DISCOVERED" };
+            return send(res, 200, { ...result, processing });
+          }
           if (listener.intelligenceEnabled === false) return send(res, 200, { ...result, processing: { state: "DISABLED" } });
           try {
             return send(res, 202, { ...result, processing: await scheduleFollowedFeed(input.feedUrl, listener.id) });
@@ -1794,7 +1755,7 @@ export function createStarCastServer({
         return send(res, 404, { error: "Not found" });
       }
       if (url.pathname === "/api/captions/window" && req.method === "POST") {
-        const input = await body(req);
+        const input = await requestBody(req);
         const listener = listeners.authenticate(
           req.headers.authorization?.replace(/^Bearer /, ""),
         );
@@ -1819,7 +1780,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/reports" && req.method === "POST") {
         const listener = listeners.authenticate(req.headers.authorization?.replace(/^Bearer /, ""));
         if (!listener) return send(res, 401, { error: "Reconnect your listener profile to continue." });
-        return send(res, 200, listeners.reportProblem(listener, await body(req)));
+        return send(res, 200, listeners.reportProblem(listener, await requestBody(req)));
       }
       if (url.pathname === "/api/admin/overview" && req.method === "GET") {
         if (!adminActor(req, "overview:read")) return send(res, 403, { error: "Administrator access is required." });
@@ -1833,7 +1794,7 @@ export function createStarCastServer({
       if (url.pathname === '/api/admin/advisories' && req.method === 'POST') {
         const actor = adminActor(req, 'configuration:write', { write: true });
         if (!actor || actor.source !== 'session' || actor.role !== 'SUPER_ADMIN') return send(res, 403, { error: 'An authenticated Super Admin session and CSRF protection are required.' });
-        const input = await body(req);
+        const input = await requestBody(req);
         const current = await adminService.operations({ ledger, rights, translation, skips, infrastructure: infrastructureStatus });
         try { return send(res, 200, adminService.updateAdvisory(input, actor, current.attention)); }
         catch (error) { return send(res, 409, { error: error.message }); }
@@ -1841,7 +1802,7 @@ export function createStarCastServer({
       if (url.pathname === '/api/admin/intelligence/prioritise' && req.method === 'POST') {
         const actor=adminActor(req,'configuration:write',{write:true});
         if (!actor || actor.role!=='SUPER_ADMIN' || actor.source!=='session') return send(res,403,{error:'A protected Super Admin session is required.'});
-        const input=await body(req),key=episodeKey(input.feedUrl,input.episodeId);
+        const input=await requestBody(req),key=episodeKey(input.feedUrl,input.episodeId);
         if(!String(input.reason||'').trim() || input.confirmation!=='CONFIRM') return send(res,400,{error:'A reason and confirmation are required.'});
         try {
           store.transaction(()=>{
@@ -1856,7 +1817,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "intelligence:read", { write: req.method === "POST" });
         if (!actor || req.method === "POST" && actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super administrator access is required for preparation changes." });
         if (req.method === "POST") {
-          const input = await body(req);
+          const input = await requestBody(req);
           if (input.action === 'prepare-missing') {
             if (actor.source !== 'session' || !String(input.reason || '').trim() || input.confirmation !== 'CONFIRM') return send(res,403,{error:'A protected Super Admin session, reason and confirmation are required.'});
             if (!followedPreparation.configuration().enabled) return send(res,409,{error:'Automatic preparation is paused. Resume it explicitly before preparing missing episodes.'});
@@ -1897,13 +1858,13 @@ export function createStarCastServer({
         const actor = adminActor(req, req.method === "GET" ? "configuration:read" : "configuration:write", { write: req.method === "POST" });
         if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
         if (req.method === "GET") return send(res, 200, { configuration: adminService.configuration() });
-        return send(res, 200, { configuration: adminService.setConfiguration(await body(req), actor) });
+        return send(res, 200, { configuration: adminService.setConfiguration(await requestBody(req), actor) });
       }
       if (url.pathname === "/api/admin/features" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, req.method === "GET" ? "features:read" : "features:write", { write: req.method === "POST" });
         if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
         if (req.method === "GET") return send(res, 200, { features: adminService.featureFlags() });
-        return send(res, 200, { feature: adminService.setFeatureFlag(await body(req), actor) });
+        return send(res, 200, { feature: adminService.setFeatureFlag(await requestBody(req), actor) });
       }
       if (url.pathname === "/api/admin/ad-skip" && req.method === "GET") {
         if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
@@ -1912,7 +1873,7 @@ export function createStarCastServer({
       if (url.pathname === '/api/admin/ad-skip/review' && req.method === 'POST') {
         const actor = adminActor(req,'configuration:write',{write:true});
         if (!actor || actor.role !== 'SUPER_ADMIN' || actor.source !== 'session') return send(res,403,{error:'A protected Super Admin session is required.'});
-        const input = await body(req);
+        const input = await requestBody(req);
         try {
           const change = store.transaction(() => {
             const result = skips.review(input,actor);
@@ -1963,7 +1924,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "rights:read", { write: true });
         if (!actor) return send(res, 403, { error: "Administrator access and CSRF validation are required." });
         try {
-          return send(res, 200, await policyImpact(await body(req)));
+          return send(res, 200, await policyImpact(await requestBody(req)));
         } catch (error) {
           return send(res, 400, { error: String(error?.message || "The policy impact could not be calculated.") });
         }
@@ -1972,7 +1933,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor) return send(res, 403, { error: "Administrator access, role permission and CSRF validation are required." });
         try {
-          return send(res, 202, await prepareEpisode(await body(req), actor));
+          return send(res, 202, await prepareEpisode(await requestBody(req), actor));
         } catch (error) {
           return send(res, 409, { error: String(error?.message || "This episode could not be prepared.") });
         }
@@ -1980,7 +1941,7 @@ export function createStarCastServer({
       if (url.pathname === '/api/admin/podcasts/prepare' && req.method === 'POST') {
         const actor=adminActor(req,'configuration:write',{write:true});
         if (!actor || actor.role !== 'SUPER_ADMIN' || actor.source !== 'session') return send(res,403,{error:'A protected Super Admin session is required.'});
-        const input=await body(req);
+        const input=await requestBody(req);
         if(input.confirmation!=='CONFIRM' || !String(input.reason||'').trim()) return send(res,400,{error:'Confirm this bounded preparation request and record a reason.'});
         try {
           const detail=await podcastDetail(input.feedUrl);
@@ -2001,7 +1962,7 @@ export function createStarCastServer({
         const actor = adminActor(req, req.method === "GET" ? "administrators:read" : "administrators:write", { write: req.method === "POST" });
         if (!actor) return send(res, 403, { error: "Super administrator access and CSRF validation are required." });
         if (req.method === "GET") return send(res, 200, { administrators: adminService.members() });
-        return send(res, 201, { administrator: adminService.addMember(await body(req), actor) });
+        return send(res, 201, { administrator: adminService.addMember(await requestBody(req), actor) });
       }
       if (url.pathname === "/api/admin/intelligence" && req.method === "GET") {
         if (!adminActor(req, "intelligence:read")) return send(res, 403, { error: "Administrator access is required." });
@@ -2026,7 +1987,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "intelligence:read", { write: req.method === "POST" });
         if (!actor || (req.method === "POST" && actor.role !== "SUPER_ADMIN")) return send(res, 403, { error: "Super administrator access is required for testing changes." });
         if (req.method === "POST") {
-          const input = await body(req);
+          const input = await requestBody(req);
           try {
             const previous = testingMode.configuration();
             const configuration = store.transaction(() => {
@@ -2043,7 +2004,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/intelligence/testing/prepare" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super administrator access is required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!valid(input) || !testingMode.allowed(input.listenerId)) return send(res, 400, { error: "Choose an eligible episode and an already configured internal tester." });
         await encounter(input.listenerId, input.feedUrl, input.episodeId, "admin-verification");
         adminService.appendAudit({ actor, action: "internal-testing-encounter", resource: `${input.feedUrl}:${input.episodeId}`, outcome: "ALLOWED", reason: "Bounded verification under the existing enrolled tester configuration." });
@@ -2052,7 +2013,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/intelligence/cancel" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!valid(input)) return send(res, 400, { error: "A valid publisher episode is required." });
         try {
           const status = pipeline.cancelQueued(input.feedUrl, input.episodeId);
@@ -2067,7 +2028,7 @@ export function createStarCastServer({
         if (!actor || (req.method === "POST" && actor.role !== "SUPER_ADMIN")) return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
         if (req.method === "GET") return send(res, 200, intelligencePolicyCatalogue());
         try {
-          return send(res, 202, await applyIntelligencePolicy(await body(req), actor));
+          return send(res, 202, await applyIntelligencePolicy(await requestBody(req), actor));
         } catch (error) {
           return send(res, 409, { error: String(error?.message || "The intelligence policy could not be saved.") });
         }
@@ -2076,7 +2037,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
         try {
-          return send(res, 200, resetIntelligencePolicy(await body(req), actor));
+          return send(res, 200, resetIntelligencePolicy(await requestBody(req), actor));
         } catch (error) {
           return send(res, 409, { error: String(error?.message || "The policy override could not be reset.") });
         }
@@ -2084,7 +2045,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/intelligence/policies/rollback" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!publicUrl(input.feedUrl)) return send(res, 400, { error: "A valid podcast RSS URL is required." });
         if (input.confirmation !== "ROLLBACK POLICY" || !Number.isInteger(input.expectedVersion) || !String(input.reason || "").trim())
           return send(res, 400, { error: "Confirm ROLLBACK POLICY with a reason and the reviewed current version." });
@@ -2102,7 +2063,7 @@ export function createStarCastServer({
         const actor = adminActor(req, req.method === "GET" ? "rights:read" : "rights:write", { write: req.method === "POST" });
         if (!actor) return send(res, 403, { error: "Rights administrator access is required." });
         if (req.method === "GET") return send(res, 200, { records: rights.list() });
-        const input = await body(req);
+        const input = await requestBody(req);
         // Ordinary legacy editors cannot erase a mandatory hold or replace a
         // structured review with an unversioned permission grant.
         const prior = rights.resolve(input.feedUrl, input.episodeId || "");
@@ -2139,7 +2100,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/assess" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId)
           return send(res, 400, { error: "A valid publisher episode is required." });
         const outcome = await assessEpisodeRights(input.feedUrl, input.episodeId);
@@ -2151,7 +2112,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
         try {
-          return send(res, 202, await approveAndProcess(await body(req), actor));
+          return send(res, 202, await approveAndProcess(await requestBody(req), actor));
         } catch (error) {
           // These are expected, administrator-supplied approval validation
           // failures. Return a useful, non-sensitive explanation instead of
@@ -2172,7 +2133,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
         try {
-          const input = await body(req);
+          const input = await requestBody(req);
           if (url.pathname.endsWith("approval-preview")) return send(res, 200, await previewApproval(input, actor));
           if (!publicUrl(input.feedUrl)) return send(res, 400, { error: "A valid publisher feed is required." });
           const record = rights.revokeApproval(input, { actor: actor.id });
@@ -2187,7 +2148,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/retry-processing" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!publicUrl(input.feedUrl) || typeof input.episodeId !== "string" || !input.episodeId) return send(res, 400, { error: "A valid publisher episode is required." });
         await assessEpisodeRights(input.feedUrl, input.episodeId);
         const permission = rights.resolve(input.feedUrl, input.episodeId);
@@ -2201,7 +2162,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/policy" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         const reason = String(input.reason || "").trim().slice(0, 1000);
         if (!reason || input.confirmation !== "CONFIRM") return send(res, 400, { error: "Provide a reason and type CONFIRM before changing the global rights policy." });
         const policy = rights.setPolicy(input, { actor: actor.id });
@@ -2211,12 +2172,12 @@ export function createStarCastServer({
       }
       if (url.pathname === "/api/admin/rights/policy/preview" && req.method === "POST") {
         if (!adminActor(req, "rights:read")) return send(res, 403, { error: "Rights administrator access is required." });
-        return send(res, 200, rights.previewPolicy(await body(req)));
+        return send(res, 200, rights.previewPolicy(await requestBody(req)));
       }
       if (url.pathname === "/api/admin/rights/super-admin-test-mode" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor || actor.role !== "SUPER_ADMIN") return send(res, 403, { error: "Super Administrator access and CSRF validation are required." });
-        const policy = rights.setSuperAdminTestMode(await body(req), { actor: actor.id });
+        const policy = rights.setSuperAdminTestMode(await requestBody(req), { actor: actor.id });
         rights.audit("super-admin-test-mode-changed", "global", actor.id, { enabled: policy.testMode.enabled, policyVersion: policy.version });
         adminService.appendAudit({ actor, action: "super-admin-test-mode-changed", resource: "global", newState: { enabled: policy.testMode.enabled, version: policy.version }, reason: policy.testMode.reason, outcome: "ALLOWED" });
         return send(res, 200, { policy });
@@ -2224,14 +2185,14 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/rights/override" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
-        const override = rights.setOverride(await body(req), { actor: actor.id });
+        const override = rights.setOverride(await requestBody(req), { actor: actor.id });
         rights.audit("rights-policy-override", override.id, actor.id, { scope: override.episodeId ? "episode" : "publisher" });
         return send(res, 200, { override });
       }
       if (url.pathname === "/api/admin/rights/suspend" && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!publicUrl(input.feedUrl) || (input.episodeId !== undefined && (typeof input.episodeId !== "string" || !input.episodeId || input.episodeId.length > 2000))) return send(res, 400, { error: "A valid publisher feed and optional episode are required." });
         const record = rights.suspend(input.feedUrl, input.episodeId || "", input.reason, { actor: actor.id });
         const removed = input.episodeId ? { ...pipeline.purgeEpisode(input.feedUrl, input.episodeId), ...translation.purgeEpisode(input.feedUrl, input.episodeId) } : { ...pipeline.purgeFeed(input.feedUrl), ...translation.purgeFeed(input.feedUrl) };
@@ -2242,7 +2203,7 @@ export function createStarCastServer({
       if (url.pathname === "/api/admin/translation/beta" && req.method === "POST") {
         const actor = adminActor(req, "translation:write", { write: true });
         if (!actor) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         const record = translation.setBetaAccess(input.listenerId, input.enabled, actor.id);
         adminService.appendAudit({ actor, action: input.enabled ? "translation-beta-authorised" : "translation-beta-revoked", resource: input.listenerId, outcome: "ALLOWED" });
         return send(res, 200, { record });
@@ -2253,7 +2214,7 @@ export function createStarCastServer({
       }
       if (url.pathname === "/api/admin/translation/fixture" && req.method === "POST") {
         if (!adminActor(req, "translation:write", { write: true })) return send(res, 403, { error: "Operations administrator access and CSRF validation are required." });
-        const input = await body(req), listenerId = String(input.listenerId || "");
+        const input = await requestBody(req), listenerId = String(input.listenerId || "");
         if (!/^[0-9a-f-]{36}$/i.test(listenerId)) return send(res, 400, { error: "A private beta listener is required." });
         const result = await translation.generateOwnedFixture({ listener: { id: listenerId }, identity: fixtureIdentity(), segments: parseVtt(approvedTestTranscriptVtt), sourceSeconds: 360 });
         return send(res, result.cacheReuse ? 200 : 201, result);
@@ -2264,13 +2225,13 @@ export function createStarCastServer({
           invites: store.all("pilot-invite").map(([, value]) => ({ ...value, codeHash: undefined })),
           devices: store.all("pilot-device").map(([, value]) => value),
         });
-        const issued = issuePilotInvite(await body(req));
+        const issued = issuePilotInvite(await requestBody(req));
         return send(res, 201, issued);
       }
       if (url.pathname === "/api/admin/pilot/devices/revoke" && req.method === "POST") {
         const actor = adminActor(req, "listeners:write", { write: true });
         if (!actor) return send(res, 403, { error: "Administrator access is required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         const device = store.get("pilot-device", input.deviceId);
         if (!device) return send(res, 404, { error: "Pilot device not found." });
         const revoked = { ...device, revokedAt: new Date().toISOString() };
@@ -2287,7 +2248,7 @@ export function createStarCastServer({
         const actor = adminActor(req, "support:write", { write: true });
         if (!actor) return send(res, 403, { error: "Support administrator access and CSRF validation are required." });
         try {
-          return send(res, 200, { report: adminService.updateReport({ ...(await body(req)), id: reportMatch[1] }, actor) });
+          return send(res, 200, { report: adminService.updateReport({ ...(await requestBody(req)), id: reportMatch[1] }, actor) });
         } catch (error) {
           return send(res, 409, { error: String(error?.message || "The listener report could not be updated.") });
         }
@@ -2295,7 +2256,7 @@ export function createStarCastServer({
       if (["/api/admin/transcripts/suspend", "/api/admin/transcripts/delete"].includes(url.pathname) && req.method === "POST") {
         const actor = adminActor(req, "rights:write", { write: true });
         if (!actor) return send(res, 403, { error: "Rights administrator access and CSRF validation are required." });
-        const input = await body(req);
+        const input = await requestBody(req);
         if (!valid(input)) return send(res, 400, { error: "A valid publisher episode is required." });
         const reason = typeof input.reason === "string" ? input.reason : "Administrative rights review.";
         if (url.pathname.endsWith("/suspend")) {
@@ -2313,7 +2274,7 @@ export function createStarCastServer({
         return send(res, 200, readyDiscovery({ store, status: listenerStatus }));
       }
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
-        const feed = url.searchParams.get("feedUrl"),
+        const feed = await canonicalFeed(url.searchParams.get("feedUrl")),
           id = url.searchParams.get("episodeId");
         if (!valid({ feedUrl: feed, episodeId: id }))
           return send(res, 400, { error: "A valid publisher episode is required." });
@@ -2326,7 +2287,7 @@ export function createStarCastServer({
       }
       if (req.method !== "POST")
         return send(res, 405, { error: "Method not allowed." });
-      const input = await body(req);
+      const input = await requestBody(req);
       if (url.pathname === "/api/search/conversations") {
         if (!featureEnabled(input.mode === "Moments" ? "findMoment" : "conversationSearch"))
           return send(res, 403, { error: "This search feature is currently unavailable.", code: "FEATURE_DISABLED" });

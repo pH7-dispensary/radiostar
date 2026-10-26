@@ -1,3 +1,4 @@
+import { episodeIdentity } from "../../episode-identity.mjs";
 import { useEffect, useRef } from "react";
 import { AppState, Linking } from "react-native";
 import * as Crypto from "expo-crypto";
@@ -65,8 +66,8 @@ export function ListenerSync({ onboarded, intelligenceEnabled }: { onboarded: bo
       if (sending || stopped || !latest.current.episodeId) return;
       sending = true;
       const current = latest.current;
-      if (episode !== current.episodeId) {
-        episode = current.episodeId;
+      if (episode !== episodeIdentity(source?.feedUrl, current.episodeId)) {
+        episode = episodeIdentity(source?.feedUrl, current.episodeId);
         session = Crypto.randomUUID();
       }
       try {

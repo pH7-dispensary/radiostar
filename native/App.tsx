@@ -1,3 +1,7 @@
+import { refreshFollowedCatalogue } from "./src/catalogueRefresh.mjs";
+import { FollowSync } from "./src/FollowSyncNotice";
+import { nativeEpisodeKey, sameEpisode, sameShow } from "../episode-identity.mjs";
+import { toggleEpisode } from "./src/listenerState";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   AccessibilityInfo,
@@ -305,7 +309,7 @@ function Discovery({
       {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
       <View style={styles.discoveryGrid}>
         {shows.map((show) => {
-          let following = state.following.some((item) => item.id === show.id);
+          let following = state.following.some((item) => sameShow(item, show));
           return (
             <Glass key={show.id} p={p} style={styles.discoveryCard}>
               <Pressable onPress={() => onOpen(show)}>
@@ -332,11 +336,11 @@ function Discovery({
                     ...state,
                     following: toggleById(state.following, show),
                   });
-                  if (show.feedUrl) void updateFollow(show.feedUrl, next)
-                    .then((result) => setState({ ...state, followIntelligence: {
-                      ...state.followIntelligence,
+                  if (show.feedUrl) void updateFollow(show.feedUrl, next, show)
+                    .then((result) => setState(current => ({ ...current, followIntelligence: {
+                      ...current.followIntelligence,
                       [show.feedUrl!]: result.processing || { state: "DISABLED" },
-                    } }))
+                    } })))
                     .catch(() => {});
                 }}
                 style={[
@@ -1551,7 +1555,7 @@ function Listen({
     ),
     uniqueEpisodes = publisherEpisodes.filter(
       (episode, index, list) =>
-        list.findIndex((item) => item.id === episode.id) === index,
+        list.findIndex((item) => sameEpisode(item, episode)) === index,
     ),
     episodes = [...uniqueEpisodes].sort(
       (a, b) =>
@@ -1566,17 +1570,17 @@ function Listen({
       )
       .sort(
         (a, b) =>
-          (state.history.find((item) => item.id === b.id)?.playCount || 0) -
-          (state.history.find((item) => item.id === a.id)?.playCount || 0),
+          (state.history.find((item) => sameEpisode(item, b))?.playCount || 0) -
+          (state.history.find((item) => sameEpisode(item, a))?.playCount || 0),
       );
   if (filter === "Best Rated")
     episodes = [...episodes].sort(
       (a, b) =>
-        Number(state.saved.some((e) => e.id === b.id)) -
-        Number(state.saved.some((e) => e.id === a.id)),
+        Number(state.saved.some((e) => sameEpisode(e, b))) -
+        Number(state.saved.some((e) => sameEpisode(e, a))),
     );
   let forYou = uniqueEpisodes
-    .filter((episode) => !state.history.some((item) => item.id === episode.id))
+    .filter((episode) => !state.history.some((item) => sameEpisode(item, episode)))
     .slice(0, 3);
   const continuing = state.history.find(
     (episode) =>
@@ -1706,7 +1710,7 @@ function Listen({
             .slice(0, 5)
             .map((episode) => (
               <EpisodeRow
-                key={episode.id}
+                key={nativeEpisodeKey(episode)}
                 episode={episode}
                 onPress={() => onPlay(episode)}
                 p={p}
@@ -1728,7 +1732,7 @@ function Listen({
             </Text>
             {forYou.map((episode) => (
               <EpisodeRow
-                key={episode.id}
+                key={nativeEpisodeKey(episode)}
                 episode={episode}
                 onPress={() => onPlay(episode)}
                 p={p}
@@ -1946,7 +1950,7 @@ function Library({
       {items.length ? (
         items.map((episode) => (
           <EpisodeRow
-            key={`${episode.id}:${episode.positionMs ?? "episode"}`}
+            key={`${nativeEpisodeKey(episode)}:${episode.positionMs ?? "episode"}`}
             episode={episode}
             onPress={() => onPlay(episode)}
             p={p}
@@ -2163,11 +2167,14 @@ function ShowDetail({
   onBack: () => void;
   p: Theme;
 }) {
-  let [episodes, setEpisodes] = useState<CatalogueEpisode[]>([]),
+  let [episodes, setEpisodes] = useState<CatalogueEpisode[]>(state.feedEpisodes[show.id] || []),
     [busy, setBusy] = useState(true),
     [error, setError] = useState("");
   useEffect(() => {
     let open = true;
+    setEpisodes(state.feedEpisodes[show.id] || []);
+    setBusy(true);
+    setError("");
     void (async () => {
       if (!show.feedUrl) {
         setBusy(false);
@@ -2204,7 +2211,7 @@ function ShowDetail({
       open = false;
     };
   }, [show]);
-  let following = state.following.some((x) => x.id === show.id);
+  let following = state.following.some((x) => sameShow(x, show));
   return (
     <>
       <Pressable onPress={onBack} style={styles.back}>
@@ -2235,7 +2242,7 @@ function ShowDetail({
             ...state,
             following: toggleById(state.following, show),
           });
-          if (show.feedUrl) void updateFollow(show.feedUrl, next)
+          if (show.feedUrl) void updateFollow(show.feedUrl, next, show)
             .then((result) => setState((current) => ({ ...current, followIntelligence: {
               ...current.followIntelligence,
               [show.feedUrl!]: result.processing || { state: "DISABLED" },
@@ -2279,12 +2286,13 @@ function ShowDetail({
           <LoadingState p={p} label="Loading publisher episodes…" />
         ) : null}
         {error ? <Text style={{ color: "#E78FA9" }}>{error}</Text> : null}
+        {!busy && !error && episodes.length === 0 ? <Text style={{color:p.muted}}>No published audio episodes are available in this feed.</Text> : null}
         {episodes.map((episode) => {
           let stored = asStored(episode, show),
-            saved = state.saved.some((x) => x.id === stored.id);
+            saved = state.saved.some((x) => sameEpisode(x, stored));
           return (
             <EpisodeRow
-              key={episode.id}
+              key={nativeEpisodeKey(episode)}
               episode={stored}
               p={p}
               saved={saved}
@@ -2294,7 +2302,7 @@ function ShowDetail({
                 if (!saved) void prewarmIntelligence([stored], state.intelligenceEnabled, "saved");
                 setState({
                   ...state,
-                  saved: toggleById(state.saved, stored),
+                  saved: toggleEpisode(state.saved, stored),
                 });
               }}
             />
@@ -2360,37 +2368,21 @@ function AppShell() {
   useEffect(() => {
     if (!hydrated) return;
     let live = true;
-    void Promise.allSettled(
-      state.following
-        .filter((show) => show.feedUrl)
-        .slice(0, 30)
-        .map(async (show) => ({ show, feed: await loadFeed(show.feedUrl!) })),
-    ).then((results) => {
-      if (!live) return;
-      setState((current) => ({
-        ...current,
-        feedEpisodes: {
-          ...current.feedEpisodes,
-          ...Object.fromEntries(
-            results.flatMap((result) =>
-              result.status === "fulfilled"
-                ? [
-                    [
-                      result.value.show.id,
-                      result.value.feed.episodes
-                        .filter((e) => e.audioUrl)
-                        .map((e) => asStored(e, result.value.show)),
-                    ],
-                  ]
-                : [],
-            ),
-          ),
-        },
-      }));
-    });
-    return () => {
-      live = false;
+    let running = false;
+    const refresh = async () => {
+      if (running || !live) return;
+      running = true;
+      try {
+        await refreshFollowedCatalogue(state.following, loadFeed, (results: Array<{show: CatalogueShow; feed: Awaited<ReturnType<typeof loadFeed>>}>) => {
+          setState(current => ({ ...current, feedEpisodes: { ...current.feedEpisodes,
+            ...Object.fromEntries(results.map(({show, feed}) => [show.id, feed.episodes.filter(e => e.audioUrl).map(e => asStored(e, show))])) } }));
+        }, { active: () => live });
+      } finally { running = false; }
     };
+    void refresh();
+    const subscription = AppState.addEventListener("change", next => { if (next === "active") void refresh(); });
+    const timer = setInterval(() => { if (AppState.currentState === "active") void refresh(); }, 600_000);
+    return () => { live = false; subscription.remove(); clearInterval(timer); };
   }, [hydrated, state.following]);
   let playStored = (episode: StoredEpisode) => {
     let source: Source = {
@@ -2543,23 +2535,23 @@ function AppContent({
   setAdSkipNotice: Dispatch<SetStateAction<AdSkipNotice | null>>;
   playStored: (e: StoredEpisode) => Source;
 }) {
-  let { play, snapshot } = usePlayback();
+  let { play, snapshot, source } = usePlayback();
   const progressBucket = Math.floor(snapshot.positionMs / 5000);
   useEffect(() => {
     if (!hydrated || !snapshot.episodeId) return;
     setState((current) =>
-      current.historyEnabled && current.history.some((e) => e.id === snapshot.episodeId)
+      current.historyEnabled && current.history.some((e) => sameEpisode(e, source))
         ? {
             ...current,
             history: current.history.map((e) =>
-              e.id === snapshot.episodeId
+              sameEpisode(e, source)
                 ? { ...e, listenedMs: snapshot.positionMs }
                 : e,
             ),
           }
         : current,
     );
-  }, [hydrated, snapshot.episodeId, progressBucket, snapshot.playing]);
+  }, [hydrated, source, snapshot.episodeId, progressBucket, snapshot.playing]);
   const profileReturn = useRef<Page>("Listen");
   let run = (episode: StoredEpisode) => {
     void play(playStored(episode)).catch(() =>
@@ -2601,7 +2593,7 @@ function AppContent({
     ) : null;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
-      {hydrated && <ListenerSync onboarded={state.onboardingComplete} intelligenceEnabled={state.intelligenceEnabled} />}
+      {hydrated && <><FollowSync setState={setState} /><ListenerSync onboarded={state.onboardingComplete} intelligenceEnabled={state.intelligenceEnabled} /></>}
       <AdSkipRuntime onNotice={setAdSkipNotice} />
       <AmbientBackdrop p={p} />
       <View style={styles.root}>

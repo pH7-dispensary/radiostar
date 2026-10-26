@@ -1,3 +1,5 @@
+import { setNativeFeedAliases } from "../../episode-identity.mjs";
+import { readLocalDocument, writeLocalDocument } from "./localStorage";
 import { getIdentity, setIdentity, removeIdentity, resumeLocalWrites } from "./localStorage";
 
 export type CatalogueShow = {
@@ -237,9 +239,19 @@ export async function loadFeed(feedUrl: string): Promise<{
   publisher: string;
   art?: string;
   episodes: CatalogueEpisode[];
+  canonicalFeedUrl?: string;
+  feedAliases?: string[];
 }> {
   return request(`/api/catalogue/feed?url=${encodeURIComponent(feedUrl)}`).then(
-    (x) => x.feed,
+    async (x) => {
+      if (x.feed.canonicalFeedUrl && Array.isArray(x.feed.feedAliases)) {
+        const aliases = {...JSON.parse(await readLocalDocument("star-cast-feed-aliases-v1") || "{}"),
+          ...Object.fromEntries(x.feed.feedAliases.map((alias: string) => [alias,x.feed.canonicalFeedUrl]))};
+        setNativeFeedAliases(aliases);
+        await writeLocalDocument("star-cast-feed-aliases-v1",JSON.stringify(aliases));
+      }
+      return x.feed;
+    },
   );
 }
 export async function loadIntelligenceStatus(

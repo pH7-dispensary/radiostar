@@ -1,3 +1,4 @@
+import * as identities from "./episode-identity.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -18,6 +19,7 @@ const output = ts.transpileModule(
 runInNewContext(output, {
   exports,
   require: (name) => {
+    if(name === "../../episode-identity.mjs") return identities;
     assert.equal(name, "./localStorage");
     return {
       readLocalDocument: async () => saved,

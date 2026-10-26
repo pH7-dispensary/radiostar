@@ -1,3 +1,4 @@
+import { episodeIdentity } from "./episode-identity.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { fetchPublisherTranscript, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
 import {
@@ -37,7 +38,7 @@ const completed = (value) =>
   (value?.state === "PARTIAL_READY" && !!value.completedAt);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 export const episodeKey = (feedUrl, episodeId) =>
-  hash(JSON.stringify([feedUrl, episodeId]));
+  hash(episodeIdentity(feedUrl, episodeId));
 export const canonicalEpisodeId = (feedUrl, episodeId) =>
   `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
 
@@ -238,6 +239,8 @@ export class EpisodePipeline {
     store,
     ledger,
     resolveEpisode,
+    canonicalFeed = async feed => feed,
+    resolveFeedIdentity = feed => feed,
     enabled = false,
     audioEnabled = false,
     configured = false,
@@ -256,6 +259,8 @@ export class EpisodePipeline {
       store,
       ledger,
       resolveEpisode,
+      canonicalFeed,
+      resolveFeedIdentity,
       enabled,
       audioEnabled,
       configured,
@@ -375,6 +380,7 @@ export class EpisodePipeline {
       .sort((a, b) => Date.parse(a.at || "") - Date.parse(b.at || ""));
   }
   status(feed, id) {
+    feed = this.resolveFeedIdentity(feed);
     const key = episodeKey(feed, id);
     let value = this.store.get("intelligence", key);
     if (completed(value) && value.transcript && !value.groundingVersion) {
@@ -508,6 +514,7 @@ export class EpisodePipeline {
       this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId }).allowed ? previous : null;
   }
   async request(input) {
+    input = { ...input, feedUrl: await this.canonicalFeed(input.feedUrl) };
     const key = episodeKey(input.feedUrl, input.episodeId);
     if (this.requesting.has(key)) return this.requesting.get(key);
     const pending = this.requestOnce(input);
