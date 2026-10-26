@@ -10,7 +10,7 @@ import { groupCommercialSpans } from "./ad-breaks.mjs";
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
 const categories = new Set(["advert", "intro", "title_sequence", "preview", "outro"]);
-const candidateVersion = "transcript-candidates-v8";
+const candidateVersion = "transcript-candidates-v9";
 const sponsorLanguage = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|made possible by|thanks to .{1,50} for sponsoring)\b/i;
 const commercialOffer = /\b(promo code|discount code|use (?:the )?code|free trial|percent off|visit .{1,80}(?: to |sign up|signup)|go to .{1,60} for|sign up at|get started at|head (?:over )?to .{1,70} (?:for|to))\b|\d+% off/i;
 const sponsorshipDenial = /\b(?:not sponsored|(?:no|without) (?:a )?sponsors?|isn't (?:a )?sponsor|not (?:an? )?(?:ad|advertisement))\b/i;
@@ -20,8 +20,9 @@ const sponsorshipDenial = /\b(?:not sponsored|(?:no|without) (?:a )?sponsors?|is
 const referralAddress = /\b[a-z][\w-]*(?:\.(?:com|net|org|io)\b|\s+dot\s+(?:com|net|org|io)\b|\s+dot\s+[\w-]+\s+(?:dot\s+)?(?:com|calm|net|org|io)\b)/i;
 const accountOffer = /\b(?:credit (?:towards|for)|new account|create an? account|free trial|discount code|promo code)\b/i;
 const addressedAction = /\b(?:go there to|go to|start by going to|get started at|sign up at)\b|\bget (?:a|an|your) .{0,80}\bcredit\b/i;
-const directResponseOffer = text => referralAddress.test(text) && accountOffer.test(text) && addressedAction.test(text);
-const strongAdvertText = text => !sponsorshipDenial.test(text) && ((sponsorLanguage.test(text) && commercialOffer.test(text)) || directResponseOffer(text));
+const nonCommercialDirection = /\b(?:pay (?:me|us|them|him|her) a visit|(?:don't|do not|never) (?:go to|visit|sign up))\b/i;
+const directResponseOffer = text => !nonCommercialDirection.test(text) && referralAddress.test(text) && accountOffer.test(text) && addressedAction.test(text);
+const strongAdvertText = text => !nonCommercialDirection.test(text) && !sponsorshipDenial.test(text) && ((sponsorLanguage.test(text) && commercialOffer.test(text)) || directResponseOffer(text));
 const verificationInput = (value, candidates) => hash(JSON.stringify([adSkipAudioVerificationVersion, value?.transcript?.audioContentHash || null, value?.transcript?.transcriptVersion, value?.transcript?.audioVariant, value?.episode?.audioUrl, candidates.map(row => [row.id,row.startMs,row.endMs])]));
 const validEventId = (value) =>
   typeof value === "string" && /^[a-zA-Z0-9_-]{8,120}$/.test(value);
@@ -31,7 +32,9 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
     return null;
   const text = String(segment.text || "");
   const sponsorship = sponsorLanguage.test(text);
-  const cta = commercialOffer.test(text);
+  // Spoken personal visits and explicit negative directions are not commercial offers.
+  // Keep sponsor declarations as review candidates; never use this filter as verification.
+  const cta = commercialOffer.test(text) && !nonCommercialDirection.test(text);
   const directOffer = directResponseOffer(text);
   const denied = sponsorshipDenial.test(text);
   const early = segment.startMs < 180000;

@@ -1,0 +1,23 @@
+{
+  "status": "AWAITING_HUMAN_REVIEW",
+  "episodes": 12,
+  "completeEpisodes": 0,
+  "reviewedLabels": 0,
+  "negativeEpisodes": 0,
+  "adverts": 0,
+  "predictions": 0,
+  "falsePositives": null,
+  "recall": null,
+  "precision": null,
+  "completeBreakCoverage": null,
+  "advertDurationCoverage": null,
+  "boundaryStartP95Ms": null,
+  "boundaryEndP95Ms": null,
+  "nonAdvertPredictedMs": null,
+  "productDiscussionOverlapMs": null,
+  "falsePositiveDurationRate": null,
+  "boundaryToleranceMs": 1000,
+  "formats": {},
+  "perEpisode": [],
+  "note": "Recall requires complete human review of entire episodes, including missed adverts. Candidate-only reviews do not establish recall. These are detector metrics, not production-safe skip accuracy."
+}

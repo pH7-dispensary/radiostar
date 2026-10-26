@@ -1,0 +1,900 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-26T19:47:50.625Z",
+  "purpose": "Private evaluation; not production skip authorisation",
+  "publisherAttribution": "Jupiter Broadcasting — original episode titles and source links retained. Audio unmodified; review excerpts are cropped. CC BY-SA 4.0.",
+  "episodes": [
+    {
+      "id": "lup-690",
+      "episodeId": "001d7139-1aed-4d0f-9f38-91cbc11cda8b",
+      "title": "690: The S in PHP is for Security",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/690",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/17d09551-573f-472f-b74e-0372a14d9a89.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/001d7139-1aed-4d0f-9f38-91cbc11cda8b.vtt",
+      "publishedAt": "Sun, 25 Oct 2026 22:53:20 -0000",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+      "durationMs": 3972676,
+      "bytes": 63683114,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:39:27.701Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129966,638dace5-a096-516e-914f-f8c8b4fff189,DDTBFNNkrCEhMFZwN05lIQld2i4/episodes/17d09551-573f-472f-b74e-0372a14d9a89/510c76f55c9461fddb034197b548db3d8439a5f86377f7f4cb4b7fbfd8c5e242383a6c5a146fb073c4d2b08a8ada6618cf4d010fff8c8b95f639e6e73dc0d6f2/20261025-TGludXglMjBVbnBsdWdnZWQlMjA2OTAlMjAlMjhBZHMlMjkuZmxhYw-6733a8ba-c8e7-47b7-976b-dfbeb837e1b7.mp3",
+        "etag": null,
+        "bytes": 63683114
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "d8f68a320951a88da9c5e61c058fa80bfbbc1b70d86cd26881596be04993c89f",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1104,
+      "reviewWindows": [
+        {
+          "id": "lup-690-opening",
+          "startMs": 0,
+          "endMs": 120000,
+          "candidateIds": [],
+          "reason": "Opening sample only; absence of candidates is not proof of no adverts."
+        }
+      ],
+      "analysisMs": 14.377832999999782,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": []
+    },
+    {
+      "id": "lup-684",
+      "episodeId": "b372b103-b15b-446f-a0b6-f3c33769596a",
+      "title": "684: You Ain't Ready For This Jelly",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/684",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/2ff27fc9-04a9-409a-b075-3ecbe6e357b5.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/b372b103-b15b-446f-a0b6-f3c33769596a.vtt",
+      "publishedAt": "Sun, 13 Sep 2026 19:02:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "faaab582ade5d5cde3017212b7ff768bd2fb79fe156af693c74b8e047aa40137",
+      "durationMs": 3707690,
+      "bytes": 59443339,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:39:38.568Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129975,3db6051c-a4a7-5f07-8a2c-b958d318e157,N7VTgZnysbXj20bYwo3ItVq3jFw/episodes/2ff27fc9-04a9-409a-b075-3ecbe6e357b5/48f4c2bda71c566680b250d12ec72898c4c65301a39f3413eff11ab242ff7a65097f4da28ed40ff7851a05ff3120cabd0e61d4b62f773dd95fd2d9a662b098ce/20260914-TGludXglMjBVbnBsdWdnZWQlMjA2ODQlMjAlMjhBZHMlMjkuZmxhYw-73e7e0fd-07ed-4000-bbf9-a12e330fea9b.mp3",
+        "etag": "\"a0344b97db565e16562b93caeb240c9b-3\"",
+        "bytes": 59443339
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "daa5d6fb3d96fc859b828fd3599e05ac57fc167f1549a8aa3a7af5f7ab176ed6",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 970,
+      "reviewWindows": [
+        {
+          "id": "lup-684-opening",
+          "startMs": 0,
+          "endMs": 120000,
+          "candidateIds": [],
+          "reason": "Opening sample only; absence of candidates is not proof of no adverts."
+        }
+      ],
+      "analysisMs": 4.308416999999963,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": []
+    },
+    {
+      "id": "lup-675",
+      "episodeId": "51033de6-ccde-4a4b-a0ed-686d254d44a6",
+      "title": "675: Sloppy Agent Roasting",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/675",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/70466ce1-26d3-4c42-bca8-eb6c90454974.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/51033de6-ccde-4a4b-a0ed-686d254d44a6.vtt",
+      "publishedAt": "Sun, 12 Jul 2026 21:00:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "durationMs": 5557943,
+      "bytes": 89047379,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:39:44.333Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129981,978ae2cd-50db-5fe5-b120-7dada39d1e7f,0lrapAQt8L8bTfRIa47MRF7_Hak/episodes/70466ce1-26d3-4c42-bca8-eb6c90454974/ae0c8b25009997fe822b71f7351903a1434785aa6e977194c7de274f8d68cb037b7fa265d61c47576a7c9084297e070d0063c461a7446043f95fa54d90674110/20260713-TGludXglMjBVbnBsdWdnZWQlMjA2NzUlMjAlMjhBZHMlMjkuZmxhYw-445b372d-aa93-420e-b482-f7a8e27ce57f.mp3",
+        "etag": "\"918e4fc7339a022bf1f2b06850284e12-4\"",
+        "bytes": 89047379
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "a73f07038a32b2c1daca5e83e6a93f5705f2e5568fb29996f4dc377fc1d2518a",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1572,
+      "reviewWindows": [
+        {
+          "id": "lup-675-review-1",
+          "startMs": 2689983,
+          "endMs": 2743231,
+          "candidateIds": [
+            "406bfedc07c62a17f91fe2f856ac79cc730cb07a15d6b1db193851ddf9b8284d"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lup-675-review-2",
+          "startMs": 2767679,
+          "endMs": 2838738,
+          "candidateIds": [
+            "a6a16fcfcd037cce711b2f878b0315994178e19d239f7a68435209af1115fe73",
+            "c49d234206014c07080cc721a4a95c00cfc3adc13de45251801b442758bac311"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 7.954791999999998,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "406bfedc07c62a17f91fe2f856ac79cc730cb07a15d6b1db193851ddf9b8284d",
+          "type": "advert",
+          "startMs": 2709983,
+          "endMs": 2713231,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "a6a16fcfcd037cce711b2f878b0315994178e19d239f7a68435209af1115fe73",
+          "type": "advert",
+          "startMs": 2787679,
+          "endMs": 2790547,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "c49d234206014c07080cc721a4a95c00cfc3adc13de45251801b442758bac311",
+          "type": "advert",
+          "startMs": 2806213,
+          "endMs": 2808738,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lup-665",
+      "episodeId": "b737a45c-c67b-4f40-94b9-999592e4f5d9",
+      "title": "665: Patch Me If You Can",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/665",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/dfe1eeda-9627-47e8-bcb7-f7750a53336b.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/b737a45c-c67b-4f40-94b9-999592e4f5d9.vtt",
+      "publishedAt": "Sun, 03 May 2026 18:30:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "e9ce50054554c70547471c9f8964f251444a3ea6fe3af2d99fe8d8bded9dc953",
+      "durationMs": 4901460,
+      "bytes": 78543645,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:39:49.832Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129986,3525deb1-462b-5068-91aa-1c76f1e2ece7,sOFiQ7U_iIIDjWo9QZCNUoX0mQM/episodes/dfe1eeda-9627-47e8-bcb7-f7750a53336b/77bdda012d2e9aab31bfff961061d372a88c83f8e7a7612914cc873d5ecbdb9db077013988c41592ead732a259c4bd680184186937027277dfcf7cea2ce4057f/Linux%20Unplugged%20665%20%28Ads%29.mp3",
+        "etag": "\"a0adaf4d03a5e8c3ef7f8118e56fe388-3\"",
+        "bytes": 78543645
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "6ecfa0673630e14ca11af856a1fed13ba9ed4456f87133ffde4fe7a9e6bddd86",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1401,
+      "reviewWindows": [
+        {
+          "id": "lup-665-opening",
+          "startMs": 0,
+          "endMs": 120000,
+          "candidateIds": [],
+          "reason": "Opening sample only; absence of candidates is not proof of no adverts."
+        }
+      ],
+      "analysisMs": 5.687540999999783,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": []
+    },
+    {
+      "id": "lup-650",
+      "episodeId": "3aad9cb2-68c5-40cb-a288-bdcf1776ac84",
+      "title": "650: This Old Network",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/650",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/46d31f99-243e-48be-98d8-c92b4b2cddeb.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/3aad9cb2-68c5-40cb-a288-bdcf1776ac84.vtt",
+      "publishedAt": "Sun, 18 Jan 2026 17:15:00 -0800",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+      "durationMs": 3874403,
+      "bytes": 62110741,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:39:54.365Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129992,d3a7e679-9930-566f-879c-f135f6394528,4AwaieDBrY9RqjgAJfvh4dxfYGQ/episodes/46d31f99-243e-48be-98d8-c92b4b2cddeb/aedea4edb84c7f9119f14fc4fc8640fffdc3d84f88b52e76261f54ece24492dc549bd7f65a4d6265d21224f1273432a476cb309a6b0f08630bd6682384d0e144/3aad9cb2-68c5-40cb-a288-bdcf1776ac84.mp3",
+        "etag": "\"420c1b22446cf3201037f328d958b4ff-3\"",
+        "bytes": 62110741
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "91b24d0cdd30ca792a28dcc1135be8a4fe448e11e30e89b0e37f9819f2d1834b",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1064,
+      "reviewWindows": [
+        {
+          "id": "lup-650-review-1",
+          "startMs": 154858,
+          "endMs": 210598,
+          "candidateIds": [
+            "969d5673bb477cd50ab1f7f2af975b93d8a8c5055dd2e8b69ecb5a1b49972520"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lup-650-review-2",
+          "startMs": 2378845,
+          "endMs": 2431385,
+          "candidateIds": [
+            "3dc111c58433b8be180162221c7e8d099fa7cd8fc94151f219be3f84a8db2c02"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 4.905708999999661,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "969d5673bb477cd50ab1f7f2af975b93d8a8c5055dd2e8b69ecb5a1b49972520",
+          "type": "advert",
+          "startMs": 174858,
+          "endMs": 180598,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "3dc111c58433b8be180162221c7e8d099fa7cd8fc94151f219be3f84a8db2c02",
+          "type": "advert",
+          "startMs": 2398845,
+          "endMs": 2401385,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lup-635",
+      "episodeId": "08a0780e-c979-41e1-bdd1-016fca89a405",
+      "title": "635: The Texas Linux Fest Special",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/635",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/ad5a7d39-f386-4e84-8ff8-4261ea432b26.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/08a0780e-c979-41e1-bdd1-016fca89a405.vtt",
+      "publishedAt": "Sun, 05 Oct 2025 19:25:37 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "c10cb5417527eed40d71200aaa3b31777d7dca3f96864a7a45919de426fa0b27",
+      "durationMs": 5493760,
+      "bytes": 88020461,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:00.515Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793129996,b19b851e-ee7c-54dd-b184-7ed28ce8c2ed,2X8QUbQpH7DyMdgeMJhiw9yHz0g/episodes/ad5a7d39-f386-4e84-8ff8-4261ea432b26/41889526f9810eaeba19889d324669119460562197e3de42e64ed3abacc148f1b07352ec0499034c8165899f4241fdbf09fe1c36df65f162d3378f20f43e5a56/08a0780e-c979-41e1-bdd1-016fca89a405.mp3",
+        "etag": "\"ecc6f6a9164a7c67fd6e1ed2c36bce7d-4\"",
+        "bytes": 88020461
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "f4dfe38b3f9ce26a9f59b4c4f645bf8de8b4657bb7a05b13b4c745b8af3fdc89",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1431,
+      "reviewWindows": [
+        {
+          "id": "lup-635-opening",
+          "startMs": 0,
+          "endMs": 120000,
+          "candidateIds": [],
+          "reason": "Opening sample only; absence of candidates is not proof of no adverts."
+        }
+      ],
+      "analysisMs": 5.365917000000081,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": []
+    },
+    {
+      "id": "lup-620",
+      "episodeId": "fcdad81b-eb1f-4e06-8465-169f8e8f4100",
+      "title": "620: Brent Loves Building Things",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/620",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/184d4a6d-92f6-4e3f-b10c-3b29b91aa414.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/fcdad81b-eb1f-4e06-8465-169f8e8f4100.vtt",
+      "publishedAt": "Sun, 22 Jun 2025 19:40:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
+      "durationMs": 3499729,
+      "bytes": 56115964,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:06.321Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793130003,6e6cd665-68bb-5662-99b9-7db2112a38de,H6ICYvSNCAhKCSoFY0Mvn1R0D6Q/episodes/184d4a6d-92f6-4e3f-b10c-3b29b91aa414/ceb5b78502877bc9abbb8e7034b9a838d9e46e1c3080c5111bd88864ae7e3d1fb94f830a6b3bff8ae6f944f45a43e24759739a4e127a5bcb04e859cc6b4cc5e7/fcdad81b-eb1f-4e06-8465-169f8e8f4100.mp3",
+        "etag": "\"2ddae1f1f4cf9266cde3a8298cd36b6b-3\"",
+        "bytes": 56115964
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "81d15723cbe01eb57f3e0c7b31fcc5b8c98abb5a89459eb5fbe4284084d76fea",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 945,
+      "reviewWindows": [
+        {
+          "id": "lup-620-review-1",
+          "startMs": 55555,
+          "endMs": 109675,
+          "candidateIds": [
+            "76cba5fb4850571a9be5e73eb6570c23b325f26e44cb09ce39d3c04749e5e201"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 4.423209000000043,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "76cba5fb4850571a9be5e73eb6570c23b325f26e44cb09ce39d3c04749e5e201",
+          "type": "advert",
+          "startMs": 75555,
+          "endMs": 79675,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lup-610",
+      "episodeId": "0961eb37-68a7-4b6d-af16-4ef1f6a58fe7",
+      "title": "610: Linus' Next Big Thing",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/610",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.vtt",
+      "publishedAt": "Sun, 13 Apr 2025 16:00:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "durationMs": 4294374,
+      "bytes": 68830276,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:14.474Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793130008,eebdc35b-37a5-58a1-be97-a9cdcc865c5f,0HVM_j__Rv2anCxguhohHp9oW2Y/episodes/f1e67190-93a7-47eb-b525-f5f5f9568228/1072db1df7dfb91d493d5807cc2c692d1bae20f8ce9264f3961cdd81f8cb452d294df0b40621e575c2ed76eba1f933fe81572a72e21a7c1b3e7773ab498ebb53/0961eb37-68a7-4b6d-af16-4ef1f6a58fe7.mp3",
+        "etag": null,
+        "bytes": 68830276
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "bc294c4db98335c6571aab89cf27fb3085e543349d2995d7ed0b666eb6c2f990",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 788,
+      "reviewWindows": [
+        {
+          "id": "lup-610-review-1",
+          "startMs": 1939785,
+          "endMs": 2081245,
+          "candidateIds": [
+            "4d90e08af1d20dd5dbd4b75c7d6721fd767332e9aa4f7e962bc613c7612f2cb3",
+            "faa675151cb20696f068b022ab6605700e5d2c883017687d401193b60241db06",
+            "3d19eb8253f16f0c3c77e1f9f92bfe93bbbc072485932fa74c3987285f6160bd",
+            "09df13c7bc73a2c8b0c93f828ddb4268f766186e6997c7b7e36eb133d9374a32",
+            "4a12b10be8097538fe44bc094a4cbbf6b6371ae7e9fcbe7117134b5d5cd2f60b",
+            "cd41b670aec90a14c2472231a67ba6f6abd2b705323a24b393c02ecebe60a46a"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lup-610-review-2",
+          "startMs": 3185328,
+          "endMs": 3239088,
+          "candidateIds": [
+            "2107c8110bf06f4c92044979a6354decc8dd704e4151f07811884462e66201be"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 3.918999999999869,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "4d90e08af1d20dd5dbd4b75c7d6721fd767332e9aa4f7e962bc613c7612f2cb3",
+          "type": "advert",
+          "startMs": 1959785,
+          "endMs": 1965065,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "3d19eb8253f16f0c3c77e1f9f92bfe93bbbc072485932fa74c3987285f6160bd",
+          "type": "advert",
+          "startMs": 2015425,
+          "endMs": 2022665,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "4a12b10be8097538fe44bc094a4cbbf6b6371ae7e9fcbe7117134b5d5cd2f60b",
+          "type": "advert",
+          "startMs": 2036445,
+          "endMs": 2040625,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "cd41b670aec90a14c2472231a67ba6f6abd2b705323a24b393c02ecebe60a46a",
+          "type": "advert",
+          "startMs": 2040625,
+          "endMs": 2044165,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "2107c8110bf06f4c92044979a6354decc8dd704e4151f07811884462e66201be",
+          "type": "advert",
+          "startMs": 3205328,
+          "endMs": 3209088,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "faa675151cb20696f068b022ab6605700e5d2c883017687d401193b60241db06",
+          "type": "advert",
+          "startMs": 1959785,
+          "endMs": 2022665,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        },
+        {
+          "id": "09df13c7bc73a2c8b0c93f828ddb4268f766186e6997c7b7e36eb133d9374a32",
+          "type": "advert",
+          "startMs": 2032265,
+          "endMs": 2051245,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lup-600",
+      "episodeId": "62834d7c-515b-4ad9-9614-221ea0fce7ba",
+      "title": "600: Everyone, Everywhere, All at Once",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/600",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/d1586243-878d-4de5-b900-a68287b71838.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/62834d7c-515b-4ad9-9614-221ea0fce7ba.vtt",
+      "publishedAt": "Sun, 02 Feb 2025 19:00:00 -0800",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
+      "durationMs": 4189257,
+      "bytes": 67148421,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:19.614Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793130017,48004a90-40e6-5332-bfcd-dc5c55a86c74,YiSz2vuNTiznpAtas7S86VBoEn0/episodes/d1586243-878d-4de5-b900-a68287b71838/12a055e6efa0ce1ef600edde9e8469d20dcdcb62488e3b24f2203f7addd729bb96a120e7d8856baa17b1644fd894db5861c2099aea91d2fff244cbaf7a1463d1/62834d7c-515b-4ad9-9614-221ea0fce7ba.mp3",
+        "etag": "\"1ca6d9f7376dab5cb8bf2241b0558830-3\"",
+        "bytes": 67148421
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "ba080bad20d6dadd1a5028d24495fc2fca4db0bc7cff0084b23c80036a29f558",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1103,
+      "reviewWindows": [
+        {
+          "id": "lup-600-review-1",
+          "startMs": 98692,
+          "endMs": 153932,
+          "candidateIds": [
+            "ec20232d7eb49d841b6f1d881e3df7ef43055e4f13f8c76c97e5555680d64da3"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 5.493499999999585,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "ec20232d7eb49d841b6f1d881e3df7ef43055e4f13f8c76c97e5555680d64da3",
+          "type": "advert",
+          "startMs": 118692,
+          "endMs": 123932,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lup-598",
+      "episodeId": "d7cb9739-9767-4628-adad-da7ce1988763",
+      "title": "598: Not Your Distrohopper's Distro",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "sourcePage": "https://linuxunplugged.com/598",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/mgln.ai/e/211/rss.art19.com/episodes/53d2fbd8-255e-4d8b-9be9-58ad7b9aaec0.mp3",
+      "transcriptUrl": "https://feeds.jupiterbroadcasting.com/transcripts/lup/d7cb9739-9767-4628-adad-da7ce1988763.vtt",
+      "publishedAt": "Sun, 19 Jan 2025 19:20:00 -0800",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Publisher transcript; product discussion and sponsorship review",
+      "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
+      "durationMs": 5111693,
+      "bytes": 81907392,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:25.272Z",
+        "finalUrl": "https://content.production.cdn.art19.com/validation=1793130022,0ceaea90-dd0e-5f00-b26f-618084101f1e,XVJPp1MImTZ5l9HbOFYMo6h_tVc/episodes/53d2fbd8-255e-4d8b-9be9-58ad7b9aaec0/d8f5d1cb119a96473aec0c8986e6b0f5afa2748c2dbb3fdb24ebe2d056da40b3fabf40db2e09d1b6b9e31b55509d13c50cc8c86a0c9c86c0eb46d35e4480b780/d7cb9739-9767-4628-adad-da7ce1988763.mp3",
+        "etag": "\"01a3d58ac4f4b01f794a2e44c29b3cfa-4\"",
+        "bytes": 81907392
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "26fe96652d410878697b69da7cd95574de220cc371e6bf42431665f0174de76b",
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 1330,
+      "reviewWindows": [
+        {
+          "id": "lup-598-review-1",
+          "startMs": 140218,
+          "endMs": 194838,
+          "candidateIds": [
+            "b6d9778e7da25f4af9abfc637269a94bad1b0b2ece232a9bd20e8f1cf0805fb4"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 5.666416999999456,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "b6d9778e7da25f4af9abfc637269a94bad1b0b2ece232a9bd20e8f1cf0805fb4",
+          "type": "advert",
+          "startMs": 160218,
+          "endMs": 164838,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
+          "transcriptAlignment": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "lan-299",
+      "episodeId": "270cad96-f51a-4143-9b0c-37083bd03e12",
+      "title": "Linux Action News 299",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxactionnews.com/rss",
+      "sourcePage": "https://linuxactionnews.com/299",
+      "audioUrl": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/270cad96-f51a-4143-9b0c-37083bd03e12.mp3",
+      "transcriptUrl": null,
+      "publishedAt": "Thu, 06 Jul 2023 10:30:00 -0700",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "News / potential negative cohort; full review required",
+      "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+      "durationMs": 793469,
+      "bytes": 11471107,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:26.965Z",
+        "finalUrl": "https://cdn.fireside.fm/file/fireside-audio-2024/podcasts/audio/d/dec90738-e640-45e5-b375-4573052f4bf4/episodes/2/270cad96-f51a-4143-9b0c-37083bd03e12/270cad96-f51a-4143-9b0c-37083bd03e12.mp3",
+        "etag": "\"75978411d96b52a7bfc497fc5af12e3f\"",
+        "bytes": 11471107
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": null,
+      "transcriptAlignment": "UNVERIFIED",
+      "transcriptSegments": 0,
+      "reviewWindows": [
+        {
+          "id": "lan-299-opening",
+          "startMs": 0,
+          "endMs": 120000,
+          "candidateIds": [],
+          "reason": "Opening sample only; absence of candidates is not proof of no adverts."
+        }
+      ],
+      "analysisMs": 0.09774999999990541,
+      "detectorVersion": null,
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": []
+    },
+    {
+      "id": "lan-164",
+      "episodeId": "615c6587-31a8-41a4-9a7c-e3b88b1df894",
+      "title": "Linux Action News 164",
+      "publisher": "Jupiter Broadcasting",
+      "feedUrl": "https://linuxactionnews.com/rss",
+      "sourcePage": "https://linuxactionnews.com/164",
+      "audioUrl": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+      "transcriptUrl": null,
+      "publishedAt": "Sun, 22 Nov 2020 15:15:00 -0800",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "permissionEvidence": "https://www.jupiterbroadcasting.com/contact/",
+      "selectionReason": "Historical advert comparison",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "durationMs": 1806968,
+      "bytes": 22046309,
+      "acquisition": {
+        "retrievedAt": "2026-10-26T19:40:27.915Z",
+        "finalUrl": "https://cdn.fireside.fm/file/fireside-audio-2024/podcasts/audio/d/dec90738-e640-45e5-b375-4573052f4bf4/episodes/6/615c6587-31a8-41a4-9a7c-e3b88b1df894/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+        "etag": "\"e8239b5d668d6a48fe985760edcaaed0\"",
+        "bytes": 22046309
+      },
+      "permissionEvidenceHash": "5f2d567dff9f481496f0a4ea970689aa2343610d84f83684b48100e1f7a7eb21",
+      "transcriptHash": "26b900419c3332d8e76cbf15f3f99bc4eac2ea4dbf87c0e79c09486d73e58fd3",
+      "transcriptAlignment": "HASH_BOUND_CACHE",
+      "transcriptSegments": 425,
+      "reviewWindows": [
+        {
+          "id": "lan-164-review-1",
+          "startMs": 521940,
+          "endMs": 576380,
+          "candidateIds": [
+            "7fb5dd23005536d92b24fd9c73555e732caca607293344b7ca349096458ff93a"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lan-164-review-2",
+          "startMs": 695020,
+          "endMs": 753020,
+          "candidateIds": [
+            "082e4c1f90289ca0f55bb8978bf8434a48d07f6349ed265782eda8a7fb07a0f3"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lan-164-review-3",
+          "startMs": 1216780,
+          "endMs": 1331600,
+          "candidateIds": [
+            "7a1a539d6fa39de5dae458631fd04b6186526cf9f44158c31e132db17440fc3e",
+            "71e2d3a2325af312ce2587fd8d49e9174cda43dd7ce2d59cfb891736d95df6e2"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        },
+        {
+          "id": "lan-164-review-4",
+          "startMs": 1735980,
+          "endMs": 1792260,
+          "candidateIds": [
+            "2193726de8a5be3abedec2c16564001ecae1e4cafbd4841e5e221f7d93fed3ad"
+          ],
+          "reason": "Unreviewed transcript candidate; verify alignment and full break boundaries."
+        }
+      ],
+      "analysisMs": 2.5900000000001455,
+      "detectorVersion": "transcript-candidates-v9",
+      "reviewStatus": "PENDING",
+      "fullEpisodeReviewed": false,
+      "candidates": [
+        {
+          "id": "2193726de8a5be3abedec2c16564001ecae1e4cafbd4841e5e221f7d93fed3ad",
+          "type": "advert",
+          "startMs": 1755980,
+          "endMs": 1762260,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+          "transcriptAlignment": "HASH_BOUND_CACHE"
+        },
+        {
+          "id": "7fb5dd23005536d92b24fd9c73555e732caca607293344b7ca349096458ff93a",
+          "type": "advert",
+          "startMs": 541940,
+          "endMs": 546380,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+          "transcriptAlignment": "HASH_BOUND_CACHE"
+        },
+        {
+          "id": "082e4c1f90289ca0f55bb8978bf8434a48d07f6349ed265782eda8a7fb07a0f3",
+          "type": "advert",
+          "startMs": 715020,
+          "endMs": 723020,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+          "transcriptAlignment": "HASH_BOUND_CACHE"
+        },
+        {
+          "id": "7a1a539d6fa39de5dae458631fd04b6186526cf9f44158c31e132db17440fc3e",
+          "type": "advert",
+          "startMs": 1236780,
+          "endMs": 1301600,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+          "transcriptAlignment": "HASH_BOUND_CACHE"
+        },
+        {
+          "id": "71e2d3a2325af312ce2587fd8d49e9174cda43dd7ce2d59cfb891736d95df6e2",
+          "type": "advert",
+          "startMs": 1293660,
+          "endMs": 1301600,
+          "verificationState": "CANDIDATE",
+          "independent": false,
+          "reviewStatus": "UNREVIEWED",
+          "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+          "transcriptAlignment": "HASH_BOUND_CACHE"
+        }
+      ]
+    }
+  ],
+  "audioStorage": "Local private Application Support directory; audio and transcripts are not committed",
+  "clips": [
+    {
+      "id": "lan-164",
+      "startMs": 520000,
+      "endMs": 750000,
+      "question": "Locate the complete Linode sponsorship. Check whether the current short detected fragment misses the rest of the break.",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "clipHash": "a870b0e805528d6deaae3f2092fa8de771a84e8615999a7220722f919056c9cc",
+      "path": "clips/lan-164-520000-750000.wav",
+      "independent": false,
+      "status": "HUMAN_REVIEW_REQUIRED",
+      "attribution": "Linux Action News 164 — Jupiter Broadcasting; https://linuxactionnews.com/164; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+    },
+    {
+      "id": "lup-610",
+      "startMs": 1939000,
+      "endMs": 2080000,
+      "question": "Confirm the ConfigCat host-read boundaries and whether the two detected spans belong to one complete break.",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "clipHash": "a39e5d648d3ed682dca930c377996219680957eac3c2d070c88260afdc087bd1",
+      "path": "clips/lup-610-1939000-2080000.wav",
+      "independent": false,
+      "status": "HUMAN_REVIEW_REQUIRED",
+      "attribution": "610: Linus' Next Big Thing — Jupiter Broadcasting; https://linuxunplugged.com/610; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+    },
+    {
+      "id": "lup-675",
+      "startMs": 2689000,
+      "endMs": 2840000,
+      "question": "Check the promotional-code context, classify the advert format, and distinguish product discussion from the complete advert.",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "clipHash": "5f857f17055a1a95e441946ae29160e6de2679e39dfef17d7f5fa440f8250780",
+      "path": "clips/lup-675-2689000-2840000.wav",
+      "independent": false,
+      "status": "HUMAN_REVIEW_REQUIRED",
+      "attribution": "675: Sloppy Agent Roasting — Jupiter Broadcasting; https://linuxunplugged.com/675; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+    },
+    {
+      "id": "lup-690",
+      "startMs": 0,
+      "endMs": 120000,
+      "question": "Check whether opening audio contains an inserted advert absent from the publisher transcript. The entire episode still requires review.",
+      "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+      "clipHash": "999e15bcfe8d07b73c6a12f91162d81a3922ade0869620568454064ca9e17287",
+      "path": "clips/lup-690-0-120000.wav",
+      "independent": false,
+      "status": "HUMAN_REVIEW_REQUIRED",
+      "attribution": "690: The S in PHP is for Security — Jupiter Broadcasting; https://linuxunplugged.com/690; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+    },
+    {
+      "id": "lan-299",
+      "startMs": 0,
+      "endMs": 120000,
+      "question": "News negative-control sample. Do not label the whole episode no-advert until all 13 minutes have been heard.",
+      "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+      "clipHash": "4be2568310593055b67d58d71760b93743c8d7da8bbda49d44dcc2d1387b1656",
+      "path": "clips/lan-299-0-120000.wav",
+      "independent": false,
+      "status": "HUMAN_REVIEW_REQUIRED",
+      "attribution": "Linux Action News 299 — Jupiter Broadcasting; https://linuxactionnews.com/299; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+    }
+  ],
+  "metrics": {
+    "status": "AWAITING_HUMAN_REVIEW",
+    "episodes": 12,
+    "completeEpisodes": 0,
+    "reviewedLabels": 0,
+    "negativeEpisodes": 0,
+    "adverts": 0,
+    "predictions": 0,
+    "falsePositives": null,
+    "recall": null,
+    "precision": null,
+    "completeBreakCoverage": null,
+    "advertDurationCoverage": null,
+    "boundaryStartP95Ms": null,
+    "boundaryEndP95Ms": null,
+    "nonAdvertPredictedMs": null,
+    "productDiscussionOverlapMs": null,
+    "falsePositiveDurationRate": null,
+    "boundaryToleranceMs": 1000,
+    "formats": {},
+    "perEpisode": [],
+    "note": "Recall requires complete human review of entire episodes, including missed adverts. Candidate-only reviews do not establish recall. These are detector metrics, not production-safe skip accuracy."
+  }
+}
