@@ -19,6 +19,7 @@ let followed;
 for(let attempt=0;attempt<45;attempt++){followed=await api('/api/admin/intelligence/followed');if(!followed.refreshInProgress)break;await new Promise(r=>setTimeout(r,1000));}
 assert.equal(followed.refreshInProgress,false,'Followed reassessment must finish');
 const rights=(await api('/api/admin/rights')).records;
+const policies=await api('/api/admin/intelligence/policies');
 const ready=await api('/api/intelligence/ready',listener),results=[];
 assert(ready.episodes.length,'Listener must have real AI-ready episodes');
 assert(ready.episodes.every(e=>!e.feedUrl.includes('/fixtures/')));
@@ -44,7 +45,11 @@ for(const episode of ready.episodes){
 }
 const after=await api('/api/admin/intelligence'),operations=await api('/api/admin/operations');
 assert.equal(after.jobs.length,before.jobs.length);assert.equal(after.usage.length,before.usage.length);assert.deepEqual(after.totals,before.totals);
-const backlog=followed.rows.filter(row=>row.inWindow).map(row=>{const r=rights.find(r=>r.feedUrl===row.feedUrl&&r.episodeId===row.episodeId);return {feedUrl:row.feedUrl,episodeId:row.episodeId,podcast:row.podcast,title:row.title,state:row.state,eligible:row.eligible,decision:row.decision,code:row.code,acquisition:row.acquisition,assessmentVersion:r?.assessmentVersion,basis:r?.legalBasis,evidence:r?.assessmentEvidence};});
+const backlog=followed.rows.filter(row=>row.inWindow).map(row=>{
+ const r=rights.find(r=>r.feedUrl===row.feedUrl&&r.episodeId===row.episodeId)||rights.find(r=>r.feedUrl===row.feedUrl&&!r.episodeId);
+ const policy=policies.policies.find(p=>p.feedUrl===row.feedUrl&&p.episodeId===row.episodeId)||policies.policies.find(p=>p.feedUrl===row.feedUrl&&!p.episodeId)||policies.global;
+ return {feedUrl:row.feedUrl,episodeId:row.episodeId,podcast:row.podcast,title:row.title,state:row.state,eligible:row.eligible,decision:row.decision,code:row.code,acquisition:row.acquisition,assessmentVersion:r?.assessmentVersion,assessmentSource:r?.assessmentSource,basis:r?.legalBasis,evidence:r?.assessmentEvidence,policy:{tier:policy.tier,label:({ZERO:'OPEN',LOW:'STANDARD',MEDIUM:'MANAGED',HIGH:'PAUSED'})[policy.tier]}};
+});
 const result={at:new Date().toISOString(),health,ready:results,backlog,followedCounts:followed.counts,controls:after.controls,testingMode:after.testingMode,usageBefore:before.usage.length,usageAfter:after.usage.length,paidCalls:0,additionalAiUsd:0,totals:after.totals,infrastructure:operations.infrastructure,summary:operations.commandCentre.summary};
 writeFileSync('.starcast/batch1-live.json',JSON.stringify(result,null,2));
 console.log(JSON.stringify({ready:results.length,backlog:backlog.length,counts:followed.counts,additionalAiUsd:0,health:health.backend,summary:result.summary},null,2));
