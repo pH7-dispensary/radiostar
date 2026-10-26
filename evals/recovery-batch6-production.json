@@ -1,0 +1,57 @@
+{
+  "baselineAt": "2026-10-26T18:51:31.228Z",
+  "verifiedAt": "2026-10-26T19:13:23.178Z",
+  "release": {
+    "releaseSha": "3bb3d055225ebf4998cf30700760fd10721f62b6cd145518aff952b067215379",
+    "previousReleaseSha": "7d3e3f0b2704921f0f3a29b893f14ff9cd8c11f2088c2d1760cd396aaa5a312a",
+    "deployedAt": "2026-10-26T19:09:23.037Z",
+    "rollbackAvailable": true
+  },
+  "baseline": {
+    "analysedEpisodes": 11,
+    "candidateIntervals": 6,
+    "candidateEpisodes": 2,
+    "verifiedIntervals": 2,
+    "realVerifiedIntervals": 1,
+    "realVerifiedDurationMs": 4355,
+    "attempts": 2,
+    "confirmedRealSeeks": 2,
+    "confirmedOwnedSeeks": 1,
+    "realUndos": 2,
+    "ownedUndos": 1,
+    "incorrectReports": 0,
+    "missedReports": 1
+  },
+  "after": {
+    "historicalIntervalRecords": 7,
+    "activeRealCandidates": 5,
+    "activeOwnedCandidates": 1,
+    "verifiedIntervals": 2,
+    "transcripts": 18,
+    "integrity": {
+      "integrity_check": "ok"
+    },
+    "availableBytes": 25686097920,
+    "worker": {
+      "at": 1793041975508,
+      "workerRunning": true,
+      "eventLoopP99Ms": 20.430847
+    },
+    "ledger": [
+      {
+        "usageCount": 121,
+        "reservations": 0,
+        "usd": 1.5886908000000002
+      }
+    ],
+    "pilotExpiresAt": "2026-10-27T21:53:27.023Z",
+    "pilotConfigurationUnchanged": true,
+    "publicAutomaticSkipping": false,
+    "nonPilotLeaseDenied": true,
+    "cachedIntelligence": "PARTIAL_READY"
+  },
+  "paidUsageUnchanged": true,
+  "productionPlaybackEventsUnchanged": true,
+  "physicalIphoneVerified": false,
+  "independentlyLabelledRealWorldCorpusAvailable": false
+}
