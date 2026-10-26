@@ -1,3 +1,4 @@
+import { cloudFrontProxyRanges } from "../../cloudfront-proxy.mjs";
 import { execFileSync } from "node:child_process";
 import { backup, DatabaseSync } from "node:sqlite";
 import { unlink, writeFile, rename } from "node:fs/promises";
@@ -33,9 +34,10 @@ try {
   process.exit(1);
 }
 // Verified dedicated VPC origin: backend SG accepts port 4173 only from the
-// CloudFront VPCOrigins service SG in 10.46.1.0/24; no intermediary proxy.
+// CloudFront VPCOrigins service SG. The VPC path preserves public edge source
+// addresses; observed peers were verified against AWS origin-facing ranges.
 process.env.STARCAST_TRUST_CLOUDFRONT_VPC = "enabled";
-process.env.STARCAST_TRUSTED_PROXY_CIDR = "10.46.1.0/24";
+process.env.STARCAST_TRUSTED_PROXY_CIDRS = ["10.46.1.0/24", ...await cloudFrontProxyRanges()].join(",");
 process.env.NODE_ENV = "production";
 process.env.STARCAST_PRIVATE_PILOT = "enabled";
 acquireServerLock("/var/lib/starcast/backend.lock");

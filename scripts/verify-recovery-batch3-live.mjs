@@ -10,9 +10,10 @@ const response=await fetch(origin+'/api/admin/session',{method:'POST',headers,bo
 const login=await response.json(),cookie=response.headers.getSetCookie().map(v=>v.split(';')[0]).join('; '),csrf=cookie.match(/starcast_admin_csrf=([^;]+)/)?.[1];
 try {
  assert.equal(login.actor.id,'operations-super-admin');assert.equal(login.actor.role,'SUPER_ADMIN');assert.equal(login.actor.emergency,true);
- assert.match(response.headers.get('set-cookie'),/HttpOnly/);assert.match(response.headers.get('set-cookie'),/Secure/);
+ assert(response.headers.get('set-cookie').includes('HttpOnly'),'HttpOnly cookie required');assert(response.headers.get('set-cookie').includes('Secure'),'Secure cookie required');
  const configuration=(await get('/api/admin/configuration',{cookie})).configuration;
- assert.match(response.headers.get('set-cookie'),new RegExp(`Max-Age=${configuration.values.security.adminSessionHours*3600}`));
+ const maxAge=Number(response.headers.get('set-cookie').match(/Max-Age=(\d+)/)?.[1]),configuredSeconds=configuration.values.security.adminSessionHours*3600;
+ assert(maxAge<=configuredSeconds && maxAge>=configuredSeconds-5,'Cookie lifetime must match policy, allowing time spent issuing the session');
  const session=await get('/api/admin/session',{cookie,'x-forwarded-for':'198.51.100.99'});assert.equal(session.viewerIdentification,'cloudfront-vpc');
  assert.equal(session.expiresAt,login.expiresAt);
  const members=await get('/api/admin/administrators',{cookie}),features=await get('/api/admin/features',{cookie});

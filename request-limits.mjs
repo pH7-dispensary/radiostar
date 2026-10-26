@@ -8,9 +8,9 @@ const normalise = value => {
 export function viewerIdentity(req, env={}) {
   const peer=normalise(req.socket.remoteAddress)||'unknown';
   if(env.STARCAST_TRUST_CLOUDFRONT_VPC!=='enabled')return {key:peer,source:'socket'};
-  const [address,prefix]=String(env.STARCAST_TRUSTED_PROXY_CIDR||'').split('/');
   const block=new BlockList();
-  try {block.addSubnet(address,Number(prefix),isIP(address)===6?'ipv6':'ipv4');} catch {return {key:peer,source:'socket'};}
+  const ranges=String(env.STARCAST_TRUSTED_PROXY_CIDRS || env.STARCAST_TRUSTED_PROXY_CIDR || '').split(',');
+  try {for(const cidr of ranges){const [address,prefix]=cidr.trim().split('/');block.addSubnet(address,Number(prefix),isIP(address)===6?'ipv6':'ipv4');}} catch {return {key:peer,source:'socket'};}
   if(!isIP(peer)||!block.check(peer,isIP(peer)===6?'ipv6':'ipv4')||typeof req.headers['x-amz-cf-id']!=='string')return {key:peer,source:'socket'};
   // In the verified direct CloudFront VPC origin path there is no ALB or second
   // proxy. CloudFront appends the TCP viewer to XFF; client-supplied prefixes

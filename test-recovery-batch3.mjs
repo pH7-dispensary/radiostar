@@ -155,3 +155,12 @@ assert.equal(migrated.featureDecision('adSkip',{id:'beta',privateBeta:true}).all
 assert.equal(migrated.featureDecision('adSkip',{id:'ordinary'}).allowed,false);
 assert.equal(migrated.audit()[0].previousState.version,4);
 new AdminService(legacyStore);assert.equal(migrated.audit().length,1,'legacy mapping is idempotent');legacyStore.close();
+
+const {cloudFrontProxyRanges,verifiedRanges,verifiedAt}=await import('./cloudfront-proxy.mjs');
+const ranges=await cloudFrontProxyRanges(async()=>({ok:true,json:async()=>({prefixes:[{service:'CLOUDFRONT_ORIGIN_FACING',ip_prefix:'130.176.160.0/19'},{service:'EC2',ip_prefix:'0.0.0.0/0'}]})}));
+assert.deepEqual(ranges,['130.176.160.0/19']);
+assert.equal(viewerIdentity(req('spoof, 203.0.113.7','130.176.165.21'),{...env,STARCAST_TRUSTED_PROXY_CIDRS:ranges.join(',')}).key,'203.0.113.7');
+assert.equal(viewerIdentity(req('203.0.113.7','192.0.2.1'),{...env,STARCAST_TRUSTED_PROXY_CIDRS:ranges.join(',')}).source,'socket');
+assert.deepEqual(await cloudFrontProxyRanges(async()=>{throw Error('offline');},Date.parse(verifiedAt)),verifiedRanges);
+await assert.rejects(cloudFrontProxyRanges(async()=>{throw Error('offline');},Date.parse(verifiedAt)+8*86400000),/could not be verified/);
+console.log('Batch 3: preserved public CloudFront edge source, AWS-only origin ranges and bounded metadata fallback verified.');
