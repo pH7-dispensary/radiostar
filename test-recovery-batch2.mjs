@@ -51,6 +51,8 @@ const old=await outbox.enqueue(feed,true);const newer=await outbox.enqueue(feed,
 // A delayed response must not acknowledge a newer local intent.
 let finish;const race=new FollowOutbox({...options,send:op=>new Promise(resolve=>{finish=()=>resolve({...op,accepted:true});})});
 await race.enqueue(other,true);const flushing=race.flush();await new Promise(resolve=>setImmediate(resolve));await race.enqueue(other,false);finish();await flushing;assert.equal(race.data.operations[other].pending,true);assert.equal(race.data.operations[other].following,false);
+const authoritative=new FollowOutbox({read:async()=>null,write:async()=>{},send:async op=>({...op,version:op.version+5,following:false,accepted:false})});
+await authoritative.enqueue(feed,true);await authoritative.flush();assert.equal(authoritative.data.operations[feed].pending,false);assert.equal(authoritative.data.operations[feed].following,false);
 store.close();console.log('Batch 2 parser, identities, alias conflicts, migrations, offline restart, unfollow tombstones and stale acknowledgements passed.');
 
 let concurrent=0,maximum=0,visited=0,accepted=[];

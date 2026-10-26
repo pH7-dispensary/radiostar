@@ -234,6 +234,7 @@ export async function searchCatalogue(
 ): Promise<{ provider: string; results: CatalogueShow[] }> {
   return request(`/api/catalogue/search?q=${encodeURIComponent(query)}`);
 }
+let feedAliasWrites: Promise<unknown> = Promise.resolve();
 export async function loadFeed(feedUrl: string): Promise<{
   title: string;
   publisher: string;
@@ -244,11 +245,15 @@ export async function loadFeed(feedUrl: string): Promise<{
 }> {
   return request(`/api/catalogue/feed?url=${encodeURIComponent(feedUrl)}`).then(
     async (x) => {
-      if (x.feed.canonicalFeedUrl && Array.isArray(x.feed.feedAliases)) {
+      if (x.feed.canonicalFeedUrl && Array.isArray(x.feed.feedAliases) && x.feed.feedAliases.length) {
+        const persist = feedAliasWrites.then(async () => {
         const aliases = {...JSON.parse(await readLocalDocument("star-cast-feed-aliases-v1") || "{}"),
           ...Object.fromEntries(x.feed.feedAliases.map((alias: string) => [alias,x.feed.canonicalFeedUrl]))};
         setNativeFeedAliases(aliases);
         await writeLocalDocument("star-cast-feed-aliases-v1",JSON.stringify(aliases));
+        });
+        feedAliasWrites = persist.catch(() => {});
+        await persist;
       }
       return x.feed;
     },

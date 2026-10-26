@@ -21,8 +21,8 @@ export class FollowOutbox {
         const result=await this.send(operation);
         const update=this.serial.then(async()=>{
           if(this.data.operations[operation.feedUrl]?.version!==operation.version)return;
-          if(result.version!==operation.version || result.accepted===false) throw Error('Follow synchronisation conflict.');
-          const next={...this.data,operations:{...this.data.operations,[operation.feedUrl]:{...operation,pending:false,error:undefined,processing:result.processing}}};
+          if(!Number.isSafeInteger(result.version) || result.version<operation.version || typeof result.following!=='boolean' || (result.version===operation.version && result.accepted===false)) throw Error('Follow synchronisation conflict.');
+          const next={...this.data,version:Math.max(this.data.version,result.version),operations:{...this.data.operations,[operation.feedUrl]:{...operation,version:result.version,following:result.following,pending:false,error:undefined,processing:result.processing}}};
           await this.write(JSON.stringify(next));this.data=next;this.changed(this.data);
         }); this.serial=update.catch(()=>{}); await update;
       } catch {

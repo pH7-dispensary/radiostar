@@ -1591,7 +1591,7 @@ export function createStarCastServer({
           const parsed = episodesFromFeed(await feedXml(feed), feedIdentity.resolve(feed));
           parsed.feedAliases = feedIdentity.aliases(feed);
           const newest = [...parsed.episodes].sort((a, b) => Date.parse(b.publishedAt || "") - Date.parse(a.publishedAt || ""))[0];
-          if (newest?.id) void backgroundEncounter(testListener(req), feed, newest.id, "podcast-detail");
+          if (newest?.id) void backgroundEncounter(testListener(req), parsed.canonicalFeedUrl, newest.id, "podcast-detail");
           return send(res, 200, {
             feed: { ...parsed, episodes: parsed.episodes.map(({ refs, ...episode }) => episode) },
           });
@@ -1607,6 +1607,7 @@ export function createStarCastServer({
           error: "Analysis requires an authorised Star Cast device.",
           code: "DEVICE_UNAUTHORISED",
         });
+      if (url.searchParams.has("feedUrl")) url.searchParams.set("feedUrl", feedIdentity.resolve(url.searchParams.get("feedUrl")));
       if (env.STARCAST_CLOUD_API_URL && /^\/api\/(intelligence|search|listener|skips|captions|reports)(\/|$)/.test(url.pathname)) {
         const payload = req.method === "POST" ? await requestBody(req) : undefined;
         const upstream = await fetch(env.STARCAST_CLOUD_API_URL + url.pathname + url.search, {
