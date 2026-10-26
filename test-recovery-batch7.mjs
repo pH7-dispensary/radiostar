@@ -31,3 +31,8 @@ const binding=await import('data:text/javascript;base64,'+Buffer.from(stripTypeS
 const bound=binding.createSleepDriver({duration:600,currentTime:0,playbackRate:1},()=>source);
 const cancelling=bound.cancel();await new Promise(r=>setImmediate(r));const pending=bound.arm('stale','ai',Date.now()+50000,1000);pending.catch(()=>{});await binding.clearNativeSleepRecord();release();await cancelling;await assert.rejects(pending,/source changed/i);assert.deepEqual(calls,['clear']);
 console.log('Batch 7 actual bridge: native ownership, 5/15/30 extensions, timer precedence, idempotent recovery, restart, interruption and queued privacy revocation passed (mock native transport).');
+
+let failedId=null,errors=0;const failing={available:true,arm:async(id)=>({id,state:'ARMED',deadlineAt:Date.now()+60000}),state:async()=>null,extend:async()=>{throw Error('transport unavailable');},cancel:async(id)=>{failedId=id;return null;}};
+const failureManual=new NativeSleepTimer(async()=>{},()=>errors++,failing);failureManual.start({kind:'minutes',minutes:5});await new Promise(r=>setImmediate(r));failureManual.extend(5);await new Promise(r=>setImmediate(r));assert.equal(failureManual.endAt,null);assert(failedId);assert.equal(errors,1);
+const failureAi=new NativeAiSleepBridge(async()=>0,()=>Date.now(),failing,()=>errors++);await ready(failureAi);failureAi.start(0,'failure-source');await new Promise(r=>setImmediate(r));failureAi.extend(5);await new Promise(r=>setImmediate(r));assert.equal(failureAi.engine.state,'OFF');assert.equal(errors,2);
+console.log('Failed native extensions cancel superseded deadlines instead of showing a later time while the old deadline remains armed.');

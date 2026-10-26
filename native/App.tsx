@@ -1017,7 +1017,7 @@ function PlayerSheet({
       if(timer.current?.lastRecord?.state === "PAUSED") { const row=timer.current.lastRecord; const savedSource=recoveredSource(row.sourceJSON,row.sourceKey); if(savedSource && Number.isFinite(row.positionMs)) setSleepRecovery({lastHeard:row.recoveryMs ?? row.positionMs!,pausedAt:row.positionMs!,source:savedSource}); }
       const timerEnd = timer.current?.endAt;
       const left = timerEnd ? Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000)) : 0;
-      setTimerRemaining(timerEnd ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")} remaining` : timer.current?.endOfEpisode ? "Until the end of this episode" : null);
+      setTimerRemaining(timer.current?.endOfEpisode ? "Until the end of this episode" : timerEnd ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")} remaining` : null);
       if (!recovered && ai.current?.ready && sleepSource) {
         recovered = true;
         if (ai.current.recovered?.sourceKey === sleepSource) { setSleepRecovery(ai.current.recovered); setSleepView("PAUSED"); }

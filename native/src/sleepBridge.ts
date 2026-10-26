@@ -58,7 +58,7 @@ export class NativeSleepTimer {
   extend(minutes: number) {
     if (![5,15,30].includes(minutes) || !this.endsAt || this.endsWithEpisode) throw Error("Start a fixed sleep timer first.");
     this.endsAt = Math.max(Date.now(),this.endsAt)+minutes*60000;
-    if (this.driver?.available) { const id=this.id; void this.driver.extend(id,minutes*60000).then(row=>{if(this.id===id)this.endsAt=row.deadlineAt;}).catch(this.onError); }
+    if (this.driver?.available) { const id=this.id; void this.driver.extend(id,minutes*60000).then(row=>{if(this.id===id)this.endsAt=row.deadlineAt;}).catch(error=>{if(this.id===id){this.cancel();this.onError(error);}}); }
     else { if(this.timeout) clearTimeout(this.timeout); this.timeout=setTimeout(()=>{void this.check().catch(this.onError);},this.endsAt-Date.now()); }
   }
   async check(now = Date.now()) {
@@ -235,7 +235,7 @@ export class NativeAiSleepBridge {
     current.recorded = false;
     this.engine.recordSession();
     this.persist();
-    if(this.driver?.available) { const id=this.nativeId; void this.driver.extend(id,minutes*60000).then(row=>{if(this.nativeId===id){this.fallbackDeadlineAt=row.deadlineAt;this.sync();}}).catch(this.onError); }
+    if(this.driver?.available) { const id=this.nativeId; void this.driver.extend(id,minutes*60000).then(row=>{if(this.nativeId===id){this.fallbackDeadlineAt=row.deadlineAt;this.sync();}}).catch(error=>{if(this.nativeId===id){this.stop();this.onError(error);}}); }
     void writeLocalDocument("star-cast-sleep-session-v1",JSON.stringify({sourceKey:this.sourceKey,state:"SETTLING",engineSession:this.engine.session,nativeId:this.nativeId})).catch(this.onError);
     return this.sync()!;
   }
