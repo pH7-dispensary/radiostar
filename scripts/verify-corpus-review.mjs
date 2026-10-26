@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {createCorpusReviewServer} from './review-ad-skip-corpus.mjs';
 const {chromium}=await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE||'playwright');
-const app=await createCorpusReviewServer();let browser;
+const app=await createCorpusReviewServer({readOnly:true});let browser;
 try{
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1280,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(app.accessUrl); await page.waitForSelector('#priority button'); assert.equal(await page.locator('#priority button').count(),5); const labelsBefore=await page.evaluate(()=>fetch('/manifest').then(r=>r.json()).then(m=>m.metrics.reviewedLabels));

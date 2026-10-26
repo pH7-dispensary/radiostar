@@ -1,7 +1,7 @@
 // Local evaluation workbench, not an alternative production admin or a rights bypass.
 import {createServer} from 'node:http';
 import {readFile,writeFile,rename,stat,realpath,readdir} from 'node:fs/promises';
-import {createReadStream} from 'node:fs';
+import {createReadStream,writeFileSync,readFileSync,unlinkSync} from 'node:fs';
 import {createHash,randomBytes} from 'node:crypto';
 import {resolve,join,dirname} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -11,7 +11,7 @@ import ffmpeg from 'ffmpeg-static';
 import {parseTranscript} from '../transcripts.mjs';
 import {corpusDirectory,reviewAnnotation,currentReviews,corpusMetrics,appendReviewEvent,verifyReviewChain} from '../ad-skip-corpus.mjs';
 const assets=join(dirname(fileURLToPath(import.meta.url)),'corpus-review');
-export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={}){
+export async function createCorpusReviewServer({root=corpusDirectory(),port=0,readOnly=false}={}){
  root=await realpath(root);const manifest=JSON.parse(await readFile(join(root,'manifest.json'),'utf8'));
  if(!Array.isArray(manifest.episodes)||manifest.episodes.length>20)throw Error('Invalid bounded corpus.');
  const pinned=new Map();
@@ -65,6 +65,7 @@ export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={
   if(!(req.headers.cookie||'').split(';').some(v=>v.trim()===`corpus_session=${cookie}`))return json(res,401,{error:'Open the one-time access link printed by the review command.'});
   if(req.method==='POST'){
    if(url.pathname!=='/review'||req.headers.origin!==origin||req.headers['x-corpus-csrf']!==csrf)return json(res,403,{error:'Invalid review origin or CSRF token'});
+   if(readOnly)return json(res,403,{error:'This verification session is read-only. Use the writable review workbench.'});
    let body='';for await(const b of req){body+=b;if(Buffer.byteLength(body)>16000)return json(res,413,{error:'Review too large'});}
    const input=JSON.parse(body);const work=tail.then(()=>save(input));tail=work.catch(()=>{});return json(res,200,await work);
   }
@@ -80,7 +81,29 @@ export async function createCorpusReviewServer({root=corpusDirectory(),port=0}={
   }
   const staticFile={'/':['index.html','text/html'],'/review.js':['review.js','text/javascript'],'/review.css':['review.css','text/css']}[url.pathname];if(!staticFile)return json(res,404,{error:'Not found'});res.setHeader('content-type',staticFile[1]);res.end(await readFile(join(assets,staticFile[0])));
  }catch(e){if(!res.headersSent)json(res,e.status||400,{error:e.message});else res.destroy();}});
- await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));origin=`http://127.0.0.1:${server.address().port}`;
+ // Only one process may own the append-only review ledger. Browser verification
+ // can share pinned audio read-only, but never race a human review writer.
+ const lockPath=join(root,'review-writer.lock'),lock={pid:process.pid,nonce:randomBytes(16).toString('hex')};let ownsLock=false;
+ const release=()=>{if(ownsLock){try{if(JSON.parse(readFileSync(lockPath,'utf8')).nonce===lock.nonce)unlinkSync(lockPath);}catch(e){if(e.code!=='ENOENT')throw e;}ownsLock=false;}};
+ if(!readOnly){
+  try{writeFileSync(lockPath,JSON.stringify(lock),{flag:'wx',mode:0o600});ownsLock=true;}
+  catch(error){
+   if(error.code!=='EEXIST')throw error;
+   const previous=JSON.parse(readFileSync(lockPath,'utf8'));let alive=true;
+   if(!Number.isInteger(previous.pid)||previous.pid<1)throw Error('Invalid review writer lock; inspect it before restarting.');
+   try{process.kill(previous.pid,0);}catch(e){if(e.code==='ESRCH')alive=false;else throw e;}
+   if(alive)throw Error('A writable corpus-review session is already running. Reuse it; verification may use readOnly mode.');
+   throw Error('The previous review writer exited without releasing review-writer.lock. Inspect its recorded PID and remove only that stale lock before restarting; reviews.json must be preserved.');
+  }
+ }
+ server.once('close',release);
+ try{
+  // A previous writer may have saved while this process checked the large audio
+  // files. Read the authoritative chain again after exclusive ownership.
+  if(ownsLock){try{events=JSON.parse(await readFile(auditPath,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;events=[];}verifyReviewChain(events);}
+  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',resolve);});
+ }catch(error){release();throw error;}
+ origin=`http://127.0.0.1:${server.address().port}`;
  return {server,origin,accessUrl:origin+'/session?code='+boot};
 }
 if(import.meta.url===pathToFileURL(process.argv[1]||'').href){const app=await createCorpusReviewServer({root:resolve(process.argv[2]||corpusDirectory()),port:Number(process.env.CORPUS_REVIEW_PORT||4318)});console.log('Local review only; eight-hour session. Open once: '+app.accessUrl);}

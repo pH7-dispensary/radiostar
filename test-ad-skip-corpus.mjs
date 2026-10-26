@@ -21,6 +21,8 @@ const directory=await mkdtemp(join(tmpdir(),'starcast-corpus-test-'));let app;
 try{
  await copyFile('fixtures/ad-skip-owned-v1.mp3',join(directory,'owned.mp3'));await writeFile(join(directory,'manifest.json'),JSON.stringify({episodes:[episode]}));
  app=await createCorpusReviewServer({root:directory});const bootstrap=await fetch(app.accessUrl,{redirect:'manual'});assert.equal(bootstrap.status,303);const cookie=bootstrap.headers.get('set-cookie').split(';')[0];
+ await assert.rejects(()=>createCorpusReviewServer({root:directory}),/already running/);
+ const reader=await createCorpusReviewServer({root:directory,readOnly:true});try{const login=await fetch(reader.accessUrl,{redirect:'manual'}),cookie=login.headers.get('set-cookie').split(';')[0];const state=await(await fetch(reader.origin+'/manifest',{headers:{cookie}})).json();assert.equal((await fetch(reader.origin+'/review',{method:'POST',headers:{cookie,origin:reader.origin,'x-corpus-csrf':state.csrf},body:'{}'})).status,403);}finally{await new Promise(r=>reader.server.close(r));}
  assert.equal((await fetch(app.accessUrl,{redirect:'manual'})).status,401,'one-time bootstrap');assert.equal((await fetch(app.origin+'/manifest')).status,401);
  const headers={cookie};const state=await(await fetch(app.origin+'/manifest',{headers})).json();
  const post=(body,extra={})=>fetch(app.origin+'/review',{method:'POST',headers:{...headers,'content-type':'application/json',origin:app.origin,'x-corpus-csrf':state.csrf,...extra},body:JSON.stringify(body)});

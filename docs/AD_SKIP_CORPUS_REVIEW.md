@@ -2,6 +2,13 @@
 
 2026-10-26 · local evaluation, not production skip authorisation.
 
+Phase 2 update: detector v10 and the richer existing workbench are now verified;
+backend diagnostics are deployed. The corpus still has 20 provisional candidates
+and no independent human labels. The workbench adds five priority buttons,
+waveforms, bounded transcript context, keyboard controls and corrections. Cached
+PCM clips are hash-checked and reused. See `PRODUCT_ACTIVATION_PHASE_2.md` for
+current deployment, measurements and the precise outstanding review tasks.
+
 ## Delivered and measured
 
 - **12 real episodes, 13.1121 hours, 748,368,148 audio bytes**, all SHA-256 checked. Ten LINUX Unplugged episodes across 2025–2026, Linux Action News 164 and 299. This initial cohort is limited to one publisher; it is not representative platform-wide evidence.
@@ -48,4 +55,4 @@ Tests cover audio hash mismatch, bounds, human attestations, incomplete-review e
 
 No TestFlight build/upload, public automatic skip activation, public Translate activation or production rights changes. Corpus labels cannot enable any of those. The native sleep work and device limitations are recorded separately in `docs/RECOVERY_BATCH_7.md`.
 
-Production read-only checks: AWS account 208096650030 / eu-west-2 verified; HTTPS health returned backend ready; SQLite integrity `ok`; 18 canonical transcript records retained. Recorded AI usage remains 121 entries / $1.5886908, zero reservations. No production deployment was performed for this local evaluation work. Detector v9 is verified in the repository, not yet the deployed v8 runtime.
+Historical corpus-preparation checks: AWS account 208096650030 / eu-west-2 verified; HTTPS health returned backend ready; SQLite integrity `ok`; 18 canonical transcript records retained. At that time AI usage was 121 entries / $1.5886908, zero reservations, and v9 was local only. Phase 1 subsequently added a real transcription; Phase 2 deployed v10. Current ledger and release evidence are in the Phase 2 report above.

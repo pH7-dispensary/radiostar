@@ -1,0 +1,327 @@
+{
+  "at": "2026-10-26T21:24:54.951Z",
+  "status": "PARTIALLY_VERIFIED_HUMAN_AND_DEVICE_REVIEW_REQUIRED",
+  "before": {
+    "analysedEpisodes": 12,
+    "episodesWithCandidates": 2,
+    "activeCandidateIntervals": 6,
+    "historicalIntervalStates": {
+      "candidates": 1,
+      "variantMatched": 4,
+      "verified": 2,
+      "disputed": 0,
+      "rejected": 0,
+      "processing": 0,
+      "failed": 0,
+      "automaticSkips": 3,
+      "undoEvents": 3,
+      "falsePositiveReports": 0,
+      "missedAdvertReports": 1
+    },
+    "verifiedIntervals": 2,
+    "episodesWithVerifiedEvidence": 2,
+    "completeRealBreaksIndependentlyReviewed": 0,
+    "attempts": 2,
+    "confirmed": 3,
+    "undos": 3,
+    "publicSkipping": false
+  },
+  "after": {
+    "analysedEpisodes": 12,
+    "episodesWithCandidates": 2,
+    "activeCandidateIntervals": 6,
+    "historicalIntervalStates": {
+      "candidates": 1,
+      "variantMatched": 4,
+      "verified": 2,
+      "disputed": 0,
+      "rejected": 0,
+      "processing": 0,
+      "failed": 0,
+      "automaticSkips": 3,
+      "undoEvents": 3,
+      "falsePositiveReports": 0,
+      "missedAdvertReports": 1
+    },
+    "verifiedIntervals": 2,
+    "episodesWithVerifiedEvidence": 2,
+    "completeRealBreaksIndependentlyReviewed": 0,
+    "attempts": 2,
+    "confirmed": 3,
+    "undos": 3,
+    "publicSkipping": false
+  },
+  "corpus": {
+    "episodes": 12,
+    "hours": 13.112061666666667,
+    "bytes": 748368148,
+    "candidates": 20,
+    "completeBreakProposals": 0,
+    "detector": "transcript-candidates-v10",
+    "audioHashesUnchanged": true,
+    "metrics": {
+      "status": "AWAITING_HUMAN_REVIEW",
+      "episodes": 12,
+      "completeEpisodes": 0,
+      "reviewedLabels": 0,
+      "negativeEpisodes": 0,
+      "adverts": 0,
+      "predictions": 0,
+      "falsePositives": null,
+      "recall": null,
+      "precision": null,
+      "completeBreakCoverage": null,
+      "advertDurationCoverage": null,
+      "boundaryStartP95Ms": null,
+      "boundaryEndP95Ms": null,
+      "nonAdvertPredictedMs": null,
+      "productDiscussionOverlapMs": null,
+      "falsePositiveDurationRate": null,
+      "boundaryToleranceMs": 1000,
+      "formats": {},
+      "perEpisode": [],
+      "note": "Recall requires complete human review of entire episodes, including missed adverts. Candidate-only reviews do not establish recall. These are detector metrics, not production-safe skip accuracy."
+    },
+    "clips": [
+      {
+        "id": "lan-164",
+        "startMs": 520000,
+        "endMs": 750000,
+        "question": "Locate the complete Linode sponsorship. Check whether the current short detected fragment misses the rest of the break.",
+        "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+        "clipHash": "a870b0e805528d6deaae3f2092fa8de771a84e8615999a7220722f919056c9cc",
+        "path": "clips/lan-164-520000-750000.wav",
+        "independent": false,
+        "status": "HUMAN_REVIEW_REQUIRED",
+        "attribution": "Linux Action News 164 — Jupiter Broadcasting; https://linuxactionnews.com/164; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+      },
+      {
+        "id": "lup-610",
+        "startMs": 1939000,
+        "endMs": 2080000,
+        "question": "Confirm the ConfigCat host-read boundaries and whether the two detected spans belong to one complete break.",
+        "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+        "clipHash": "a39e5d648d3ed682dca930c377996219680957eac3c2d070c88260afdc087bd1",
+        "path": "clips/lup-610-1939000-2080000.wav",
+        "independent": false,
+        "status": "HUMAN_REVIEW_REQUIRED",
+        "attribution": "610: Linus' Next Big Thing — Jupiter Broadcasting; https://linuxunplugged.com/610; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+      },
+      {
+        "id": "lup-675",
+        "startMs": 2689000,
+        "endMs": 2840000,
+        "question": "Check the promotional-code context, classify the advert format, and distinguish product discussion from the complete advert.",
+        "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+        "clipHash": "5f857f17055a1a95e441946ae29160e6de2679e39dfef17d7f5fa440f8250780",
+        "path": "clips/lup-675-2689000-2840000.wav",
+        "independent": false,
+        "status": "HUMAN_REVIEW_REQUIRED",
+        "attribution": "675: Sloppy Agent Roasting — Jupiter Broadcasting; https://linuxunplugged.com/675; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+      },
+      {
+        "id": "lup-690",
+        "startMs": 0,
+        "endMs": 120000,
+        "question": "Check whether opening audio contains an inserted advert absent from the publisher transcript. The entire episode still requires review.",
+        "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+        "clipHash": "999e15bcfe8d07b73c6a12f91162d81a3922ade0869620568454064ca9e17287",
+        "path": "clips/lup-690-0-120000.wav",
+        "independent": false,
+        "status": "HUMAN_REVIEW_REQUIRED",
+        "attribution": "690: The S in PHP is for Security — Jupiter Broadcasting; https://linuxunplugged.com/690; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+      },
+      {
+        "id": "lan-299",
+        "startMs": 0,
+        "endMs": 120000,
+        "question": "News negative-control sample. Do not label the whole episode no-advert until all 13 minutes have been heard.",
+        "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+        "clipHash": "4be2568310593055b67d58d71760b93743c8d7da8bbda49d44dcc2d1387b1656",
+        "path": "clips/lan-299-0-120000.wav",
+        "independent": false,
+        "status": "HUMAN_REVIEW_REQUIRED",
+        "attribution": "Linux Action News 299 — Jupiter Broadcasting; https://linuxactionnews.com/299; https://creativecommons.org/licenses/by-sa/4.0/. Cropped PCM excerpt; no editorial changes."
+      }
+    ]
+  },
+  "playback": {
+    "audioHash": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+    "interval": {
+      "id": "05e5d53bfde8f6f4991a6471c3ef7aaa35d387ebe50ee2330fb3e8d447764f33",
+      "type": "advert",
+      "startMs": 15200,
+      "endMs": 34500,
+      "targetMs": 34500
+    },
+    "originMs": 15207.691,
+    "targetMs": 34500,
+    "skippedDurationMs": 19292.309,
+    "restoredMs": 15207.691,
+    "undoSeeks": 1,
+    "paused": true,
+    "rate": 1.5,
+    "playPromiseMs": 0.8999999910593033,
+    "authorisationRoundTripMs": 27.600000008940697,
+    "seekConfirmationMs": 4.4000000059604645,
+    "undoConfirmationMs": 0.8999999910593033,
+    "entryDelaySourceMs": 6.4210000000002765,
+    "pollIntervalMs": 10,
+    "device": "Chromium, not a physical iPhone"
+  },
+  "browser": {
+    "at": "2026-10-26T21:32:09.273Z",
+    "episodes": 12,
+    "hashVerifiedAtStartup": true,
+    "actualAudioSeekSeconds": 1939.996,
+    "quarterSecondControl": true,
+    "keyboardControls": true,
+    "waveformAndTranscript": true,
+    "priorityClips": 5,
+    "humanLabelsCreated": 0,
+    "desktop": "1280x900",
+    "mobile": "390x844",
+    "horizontalOverflow": false,
+    "pageErrors": [],
+    "realWorldAccuracy": "UNMEASURED_PENDING_HUMAN_REVIEW"
+  },
+  "cost": {
+    "before": 1.8183337399999997,
+    "after": 1.8183337399999997,
+    "additionalAiUsd": 0,
+    "reservations": 0,
+    "newResources": 0,
+    "incrementalAwsCost": "NOT_SEPARATELY_ATTRIBUTED"
+  },
+  "production": {
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+      "deployedAt": "2026-10-26T21:24:11.537Z",
+      "previousReleaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    },
+    "infrastructure": {
+      "status": "DEGRADED",
+      "generatedAt": "2026-10-26T21:24:51.022Z",
+      "serverStartedAt": "2026-10-26T21:24:13.103Z",
+      "components": [
+        {
+          "name": "Backend API",
+          "status": "HEALTHY",
+          "reason": "This authenticated operations request reached the active backend.",
+          "observedAt": "2026-10-26T21:24:51.022Z"
+        },
+        {
+          "name": "Durable database",
+          "status": "HEALTHY",
+          "reason": "SQLite quick check passed for the active server store."
+        },
+        {
+          "name": "Disk capacity",
+          "status": "HEALTHY",
+          "reason": "21% used · 23.8 GiB available; deployments require 3 GiB headroom.",
+          "detail": {
+            "totalBytes": 32132542464,
+            "availableBytes": 25503473664,
+            "usedPercent": 21
+          },
+          "observedAt": "2026-10-26T21:24:51.021Z"
+        },
+        {
+          "name": "Deployment retention",
+          "status": "DEGRADED",
+          "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+          "detail": {
+            "retained": 3,
+            "limit": 2,
+            "protectedLegacy": 1
+          },
+          "observedAt": "2026-10-26T21:24:51.022Z"
+        },
+        {
+          "name": "Last verified backup",
+          "status": "HEALTHY",
+          "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+          "observedAt": "2026-10-26T21:24:17.541Z"
+        },
+        {
+          "name": "Processing queue",
+          "status": "HEALTHY",
+          "reason": "SQS queue attributes were read successfully.",
+          "observedAt": "2026-10-26T21:24:51.021Z",
+          "detail": {
+            "visible": 0,
+            "inFlight": 0,
+            "delayed": 0
+          }
+        },
+        {
+          "name": "Dead-letter queue",
+          "status": "HEALTHY",
+          "reason": "No messages are waiting in the dead-letter queue.",
+          "observedAt": "2026-10-26T21:24:51.021Z",
+          "detail": {
+            "visible": 0,
+            "inFlight": 0,
+            "delayed": 0
+          }
+        },
+        {
+          "name": "Processing worker",
+          "status": "HEALTHY",
+          "reason": "The single durable queue consumer is running."
+        },
+        {
+          "name": "CloudWatch logs",
+          "status": "UNKNOWN",
+          "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+        },
+        {
+          "name": "S3 backups",
+          "status": "UNKNOWN",
+          "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+        },
+        {
+          "name": "Deployment",
+          "status": "HEALTHY",
+          "reason": "Release metadata was read from the protected server record.",
+          "observedAt": "2026-10-26T21:24:11.537Z",
+          "detail": {
+            "releaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+            "previousReleaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+            "rollbackAvailable": true
+          }
+        }
+      ],
+      "release": {
+        "status": "HEALTHY",
+        "releaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+        "deployedAt": "2026-10-26T21:24:11.537Z",
+        "previousReleaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+        "rollbackAvailable": true,
+        "reason": "Release metadata was read from the protected server record."
+      }
+    },
+    "account": "208096650030",
+    "region": "eu-west-2",
+    "deployCommand": "42147b74-9ce9-465a-91da-96f93296efe3",
+    "deployStatus": "Success",
+    "adminAuthentication": "verified",
+    "nonPilotLeaseDenied": true,
+    "pilotConfigurationUnchanged": true,
+    "sourceRollback": true
+  },
+  "tests": {
+    "fullSuite": "PASS",
+    "finalTargeted": "PASS",
+    "nativeTypeScript": "PASS",
+    "adminDesktopMobile": "PASS",
+    "physicalIphone": "NOT_TESTED",
+    "testFlightBuildCreated": false,
+    "exclusiveReviewWriter": "PASS",
+    "readOnlyBrowserVerification": "PASS"
+  },
+  "commit": "d00844a"
+}
