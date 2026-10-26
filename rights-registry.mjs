@@ -493,15 +493,19 @@ export class RightsRegistry {
       return [feature, { allowed, code, reason }];
     }));
     const advisories = [];
+    const evidence = [...new Map([this.store.get("rights", key(feedUrl)), this.store.get("rights", key(feedUrl, episodeId))]
+      .flatMap(row => row?.assessmentEvidence || []).map(item => [JSON.stringify(item), item])).values()];
     const add = (code, reason, action) => advisories.push({
       id: `${record.id || key(feedUrl, episodeId)}:${code}`, code, feedUrl, episodeId: episodeId || null,
-      source: record.assessmentSource || "rights-registry", evidence: record.assessmentEvidence || [],
-      features: Object.keys(features), severity: "REVIEW", reason, recommendedAction: action,
+      source: record.assessmentSource || "rights-registry", evidence,
+      features: Object.keys(features).filter(feature => !features[feature].allowed), severity: "REVIEW", reason, recommendedAction: action,
       timestamp: record.updatedAt || null, blocking: false,
     });
     if (!record.id) add("ASSESSMENT_PENDING", "Publisher evidence has not been assessed yet.", "Request preparation to run automatic assessment.");
     else if (record.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED") add("EVIDENCE_INCOMPLETE", "Available evidence does not establish a processing basis; this is not a discovered prohibition.", "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.");
     else if (!record.assessmentEvidence?.length) add("EVIDENCE_INCOMPLETE", "The existing rights record has no structured evidence references.", "Review and supplement the existing record; this advisory does not revoke its permissions.");
+    if (Object.values(features).some(feature => ["PUBLISHER_RESTRICTION", "SCOPED_PUBLISHER_RESTRICTION", "RIGHTS_RESERVED"].includes(feature.code)))
+      add("PUBLISHER_RESTRICTION_IDENTIFIED", "Publisher restriction identified; affected features remain blocked.", "Inspect the recorded restriction and its scope. A policy change cannot grant these permissions.");
     if (record.assessmentSource?.startsWith("publisher-rss-") && this.now() - record.updatedAt > 30 * 86400000)
       add("ASSESSMENT_OUTDATED", "Publisher evidence has not been reviewed recently.", "Refresh publisher evidence; unchanged evidence is reused without another paid request.");
     const processing = features["intelligence-processing"];
@@ -510,7 +514,7 @@ export class RightsRegistry {
       : processing.code;
     return { assessmentStatus: record.id ? "ASSESSED" : "ASSESSMENT_PENDING", decision,
       processingEligibility: processing.allowed ? "ELIGIBLE" : !record.id ? "ASSESSMENT_PENDING" : processing.code === "LEGAL_BASIS_NOT_ESTABLISHED" ? "UNRESOLVED" : "RESTRICTED",
-      features, advisories, evidence: record.assessmentEvidence || [], assessedAt: record.updatedAt || null,
+      features, advisories, evidence, assessedAt: record.updatedAt || null,
       assessmentRevision: this.assessmentRevision(feedUrl, episodeId) };
   }
   previewPolicy(input = {}) {
@@ -643,8 +647,20 @@ export class RightsRegistry {
   assessAutomatic(input = {}, { actor = "system:publisher-rss" } = {}) {
     if (!input || typeof input.feedUrl !== "string" || !input.feedUrl || typeof input.episodeId !== "string" || !input.episodeId)
       throw Error("A publisher feed and episode are required for an automatic rights assessment.");
-    const prior = this.resolve(input.feedUrl, input.episodeId);
-    const mandatory = prior.id && mandatoryRestriction(prior);
+    const stored = this.store.get("rights", key(input.feedUrl, input.episodeId));
+    const inherited = this.resolve(input.feedUrl, input.episodeId);
+    const prior = stored || inherited;
+    // Only repair the known automatic notice-classification defect. Never
+    // reinterpret a human reservation, legal prohibition, dispute or takedown.
+    const noticeCorrection = stored && /^publisher-rss-v[123]$/.test(stored.assessmentSource || "") &&
+      stored.blockerCode === "PUBLISHER_RESTRICTION" && !stored.suspendedAt && !stored.deletedAt &&
+      stored.classification !== RightsClassification.DISPUTED && !stored.approvalAssessment &&
+      stored.assessmentEvidence?.some(e => e.type === "PUBLISHER_RESTRICTION") &&
+      stored.assessmentEvidence.filter(e => e.type === "PUBLISHER_RESTRICTION").every(e =>
+        /^(?:©\s*)?(?:all )?rights reserved[.\s]*$/i.test(e.value)) &&
+      input.assessmentSource === "publisher-rss-v4" && input.rightsReserved === false &&
+      input.assessmentEvidence?.some(e => e.type === "COPYRIGHT_NOTICE");
+    const mandatory = prior.id && mandatoryRestriction(prior) && !noticeCorrection;
     if (mandatory) return { record: prior, reused: true, mandatory: true };
     // A historical technical finding of missing evidence is not an enduring
     // denial of a subsequently documented publisher grant. Keep the old row
@@ -659,10 +675,12 @@ export class RightsRegistry {
       input.assessmentEvidence?.some(item => item.type === "PUBLISHER_LICENSE");
     // Human-entered rights records remain authoritative. Automatic evidence may
     // refresh only a prior automatic assessment for the same episode.
-    if (prior.id && !newlyDocumented && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
+    const newEpisodeReservation = !stored && (input.rightsReserved || input.reservedFeatures?.length);
+    if (prior.id && !newlyDocumented && !newEpisodeReservation && prior.assessmentSource !== input.assessmentSource && !(prior.assessmentSource?.startsWith("publisher-rss-") && input.assessmentSource?.startsWith("publisher-rss-")))
       return { record: prior, reused: true, mandatory: false };
     if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint && prior.assessmentVersion === input.assessmentVersion)
       return { record: prior, reused: true, mandatory: false };
+    if (noticeCorrection) this.audit("automatic-notice-classification-corrected", prior.id, actor, { previous: prior, assessmentVersion: input.assessmentVersion });
     const record = this.set({ ...input, episodeId: input.episodeId }, { actor });
     this.audit("rights-assessed-automatically", record.id, actor, {
       classification: record.classification,

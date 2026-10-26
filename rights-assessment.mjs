@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 // A public feed, a transcript link, or the absence of a reservation is never
 // treated as permission.  It can establish bounded intelligence only when the
 // publisher has supplied a recognised, machine-readable licence.
-export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v3";
+export const RIGHTS_ASSESSMENT_VERSION = "publisher-rss-v4";
 
 const text = (value) => String(value || "")
   .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
@@ -45,7 +45,7 @@ const canonicalLicence = (value) => {
   return null;
 };
 
-const reservation = (value) => /\b(all rights reserved|rights reserved|no\s+(?:ai|artificial intelligence|machine learning|text and data mining|tdm)|(?:ai|artificial intelligence|machine learning|text and data mining|tdm)\s+(?:is|are)\s+not\s+permitted|do not transcrib)\b/i.test(value);
+const reservation = (value) => /\b(no\s+(?:ai|artificial intelligence|machine learning)|(?:ai|artificial intelligence|machine learning)\s+(?:is|are)\s+not\s+permitted)\b/i.test(value);
 
 /**
  * Extracts bounded, auditable evidence. It does not fetch a linked licence or
@@ -94,13 +94,21 @@ export function publisherRightsEvidence({ channelXml = "", itemXml = "", feedUrl
       ...elementValues(xml, "podcast:rights"),
     ]);
     for (const value of rightsText) {
+      if (/\b(?:all )?rights reserved\b|©|copyright/i.test(value))
+        evidence.push({ type: "COPYRIGHT_NOTICE", source: "publisher-rss", scope, value });
+      const scopedFeatures = [];
+      const tdm = /\b(?:no\s+(?:text and data mining|tdm)|(?:text and data mining|tdm)\s+(?:(?:is|are)\s+not\s+permitted|rights?\s+reserved))\b/i.test(value);
+      if (tdm) scopedFeatures.push("transcript-acquisition", "audio-transcription", "intelligence-processing");
+      if (/\b(?:do not transcribe|no (?:audio )?transcription)\b/i.test(value)) scopedFeatures.push("audio-transcription");
       // A narrowly worded distribution reservation is not an internal-analysis
       // prohibition. Retain the verbatim evidence and gate its actual scope.
-      const distributionOnly = /(?:no|prohibit(?:ed)?|not permitted)[\s\S]{0,45}(?:public transcript distribution|distribution of (?:full )?transcripts|public captions)/i.test(value)
-        && !reservation(value);
-      if (distributionOnly) {
-        const item = { type: "SCOPED_PUBLISHER_RESTRICTION", source: "publisher-rss", scope, value: compact(value, 500), features: ["captions", "transcript-distribution"] };
-        reservations.push(item); evidence.push(item); continue;
+      // Sequential public captions distribute the transcript too; preserve the
+      // existing output hold without extending it to private internal analysis.
+      if (/(?:no|prohibit(?:ed)?|not permitted)[\s\S]{0,45}(?:public transcript distribution|distribution of (?:full )?transcripts)/i.test(value)) scopedFeatures.push("transcript-distribution", "captions");
+      if (/(?:no|prohibit(?:ed)?|not permitted)[\s\S]{0,45}public captions/i.test(value)) scopedFeatures.push("captions");
+      if (scopedFeatures.length) {
+        const item = { type: tdm ? "TDM_RESERVATION" : "SCOPED_PUBLISHER_RESTRICTION", source: "publisher-rss", scope, value: compact(value, 500), features: unique(scopedFeatures) };
+        reservations.push(item); evidence.push(item);
       }
       if (!reservation(value)) continue;
       const item = { type: "PUBLISHER_RESTRICTION", source: "publisher-rss", scope, value: compact(value, 500) };
@@ -110,7 +118,7 @@ export function publisherRightsEvidence({ channelXml = "", itemXml = "", feedUrl
   }
   if (String(feedUrl).startsWith("https://"))
     evidence.push({ type: "LAWFUL_ACCESS_OBSERVED", source: "publisher-rss", scope: "feed", value: "The publisher HTTPS feed was retrieved by the server." });
-  return { licences, reservations, evidence, fingerprint: hash({ licences, reservations }) };
+  return { licences, reservations, evidence, fingerprint: hash({ licences, reservations, evidence }) };
 }
 
 /**
@@ -168,6 +176,7 @@ export function assessPublisherRights({ feedUrl, episode, evidence } = {}) {
     canGenerateChapters: true,
     canGenerateTopics: true,
     canSearchMoments: true,
+    canSearchConversations: true,
     canDetectAdvertisements: true,
     canDisplayCaptions: false,
     canTranslateText: false,

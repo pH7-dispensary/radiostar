@@ -22,6 +22,7 @@ import { SkipService } from "./skip-service.mjs";
 import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
 import { RightsRegistry } from "./rights-registry.mjs";
 import { assessPublisherRights, publisherRightsEvidence } from "./rights-assessment.mjs";
+import { readyDiscovery } from "./ready-discovery.mjs";
 import { IntelligencePolicyRegistry, intelligenceLevel } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
 import { approvedTestCorpus, approvedTestTranscriptVtt } from "./approved-test-corpus.mjs";
@@ -2307,6 +2308,9 @@ export function createStarCastServer({
         rights.audit("transcript-deleted", record.id, actor.id, removed);
         adminService.appendAudit({ actor, action: "transcript-deleted", resource: record.id, reason, outcome: "ALLOWED" });
         return send(res, 200, { record, removed });
+      }
+      if (url.pathname === "/api/intelligence/ready" && req.method === "GET") {
+        return send(res, 200, readyDiscovery({ store, status: listenerStatus }));
       }
       if (url.pathname === "/api/intelligence/status" && req.method === "GET") {
         const feed = url.searchParams.get("feedUrl"),

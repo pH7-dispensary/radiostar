@@ -9,7 +9,7 @@ const restrictedFeedUrl = "https://publisher.example/restricted.xml";
 const noBasisFeedUrl = "https://publisher.example/no-basis.xml";
 const historicalFeedUrl = "https://publisher.example/historical.xml";
 const vttUrl = "https://publisher.example/licensed.vtt";
-const xml = (id, body = "") => `<?xml version="1.0"?><rss><channel><title>Publisher licensed show</title><itunes:author>Publisher</itunes:author>${body}<item><guid>${id}</guid><title>${id} &amp; evidence</title><pubDate>Tue, 20 Oct 2026 12:00:00 GMT</pubDate><itunes:duration>00:02:00</itunes:duration><podcast:transcript url="${vttUrl}" type="text/vtt"/>${body}</item></channel></rss>`;
+const xml = (id, body = "") => `<?xml version="1.0"?><rss><channel><title>Publisher licensed show</title><itunes:author>Publisher</itunes:author>${body}<item><guid>${id}</guid><title>${id} &amp; evidence</title><pubDate>Tue, 20 Oct 2026 12:00:00 GMT</pubDate><itunes:duration>00:02:00</itunes:duration><enclosure url="https://publisher.example/${id}.mp3"/><podcast:transcript url="${vttUrl}" type="text/vtt"/>${body}</item></channel></rss>`;
 const fillerItems = Array.from({ length: 85 }, (_, index) => `<item><guid>recent-${index}</guid><title>Recent ${index}</title></item>`).join("");
 const historicalXml = `<?xml version="1.0"?><rss><channel><title>Licensed archive</title><itunes:author>Publisher</itunes:author><copyright>This work is licensed under the Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/</copyright>${fillerItems}<item><guid>older-licensed</guid><title>Older licensed episode</title><itunes:duration>00:02:00</itunes:duration><podcast:transcript url="${vttUrl}" type="text/vtt"/></item></channel></rss>`;
 const feeds = new Map([
@@ -86,7 +86,7 @@ try {
   await Promise.all(app.pipeline.inflight.values());
   const rights = app.rights.resolve(feedUrl, "licensed");
   assert.equal(rights.assessmentStatus, "APPROVED");
-  assert.equal(rights.assessmentSource, "publisher-rss-v3");
+  assert.equal(rights.assessmentSource, "publisher-rss-v4");
   assert.equal(rights.canGenerateBrief && rights.canGenerateChapters && rights.canGenerateTopics && rights.canSearchMoments, true, "core derived intelligence permissions are independently recorded");
   assert.equal(rights.canDisplayCaptions || rights.canGenerateDubbedAudio || rights.canCloneSpeakerVoice, false, "captions, dubbing and voice replication stay independently blocked");
   assert.equal(app.pipeline.status(feedUrl, "licensed").state, "READY", "the eligible episode reaches READY through the real pipeline");
@@ -95,6 +95,18 @@ try {
   assert.ok(status.status.brief?.overview && status.status.chapters?.length && status.status.brief?.themes?.length, "the live status API returns Brief, Chapters and Topics");
   const moments = await (await post("/api/intelligence/moment", { feedUrl, episodeId: "licensed", query: "careful methods" })).json();
   assert.ok(moments.moments.length && Number.isFinite(moments.moments[0].startMs), "Find a Moment returns a grounded playable timestamp");
+  const beforeDiscovery = app.store.get("budget", "ledger").usage.length;
+  assert.equal((await fetch(base + "/api/intelligence/ready")).status, 403);
+  const discover = async () => (await (await fetch(base + "/api/intelligence/ready", { headers })).json()).episodes;
+  const ready = await discover();
+  assert.equal(ready.length, 1);
+  assert.equal(ready[0].id, "licensed");
+  assert(ready[0].availableFeatures.brief && ready[0].availableFeatures.chapters && ready[0].availableFeatures.topics && ready[0].availableFeatures.moments);
+  assert.equal(ready[0].transcript, undefined);
+  await discover();
+  assert.equal(app.store.get("budget", "ledger").usage.length, beforeDiscovery, "Discovery never purchases intelligence");
+  app.rights.suspend(feedUrl, "licensed", "Fixture restriction verification");
+  assert.equal((await discover()).length, 0, "Revocation removes cached discovery immediately");
 
   const restricted = await post("/api/intelligence/request", { feedUrl: restrictedFeedUrl, episodeId: "restricted", capability: "brief" });
   const restrictedStatus = await restricted.json();

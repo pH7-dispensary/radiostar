@@ -299,7 +299,7 @@ export class AdminService {
     for (const record of rightsRecords) {
       if (!record.feedUrl || !rights?.assessment) continue;
       for (const advisory of rights.assessment(record.feedUrl,record.episodeId).advisories || []) {
-        addAttention({kind:'RIGHTS_ADVISORY',severity:'MEDIUM',resource:record.episodeTitle || record.podcast || record.feedUrl,feedUrl:record.feedUrl,episodeId:record.episodeId || null,reason:advisory.reason,evidence:advisory.code,features:advisory.features || ['Intelligence'],detectedAt:record.updatedAt || record.createdAt || null,action:advisory.recommendedAction,destination:'rights'});
+        addAttention({kind:'RIGHTS_ADVISORY',severity:'MEDIUM',resource:record.episodeTitle || record.podcast || record.feedUrl,feedUrl:record.feedUrl,episodeId:record.episodeId || null,reason:advisory.reason,evidence:[advisory.code, ...(advisory.evidence || []).map(item => `${item.type} (${item.scope}, ${item.source}): ${item.value}${item.url ? ` — ${item.url}` : ''}`)].join('\n'),features:advisory.features || ['Intelligence'],detectedAt:record.updatedAt || record.createdAt || null,action:advisory.recommendedAction,destination:'rights'});
       }
     }
     for (const job of projectedJobs.filter(j => ['TRANSCRIPT_UNAVAILABLE','TRANSCRIPT_INVALID','LEGAL_BASIS_NOT_ESTABLISHED','RIGHTS_RESTRICTED'].includes(j.code))) {
