@@ -238,7 +238,7 @@ function Discovery({
   p,
 }: {
   state: ListenerState;
-  setState: (next: ListenerState) => void;
+  setState: Dispatch<SetStateAction<ListenerState>>;
   onOpen: (show: CatalogueShow) => void;
   p: Theme;
 }) {
@@ -1543,7 +1543,7 @@ function Listen({
   p,
 }: {
   state: ListenerState;
-  setState: (next: ListenerState) => void;
+  setState: Dispatch<SetStateAction<ListenerState>>;
   onPlay: (e: StoredEpisode) => void;
   onOpen: (show: CatalogueShow) => void;
   p: Theme;

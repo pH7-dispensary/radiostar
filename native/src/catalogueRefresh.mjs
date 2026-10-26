@@ -1,3 +1,9 @@
+/**
+ * @param {Array<any>} shows
+ * @param {(feed: string) => Promise<any>} load
+ * @param {(results: Array<{show: any, feed: any}>) => void} accept
+ * @param {{active?: () => boolean, pause?: (ms: number) => Promise<unknown>}} options
+ */
 export async function refreshFollowedCatalogue(shows, load, accept, {active=()=>true, pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))}={}) {
   const feeds=shows.filter(show=>show.feedUrl);
   for(let index=0;active()&&index<feeds.length;index+=3) {
