@@ -495,17 +495,18 @@ export class RightsRegistry {
     const advisories = [];
     const evidence = [...new Map([this.store.get("rights", key(feedUrl)), this.store.get("rights", key(feedUrl, episodeId))]
       .flatMap(row => row?.assessmentEvidence || []).map(item => [JSON.stringify(item), item])).values()];
-    const add = (code, reason, action) => advisories.push({
+    const add = (code, reason, action, affected = Object.keys(features).filter(feature => !features[feature].allowed)) => advisories.push({
       id: `${record.id || key(feedUrl, episodeId)}:${code}`, code, feedUrl, episodeId: episodeId || null,
       source: record.assessmentSource || "rights-registry", evidence,
-      features: Object.keys(features).filter(feature => !features[feature].allowed), severity: "REVIEW", reason, recommendedAction: action,
+      features: affected, severity: "REVIEW", reason, recommendedAction: action,
       timestamp: record.updatedAt || null, blocking: false,
     });
     if (!record.id) add("ASSESSMENT_PENDING", "Publisher evidence has not been assessed yet.", "Request preparation to run automatic assessment.");
     else if (record.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED") add("EVIDENCE_INCOMPLETE", "Available evidence does not establish a processing basis; this is not a discovered prohibition.", "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.");
     else if (!record.assessmentEvidence?.length) add("EVIDENCE_INCOMPLETE", "The existing rights record has no structured evidence references.", "Review and supplement the existing record; this advisory does not revoke its permissions.");
-    if (Object.values(features).some(feature => ["PUBLISHER_RESTRICTION", "SCOPED_PUBLISHER_RESTRICTION", "RIGHTS_RESERVED"].includes(feature.code)))
-      add("PUBLISHER_RESTRICTION_IDENTIFIED", "Publisher restriction identified; affected features remain blocked.", "Inspect the recorded restriction and its scope. A policy change cannot grant these permissions.");
+    const restrictedFeatures = Object.keys(features).filter(name => ["PUBLISHER_RESTRICTION", "SCOPED_PUBLISHER_RESTRICTION", "RIGHTS_RESERVED"].includes(features[name].code));
+    if (restrictedFeatures.length)
+      add("PUBLISHER_RESTRICTION_IDENTIFIED", "Publisher restriction identified; affected features remain blocked.", "Inspect the recorded restriction and its scope. A policy change cannot grant these permissions.", restrictedFeatures);
     if (record.assessmentSource?.startsWith("publisher-rss-") && this.now() - record.updatedAt > 30 * 86400000)
       add("ASSESSMENT_OUTDATED", "Publisher evidence has not been reviewed recently.", "Refresh publisher evidence; unchanged evidence is reused without another paid request.");
     const processing = features["intelligence-processing"];

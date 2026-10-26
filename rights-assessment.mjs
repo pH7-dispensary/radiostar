@@ -88,13 +88,14 @@ export function publisherRightsEvidence({ channelXml = "", itemXml = "", feedUrl
         evidence.push({ type: "PUBLISHER_LICENSE", source: "publisher-rss-copyright", scope, value: licence.kind, url: licence.url });
       }
     }
+    const copyrightNotices = elementValues(xml, "copyright");
     const rightsText = unique([
       ...elementValues(xml, "rights"),
-      ...elementValues(xml, "copyright"),
+      ...copyrightNotices,
       ...elementValues(xml, "podcast:rights"),
     ]);
     for (const value of rightsText) {
-      if (/\b(?:all )?rights reserved\b|©|copyright/i.test(value))
+      if (copyrightNotices.includes(value) || /\b(?:all )?rights reserved\b|©|copyright/i.test(value))
         evidence.push({ type: "COPYRIGHT_NOTICE", source: "publisher-rss", scope, value });
       const scopedFeatures = [];
       const tdm = /\b(?:no\s+(?:text and data mining|tdm)|(?:text and data mining|tdm)\s+(?:(?:is|are)\s+not\s+permitted|rights?\s+reserved))\b/i.test(value);

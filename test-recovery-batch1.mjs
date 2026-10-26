@@ -12,6 +12,7 @@ const notice = assess('<copyright>© All rights reserved</copyright>');
 assert.equal(notice.blockerCode, "LEGAL_BASIS_NOT_ESTABLISHED");
 assert.equal(notice.rightsReserved, false);
 assert(notice.assessmentEvidence.some(e => e.type === "COPYRIGHT_NOTICE"));
+assert(assess('<copyright>2026 Example Publisher</copyright>').assessmentEvidence.some(e => e.type === "COPYRIGHT_NOTICE" && e.value === "2026 Example Publisher"));
 assert.equal(assess('<rights>No AI processing</rights>').blockerCode, "PUBLISHER_RESTRICTION");
 const store = new LocalStore(":memory:"), rights = new RightsRegistry(store);
 const allows = feature => rights.evaluate({ feedUrl, episodeId: "episode", feature });
@@ -37,6 +38,7 @@ try {
   rights.assessAutomatic(assess(license+'<rights>No text and data mining.</rights>'));
   assert.equal(allows("intelligence-processing").code,"SCOPED_PUBLISHER_RESTRICTION");
   assert(rights.assessment(feedUrl,"episode").evidence.some(e=>e.type==="TDM_RESERVATION"));
+  assert.deepEqual(rights.assessment(feedUrl,"episode").advisories.find(a=>a.code==="PUBLISHER_RESTRICTION_IDENTIFIED").features.sort(),["audio-transcription","intelligence-processing","transcript-acquisition"]);
   rights.assessAutomatic(assess(license+'<rights>Do not transcribe audio.</rights>'));
   assert.equal(allows("audio-transcription").allowed,false);
   assert.equal(allows("intelligence-processing").allowed,true);
