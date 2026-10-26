@@ -1,0 +1,338 @@
+{
+  "phase": "Product activation 1",
+  "at": "2026-10-26T21:10:08.540Z",
+  "release": {
+    "status": "HEALTHY",
+    "releaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+    "deployedAt": "2026-10-26T21:05:18.975Z",
+    "previousReleaseSha": "253972ff4e8f7b793870fc9f8a7ac9b1651d4fddb2c7d33150c5411f8610c45d",
+    "rollbackAvailable": true,
+    "reason": "Release metadata was read from the protected server record."
+  },
+  "scope": {
+    "registeredInstallations": 9,
+    "eligibleActiveProfiles": 2,
+    "followedPodcasts": 6,
+    "latestWindow": 18,
+    "counts": {
+      "REVIEW_REQUIRED": 18
+    },
+    "newlyEligibleOriginalWindow": 0
+  },
+  "changes": {
+    "perEpisodeFailureIsolation": true,
+    "canonicalFeedDispatch": true,
+    "completedPartialCacheReuse": true,
+    "automaticSemanticResume": true,
+    "humanPoliciesChanged": 0
+  },
+  "fresh": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+    "jobId": "58a73418-b867-48bd-b08c-d2a851c8185c",
+    "trigger": "automatic",
+    "manualAnalysisRequests": 0,
+    "durationMs": 1913235,
+    "audioSha256": "8df934a5f1ab1af504092c4cb61a3e0702c7e36aa127268c1e3531e3afad9210",
+    "transcriptSegments": 603,
+    "transcriptionChunks": 2,
+    "state": "PARTIAL_READY",
+    "features": {
+      "transcript": {
+        "state": "READY"
+      },
+      "brief": {
+        "state": "PARTIAL_READY"
+      },
+      "chapters": {
+        "state": "PARTIAL_READY"
+      },
+      "topics": {
+        "state": "READY"
+      },
+      "search": {
+        "state": "READY"
+      },
+      "moments": {
+        "state": "READY"
+      },
+      "adCandidates": {
+        "state": "READY",
+        "candidateCount": 0
+      }
+    },
+    "chapters": 11,
+    "topics": 13,
+    "adCandidates": 0,
+    "processingMs": 162908,
+    "semantic": {
+      "state": "READY",
+      "cursor": 603,
+      "total": 603,
+      "version": "embedding-3-small-512-v2",
+      "builtAt": "2026-10-26T21:06:23.327Z"
+    },
+    "semanticObservedBeforeSearch": true
+  },
+  "cachedFollowWindow": [
+    {
+      "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "state": "PARTIAL_READY",
+      "cacheHit": true
+    },
+    {
+      "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "state": "PARTIAL_READY",
+      "cacheHit": true
+    },
+    {
+      "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "state": "PARTIAL_READY",
+      "cacheHit": true
+    }
+  ],
+  "testFollowRemoved": true,
+  "discovery": {
+    "before": 8,
+    "after": 9
+  },
+  "search": {
+    "exactMatchedFreshEpisode": true,
+    "broadMatchedFreshEpisode": false,
+    "retrieval": {
+      "mode": "semantic-with-lexical-fallback",
+      "semanticEpisodes": 3
+    },
+    "answerState": "SUPPORTED_EXCERPTS",
+    "sourceReferencesVerified": 26,
+    "moments": [
+      {
+        "segmentId": "0-317",
+        "startMs": 782120,
+        "endMs": 784120
+      },
+      {
+        "segmentId": "0-261",
+        "startMs": 646840,
+        "endMs": 648040
+      },
+      {
+        "segmentId": "0-444",
+        "startMs": 996120,
+        "endMs": 997880
+      },
+      {
+        "segmentId": "0-61",
+        "startMs": 130240,
+        "endMs": 133760
+      },
+      {
+        "segmentId": "0-214",
+        "startMs": 527320,
+        "endMs": 530600
+      }
+    ],
+    "chapterAndTopicSourcesVerified": true
+  },
+  "cost": {
+    "baselineUsd": 1.5886908000000002,
+    "finalRecordedUsd": 1.8183337399999997,
+    "phaseUsd": 0.22964294,
+    "transcriptionUsd": 0.1915,
+    "remainingAnalysisAndIndexUsd": 0.03814294,
+    "warmAdditionalUsd": 0,
+    "reservations": 0,
+    "standardLimits": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "temporaryPilotAllowance": {
+      "enabled": true,
+      "dailyUsd": 25,
+      "monthlyUsd": 125,
+      "dailyTranscriptionSeconds": 54000,
+      "maxEpisodeSeconds": 14400,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": false
+    },
+    "temporaryAllowanceExpires": "2026-10-27T21:53:27.023Z",
+    "temporaryAllowanceRenewed": false,
+    "backlogEstimate": {
+      "knownUsd": 22.400691666666667,
+      "unknownEpisodes": 0,
+      "eligibleKnownUsd": 0,
+      "completionEta": null,
+      "reason": "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable."
+    },
+    "acquisition": {
+      "intelligenceCacheHits": 0,
+      "transcriptCacheHits": 0,
+      "publisherTranscriptsFound": 0,
+      "publisherReferencesUnverified": 3,
+      "requiringAudio": 15,
+      "eligibleRequiringAudio": 0,
+      "estimatedAudioHours": 42.20777777777778,
+      "unknownAudioDurations": 0
+    }
+  },
+  "deployment": {
+    "account": "208096650030",
+    "region": "eu-west-2",
+    "commandId": "d3b21e47-e87f-4327-9485-de207cfa81b6",
+    "status": "Success",
+    "health": "ready",
+    "infrastructure": {
+      "status": "DEGRADED",
+      "generatedAt": "2026-10-26T21:10:06.620Z",
+      "serverStartedAt": "2026-10-26T21:05:20.639Z",
+      "components": [
+        {
+          "name": "Backend API",
+          "status": "HEALTHY",
+          "reason": "This authenticated operations request reached the active backend.",
+          "observedAt": "2026-10-26T21:10:06.620Z"
+        },
+        {
+          "name": "Durable database",
+          "status": "HEALTHY",
+          "reason": "SQLite quick check passed for the active server store."
+        },
+        {
+          "name": "Disk capacity",
+          "status": "HEALTHY",
+          "reason": "21% used · 23.8 GiB available; deployments require 3 GiB headroom.",
+          "detail": {
+            "totalBytes": 32132542464,
+            "availableBytes": 25540833280,
+            "usedPercent": 21
+          },
+          "observedAt": "2026-10-26T21:10:06.619Z"
+        },
+        {
+          "name": "Deployment retention",
+          "status": "DEGRADED",
+          "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+          "detail": {
+            "retained": 3,
+            "limit": 2,
+            "protectedLegacy": 1
+          },
+          "observedAt": "2026-10-26T21:10:06.619Z"
+        },
+        {
+          "name": "Last verified backup",
+          "status": "HEALTHY",
+          "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+          "observedAt": "2026-10-26T21:05:24.709Z"
+        },
+        {
+          "name": "Processing queue",
+          "status": "HEALTHY",
+          "reason": "SQS queue attributes were read successfully.",
+          "observedAt": "2026-10-26T21:10:06.619Z",
+          "detail": {
+            "visible": 0,
+            "inFlight": 0,
+            "delayed": 0
+          }
+        },
+        {
+          "name": "Dead-letter queue",
+          "status": "HEALTHY",
+          "reason": "No messages are waiting in the dead-letter queue.",
+          "observedAt": "2026-10-26T21:10:06.619Z",
+          "detail": {
+            "visible": 0,
+            "inFlight": 0,
+            "delayed": 0
+          }
+        },
+        {
+          "name": "Processing worker",
+          "status": "HEALTHY",
+          "reason": "The single durable queue consumer is running."
+        },
+        {
+          "name": "CloudWatch logs",
+          "status": "UNKNOWN",
+          "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+        },
+        {
+          "name": "S3 backups",
+          "status": "UNKNOWN",
+          "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+        },
+        {
+          "name": "Deployment",
+          "status": "HEALTHY",
+          "reason": "Release metadata was read from the protected server record.",
+          "observedAt": "2026-10-26T21:05:18.975Z",
+          "detail": {
+            "releaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+            "previousReleaseSha": "253972ff4e8f7b793870fc9f8a7ac9b1651d4fddb2c7d33150c5411f8610c45d",
+            "rollbackAvailable": true
+          }
+        }
+      ],
+      "release": {
+        "status": "HEALTHY",
+        "releaseSha": "118492d5fd135f0658e890ebd0454769f8c557d03be036c4518cda791c12f917",
+        "deployedAt": "2026-10-26T21:05:18.975Z",
+        "previousReleaseSha": "253972ff4e8f7b793870fc9f8a7ac9b1651d4fddb2c7d33150c5411f8610c45d",
+        "rollbackAvailable": true,
+        "reason": "Release metadata was read from the protected server record."
+      }
+    },
+    "integrity": {
+      "integrity_check": "ok"
+    },
+    "sourceCheckCommand": "ed8a645f-64b5-47c2-b75e-f5d005dd7006",
+    "runtimeCheckCommand": "2ae06af6-5c37-4d26-beb0-0a75179b6f2c",
+    "storeCheckCommand": "1f97acf2-715f-4785-b63d-cacce58db5ca"
+  },
+  "tests": {
+    "fullSuite": "PASS",
+    "targeted": "PASS",
+    "physicalIphone": "NOT TESTED",
+    "testFlightBuildCreated": false
+  },
+  "remainingRestrictions": [
+    {
+      "podcast": "Danny Jones Podcast",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+    },
+    {
+      "podcast": "Julian Dorey Podcast",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+    },
+    {
+      "podcast": "Dan Carlin's Hardcore History",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+    },
+    {
+      "podcast": "The Tucker Carlson Show",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+    },
+    {
+      "podcast": "Lex Fridman Podcast",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+    }
+  ]
+}
