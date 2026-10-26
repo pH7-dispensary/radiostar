@@ -62,6 +62,7 @@ import {
   NativeSleepTimer,
   resetSleepLearning,
 } from "./src/sleepBridge";
+import { nativeSleepAvailable } from "./src/nativeSleep";
 import { feedback } from "./src/feedback";
 import { motion, themes, type StarTheme } from "./src/design";
 import { useEpisodeIntelligence } from "./src/useEpisodeIntelligence";
@@ -827,6 +828,7 @@ function TimerSheet({
   p,
   remaining,
   onCancel,
+  onExtend,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -834,6 +836,7 @@ function TimerSheet({
   p: Theme;
   remaining: string | null;
   onCancel: () => void;
+  onExtend: (minutes: number) => void;
 }) {
   const reducedMotion = useReducedMotion();
   return (
@@ -868,7 +871,7 @@ function TimerSheet({
             {remaining || "Pause playback when you’re ready."}
           </Text>
           <Text style={[styles.small, { color: p.muted }]}>
-            Keep the app active for reliable timer timing in this beta.
+            {nativeSleepAvailable ? "A native deadline fades the current episode and pauses it. Pausing, an interruption or a source change cancels the timer." : "Keep the app active in this build. Locked-screen deadlines need the next native release."}
           </Text>
           <View style={styles.timerOptionGrid}>
             {manualTimerMinutes.map((minutes) => (
@@ -890,6 +893,7 @@ function TimerSheet({
               </Pressable>
             ))}
           </View>
+          {remaining && !remaining.includes("end of") && <View style={styles.speedRow}>{[5,15,30].map(minutes=><Pressable key={minutes} accessibilityRole="button" accessibilityLabel={`Extend sleep timer by ${minutes} minutes`} onPress={()=>onExtend(minutes)} style={{minHeight:44,minWidth:60,justifyContent:"center",alignItems:"center"}}><Text style={{color:p.accent2}}>+{minutes} min</Text></Pressable>)}</View>}
           {remaining && <Pressable accessibilityRole="button" onPress={onCancel} style={styles.endEpisode}><Text style={[styles.link, { color: p.accent2 }]}>Cancel timer</Text></Pressable>}
           <Pressable
             accessibilityRole="button"
@@ -939,6 +943,7 @@ function PlayerSheet({
       audio,
       retry,
       manualSeekRevision,
+      sleepDriver,
     } = usePlayback(),
     timer = useRef<NativeSleepTimer | null>(null),
     ai = useRef<NativeAiSleepBridge | null>(null),
@@ -972,60 +977,75 @@ function PlayerSheet({
   const [sleepRecovery, setSleepRecovery] = useState<{
     lastHeard: number;
     pausedAt: number;
+    source?: Source;
   } | null>(null);
+  useEffect(() => { if(notice) AccessibilityInfo.announceForAccessibility(notice); }, [notice]);
   const latestSnapshot = useRef(snapshot);
   latestSnapshot.current = snapshot;
-  const playbackActions = useRef({ pause, fadeAndPause });
-  playbackActions.current = { pause, fadeAndPause };
+  const playbackActions = useRef({ pause, fadeAndPause, sleepDriver });
+  playbackActions.current = { pause, fadeAndPause, sleepDriver };
   useEffect(() => {
-    timer.current = new NativeSleepTimer(() => playbackActions.current.pause(), () => setNotice("The timer could not pause playback. Please pause manually."));
+    timer.current = new NativeSleepTimer(() => playbackActions.current.pause(), () => setNotice("The timer could not pause playback. Please pause manually."), playbackActions.current.sleepDriver);
     ai.current = new NativeAiSleepBridge((ms) =>
       playbackActions.current.fadeAndPause(ms),
+      () => Date.now(), playbackActions.current.sleepDriver, () => {setAiActive(false); setSleepView("ERROR"); setNotice("Sleep could not be armed. Playback remains under your control.");},
     );
     return () => { timer.current?.cancel(); cancelFade(); };
   }, []);
   const sleepSource = source ? JSON.stringify([source.feedUrl || "", source.episodeId, source.url]) : "";
+  const recoveredSource = (value: string, key: string): Source | undefined => {
+    try { const row = JSON.parse(value); return row && typeof row.episodeId === "string" && typeof row.url === "string" && /^https?:/.test(row.url) && JSON.stringify([row.feedUrl || "",row.episodeId,row.url]) === key ? row as Source : undefined; } catch { return undefined; }
+  };
   const previousSleepSource = useRef(sleepSource);
   useEffect(() => {
     if (previousSleepSource.current && previousSleepSource.current !== sleepSource) {
-      timer.current?.cancel(); cancelFade(); ai.current?.stop();
+      timer.current?.cancel(); cancelFade(); if(ai.current?.engine.state !== "PAUSED") ai.current?.stop();
       setAiActive(false); setSleepView("STOPPED"); setSleepRecovery(null); setTimerRemaining(null);
     }
     previousSleepSource.current = sleepSource;
   }, [sleepSource]);
   useEffect(() => {
     let recovered = false;
-    const update = () => {
+    const update = async () => {
+      if (AppState.currentState !== "active") return;
+      await timer.current?.check().catch(() => setNotice("The timer could not pause playback. Please pause manually."));
+      const nativeResult = await ai.current?.reconcileNative().catch(() => null);
+      if (nativeResult?.state === "PAUSED" && ai.current?.recovered) {
+        const savedSource = recoveredSource(nativeResult.sourceJSON, nativeResult.sourceKey);
+        if (savedSource) setSleepRecovery({...ai.current.recovered,source:savedSource}); setSleepView("PAUSED"); setAiActive(false);
+      } else if (nativeResult && ["CANCELLED","INTERRUPTED"].includes(nativeResult.state)) { setAiActive(false); setSleepView("STOPPED"); }
+      if(timer.current?.lastRecord?.state === "PAUSED") { const row=timer.current.lastRecord; const savedSource=recoveredSource(row.sourceJSON,row.sourceKey); if(savedSource && Number.isFinite(row.positionMs)) setSleepRecovery({lastHeard:row.recoveryMs ?? row.positionMs!,pausedAt:row.positionMs!,source:savedSource}); }
       const timerEnd = timer.current?.endAt;
       const left = timerEnd ? Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000)) : 0;
       setTimerRemaining(timerEnd ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")} remaining` : timer.current?.endOfEpisode ? "Until the end of this episode" : null);
-      void timer.current?.check().catch(() => setNotice("The timer could not pause playback. Please pause manually."));
       if (!recovered && ai.current?.ready && sleepSource) {
         recovered = true;
         if (ai.current.recovered?.sourceKey === sleepSource) { setSleepRecovery(ai.current.recovered); setSleepView("PAUSED"); }
         else if (ai.current.interrupted) { setSleepView("STOPPED"); setNotice("The previous AI Sleep session ended when the app closed. Start a new session when ready."); }
       }
     };
-    const interval = setInterval(update, 1000);
-    const sub = AppState.addEventListener("change", (next) => {
-      // A suspended interval is not evidence of sleep. Re-entry resets idle
-      // observation before the next inference tick.
-      ai.current?.interact(latestSnapshot.current.positionMs, latestSnapshot.current.playing);
-      if (next === "active") update();
-    });
-    return () => { clearInterval(interval); sub.remove(); };
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const schedule = (next: string) => {
+      if(interval) clearInterval(interval);
+      if(next === "active") { void update(); interval=setInterval(update,1000); }
+    };
+    schedule(AppState.currentState);
+    const sub = AppState.addEventListener("change",schedule);
+    return () => { if(interval) clearInterval(interval); sub.remove(); };
   }, [sleepSource]);
   useEffect(() => {
     if (!aiActive) return;
-    const interval = setInterval(() => {
+    const infer = () => {
       const current = latestSnapshot.current;
       if (AppState.currentState !== "active") {
-        ai.current?.interact(current.positionMs, current.playing);
+        // Native deadline progresses without inventing background observations.
         return;
       }
       void ai.current
         ?.tick(current.positionMs, current.playing)
         .then((state) => {
+          if (state === "FADING") setSleepView("FADING");
+          if (["POSSIBLE_SLEEP","LIKELY_ASLEEP","GRACE_PERIOD"].includes(state || "")) setSleepView("LIKELY_ASLEEP");
           if (state === "PAUSED") {
             setAiActive(false);
             setSleepView("PAUSED");
@@ -1036,13 +1056,17 @@ function PlayerSheet({
           }
           if (state === "OFF") { setAiActive(false); setSleepView("STOPPED"); ai.current?.stop(); }
         }).catch(() => { cancelFade(); ai.current?.stop(); setAiActive(false); setSleepView("ERROR"); setNotice("The sleep fade was interrupted. Playback remains under your control."); });
-    }, 15000);
-    return () => clearInterval(interval);
+    };
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const schedule = (next: string) => { if(interval) clearInterval(interval); if(next === "active") interval=setInterval(infer,15000); };
+    schedule(AppState.currentState);
+    const sub=AppState.addEventListener("change",schedule);
+    return () => { if(interval) clearInterval(interval); sub.remove(); };
   }, [aiActive]);
   useEffect(() => {
     if (!aiActive || !ai.current) return;
     if (snapshot.playing) ai.current.interact(snapshot.positionMs, true);
-    else if (!["FADING", "PAUSED"].includes(ai.current.engine.state)) {
+    else if (!sleepDriver.available && !["FADING", "PAUSED"].includes(ai.current.engine.state)) {
       ai.current.stop(); cancelFade(); setAiActive(false); setSleepView("STOPPED");
     }
   }, [snapshot.playing, manualSeekRevision]);
@@ -1099,8 +1123,14 @@ function PlayerSheet({
     setAiActive(true);
     setSleepView("SETTLING"); setSleepRecovery(null);
     setEarliestPauseAt(session?.earliestPauseAt || null);
-    setNotice("AI Sleep active. Listening continues.");
+    setNotice(sleepDriver.available ? "AI Sleep active. A native deadline protects the listening window while locked." : "Foreground sleep only in this build. Native deadlines require the next native release.");
     feedback.success();
+  };
+  const resumeSleepRecovery = (positionMs: number) => {
+    const saved=sleepRecovery?.source || source;
+    timer.current?.cancel(); ai.current?.stop(); cancelFade();
+    setSleepRecovery(null); setSleepView("STOPPED"); setAiActive(false);
+    void play({...saved,startPositionMs:positionMs}).catch(()=>setNotice("The saved episode could not resume. Please try again."));
   };
   let stopAi = () => {
     cancelFade();
@@ -1367,20 +1397,20 @@ function PlayerSheet({
               {sleepRecovery && (
                 <Glass p={p} style={styles.briefCard}>
                   <Text style={[styles.briefOverview, { color: p.text }]}>
-                    Welcome back.
+                    Welcome back. {sleepRecovery.source?.title || source.title}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => void seek(sleepRecovery.lastHeard)}
+                    onPress={() => resumeSleepRecovery(sleepRecovery.lastHeard)}
                     style={{ minHeight: 44, justifyContent: "center" }}
                   >
                     <Text style={{ color: p.accent2 }}>
-                      Continue from estimated last-heard position
+                      Resume from the saved rewind position
                     </Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => void seek(sleepRecovery.pausedAt)}
+                    onPress={() => resumeSleepRecovery(sleepRecovery.pausedAt)}
                     style={{ minHeight: 44, justifyContent: "center" }}
                   >
                     <Text style={{ color: p.accent2 }}>
@@ -1444,6 +1474,7 @@ function PlayerSheet({
           visible={timerOpen}
           p={p}
           remaining={timerRemaining}
+          onExtend={minutes=>{try {timer.current?.extend(minutes);setNotice(`Timer extended by ${minutes} minutes.`);} catch {setNotice("Choose a fixed timer before extending.");}}}
           onCancel={() => { timer.current?.cancel(); setTimerRemaining(null); setNotice("Sleep Timer cancelled."); }}
           onClose={() => setTimerOpen(false)}
           onSet={(value) => {
@@ -1461,6 +1492,7 @@ function PlayerSheet({
           state={sleepView}
           session={ai.current?.session || null}
           message={notice}
+          onInteraction={() => { if(aiActive){cancelFade(); ai.current?.interact(snapshot.positionMs,snapshot.playing);setSleepView("SETTLING");} }}
           onResume={() => { stopAi(); void play(source); }}
           onStart={startAi}
           onStop={stopAi}
@@ -2095,9 +2127,7 @@ function Profile({
           </Text>
         </Pressable>
         <Text style={[styles.tiny, { color: p.muted }]}>
-          Automatic pause in the background still needs physical-device
-          validation. Use a manual sleep timer when you need a fixed stopping
-          time.
+          {nativeSleepAvailable ? "Native deadlines support the listening window while background audio is active. Locked-screen behaviour still needs physical-device validation." : "This build supports foreground sleep only. Reliable locked-screen deadlines require the next native release."}
         </Text>
       </Section>
       <Section title="Privacy" p={p}>

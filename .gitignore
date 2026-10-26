@@ -14,3 +14,4 @@ infra/aws/.terraform/
 infra/aws/*.tfstate*
 infra/aws/*.tfplan
 infra/aws/*.tfvars
+native/dist-batch7/

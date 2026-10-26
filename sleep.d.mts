@@ -2,6 +2,7 @@ export type SleepSummary={preferredEstimateMs:number|null;correct:boolean|null;e
 export type SleepSession={startedAt:number;predictedSleepOnsetAt:number;preferredMinimumMs:number;earliestPauseAt:number;extensions:Array<{minutes:number;at:number}>;recoveryPosition:number|null;pausePosition:number|null;[key:string]:unknown};
 export class AiSleepEngine {
   constructor(options?:{settings?:Record<string,number|boolean>;history?:SleepSummary[]});
+  settings: {fadeMs:number;confirmationMs:number;graceMs:number;[key:string]:number|boolean};
   history:SleepSummary[];session:SleepSession|null;state:string;confidence:number;
   start(options?:{now?:number;positionMs?:number;localHour?:number}):{started:boolean};
   extend(minutes:number,options?:{now:number}):{extended:boolean};

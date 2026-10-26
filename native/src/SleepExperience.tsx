@@ -16,10 +16,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { themes, type StarTheme } from "./design";
 import { useReducedMotion } from "./LoadingState";
+import { nativeSleepAvailable } from "./nativeSleep";
 import type { AiSleepSession } from "./sleepBridge";
 
 export type SleepViewState =
-  "READY" | "SETTLING" | "PAUSED" | "STOPPED" | "ERROR";
+  "READY" | "SETTLING" | "LIKELY_ASLEEP" | "FADING" | "PAUSED" | "STOPPED" | "ERROR";
 export const manualTimerMinutes = [5, 10, 15, 20, 30, 45, 60, 90];
 const clock = (ms: number) =>
   `${Math.floor(Math.max(0, ms) / 60000)}:${String(Math.floor(Math.max(0, ms) / 1000) % 60).padStart(2, "0")}`;
@@ -154,6 +155,7 @@ export function AiSleepScreen({
   onStop,
   onExtend,
   onResume,
+  onInteraction,
   p,
 }: {
   visible: boolean;
@@ -165,9 +167,10 @@ export function AiSleepScreen({
   onStop: () => void;
   onExtend: (minutes: number) => void;
   onResume: () => void;
+  onInteraction?: () => void;
   p: StarTheme;
 }) {
-  const active = state === "SETTLING",
+  const active = ["SETTLING","LIKELY_ASLEEP","FADING"].includes(state),
     paused = state === "PAUSED";
   const colors = active || paused ? themes.night : p;
   const reduced = useReducedMotion();
@@ -220,7 +223,7 @@ export function AiSleepScreen({
             />
           </Pressable>
         </View>
-        <ScrollView
+        <ScrollView onTouchStart={onInteraction}
           contentContainerStyle={s.content}
           showsVerticalScrollIndicator={false}
         >
@@ -228,7 +231,7 @@ export function AiSleepScreen({
             accessibilityLiveRegion="polite"
             style={[s.status, { color: colors.accent2 }]}
           >
-            {active ? "SETTLING" : paused ? "PAUSE TRIGGERED" : state}
+            {active ? state.replaceAll("_"," ") : paused ? "PAUSE TRIGGERED" : state}
           </Text>
           <Text
             accessibilityRole="header"
@@ -250,7 +253,7 @@ export function AiSleepScreen({
                 Session running · {clock(now - session.startedAt)}
               </Text>
               <Text style={[s.copy, { color: colors.muted }]}>
-                {now < session.earliestPauseAt
+                {session.fallbackDeadlineAt ? `Fade and pause by ${new Date(session.fallbackDeadlineAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}.` : now < session.earliestPauseAt
                   ? `Pause protection until ${new Date(session.earliestPauseAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`
                   : "AI Sleep is monitoring your session."}
               </Text>
@@ -342,9 +345,7 @@ export function AiSleepScreen({
                 physiological sleep detection or sensitivity sensor.
               </Text>
               <Text style={[s.copy, { color: colors.muted }]}>
-                AI Sleep observes while the app is active. Locked-screen
-                inference is not verified; background audio can continue. A
-                restarted app never silently resumes an old sleep session.
+                {nativeSleepAvailable ? "The local model observes while active. A native adaptive deadline fades and pauses the same player while background audio runs. Interruptions cancel the session; force-quitting stops playback. Physical-device validation is still pending." : "This build supports foreground sleep only. Locked-screen deadlines require the next native release; Expo Go cannot load the custom native module."} A restarted app never silently resumes an old sleep session.
               </Text>
               <Text style={[s.copy, { color: colors.muted }]}>
                 If a pause is triggered, audio fades for 45 seconds. You can

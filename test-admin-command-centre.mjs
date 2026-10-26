@@ -65,9 +65,12 @@ try {
   app.rights.set({feedUrl,episodeId,classification:'LICENSED',assessmentStatus:'APPROVED',explicitAuthorisation:true,canAcquireTranscript:true,canProcessForAi:true,canDetectAdvertisements:true,canRetain:true,assessmentEvidence:[{type:'OWNED_FIXTURE',value:'Synthetic local test content'}]});
   let candidateSet=[];
   app.skips.scheduleVerification=(_feed,_episode,_job,intervals)=>{candidateSet=intervals;};
-  app.store.set('intelligence',key,{...app.store.get('intelligence',key),processingVersion:PROCESSING_VERSION,transcript:{audioVariant:'v1',segments:[{id:'s1',text:'A discussion without advertisements.',startMs:0,endMs:1000}]}});
-  for(const id of ['candidate-one','candidate-two'])app.store.set('skip-interval',id,{id,episodeKey:key,sourceVariantKey:'v1',verificationState:'CANDIDATE',startMs:1000,endMs:2000});
-  const reverify=await request('/api/admin/ad-skip/review',{id:'candidate-one',action:'reverify',reason:'Bounded fixture check',confirmation:'CONFIRM',expectedState:'CANDIDATE'},session);
+  app.store.set('intelligence',key,{...app.store.get('intelligence',key),processingVersion:PROCESSING_VERSION,transcript:{audioVariant:'v1',transcriptVersion:'canonical-review-fixture',segments:[{id:'s1',text:'Our sponsor is Example. Use code FIRST for a free trial.',startMs:10000,endMs:20000},{id:'s2',text:'Brought to you by Second. Use code SECOND for a free trial.',startMs:30000,endMs:40000}]}});
+  const canonical=app.skips.inspect(feedUrl,episodeId).intervals.filter(row=>row.type==='advert');
+  assert.equal(canonical.length,2);
+  // Historical intervals outside activeIntervalIds must not re-enter verification.
+  app.store.set('skip-interval','obsolete-candidate',{id:'obsolete-candidate',episodeKey:key,sourceVariantKey:'v1',verificationState:'CANDIDATE',startMs:45000,endMs:46000});
+  const reverify=await request('/api/admin/ad-skip/review',{id:canonical[0].id,action:'reverify',reason:'Bounded fixture check',confirmation:'CONFIRM',expectedState:'CANDIDATE'},session);
   assert.equal(reverify.status,200);assert.equal((await reverify.json()).outcome.processingStarted,false);
   assert.equal(candidateSet.length,2,'re-verification preserves the full canonical input, not a subset that resets retry limits');
   app.skips.scheduleVerification=original;

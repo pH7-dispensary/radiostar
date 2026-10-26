@@ -18,6 +18,8 @@ import type { PlaybackSnapshot } from "./contracts";
 import { playbackPresentation, type AudioFeedback } from "./playbackPresentation.mjs";
 import { verifiedPlaybackCopy, cachedVerifiedPlaybackSource, invalidateVerifiedPlaybackSource } from "./verifiedAudio";
 
+import { createSleepDriver, readNativeSleepRecord, type SleepDriver } from "./nativeSleep";
+
 export type Source = {
   episodeId: string;
   url: string;
@@ -30,9 +32,11 @@ export type Source = {
 };
 type Persisted = {
   source: Source;
+  savedAt?: number;
   snapshot: Pick<PlaybackSnapshot, "positionMs" | "speed">;
 };
 type PlaybackContextValue = {
+  sleepDriver: SleepDriver;
   snapshot: PlaybackSnapshot;
   source: Source | null;
   audio: AudioFeedback;
@@ -79,6 +83,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     operation = useRef(0),
     fadeOperation = useRef(0),
     [manualSeekRevision, setManualSeekRevision] = useState(0);
+  const fadeVolume = useRef<number | null>(null);
+  const restoreFadeVolume = () => { if (fadeVolume.current !== null) { player.volume = fadeVolume.current; fadeVolume.current = null; } };
   const positions = useRef<Record<string, number>>({});
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -128,6 +134,13 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         if (!raw || cancelled) return;
         let stored = JSON.parse(raw) as Persisted;
         if (!stored.source?.url || operation.current > 0) return;
+        const sleep = await readNativeSleepRecord().catch(() => null);
+        const key = JSON.stringify([stored.source.feedUrl || "",stored.source.episodeId,stored.source.url]);
+        if (sleep?.state === "PAUSED" && sleep.sourceKey === key && Number.isFinite(sleep.positionMs) && (sleep.completedAt || 0) > (stored.savedAt || 0)) {
+          stored.snapshot.positionMs = sleep.positionMs!;
+          positions.current[nativeEpisodeKey(stored.source)] = sleep.positionMs!;
+        }
+        if (cancelled || operation.current > 0) return;
         sourceRef.current = { ...stored.source, startPositionMs: undefined };
         setSource(sourceRef.current);
         setConnecting(true);
@@ -192,11 +205,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       KEY,
       JSON.stringify({
         source,
+        savedAt: Date.now(),
         snapshot: { positionMs: snapshot.positionMs, speed: snapshot.speed },
       } satisfies Persisted),
     );
   }, [source, snapshot.positionMs, snapshot.speed]);
+  const sleepDriver = useMemo(() => createSleepDriver(player, () => sourceRef.current), [player]);
   let value: PlaybackContextValue = {
+    sleepDriver,
     getPositionMs: () => player.currentTime * 1000,
     getPlaybackRevision: () => operation.current,
     snapshot,
@@ -210,10 +226,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       try {
       setPlaybackError(null);
       fadeOperation.current++;
-      player.volume = 1;
+      restoreFadeVolume();
       const switching = sourceRef.current?.url !== next.url || !sourceRef.current || nativeEpisodeKey(sourceRef.current) !== nativeEpisodeKey(next);
       const reload = switching || !player.isLoaded || audio.state === "FAILED";
       if (reload) {
+        await sleepDriver.cancel();
+        if (currentOperation !== operation.current) return;
         setConnecting(true);
         sourceRef.current = { ...next, startPositionMs: undefined };
         setSource({ ...next, startPositionMs: undefined });
@@ -269,11 +287,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
     },
     pause: async () => {
+      void sleepDriver.cancel();
       operation.current++;
       setConnecting(false);
       fadeOperation.current++;
       player.pause();
-      player.volume = 1;
+      restoreFadeVolume();
       if (sourceRef.current) {
         positions.current[nativeEpisodeKey(sourceRef.current)] =
           player.currentTime * 1000;
@@ -285,6 +304,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
           KEY,
           JSON.stringify({
             source: sourceRef.current,
+            savedAt: Date.now(),
             snapshot: {
               positionMs: player.currentTime * 1000,
               speed: snapshot.speed,
@@ -298,7 +318,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       setConnecting(false);
       setManualSeekRevision((revision) => revision + 1);
       fadeOperation.current++;
-      player.volume = 1;
+      restoreFadeVolume();
       const target = Math.max(
         0,
         Math.min(ms, player.duration > 0 ? player.duration * 1000 : ms),
@@ -308,7 +328,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     },
     seekAutomatically: async (ms) => {
       fadeOperation.current++;
-      player.volume = 1;
+      restoreFadeVolume();
       const target = Math.max(
         0,
         Math.min(ms, player.duration > 0 ? player.duration * 1000 : ms),
@@ -333,27 +353,29 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     },
     cancelFade: () => {
       fadeOperation.current++;
-      player.volume = 1;
+      restoreFadeVolume();
     },
     fadeAndPause: async (durationMs) => {
       const token = ++fadeOperation.current;
-      const steps = Math.max(1, Math.min(20, Math.round(durationMs / 2_250)));
+      const fadeSource = sourceRef.current;
+      restoreFadeVolume();
+      const originalVolume = player.volume;
+      fadeVolume.current = originalVolume;
+      const steps = Math.max(1, Math.min(2400, Math.round(durationMs / 50)));
       for (let step = steps; step > 0; step--) {
-        if (token !== fadeOperation.current) {
-          player.volume = 1;
+        if (token !== fadeOperation.current || sourceRef.current !== fadeSource) {
           throw Object.assign(Error("Sleep fade was interrupted."), { code: "SLEEP_FADE_CANCELLED" });
         }
-        player.volume = step / steps;
+        player.volume = originalVolume * step / steps;
         await new Promise<void>((resolve) =>
           setTimeout(resolve, durationMs / steps),
         );
       }
-      if (token !== fadeOperation.current) {
-        player.volume = 1;
+      if (token !== fadeOperation.current || sourceRef.current !== fadeSource) {
         throw Object.assign(Error("Sleep fade was interrupted."), { code: "SLEEP_FADE_CANCELLED" });
       }
       player.pause();
-      player.volume = 1;
+      restoreFadeVolume();
       const actualPausePosition = player.currentTime * 1000;
       await persistPosition(actualPausePosition);
       return actualPausePosition;

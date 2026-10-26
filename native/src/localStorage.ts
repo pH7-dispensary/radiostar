@@ -1,3 +1,4 @@
+import { clearNativeSleepRecord } from "./nativeSleep";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import * as FileSystem from "expo-file-system/legacy";
@@ -12,6 +13,7 @@ export const removeIdentity = (key: string): Promise<void> =>
 export async function eraseLocalListenerData() {
   writesPaused = true;
   privacyRevision++;
+  await clearNativeSleepRecord();
   await pending;
   const documents = ["star-cast-feed-aliases-v1", "star-cast-listener-state-v2", "star-cast-native-playback-v2", "star-cast-native-playback-v2-positions", "star-cast-follow-outbox-v1", "star-cast-listener-state-v1", "star-cast-native-playback-v1",
     "star-cast-native-playback-v1-positions", "star-cast-offline-reports",
