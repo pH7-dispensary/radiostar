@@ -7,6 +7,7 @@ import { setImmediate as yieldToRequests } from "node:timers/promises";
 const kind = "followed-preparation";
 const iso = () => new Date().toISOString();
 const waitCodes = new Set(["BUDGET_LIMIT", "SERVER_BUSY", "SERVER_UNAVAILABLE"]);
+const completed = job => job?.state === "READY" || job?.state === "PARTIAL_READY" && Boolean(job.completedAt);
 export function latestPublishedEpisodes(episodes, now = Date.now()) {
   const seen = new Set();
   return episodes.filter(e => e.id && publicUrl(e.audioUrl) &&
@@ -33,7 +34,8 @@ export class FollowedPreparation {
   }
   follows() {
     const ids = new Set(this.listeners().map(v => v.id));
-    return this.store.all("follow").map(([, v]) => v).filter(v => ids.has(v.owner) && v.intelligenceEnabled !== false);
+    return this.store.all("follow").map(([, v]) => v).filter(v => ids.has(v.owner) && v.intelligenceEnabled !== false)
+      .map(v => ({ ...v, feedUrl: this.resolveFeedIdentity(v.feedUrl) }));
   }
   rows() { return this.store.all("followed-demand").map(([, v]) => v); }
   put(row) { this.store.set("followed-demand", row.key, row); return row; }
@@ -60,35 +62,43 @@ export class FollowedPreparation {
           await yieldToRequests();
           const key = episodeKey(feedUrl, episode.id), old = this.store.get("followed-demand", key);
           windowKeys.push(key);
-          const { episode: resolved } = await this.assess(feedUrl, episode.id);
-          const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id });
-          const decision = processing;
-          const cached = this.pipeline.status(feedUrl, episode.id);
-          const sourceNeedsRefresh = cached?.state === "READY" && (cached.episode?.audioUrl !== resolved.audioUrl || JSON.stringify(cached.episode?.refs) !== JSON.stringify(resolved.refs) || Date.now() - Date.parse(cached.sourceCheckedAt || cached.completedAt) >= 86400000);
-          const seconds = durationMs(resolved.duration) / 1000 || null;
-          const variant = createHash("sha256").update(resolved.audioUrl || "").digest("hex");
-          const hasTranscript = Boolean(this.store.get("transcript", `${key}:${variant}`)?.segments?.length || this.store.get("audio-transcript", variant)?.segments?.length);
-          const ready = cached?.state === "READY" && !sourceNeedsRefresh;
-          const audioUsd = ready || hasTranscript ? 0 : seconds == null ? null : Math.ceil(seconds) * 0.0001;
-          const acquisition = { intelligenceCacheHit: ready, transcriptCacheHit: hasTranscript,
-            publisherReferences: resolved.refs?.length || 0, publisherTranscriptFound: cached?.episode?.audioUrl === resolved.audioUrl && cached?.transcriptChecks?.publisherTranscriptFound === true,
-            requiresAudio: !ready && !hasTranscript && !resolved.refs?.length, durationSeconds: seconds, audioVariant: variant };
-          this.put({ ...old, key, feedUrl, episodeId: episode.id, title: resolved.title, podcast: resolved.showName,
-            rank, inWindow: true, sourceNeedsRefresh, acquisition, publishedAt: episode.publishedAt,
-            priority: priorityFor({ ...old, rank, inWindow: true }, new Set(this.listeners().map(v => v.id))),
-            source: newlyFollowed === feedUrl ? "new-follow" : "followed", assessedAt: iso(), createdAt: old?.createdAt || iso(),
-            eligible: processing.allowed, retryAfter: processing.allowed && old?.eligible === false ? null : old?.retryAfter,
-            ...(processing.allowed && old?.eligible === false ? { state: "NOT_REQUESTED", code: null, reason: null } : {}),
-            decision: { code: decision.code, reason: decision.reason, evidence: this.rights.resolve(feedUrl, episode.id).assessmentEvidence || [] },
-            // References are NOT verified transcripts. Include potential fallback
-            // until acquisition proves reuse; reservations remain authoritative.
-            estimate: { audioUsd, textUsd: ready ? 0 : seconds ? Math.max(0.01, seconds / 3600 * 0.05) : null, basis: "RSS duration; Whisper $0.006/min; text planning allowance $0.05/hour; includes fallback for unverified publisher references" },
-          });
+          try {
+            const { episode: resolved } = await this.assess(feedUrl, episode.id);
+            const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl, episodeId: episode.id });
+            const decision = processing;
+            const recoveredEvidence = processing.allowed && (old?.eligible === false || old?.code === "SOURCE_UNAVAILABLE");
+            const cached = this.pipeline.status(feedUrl, episode.id);
+            const sourceNeedsRefresh = completed(cached) && (cached.episode?.audioUrl !== resolved.audioUrl || JSON.stringify(cached.episode?.refs) !== JSON.stringify(resolved.refs) || Date.now() - Date.parse(cached.sourceCheckedAt || cached.completedAt) >= 86400000);
+            const seconds = durationMs(resolved.duration) / 1000 || null;
+            const variant = createHash("sha256").update(resolved.audioUrl || "").digest("hex");
+            const hasTranscript = Boolean(this.store.get("transcript", `${key}:${variant}`)?.segments?.length || this.store.get("audio-transcript", variant)?.segments?.length);
+            const ready = completed(cached) && !sourceNeedsRefresh;
+            const audioUsd = ready || hasTranscript ? 0 : seconds == null ? null : Math.ceil(seconds) * 0.0001;
+            const acquisition = { intelligenceCacheHit: ready, transcriptCacheHit: hasTranscript,
+              publisherReferences: resolved.refs?.length || 0, publisherTranscriptFound: cached?.episode?.audioUrl === resolved.audioUrl && cached?.transcriptChecks?.publisherTranscriptFound === true,
+              requiresAudio: !ready && !hasTranscript && !resolved.refs?.length, durationSeconds: seconds, audioVariant: variant };
+            this.put({ ...old, key, feedUrl, episodeId: episode.id, title: resolved.title, podcast: resolved.showName,
+              rank, inWindow: true, sourceNeedsRefresh, acquisition, publishedAt: episode.publishedAt,
+              priority: priorityFor({ ...old, rank, inWindow: true }, new Set(this.listeners().map(v => v.id))),
+              source: newlyFollowed === feedUrl ? "new-follow" : "followed", assessedAt: iso(), createdAt: old?.createdAt || iso(),
+              eligible: processing.allowed, retryAfter: recoveredEvidence ? null : old?.retryAfter,
+              ...(recoveredEvidence ? { state: "NOT_REQUESTED", code: null, reason: null } : {}),
+              decision: { code: decision.code, reason: decision.reason, evidence: this.rights.resolve(feedUrl, episode.id).assessmentEvidence || [] },
+              // References are NOT verified transcripts. Include potential fallback
+              // until acquisition proves reuse; reservations remain authoritative.
+              estimate: { audioUsd, textUsd: ready ? 0 : seconds ? Math.max(0.01, seconds / 3600 * 0.05) : null, basis: "RSS duration; Whisper $0.006/min; text planning allowance $0.05/hour; includes fallback for unverified publisher references" },
+            });
+          } catch {
+            errors.push({ feedUrl, episodeId: episode.id, code: "SOURCE_UNAVAILABLE", reason: "Episode assessment could not reach its source; other episodes continue independently." });
+            this.put({ ...old, key, feedUrl, episodeId: episode.id, title: episode.title, rank, inWindow: true,
+              createdAt: old?.createdAt || iso(), state: "WAITING", code: "SOURCE_UNAVAILABLE",
+              reason: "Episode evidence could not be refreshed. Retrying source discovery.", retryAfter: new Date(Date.now() + 300000).toISOString() });
+          }
         }
       } catch { errors.push({ feedUrl, code: "SOURCE_UNAVAILABLE", reason: "Feed or episode discovery failed; it will be retried at the next refresh." }); }
     }
     const known = new Set(windowKeys);
-    for (const row of this.rows()) if (!known.has(row.key) && !errors.some(e => e.feedUrl === row.feedUrl)) this.put({ ...row, inWindow: false });
+    for (const row of this.rows()) if (!known.has(row.key) && !errors.some(e => e.feedUrl === row.feedUrl && !e.episodeId)) this.put({ ...row, inWindow: false });
     // This snapshot is committed BEFORE dispatch; a restart cannot bypass the estimate.
     this.store.set(kind, "snapshot", { at: iso(), signature, activeUsers: this.listeners().length, follows: follows.length, feeds: feeds.length, errors });
     return this.summary();
@@ -116,7 +126,7 @@ export class FollowedPreparation {
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
       if (!(row.inWindow && feeds.has(row.feedUrl)) && !recentEncounter) continue;
       const cached = this.pipeline.status(row.feedUrl, row.episodeId);
-      if (cached?.state === "READY" && !row.sourceNeedsRefresh) { this.inspect(row.feedUrl, row.episodeId); continue; }
+      if (completed(cached) && !row.sourceNeedsRefresh) { this.inspect(row.feedUrl, row.episodeId); continue; }
       if (activeStates.has(cached?.state) && !cached.completedAt) {
         if ((cached.priority || 0) < row.priority) this.store.set("intelligence", row.key, { ...cached, priority: row.priority });
         continue;
@@ -151,10 +161,11 @@ export class FollowedPreparation {
       const job = this.pipeline.status(row.feedUrl, row.episodeId);
       const recovered = this.pipeline.rightsRecovery?.(row.feedUrl, row.episodeId);
       const projected = job ? listenerProcessingStatus(job) : null;
-      const state = row.paused || row.state === "PAUSED" ? "PAUSED" : row.eligible === false ? "REVIEW_REQUIRED" : recovered || row.sourceNeedsRefresh && projected?.state === "READY" ? "DISCOVERED" : projected?.state === "NOT_REQUESTED" || !job ? row.code === "BUDGET_LIMIT" ? "BUDGET_PAUSED" : row.state === "FAILED" ? "FAILED" : "DISCOVERED" : projected.state;
+      const state = row.paused || row.state === "PAUSED" && !this.allowed(row.feedUrl,row.episodeId) ? "PAUSED" : row.state === "WAITING" && row.code === "SOURCE_UNAVAILABLE" ? "WAITING" : row.eligible === false ? "REVIEW_REQUIRED" : recovered || row.sourceNeedsRefresh && completed(job) ? "DISCOVERED" : projected?.state === "NOT_REQUESTED" || !job ? row.code === "BUDGET_LIMIT" ? "BUDGET_PAUSED" : row.state === "FAILED" ? "FAILED" : "DISCOVERED" : projected.state;
       const ready = state === "READY";
+      const cachedResult = ready || state === "PARTIAL_READY" && completed(job);
       const matchingVariant = !row.acquisition?.audioVariant || createHash("sha256").update(job?.episode?.audioUrl || "").digest("hex") === row.acquisition.audioVariant;
-      const acquisition = { ...row.acquisition, intelligenceCacheHit: ready && !row.sourceNeedsRefresh,
+      const acquisition = { ...row.acquisition, intelligenceCacheHit: cachedResult && !row.sourceNeedsRefresh,
         publisherTranscriptFound: matchingVariant && job?.transcriptChecks?.publisherTranscriptFound === true || row.acquisition?.publisherTranscriptFound === true,
         transcriptCacheHit: matchingVariant && !!job?.transcript?.segments?.length || row.acquisition?.transcriptCacheHit === true };
       return { ...row, acquisition, priority: priorityFor(row, listeners), ...this.status?.(row.feedUrl, row.episodeId), state, stage: projected?.stage || null,
@@ -164,7 +175,7 @@ export class FollowedPreparation {
     });
     const window = rows.filter(v => v.inWindow), counts = {};
     for (const row of window) counts[row.state] = (counts[row.state] || 0) + 1;
-    const pending = window.filter(v => v.state !== "READY"), estimates = pending.map(v => v.estimate);
+    const pending = window.filter(v => !v.acquisition.intelligenceCacheHit), estimates = pending.map(v => v.estimate);
     const remaining = row => (row.acquisition?.transcriptCacheHit ? 0 : row.estimate?.audioUsd || 0) + (row.estimate?.textUsd || 0);
     const knownUsd = pending.reduce((n, row) => n + remaining(row), 0);
     const limits = { ...this.ledger.controls, ...this.testingMode.limits(this.testingMode.platformContext()) }, totals = this.ledger.totals();
