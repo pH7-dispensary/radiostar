@@ -1,0 +1,313 @@
+{
+  "recordedAt": "2026-10-26T17:05:03Z",
+  "environment": "isolated t3.small, Amazon Linux, standard CPU credits, encrypted 8 GiB gp3; production-size compute, no IAM role or ingress",
+  "backupRetrievalMs": 284,
+  "restore": {
+    "counts": {
+      "admin-audit": 111,
+      "admin-audit-head": 1,
+      "admin-session": 39,
+      "allowance-ledger": 9,
+      "analysis-checkpoint": 13,
+      "audio-transcript": 8,
+      "budget": 1,
+      "feature-flag": 1,
+      "feed-observation": 8,
+      "follow": 7,
+      "follow-operation": 1,
+      "followed-demand": 34,
+      "followed-preparation": 2,
+      "installation": 9,
+      "intelligence": 21,
+      "intelligence-attention": 27,
+      "intelligence-encounter": 13,
+      "intelligence-history": 5,
+      "intelligence-policy": 4,
+      "intelligence-policy-audit": 5,
+      "intelligence-refresh": 1,
+      "intelligence-test-mode": 1,
+      "intelligence-test-mode-history": 8,
+      "invite-code": 9,
+      "listening-clock": 3,
+      "listening-event": 2706,
+      "listening-session": 2418,
+      "offline-listening": 10,
+      "pilot-device": 9,
+      "pilot-invite": 9,
+      "processing-approval": 5,
+      "processing-approval-preview": 4,
+      "processing-event": 148,
+      "provider-result": 18,
+      "rights": 36,
+      "rights-audit": 4596,
+      "rights-policy": 1,
+      "rights-policy-audit": 4733,
+      "rights-policy-history": 6,
+      "rights-policy-metric": 11,
+      "rights-policy-override": 5,
+      "rights-review-history": 3,
+      "search-index": 11,
+      "skip-analysis": 11,
+      "skip-audio-verification": 2,
+      "skip-authorisation": 2,
+      "skip-execution": 12,
+      "skip-feedback": 1,
+      "skip-interval": 6,
+      "skip-vote": 1,
+      "transcript": 18,
+      "transcription-checkpoint": 12,
+      "translation": 1,
+      "translation-beta": 1,
+      "translation-budget": 1
+    },
+    "restorationMs": 418.5823439999999,
+    "startupMs": 28.032852000000048,
+    "healthMs": 28.70287099999996,
+    "totalRestoreMs": 475.40766499999995,
+    "environment": {
+      "node": "v24.22.0",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "benchmarks": [
+      {
+        "concurrency": 1,
+        "queue": {
+          "mocked": true,
+          "jobs": 8,
+          "acknowledged": 8,
+          "renewals": 0,
+          "p50DelayMs": 242.2374749999999,
+          "p95DelayMs": 732.275294
+        },
+        "requests": 100,
+        "durationMs": 10249.788312,
+        "requestsPerSecond": 9.756299052822818,
+        "p50Ms": 95.05470400000013,
+        "p95Ms": 212.70646599999964,
+        "statuses": {
+          "200": 100
+        },
+        "errorRate": 0,
+        "cpuMs": 10571.984,
+        "rssBytes": 248184832,
+        "eventLoopP99Ms": 276.824063,
+        "scenarios": {
+          "cached-intelligence": {
+            "p50Ms": 53.490205999999944,
+            "p95Ms": 76.01648800000021
+          },
+          "catalogue-mocked-rss": {
+            "p50Ms": 10.50441499999988,
+            "p95Ms": 46.408394000000044
+          },
+          "search": {
+            "p50Ms": 95.05470400000013,
+            "p95Ms": 168.8963990000011
+          },
+          "admin-list": {
+            "p50Ms": 120.0491750000001,
+            "p95Ms": 388.680977
+          },
+          "processing-status": {
+            "p50Ms": 204.20396599999913,
+            "p95Ms": 285.0600480000003
+          }
+        }
+      },
+      {
+        "concurrency": 4,
+        "queue": {
+          "mocked": true,
+          "jobs": 8,
+          "acknowledged": 8,
+          "renewals": 1,
+          "p50DelayMs": 499.79845100000057,
+          "p95DelayMs": 1011.5272079999995
+        },
+        "requests": 100,
+        "durationMs": 8988.788342999998,
+        "requestsPerSecond": 11.1249699274402,
+        "p50Ms": 391.09141999999883,
+        "p95Ms": 469.28031700000065,
+        "statuses": {
+          "200": 100
+        },
+        "errorRate": 0,
+        "cpuMs": 9306.422,
+        "rssBytes": 258035712,
+        "eventLoopP99Ms": 387.448831,
+        "scenarios": {
+          "cached-intelligence": {
+            "p50Ms": 419.4180550000001,
+            "p95Ms": 469.28031700000065
+          },
+          "catalogue-mocked-rss": {
+            "p50Ms": 347.3210020000006,
+            "p95Ms": 395.68377899999905
+          },
+          "processing-status": {
+            "p50Ms": 419.2426720000003,
+            "p95Ms": 511.6329600000008
+          },
+          "admin-list": {
+            "p50Ms": 392.6230289999985,
+            "p95Ms": 466.80370100000073
+          },
+          "search": {
+            "p50Ms": 321.1447350000017,
+            "p95Ms": 533.8322649999991
+          }
+        }
+      },
+      {
+        "concurrency": 8,
+        "queue": {
+          "mocked": true,
+          "jobs": 8,
+          "acknowledged": 8,
+          "renewals": 0,
+          "p50DelayMs": 1282.2162259999968,
+          "p95DelayMs": 2245.116278999998
+        },
+        "requests": 100,
+        "durationMs": 20348.970811,
+        "requestsPerSecond": 4.914253449414907,
+        "p50Ms": 1670.069563000001,
+        "p95Ms": 2459.5128719999993,
+        "statuses": {
+          "200": 100
+        },
+        "errorRate": 0,
+        "cpuMs": 10305.103,
+        "rssBytes": 262828032,
+        "eventLoopP99Ms": 1434.451967,
+        "scenarios": {
+          "cached-intelligence": {
+            "p50Ms": 1511.591375,
+            "p95Ms": 2393.7419389999995
+          },
+          "catalogue-mocked-rss": {
+            "p50Ms": 1511.4825109999983,
+            "p95Ms": 2459.5128719999993
+          },
+          "admin-list": {
+            "p50Ms": 1824.552628999998,
+            "p95Ms": 2425.686708000001
+          },
+          "processing-status": {
+            "p50Ms": 1824.862003000002,
+            "p95Ms": 3781.5408270000007
+          },
+          "search": {
+            "p50Ms": 1689.695157000002,
+            "p95Ms": 2425.8718769999978
+          }
+        }
+      },
+      {
+        "concurrency": 16,
+        "queue": {
+          "mocked": true,
+          "jobs": 8,
+          "acknowledged": 8,
+          "renewals": 0,
+          "p50DelayMs": 4008.068471000006,
+          "p95DelayMs": 7136.1088910000035
+        },
+        "requests": 100,
+        "durationMs": 25046.214098999997,
+        "requestsPerSecond": 3.9926193876939124,
+        "p50Ms": 2407.776908,
+        "p95Ms": 11283.070320000006,
+        "statuses": {
+          "200": 100
+        },
+        "errorRate": 0,
+        "cpuMs": 10673.243,
+        "rssBytes": 271470592,
+        "eventLoopP99Ms": 2087.714815,
+        "scenarios": {
+          "cached-intelligence": {
+            "p50Ms": 2629.669517999995,
+            "p95Ms": 12323.600749999998
+          },
+          "catalogue-mocked-rss": {
+            "p50Ms": 2297.4842170000047,
+            "p95Ms": 9749.087719999996
+          },
+          "admin-list": {
+            "p50Ms": 2575.7352180000016,
+            "p95Ms": 11364.723173999999
+          },
+          "processing-status": {
+            "p50Ms": 3138.9257910000015,
+            "p95Ms": 14479.906040000002
+          },
+          "search": {
+            "p50Ms": 2297.806172999997,
+            "p95Ms": 9784.293536999998
+          }
+        }
+      }
+    ],
+    "database": {
+      "pointLookups100Ms": 145.9282910000038,
+      "queryPlan": [
+        "SEARCH records USING INDEX sqlite_autoindex_records_1 (kind=? AND id=?)"
+      ],
+      "wholeKindReads25Ms": 722.897438999993
+    },
+    "verified": {
+      "integrity": true,
+      "canonicalRecords": true,
+      "listenersPreserved": true,
+      "intelligenceCache": true,
+      "administratorSessionCompatibility": true,
+      "productionQueueDisabled": true,
+      "paidProcessingDisabled": true,
+      "paidLedgerUnchanged": true,
+      "readyJobsPreserved": true,
+      "blockedExternalRequests": 0
+    },
+    "scope": "Restored production records, isolated fixture listener credentials and emergency login; catalogue RSS mocked to avoid external calls. Not a live concurrency guarantee or full EC2 replacement RTO."
+  },
+  "cleanup": [
+    {
+      "Id": "i-0de61f88c75ad1934",
+      "State": "terminated",
+      "Launched": "2026-10-26T16:46:37+00:00",
+      "Reason": "User initiated (2026-10-26 16:49:05 GMT)"
+    },
+    {
+      "Id": "i-0ffefe8521207d774",
+      "State": "terminated",
+      "Launched": "2026-10-26T17:01:09+00:00",
+      "Reason": "User initiated (2026-10-26 17:05:06 GMT)"
+    },
+    {
+      "Id": "i-08dc307d0ffca6a85",
+      "State": "terminated",
+      "Launched": "2026-10-26T16:49:15+00:00",
+      "Reason": "User initiated (2026-10-26 16:55:28 GMT)"
+    },
+    {
+      "Id": "i-043ce278d2e2300dc",
+      "State": "terminated",
+      "Launched": "2026-10-26T16:55:36+00:00",
+      "Reason": "User initiated (2026-10-26 17:00:59 GMT)"
+    }
+  ],
+  "localSqliteContention": {
+    "fixtureOnly": true,
+    "heldWriteTransactionMs": 200,
+    "read": "before",
+    "readMs": 0.027832999999986896,
+    "writerWaitMs": 209.54229099999998,
+    "childExit": 0,
+    "integrity": {
+      "integrity_check": "ok"
+    },
+    "scope": "Separate local cross-process SQLite WAL contention measurement; not EC2 capacity."
+  }
+}

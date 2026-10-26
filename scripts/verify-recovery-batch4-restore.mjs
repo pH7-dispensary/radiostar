@@ -4,6 +4,8 @@ import {copyFile,readFile,writeFile} from 'node:fs/promises';
 import {performance,monitorEventLoopDelay} from 'node:perf_hooks';
 import {LocalStore} from '../persistence.mjs';
 import {createStarCastServer} from '../server.mjs';
+import {ProcessingQueue} from '../processing-queue.mjs';
+import {setTimeout as delay} from 'node:timers/promises';
 const [source,directory,output]=process.argv.slice(2);
 if(!source||!directory||!output||source.includes('/var/lib/starcast')||directory.includes('/var/lib/starcast'))throw Error('A disposable restore directory is required');
 const start=performance.now();await copyFile(source,`${directory}/restored.sqlite`);const store=new LocalStore(`${directory}/restored.sqlite`);
@@ -30,9 +32,18 @@ try {
  const percentile=(a,p)=>[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))];
  for(const concurrency of [1,4,8,16]){
   const loop=monitorEventLoopDelay({resolution:10});loop.enable();const cpu=process.cpuUsage(),at=performance.now(),latencies=[],statuses={},byScenario={};let index=0;
-  await Promise.all(Array.from({length:concurrency},async()=>{while(index<100){const n=index++,[name,path,body]=scenarios[n%scenarios.length],t=performance.now();const response=await realFetch(base+path,{method:body?'POST':'GET',headers:{...headers,cookie,authorization:`Bearer ${devices[n%devices.length].credential}`},...(body?{body:JSON.stringify(body)}:{})});await response.arrayBuffer();const ms=performance.now()-t;latencies.push(ms);statuses[response.status]=(statuses[response.status]||0)+1;(byScenario[name]||=[]).push(ms);}}));
+  let delivered=0,acknowledged=0,renewals=0;const queueDelays=[],queuedAt=performance.now();
+  const queue=new ProcessingQueue({queueUrl:'https://sqs.eu-west-2.amazonaws.com/208096650030/starcast-phase1-processing',renewalMs:50,client:{send:async command=>{
+   if(command.constructor.name==='ReceiveMessageCommand')return {Messages:[{Body:JSON.stringify({jobId:String(delivered++)}),ReceiptHandle:'isolated'}]};
+   if(command.constructor.name==='DeleteMessageCommand')acknowledged++;
+   if(command.constructor.name==='ChangeMessageVisibilityCommand')renewals++;
+   return {};
+  }}});
+  const queueWork=queue.run({recover:async()=>{},execute:async job=>{queueDelays.push(performance.now()-queuedAt);store.set('dr-queue-benchmark',job.jobId,{completed:true});await delay(20);if(delivered===8)queue.stop();}});
+  await Promise.all(Array.from({length:concurrency},async()=>{while(index<100){const n=index++,[name,path,body]=scenarios[n%scenarios.length],t=performance.now();let status;try{const response=await realFetch(base+path,{method:body?'POST':'GET',headers:{...headers,cookie,authorization:`Bearer ${devices[n%devices.length].credential}`},signal:AbortSignal.timeout(30000),...(body?{body:JSON.stringify(body)}:{})});await response.arrayBuffer();status=response.status;}catch(error){status=error.cause?.code||error.name||'NETWORK_ERROR';}const ms=performance.now()-t;latencies.push(ms);statuses[status]=(statuses[status]||0)+1;(byScenario[name]||=[]).push(ms);}}));
+  await queueWork;assert.equal(acknowledged,8);assert.equal(delivered,8);
   const durationMs=performance.now()-at,used=process.cpuUsage(cpu);loop.disable();
-  report.benchmarks.push({concurrency,requests:latencies.length,durationMs,requestsPerSecond:latencies.length/(durationMs/1000),p50Ms:percentile(latencies,.5),p95Ms:percentile(latencies,.95),statuses,errorRate:(100-(statuses[200]||0))/100,cpuMs:(used.user+used.system)/1000,rssBytes:process.memoryUsage().rss,eventLoopP99Ms:loop.percentile(99)/1e6,scenarios:Object.fromEntries(Object.entries(byScenario).map(([name,values])=>[name,{p50Ms:percentile(values,.5),p95Ms:percentile(values,.95)}]))});
+  report.benchmarks.push({concurrency,queue:{mocked:true,jobs:8,acknowledged,renewals,p50DelayMs:percentile(queueDelays,.5),p95DelayMs:percentile(queueDelays,.95)},requests:latencies.length,durationMs,requestsPerSecond:latencies.length/(durationMs/1000),p50Ms:percentile(latencies,.5),p95Ms:percentile(latencies,.95),statuses,errorRate:(100-(statuses[200]||0))/100,cpuMs:(used.user+used.system)/1000,rssBytes:process.memoryUsage().rss,eventLoopP99Ms:loop.percentile(99)/1e6,scenarios:Object.fromEntries(Object.entries(byScenario).map(([name,values])=>[name,{p50Ms:percentile(values,.5),p95Ms:percentile(values,.95)}]))});
  }
  assert.equal(JSON.stringify(store.all('budget')),ledgerBefore,'restoration and benchmark must not consume or release real paid reservations');
  assert(readyBefore.every(id=>store.get('intelligence',id)?.state==='READY'));
