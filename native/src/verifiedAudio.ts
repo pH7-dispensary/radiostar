@@ -5,6 +5,7 @@ import { verifyAudioRanges } from "./verifiedAudioRanges.mjs";
 import { listenerRequest, type SkipStatus } from "./listenerApi";
 import type { Source } from "./PlaybackProvider";
 import { localPrivacyState } from "./localStorage";
+import { createVerifiedSourceCache } from "./verifiedSourceCache.mjs";
 
 // Legacy exact-file fallback only; range-pinned streams have no source-size cap.
 const maximumBytes = 32 * 1024 * 1024;
@@ -12,10 +13,22 @@ type VerifiedSource = { uri: string; fingerprint: string; headers?: Record<strin
 const copies = new Map<string, { uri: string; fingerprint: string }>();
 let swept = false;
 const inflight = new Map<string, Promise<VerifiedSource | null>>();
+const ready = createVerifiedSourceCache();
+const sourceKey = (source: Source) => `${source.feedUrl}:${source.episodeId}:${source.url}:${localPrivacyState().revision}`;
+export function invalidateVerifiedPlaybackSource(source: Source) { ready.set(sourceKey(source), null); }
+export function cachedVerifiedPlaybackSource(source: Source): VerifiedSource | null {
+  if (localPrivacyState().paused) return null;
+  const value = ready.get(sourceKey(source));
+  // Private files may have been evicted while another source was checked.
+  if (value && !value.headers && !new File(value.uri).exists) return null;
+  return value;
+}
 /** A bounded private playback cache, never an audio proxy or second player. */
 export function verifiedPlaybackCopy(source: Source): Promise<VerifiedSource | null> {
-  const key = `${source.feedUrl}:${source.episodeId}:${source.url}:${localPrivacyState().revision}`;
-  if (!inflight.has(key)) inflight.set(key, prepareCopy(source).finally(() => inflight.delete(key)));
+  const cached = cachedVerifiedPlaybackSource(source);
+  if (cached) return Promise.resolve(cached);
+  const key = sourceKey(source);
+  if (!inflight.has(key)) inflight.set(key, prepareCopy(source).then(value => { ready.set(key, value); return value; }).finally(() => inflight.delete(key)));
   return inflight.get(key)!;
 }
 async function prepareCopy(source: Source): Promise<VerifiedSource | null> {

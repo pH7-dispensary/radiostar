@@ -1,4 +1,7 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { resolve, dirname } from "node:path";
 import { evaluateSkipCases, acceptance } from "../skip-evaluation.mjs";
 import { syntheticSkipFixtures as fixture } from "../ad-skip.mjs";
 // No network, provider calls, production mutations, or feature flag writes.
@@ -32,6 +35,19 @@ const cases = path
     ];
 if (!Array.isArray(cases) || cases.length > 100000)
   throw Error("Supply a bounded JSON array of annotated cases.");
+if (path) {
+  const checked = new Map();
+  for (const item of cases) {
+    if (typeof item.audioPath !== 'string') throw Error('Real-world evaluation requires the actual labelled audio file.');
+    const audioPath = resolve(dirname(path), item.audioPath);
+    if (!checked.has(audioPath)) {
+      const hash = createHash('sha256');
+      for await (const bytes of createReadStream(audioPath)) hash.update(bytes);
+      checked.set(audioPath, hash.digest('hex'));
+    }
+    if (checked.get(audioPath) !== item.audioContentHash) throw Error('Audio changed: historical labels cannot evaluate this variant.');
+  }
+}
 console.log(
   JSON.stringify(
     {

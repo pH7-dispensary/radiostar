@@ -8,13 +8,13 @@ export function skipDiagnostics(store, rights) {
   const attention = new Map(rows("intelligence-attention").map(row => [episodeKey(row.feedUrl, row.episodeId), row]));
   const analyses = new Map(rows("skip-analysis").map(row => [row.episodeKey, row]));
   const verification = new Map(rows("skip-audio-verification").map(row => [row.episodeKey, row]));
-  const intervals = rows("skip-interval"), events = rows("skip-execution");
+  const intervals = rows("skip-interval"), events = rows("skip-execution"), feedback = rows("skip-feedback");
   const keys = new Set([...jobs.keys(), ...encounters.keys(), ...analyses.keys(), ...verification.keys(), ...intervals.map(row => row.episodeKey)]);
   return [...keys].map(key => {
     const job = jobs.get(key), encounter = encounters.get(key), analysis = analyses.get(key), verified = verification.get(key);
     const feedUrl = job?.feedUrl || job?.episode?.feedUrl || encounter?.feedUrl || analysis?.feedUrl;
     const episodeId = job?.episodeId || job?.episode?.id || encounter?.episodeId || analysis?.episodeId;
-    const candidates = intervals.filter(row => row.episodeKey === key && (!job?.transcript?.audioVariant || (row.sourceVariantKey || row.audioVariant) === job.transcript.audioVariant));
+    const candidates = intervals.filter(row => row.episodeKey === key && (!job?.transcript?.audioVariant || (row.sourceVariantKey || row.audioVariant) === job.transcript.audioVariant) && (!analysis?.activeIntervalIds || analysis.activeIntervalIds.includes(row.id)));
     const receipts = events.filter(row => row.episodeKey === key);
     const safe = candidates.filter(row => row.verificationState === "VERIFIED" && row.boundaryVerified && !row.disputed);
     const decision = feedUrl && episodeId ? rights?.evaluate({ feature: "ad-detection", feedUrl, episodeId }) : null;
@@ -40,6 +40,15 @@ export function skipDiagnostics(store, rights) {
     return { episodeKey: key, feedUrl, episodeId, title: job?.episode?.title || attention.get(key)?.title || episodeId || "Episode metadata unavailable", podcast: job?.episode?.showName || attention.get(key)?.podcast || null,
       analysis: analysis ? "COMPLETE" : candidates.length ? "LEGACY_EVIDENCE" : "NOT_STARTED", transcriptAvailable: Boolean(job?.transcript?.segments?.length),
       candidates: analysis || candidates.length ? candidates.length : null, verified: safe.length,
+      audioIdentity: verified?.variant?.audioVariantFingerprint || null,
+      analysisDurationMs: analysis?.analysisDurationMs ?? null, verificationDurationMs: verified?.verificationDurationMs ?? null,
+      verificationSourceReused: verified?.sourceCacheReused ?? null,
+      completeBreakCoverage: null, coverageReason: "Independent hash-bound complete-break labels have not been recorded for this episode.",
+      groupedBreakCandidates: candidates.filter(row => row.breakCandidate).length,
+      verifiedDurationMs: safe.slice().sort((a,b)=>a.startMs-b.startMs).reduce((acc,row)=>({end:Math.max(acc.end,row.endMs),ms:acc.ms+Math.max(0,row.endMs-Math.max(acc.end,row.startMs))}),{end:0,ms:0}).ms,
+      incorrectReports: feedback.filter(row=>row.episodeKey===key&&row.kind==="skipped_conversation").length,
+      missedReports: feedback.filter(row=>row.episodeKey===key&&row.kind==="missed").length,
+      recordedSkippedDurationMs: successes.some(row=>Number.isFinite(row.skippedDurationMs)) ? successes.reduce((sum,row)=>sum+(row.skippedDurationMs||0),0) : null,
       audioMatching: latestPlayback ? latestPlayback.sourceMatched ? "MATCHED" : latestPlayback.matchAttempted ? "MISMATCHED" : "UNKNOWN" : "UNKNOWN",
       automaticSkipping: latestPlayback ? latestPlayback.enabled ? "ENABLED" : "DISABLED" : "UNKNOWN",
       pilotEnabled: latestPlayback?.pilotEnabled ?? null, preferenceEnabled: latestPlayback?.preferenceEnabled ?? null,

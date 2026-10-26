@@ -6,6 +6,7 @@ const { chromium } = await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE || "pl
 const { app } = createReviewFixture();
 app.store.set("intelligence", episodeKey(feedUrl, "restricted"), { state: "BLOCKED", code: "PUBLISHER_RESTRICTION", feedUrl, episodeId: "restricted", episode: {title: "Labelled UI fixture: a long episode title with a recorded publisher restriction", showName: "Radio Star test material"} });
 app.store.set("intelligence-encounter", episodeKey(feedUrl, "restricted"), {feedUrl, episodeId: "restricted", source: "opened", at: new Date().toISOString()});
+app.store.set("skip-audio-verification", episodeKey(feedUrl, "restricted"), { episodeKey: episodeKey(feedUrl, "restricted"), state: "UNAVAILABLE", variant: { audioVariantFingerprint: "b".repeat(64) } });
 await new Promise(resolve => app.server.listen(0, "127.0.0.1", resolve));
 const origin = `http://127.0.0.1:${app.server.address().port}`;
 const output = ".starcast/adskip-recovery-visual";
@@ -17,12 +18,14 @@ try {
   const page = await context.newPage(), errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(origin + "/admin");
+  await page.getByRole("button", {name: "Emergency recovery", exact: true}).click();
   await page.getByLabel("Administrator credential").fill("phase3-test-admin");
   await page.getByRole("button", {name: "Sign in securely"}).click();
-  await page.locator(".technical-nav summary").click();
-  await page.getByRole("button", {name: "Ad Skip safety", exact: true}).click();
+  await page.getByRole("button", {name: "Ad Skip", exact: true}).click();
   await page.locator("#ad-skip-diagnostics").waitFor();
   assert.match(await page.locator("#ad-skip-diagnostics").innerText(), /missing analysis is not evidence/i);
+  await page.getByText("Audio and break evidence", {exact: true}).click();
+  assert.match(await page.locator("#ad-skip-diagnostics").innerText(), /Complete-break coverage: Not measured/);
   await page.screenshot({path: output + "/desktop.png", fullPage: true});
   await page.setViewportSize({width: 390, height: 844});
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);

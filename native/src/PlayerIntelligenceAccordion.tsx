@@ -30,6 +30,7 @@ import { LoadingState, useReducedMotion } from "./LoadingState";
 import { usePlayback, type Source } from "./PlaybackProvider";
 import type { useEpisodeIntelligence } from "./useEpisodeIntelligence";
 import { intelligenceCapabilities } from "./intelligencePresentation.mjs";
+import { verifiedPlaybackCopy } from "./verifiedAudio";
 
 type Panel = "brief" | "explore" | "ads";
 type Accordion = Panel | null;
@@ -77,6 +78,8 @@ function useAdSkip(source: Source) {
       }).finally(() => { loading = false; });
     };
     void refresh();
+    // Prepare independently while the episode is open, before a possible Play.
+    void verifiedPlaybackCopy(source).catch(() => null);
     const timer = setInterval(() => void refresh(), 10000);
     return () => {
       alive.current = false;

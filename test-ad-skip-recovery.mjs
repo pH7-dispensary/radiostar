@@ -22,6 +22,8 @@ assert.equal(transferred, 65536, "250MB source verifies with 64KB, not a full do
 await assert.rejects(verifyAudioRanges(variant, {fetcher: async () => new Response(null, {status: 200}), digest: sha, nonce: "test"}), /PRECONDITION_UNSUPPORTED/);
 await assert.rejects(verifyAudioRanges({...variant, windows: [{...variant.windows[0], sha256: "0".repeat(64)}]}, {fetcher, digest: sha, nonce: "test"}), /WITNESS_MISMATCH/);
 await assert.rejects(verifyAudioRanges(variant, {fetcher: async (url, options) => options.headers["If-Match"] !== variant.etag ? new Response(null, {status: 412}) : new Response(new Uint8Array(65537), {status: 206, headers: {etag: variant.etag, "content-range": "bytes 150000000-150065535/250000000"}}), digest: sha, nonce: "test"}), /RANGE_SIZE_MISMATCH/);
+for (const status of [200, 412]) await assert.rejects(verifyAudioRanges(variant, {fetcher: async (_url, options) => new Response(null, {status: options.headers["If-Match"] !== variant.etag ? 412 : status}), digest: sha, nonce: "test"}), /VARIANT_CHANGED/, "missing ranges or changed dynamic content cannot verify");
+await assert.rejects(verifyAudioRanges(variant, {fetcher: async () => ({redirected:true,url:'https://elsewhere.example/audio'}),digest:sha,nonce:'test'}), /REDIRECT_CHANGED/);
 const interval = {id: "ad", startMs: 10000, endMs: 30000};
 let seekCalls = 0;
 await assert.rejects(executeVerifiedSkip({interval, positionMs: 29000, durationMs: 60000, current: () => true, getPosition: () => 31000, authorise: async () => ({...interval, targetMs: 30000, expiresAt: Date.now()+10000}), seek: async () => { seekCalls++; return 30000; }}), /left the advert/);
@@ -30,7 +32,7 @@ for (const speed of [1, 1.5, 2]) {
   const stages = [];
   const result = await executeVerifiedSkip({interval, positionMs: 15000, durationMs: 60000, current: () => true, getPosition: () => 15000 + 100 * speed, onStage: stage => stages.push(stage), authorise: async () => ({...interval, targetMs: 30000, expiresAt: Date.now()+10000}), seek: async target => target});
   assert.equal(result.durationMs, 15000 - 100*speed);
-  assert.equal(await result.undo(), 15000);
+  assert.equal(await result.undo(), 15000 + 100*speed);
   assert.deepEqual(stages, ["seek_attempted"]);
 }
 const store = new LocalStore(":memory:"), feed = "https://publisher.example/feed", episode = "one", key = episodeKey(feed, episode);

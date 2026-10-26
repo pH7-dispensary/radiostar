@@ -1,0 +1,1 @@
+export function createVerifiedSourceCache(options?: {now?: () => number; maxEntries?: number; ttlMs?: number}): {get(key: string): {uri: string; fingerprint: string; headers?: Record<string,string>} | null; set(key: string, source: {uri: string; fingerprint: string; headers?: Record<string,string>} | null): void};

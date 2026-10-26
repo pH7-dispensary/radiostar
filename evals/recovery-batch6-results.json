@@ -1,0 +1,21 @@
+{
+  "cohort": "owned synthetic fixture; not independently labelled real-world accuracy",
+  "audioHash": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+  "analysisMs": 13.38862499999999,
+  "verificationMs": 171.924375,
+  "boundaries": {
+    "id": "owned-full",
+    "boundaryVerified": true,
+    "startMs": 15200,
+    "endMs": 34500,
+    "boundaryFingerprint": "149c1dc17cdfca9d5ad6d180d13f503365c5a68fc5c68a61ddcd0fd8e0cd39a1"
+  },
+  "expected": {
+    "startMs": 15000,
+    "endMs": 35000
+  },
+  "peakProcessRssBytes": 77725696,
+  "paidProviderCalls": 0,
+  "downloadedAudioBytes": 0,
+  "physicalIphoneVerified": false
+}

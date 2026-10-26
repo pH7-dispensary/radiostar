@@ -16,7 +16,7 @@ import {
 } from "expo-audio";
 import type { PlaybackSnapshot } from "./contracts";
 import { playbackPresentation, type AudioFeedback } from "./playbackPresentation.mjs";
-import { verifiedPlaybackCopy } from "./verifiedAudio";
+import { verifiedPlaybackCopy, cachedVerifiedPlaybackSource, invalidateVerifiedPlaybackSource } from "./verifiedAudio";
 
 export type Source = {
   episodeId: string;
@@ -41,6 +41,8 @@ type PlaybackContextValue = {
   pause: () => Promise<void>;
   seek: (ms: number) => Promise<void>;
   seekAutomatically: (ms: number) => Promise<number>;
+  getPositionMs: () => number;
+  getPlaybackRevision: () => number;
   audioVariantFingerprint: string | null;
   manualSeekRevision: number;
   setSpeed: (speed: number) => Promise<void>;
@@ -195,6 +197,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     );
   }, [source, snapshot.positionMs, snapshot.speed]);
   let value: PlaybackContextValue = {
+    getPositionMs: () => player.currentTime * 1000,
+    getPlaybackRevision: () => operation.current,
     snapshot,
     source,
     audio,
@@ -208,13 +212,13 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       fadeOperation.current++;
       player.volume = 1;
       const switching = sourceRef.current?.url !== next.url || !sourceRef.current || nativeEpisodeKey(sourceRef.current) !== nativeEpisodeKey(next);
-      const reload = switching || !player.isLoaded || audio.state === "FAILED" || (!audioVariantFingerprint && !player.playing);
+      const reload = switching || !player.isLoaded || audio.state === "FAILED";
       if (reload) {
         setConnecting(true);
         sourceRef.current = { ...next, startPositionMs: undefined };
         setSource({ ...next, startPositionMs: undefined });
         setAudioVariantFingerprint(null);
-        const verified = await verifiedPlaybackCopy(next);
+        const verified = cachedVerifiedPlaybackSource(next);
         if (currentOperation !== operation.current) return;
         player.replace(verified ? { uri: verified.uri, headers: verified.headers } : next.url);
         setAudioVariantFingerprint(verified?.fingerprint || null);
@@ -250,8 +254,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       );
       player.setPlaybackRate(snapshot.speed);
       player.play();
+      // Start the existing engine before any optional proof work. A cold
+      // proof is cached for a later deliberate load; never swap active audio.
+      if (reload) void verifiedPlaybackCopy(next).catch(() => null);
       } catch (error) {
         if (currentOperation === operation.current) {
+          invalidateVerifiedPlaybackSource(next);
           setPlaybackError("Audio couldn't play. Please try again.");
           setSnapshot((previous) => ({ ...previous, playing: false }));
         }
@@ -286,6 +294,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
     },
     seek: async (ms) => {
+      operation.current++;
+      setConnecting(false);
       setManualSeekRevision((revision) => revision + 1);
       fadeOperation.current++;
       player.volume = 1;
@@ -305,6 +315,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       );
       const generation = operation.current;
       await player.seekTo(target / 1000, 0, 0);
+      // Expo status propagation may lag the completed seek callback. Confirm
+      // actual engine time, bounded and cancellable by manual navigation.
+      const deadline = Date.now() + 1500;
+      while (generation === operation.current && player.isLoaded && Math.abs(player.currentTime * 1000-target) > 350 && Date.now() < deadline)
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
       const observed = player.currentTime * 1000;
       if (generation !== operation.current || !player.isLoaded || Math.abs(observed - target) > 350) throw Error("Playback seek was not confirmed.");
       await persistPosition(observed);

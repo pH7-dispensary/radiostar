@@ -1,0 +1,19 @@
+{
+  "audioHash": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+  "interval": {
+    "id": "05e5d53bfde8f6f4991a6471c3ef7aaa35d387ebe50ee2330fb3e8d447764f33",
+    "type": "advert",
+    "startMs": 15200,
+    "endMs": 34500,
+    "targetMs": 34500
+  },
+  "originMs": 15204.139,
+  "targetMs": 34500,
+  "skippedDurationMs": 19295.861,
+  "restoredMs": 15204.139,
+  "undoSeeks": 1,
+  "paused": true,
+  "rate": 1.5,
+  "playPromiseMs": 0.5,
+  "device": "Chromium, not a physical iPhone"
+}
