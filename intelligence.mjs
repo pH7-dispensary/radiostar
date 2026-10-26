@@ -93,60 +93,7 @@ export const fixtureTranscript = {
     },
   ],
 };
-const stopWords = new Set('the and what where when which who how does did they them about that this with from have has were are was for into said podcast episode find moment people discuss discussed'.split(' '));
-export const searchTerms = (s) =>
-  new Set(
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]/g, " ")
-      .split(/\s+/)
-      .filter((x) => x.length > 2 && !stopWords.has(x))
-      .map(x => /^profil(e|er|ers|ing)$/.test(x) ? 'profile' : x),
-  );
-const synonyms = {
-  dangerous: ["safety", "strategic", "deception", "oversight"],
-  danger: ["safety", "strategic"],
-  worried: ["safety", "oversight"],
-  agents: ["agent", "autonomy", "delegated"],
-  control: ["oversight", "permissions", "audit"],
-  energy: ["compute", "energy"],
-};
-export function hybridRetrieve(transcript, query, limit = 3) {
-  let q = searchTerms(query);
-  for (let word of [...q])
-    for (let related of synonyms[word] || []) q.add(related);
-  let rows = transcript.segments
-    .filter((s) => (s.contentType || "conversation") === "conversation")
-    .map((s) => {
-      let hay = s.searchTerms ? new Set(s.searchTerms) : searchTerms(
-          `${s.text} ${(s.topics || []).join(" ")} ${(s.entities || []).join(" ")}`,
-        ),
-        hits = [...q].filter((x) => hay.has(x)).length,
-        lexical = hits / Math.max(q.size, 1),
-        topic = (s.topics || []).some((x) => q.has(x)) ? 0.2 : 0;
-      return { ...s, score: lexical + topic };
-    })
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score || a.startMs - b.startMs);
-  return rows
-    .filter(s => s.score >= (rows[0]?.score || 0) * .7)
-    .slice(0, limit)
-    .map((s, index) => ({
-      rank: index + 1,
-      label:
-        index === 0
-          ? "MOST LIKELY"
-          : index === 1
-            ? "ANOTHER POSSIBILITY"
-            : "RELATED MOMENT",
-      segmentId: s.id,
-      startMs: s.startMs,
-      endMs: s.endMs,
-      context: s.text,
-      confidence: Number(Math.min(0.98, 0.45 + s.score / 2).toFixed(2)),
-      sourceTranscriptVersion: transcript.transcriptVersion || "publisher-v1",
-    }));
-}
+export {unicodeTerms as searchTerms, rankMoments as hybridRetrieve} from './retrieval.mjs';
 export function deriveIntelligence(transcript) {
   let conversation = transcript.segments.filter(
       (s) => s.contentType === "conversation",

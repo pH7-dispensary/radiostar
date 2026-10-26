@@ -62,7 +62,7 @@ const pipeline = new EpisodePipeline({
     return transcript;
   },
   client: { responses: { create: async () => ({
-    output_text: JSON.stringify({ overview: "A durable queue is discussed.", themes: ["Queue"], detail: "The episode explains durable dispatch.", sourceSegmentIndexes: [1], chapters: [{ title: "Dispatch", description: "The durable dispatch discussion.", sourceSegmentIndexes: [1] }] }),
+    output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Budget ledger"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Budget ledger", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }] }),
     usage: { input_tokens: 1, output_tokens: 1 },
   }) } },
 });

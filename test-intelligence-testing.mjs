@@ -58,7 +58,7 @@ assert.equal(store.all("transcription-checkpoint").some(([key]) => key.startsWit
 let textCalls = 0, stopAfterMap = true;
 const textClient = { responses: { create: async ({ input }) => {
   textCalls++; const count = input[1].content.split("\n").filter((line) => /^source \d+/.test(line)).length;
-  return { status: "completed", output_text: JSON.stringify({ overview: "The speakers discuss reliable podcast intelligence.", themes: ["Evidence"], detail: "They explain source attribution and careful processing.", sourceSegmentIndexes: [1], chapters: [{ title: "Evidence", description: "Source evidence", sourceSegmentIndexes: [1, count] }] }), usage: { input_tokens: 100, output_tokens: 100 } };
+  return { status: "completed", output_text: JSON.stringify({ overview: "Reliable podcast intelligence uses source evidence and careful attribution.", themes: ["Evidence"], detail: "Reliable podcast intelligence uses source evidence and careful attribution.", sourceSegmentIndexes: [1], chapters: [{ title: "Evidence", description: "Reliable podcast intelligence uses source evidence and careful attribution.", sourceSegmentIndexes: [1, count] }] }), usage: { input_tokens: 100, output_tokens: 100 } };
 } } };
 const long = { ...transcript, segments: Array.from({ length: 800 }, (_, index) => ({ id: `source-${index}`, startMs: index * 18000, endMs: (index + 1) * 18000, text: "Reliable podcast intelligence uses source evidence and careful attribution. ".repeat(15) })) };
 const textOptions = () => ({ transcript: long, ledger, requestId: "long-text", client: textClient, checkpointStore: store, checkpointPrefix: "owned", onProgress: ({ completedBatches }) => { if (completedBatches === 2 && stopAfterMap) throw Error("worker stopped between batches"); } });

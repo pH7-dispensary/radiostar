@@ -37,11 +37,11 @@ const app = createStarCastServer({
   fetchTranscript: async () => transcript,
   client: { responses: { create: async () => ({
     output_text: JSON.stringify({
-      overview: "Researchers discuss evidence-based decisions for teams.",
+      overview: transcript.segments[0].text,
       themes: ["Evidence", "Recommendations"],
-      detail: "The conversation compares careful methods and practical recommendations for team decisions.",
+      detail: transcript.segments.map(s=>s.text).join(" "),
       sourceSegmentIndexes: [1, 2],
-      chapters: [{ title: "Careful methods", description: "The speakers compare evidence-based methods.", sourceSegmentIndexes: [1, 2] }],
+      chapters: [{ title: "Careful methods", description: transcript.segments[0].text, sourceSegmentIndexes: [1, 2] }],
     }),
     usage: { input_tokens: 100, output_tokens: 100 },
   }) } },

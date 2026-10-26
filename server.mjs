@@ -1,3 +1,6 @@
+import {DerivedRequests} from "./paid-derived.mjs";
+import {SemanticSearch} from "./semantic-search.mjs";
+import {reviewClaims} from "./claim-grounding.mjs";
 import { RequestLimits, viewerIdentity } from "./request-limits.mjs";
 import { FeedIdentity } from "./feed-identity.mjs";
 import { parseFeed } from "./catalogue-feed.mjs";
@@ -11,6 +14,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { parseVtt, transcriptRefsFromItem } from "./transcripts.mjs";
 import {
   BudgetLedger,
+  createOpenAIClient,
   defaultControls,
   openAIStatus,
 } from "./openai-intelligence.mjs";
@@ -384,8 +388,22 @@ export function createStarCastServer({
       skips?.inspect(feedUrl, episodeId, { preparedAudio });
       if (preparedAudio) await skips?.inflight.get(episodeKey(feedUrl, episodeId));
     },
-    onCompleted: ({ feedUrl, episodeId }) => rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed && skips?.inspect(feedUrl, episodeId),
+    onCompleted: async ({ feedUrl, episodeId }) => {
+      if(rights.evaluate({ feature:"ad-detection",feedUrl,episodeId }).allowed)skips?.inspect(feedUrl,episodeId);
+      const key=episodeKey(feedUrl,episodeId),index=store.get("search-index",key);
+      if(pipeline.semanticSearch&&index)await pipeline.semanticSearch.build(index,{key,maxBatches:8});
+    },
   });
+  if(env.STARCAST_SEMANTIC_SEARCH==="enabled"||env.STARCAST_CLAIM_REVIEW==="enabled"){
+    let providerClient=client;
+    const provider=()=>providerClient ||= createOpenAIClient();
+    const requests=new DerivedRequests({store,ledger,client:{embeddings:{create:(...args)=>provider().embeddings.create(...args)},responses:{create:(...args)=>provider().responses.create(...args)}},
+      canPersist:key=>{if(!key)return true;const value=store.get("intelligence",key),episode=value?.episode;return Boolean(episode&&rights.evaluate({feature:"intelligence-processing",feedUrl:episode.feedUrl,episodeId:episode.id}).allowed);},
+      beforePaid:key=>{if(!ledger.controls.enabled)throw Error("Paid intelligence is disabled.");if(key){const value=store.get("intelligence",key);if(value?.episode&&!intelligencePolicy.allows(value.episode.feedUrl,value.episode.id).allowed)throw Error("Intelligence processing is paused.");if(value?.episode&&!adminService.featureOperational("automaticProcessing")&&value?.trigger==="automatic")throw Error("Automatic processing is disabled.");}},
+    });
+    if(env.STARCAST_SEMANTIC_SEARCH==="enabled")pipeline.semanticSearch=new SemanticSearch({store,requests});
+    if(env.STARCAST_CLAIM_REVIEW==="enabled")pipeline.claimReviewer=(value,transcript,key)=>reviewClaims(value,transcript,requests,{sourceKey:key});
+  }
   const assessEpisodeRights = async (feedUrl, episodeId, suppliedEpisode = null) => {
     const episode = suppliedEpisode?.rightsEvidence
       ? suppliedEpisode
@@ -2321,7 +2339,7 @@ export function createStarCastServer({
         return send(
           res,
           200,
-          pipeline.search(input.query.trim(), {
+          await pipeline.searchAsync(input.query.trim(), {
             feedUrls: input.feedUrls || null,
             momentsOnly: input.mode === "Moments",
           }),
@@ -2395,7 +2413,7 @@ export function createStarCastServer({
           });
         return send(res, 200, {
           status: listenerStatus(input.feedUrl, input.episodeId, audienceId(req)),
-          moments: pipeline.moments(
+          moments: await pipeline.momentsAsync(
             input.feedUrl,
             input.episodeId,
             input.query,

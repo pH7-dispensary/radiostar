@@ -97,14 +97,14 @@ const pipeline = new EpisodePipeline({
         providerCalls++;
         return {
           output_text: JSON.stringify({
-            overview: "The fixture describes safe transcript reuse.",
-            themes: ["Transcript reuse"],
-            detail: "Authorised text can be analysed without paid audio transcription.",
+            overview: segments[0].text,
+            themes: ["Publisher transcripts"],
+            detail: segments[0].text,
             sourceSegmentIndexes: [1],
             chapters: [
               {
-                title: "Reuse",
-                description: "The grounded reuse discussion.",
+                title: "Publisher transcripts",
+                description: segments[0].text,
                 sourceSegmentIndexes: [1, 2],
               },
             ],

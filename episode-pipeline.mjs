@@ -8,11 +8,14 @@ import {
   PROCESSING_VERSION,
 } from "./openai-intelligence.mjs";
 import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION } from "./transcription.mjs";
+import { hybridSemanticRetrieve,validSemanticIndex } from "./semantic-search.mjs";
+import { composeGroundedAnswer } from "./grounded-answer.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
+import { GROUNDING_VERSION } from "./claim-grounding.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
-import { DELIVERY_VERSION, transcriptFingerprint, buildSearchIndex, groundedTopics, deliveryValidation } from "./intelligence-delivery.mjs";
+import { DELIVERY_VERSION, transcriptFingerprint, validSearchIndex, buildSearchIndex, groundedTopics, deliveryValidation } from "./intelligence-delivery.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -117,7 +120,7 @@ export function durationMs(value) {
 }
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
-  const { transcript, episode, refs, lifecycle, estimateHistory, timing, testingContext, ...safe } = value;
+  const { transcript, episode, refs, lifecycle, estimateHistory, timing, testingContext, claimReview, ...safe } = value;
   return {
     ...safe,
     // Job identity is safe and necessary for operations.  Do not leak the
@@ -383,9 +386,15 @@ export class EpisodePipeline {
     feed = this.resolveFeedIdentity(feed);
     const key = episodeKey(feed, id);
     let value = this.store.get("intelligence", key);
-    if (completed(value) && value.transcript && !value.groundingVersion) {
+    if (completed(value) && value.transcript && value.groundingVersion!==GROUNDING_VERSION && (!this.rights||this.rights.evaluate({feature:"intelligence-processing",feedUrl:feed,episodeId:id}).allowed)) {
+      if(!this.store.get("grounding-original",key))this.store.set("grounding-original",key,{fingerprint:transcriptFingerprint(value.transcript),brief:value.brief,chapters:value.chapters,state:value.state,completedAt:value.completedAt,partialResult:value.partialResult,qualityNote:value.qualityNote,claimReview:value.claimReview,groundingVersion:value.groundingVersion});
+      const review=this.store.get("grounding-review",key);
+      if(review?.fingerprint===transcriptFingerprint(value.transcript))value={...value,claimReview:review.claimReview};
       value = groundResult(value, value.transcript);
-      if (value.partialResult) value.state = "PARTIAL_READY";
+      if (value.partialResult) {
+        value.state = "PARTIAL_READY";
+        value.completedAt ||= value.generatedAt || value.brief?.generatedAt || new Date().toISOString();
+      }
       this.store.set("intelligence", key, value);
     }
     if (value?.processingVersion !== PROCESSING_VERSION) return null;
@@ -408,11 +417,17 @@ export class EpisodePipeline {
     }
     if (this.rights && !this.rights.evaluate({ feature:"intelligence-processing", feedUrl:value.feedUrl, episodeId:value.episodeId }).allowed) return value;
     const key=episodeKey(value.feedUrl,value.episodeId), transcript=value.transcript;
+    if(transcript.audioVariant&&value.episode?.audioUrl&&transcript.audioVariant!==hash(value.episode.audioUrl))return{...value,featureStatus:{search:{state:"FAILED",code:"AUDIO_VARIANT_MISMATCH"},moments:{state:"UNAVAILABLE",code:"AUDIO_VARIANT_MISMATCH"}},state:"PARTIAL_READY",qualityNote:"The audio source changed. Source timestamps require revalidation."};
     let index=this.store.get("search-index",key), derived;
     try {
-      if(index?.version!==DELIVERY_VERSION || index.processingVersion!==value.processingVersion || index.fingerprint!==transcriptFingerprint(transcript)) {
+      if(!validSearchIndex(index,transcript,value)) {
+        const previous=index;
         index=buildSearchIndex(transcript,value);
-        this.store.set("search-index",key,index);
+        this.store.transaction(()=>{
+          if(previous?.version && previous.version!==index.version)this.store.set("search-index-previous",key,previous);
+          this.store.set("search-index",key,index);
+          if(this.store.get("semantic-index",key)?.fingerprint!==index.fingerprint)this.store.delete("semantic-index",key);
+        });
       }
       const topics=groundedTopics(value,index);
       derived={...value,topics};
@@ -1162,6 +1177,7 @@ export class EpisodePipeline {
       value=this.deliver(value);
       update({processingStage:"ANALYSING"});
       const generated = await generateLongFormIntelligence({
+        claimReviewer:this.claimReviewer ? (v,t)=>this.claimReviewer(v,t,key) : null,
         transcript,
         ledger,
         requestId: value.jobId + ":text",
@@ -1312,6 +1328,11 @@ export class EpisodePipeline {
     }
     this.store.delete("skip-analysis", key);
     this.store.delete("search-index", key);
+    this.store.delete("search-index-previous", key);
+    this.store.delete("semantic-index", key);
+    this.store.delete("grounding-original",key);
+    this.store.delete("grounding-review",key);
+    for(const [derivedKey,record]of this.store.all("derived-provider"))if(record.sourceKey===key)this.store.delete("derived-provider",derivedKey);
     for (const [recordKey, value] of this.store.all("skip-feedback"))
       if (value.episodeKey === key) {
         this.store.delete("skip-feedback", recordKey);
@@ -1357,7 +1378,38 @@ export class EpisodePipeline {
           }))
       : [];
   }
-  search(query, { feedUrls = null, momentsOnly = false } = {}) {
+  async searchAsync(query,options={}) {
+    const fallback=this.search(query,options);
+    if(!this.semanticSearch)return fallback;
+    const eligible=new Map();let resumed=false;
+    for(const [,value]of this.store.all("intelligence")){
+      const episode=value.episode;if(!episode||options.feedUrls&&!options.feedUrls.includes(episode.feedUrl))continue;
+      if(this.rights&&!["intelligence-processing","intelligence-display","conversation-search",...(options.momentsOnly?["find-moment"]:[])].every(feature=>this.rights.evaluate({feature,feedUrl:episode.feedUrl,episodeId:episode.id}).allowed))continue;
+      const key=episodeKey(episode.feedUrl,episode.id),index=this.store.get("search-index",key),semantic=this.store.get("semantic-index",key);
+      if(!resumed&&semantic?.state==="BUILDING"&&index&&semantic.fingerprint===index.fingerprint){resumed=true;try{await this.semanticSearch.build(index,{key,maxBatches:1});}catch{/* Lexical search remains usable. */}}
+      const current=this.store.get("semantic-index",key);
+      if(validSemanticIndex(current,index||{}))eligible.set(key,current);
+    }
+    if(!eligible.size)return {...(resumed?this.search(query,options):fallback),retrieval:{mode:"unicode-lexical",semanticEpisodes:0}};
+    try{const vector=await this.semanticSearch.query(query);
+      // search re-evaluates rights and source identity after the provider await.
+      const result=this.search(query,{...options,retrieve:(index,q,n)=>{
+        const key=episodeKey(index.feedUrl,index.episodeId),semantic=eligible.get(key);
+        return semantic?hybridSemanticRetrieve(index,q,vector,semantic,{limit:n}):hybridRetrieve(index,q,n);
+      }});
+      return{...result,retrieval:{mode:"semantic-with-lexical-fallback",semanticEpisodes:eligible.size}};
+    }catch{return{...this.search(query,options),retrieval:{mode:"unicode-lexical",semanticEpisodes:0,reason:"Semantic retrieval is temporarily unavailable; source search remains available."}};}
+  }
+  async momentsAsync(feed,id,query){
+    const fallback=this.moments(feed,id,query),key=episodeKey(feed,id),index=this.store.get("search-index",key),semantic=this.store.get("semantic-index",key);
+    if(!this.semanticSearch||!index||!validSemanticIndex(semantic,index))return fallback;
+    const permitted=()=>!this.rights||["intelligence-processing","intelligence-display","find-moment"].every(feature=>this.rights.evaluate({feature,feedUrl:feed,episodeId:id}).allowed);
+    if(!permitted())return[];
+    try{const vector=await this.semanticSearch.query(query);const value=this.status(feed,id),current=this.store.get("search-index",key);if(!permitted()||value?.featureStatus?.search?.state!=="READY"||!validSemanticIndex(semantic,current||{}))return[];
+      return hybridSemanticRetrieve(current,query,vector,semantic,{limit:5}).filter(m=>Number.isFinite(m.startMs)&&Number.isFinite(m.endMs)).map(m=>({...m,context:m.context.slice(0,360),episode:{id,feedUrl:feed,title:value.episode?.title,showName:value.episode?.showName}}));
+    }catch{return this.moments(feed,id,query);}
+  }
+  search(query, { feedUrls = null, momentsOnly = false, retrieve = hybridRetrieve } = {}) {
     const corpus = this.store
       .all("intelligence")
       .map(([, v]) =>
@@ -1374,7 +1426,7 @@ export class EpisodePipeline {
       );
     const matches = corpus
       .flatMap((v) =>
-        hybridRetrieve(this.store.get("search-index",episodeKey(v.episode.feedUrl,v.episode.id)), query, 3)
+        retrieve(this.store.get("search-index",episodeKey(v.episode.feedUrl,v.episode.id)), query, 5)
           .filter((m) => !momentsOnly || Number.isFinite(m.startMs))
           .map((m) => ({
             ...m,
@@ -1385,14 +1437,10 @@ export class EpisodePipeline {
             provenance: v.provenance,
           })),
       )
-      .sort((a, b) => b.confidence - a.confidence)
+      .sort((a, b) => (b.score ?? b.confidence) - (a.score ?? a.confidence))
       .slice(0, 8);
-    const synthesis = matches.length
-      ? matches
-          .slice(0, 3)
-          .map((m, i) => `[${i + 1}] ${m.episode.showName}: “${m.context}”`)
-          .join("\n\n")
-      : "No processed transcript passages matched this question. Eligible followed episodes are prepared automatically.";
+    const partialEpisodes=corpus.filter(v=>v.transcript?.quality?.readiness==="PARTIAL" || v.transcript?.quality?.complete===false || v.transcript?.quality?.partial===true).length;
+    const answer=composeGroundedAnswer(query,matches,{partialEpisodes});
     const followUps = [
       ...new Set(
         corpus
@@ -1406,11 +1454,11 @@ export class EpisodePipeline {
       query,
       coverage: {
         processedEpisodes: corpus.length,
+        partialEpisodes,
         matchedEpisodes: new Set(matches.map((m) => m.episode.id)).size,
         scope: feedUrls ? "My Podcasts" : "All Processed Podcasts",
       },
-      synthesis,
-      synthesisType: "extractive",
+      ...answer,
       matches,
       followUps,
     };

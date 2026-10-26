@@ -504,7 +504,9 @@ export function SearchScreen({
             ]}
           >
             <Text style={[s.resultTitle, { color: p.text }]}>
-              {answer.matches.length
+              {answer.answerState === "PARTIAL"
+                ? "From the available evidence"
+                : answer.matches.length
                 ? "From the conversations"
                 : "A little more listening to explore"}
             </Text>
@@ -515,7 +517,7 @@ export function SearchScreen({
               {answer.coverage.scope}
             </Text>
           </View>
-          {answer.matches.map((match) => (
+          {answer.matches.map((match, citationIndex) => (
             <View
               key={match.episode.id + match.segmentId}
               style={[
@@ -533,7 +535,7 @@ export function SearchScreen({
                 )}
                 <View style={{ flex: 1 }}>
                   <Text style={[s.showTitle, { color: p.text }]}>
-                    {match.episode.showName}
+                    [{citationIndex + 1}] {match.episode.showName}
                   </Text>
                   <Text
                     numberOfLines={2}
@@ -543,7 +545,7 @@ export function SearchScreen({
                   </Text>
                 </View>
               </View>
-              {!!match.speaker && (
+              {!!match.speaker && !/^SPEAKER[_\s-]?\d+$/i.test(match.speaker) && (
                 <Text style={[s.eyebrow, { color: p.accent2 }]}>
                   {match.speaker}
                 </Text>

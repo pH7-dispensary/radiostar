@@ -42,7 +42,7 @@ const app = createStarCastServer({
   client: { responses: { create: async () => {
     analysisStarted();
     await analysisGate;
-    return { output_text: JSON.stringify({ overview: "The fixture explains measured preparation stages.", themes: ["Preparation"], detail: "The conversation covers queued work, transcript acquisition and grounded delivery.", sourceSegmentIndexes: [1], chapters: [{ title: "Preparation", description: "Measured work stages.", sourceSegmentIndexes: [1, 2] }] }), usage: { input_tokens: 10, output_tokens: 10 } };
+    return { output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Preparation"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Preparation", description: transcript.segments[0].text, sourceSegmentIndexes: [1, 2] }] }), usage: { input_tokens: 10, output_tokens: 10 } };
   } } },
 });
 app.rights.set({

@@ -30,9 +30,9 @@ const transcript = {
 };
 const response = {
   output_text: JSON.stringify({
-    overview: "Fixture overview.",
+    overview: segments[0].text,
     themes: ["Science"],
-    detail: "Fixture detail.",
+    detail: segments[0].text,
     sourceSegmentIndexes: [1],
     chapters: [{ title: "Science", sourceSegmentIndexes: [1, 2] }],
   }),
@@ -94,13 +94,10 @@ const guarded = groundResult(ungrounded, transcript);
 assert.equal(guarded.partialResult, true);
 assert.equal(guarded.brief.mode, "extractive");
 assert.ok(!guarded.brief.overview.includes("2023"));
-assert.equal(guarded.chapters.length, 1);
+assert.equal(guarded.chapters.length, 0, "Uncited chapter labels are not grounded");
 assert.equal(
   guarded.brief.overview,
-  `“${segments
-    .slice(0, 2)
-    .map((s) => s.text)
-    .join(" ")}”`,
+  `“${segments[0].text}”`,
 );
 p.store.set("intelligence", episodeKey(feed, "legacy"), ungrounded);
 const migrated = p.status(feed, "legacy");

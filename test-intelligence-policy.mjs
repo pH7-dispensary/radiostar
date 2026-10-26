@@ -12,7 +12,7 @@ const app = createStarCastServer({
   env: { STARCAST_DEV_INTELLIGENCE_TOKEN: "device-token", STARCAST_ADMIN_TOKEN: "admin-token", STARCAST_PAID_INTELLIGENCE: "enabled", OPENAI_API_KEY: "mock-key", RADIOSTAR_TRANSLATE_BETA: "INTERNAL_TESTING" },
   resolveEpisode: async (_feed, id) => ({ id, title: id, showName: "Policy fixture show", publisher: "Fixture publisher", duration: "1:00", audioUrl: `https://publisher.example/${id}.mp3`, refs: [{ url: transcript.sourceUri, type: "text/vtt" }] }),
   fetchTranscript: async () => transcript,
-  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: "Grounded policy fixture.", themes: ["Policy"], detail: "Grounded policy fixture.", sourceSegmentIndexes: [1], chapters: [{ title: "Policy", description: "Policy", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }) } },
+  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Policy"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Policy", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }) } },
 });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;

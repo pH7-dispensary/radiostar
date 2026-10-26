@@ -27,7 +27,7 @@ let calls = 0;
 const pipeline = new EpisodePipeline({ store, ledger, rights, intelligencePolicy, enabled: true, configured: true, audioEnabled: true,
   resolveEpisode, fetchTranscript: async () => transcript,
   audioFactory: async () => { throw Error("Reassessment must never acquire audio."); },
-  client: { responses: { create: async () => { calls++; return { output_text: JSON.stringify({ overview: "Authorised transcripts preserve evidence.", detail: "Publisher text can be reused without audio transcription.", themes: ["Transcript reuse"], sourceSegmentIndexes: [1], chapters: [{ title: "Reuse", description: "Using authorised text.", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }; } } },
+  client: { responses: { create: async () => { calls++; return { output_text: JSON.stringify({ overview: transcript.segments[0].text, detail: transcript.segments[0].text, themes: ["Publisher transcripts"], sourceSegmentIndexes: [1], chapters: [{ title: "Publisher transcripts", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }; } } },
 });
 const seed = (id, extra = {}) => {
   const value = { state: "BLOCKED", code: "DURATION_LIMIT", reason: "Legacy duration gate", jobId: `old-${id}`, attempts: 2, retryable: false, processingVersion: PROCESSING_VERSION, feedUrl: feed, episodeId: id, startedAt: "2026-01-01T00:00:00.000Z", completedAt: "2026-01-01T00:00:01.000Z", ...extra };

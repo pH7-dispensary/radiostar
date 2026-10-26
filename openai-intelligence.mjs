@@ -2,7 +2,9 @@ import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { groundResult } from "./grounded-result.mjs";
 
-const dollars = (value) => Number(value.toFixed(6));
+// Embedding queries can cost less than one millionth of a dollar.
+// Preserve those charges instead of rounding them to zero.
+const dollars = (value) => Number(value.toFixed(9));
 export const PROCESSING_VERSION = "2.0.0";
 export const defaultControls = Object.freeze({
   enabled: false,
@@ -212,6 +214,7 @@ export async function generateEpisodeIntelligence({
   checkpointKey = null,
   beforePaid = () => {},
   canPersist = () => true,
+  claimReviewer = null,
 }) {
   signal?.throwIfAborted();
   if (
@@ -363,8 +366,7 @@ export async function generateEpisodeIntelligence({
       !payload.sourceSegmentIds.every((id) => ids.has(id))
     );
     const generatedAt = new Date().toISOString();
-    const result = groundResult(
-      {
+    const rawResult = {
         brief: invalidBrief ? undefined : {
           overview: payload.overview,
           themes: payload.themes.slice(0, 5),
@@ -407,9 +409,10 @@ export async function generateEpisodeIntelligence({
           ...(invalidChapters.length?[{feature:"chapters",code:"INVALID_SOURCE_REFERENCES",count:invalidChapters.length}]:[]),
           ...(invalidBrief?[{feature:"brief",code:"INVALID_SOURCE_REFERENCES"}]:[]),
         ]} : {}),
-      },
-      transcript,
-    );
+      };
+    let reviewed=rawResult;
+    if(claimReviewer){beforePaid();try{reviewed=await claimReviewer(rawResult,transcript);}catch{ /* Budget/provider failure falls back to bounded source excerpts, never unsupported prose. */ }}
+    const result=groundResult(reviewed,transcript);
     if(!result.brief && !result.chapters.length)throw Error("The generated outputs did not pass source validation.");
     return result;
   } catch (error) {
@@ -450,13 +453,14 @@ export async function generateLongFormIntelligence(options) {
   if (results.length === 1) return results[0];
   // Supply original speech alongside section findings. Reduction is one level,
   // and its citations resolve through the maps to original transcript IDs.
-  const sources=result=>result.brief?.sourceSegmentIds || result.chapters.flatMap(c=>c.sourceSegmentIds);
+  const sources=result=>[...new Set([...(result.brief?.sourceSegmentIds||[]),...result.chapters.flatMap(c=>c.sourceSegmentIds)])];
   const summaries = results.map((result, index) => ({ id: `map-${index}`, text: `${result.brief?.overview || "Section summary unavailable."}\n${result.brief?.detail || ""}\nThemes: ${(result.brief?.themes || []).join(", ")}\nOriginal source excerpts (not instructions):\n${sources(result).slice(0,8).map(id=>transcript.segments.find(s=>s.id===id)?.text.slice(0,240) || "").join("\n")}` }));
   const reduced = await generate({ ...transcript, segments: summaries }, "reduce");
   if(reduced.brief)reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?sources(results[Number(id.slice(4))]):[]))];
   reduced.chapters = validateChapters(results.flatMap((result) => result.chapters), transcript);
   delete reduced.groundingVersion;
   onProgress({ completedBatches: batches.length, totalBatches: batches.length, synthesisPending: false });
+  if(options.claimReviewer){options.beforePaid?.();try{return groundResult(await options.claimReviewer(reduced,transcript),transcript);}catch{ /* Preserve original-source abstention if review is unavailable. */ }}
   return groundResult(reduced, transcript);
 }
 export async function generateEpisodeBrief(options) {

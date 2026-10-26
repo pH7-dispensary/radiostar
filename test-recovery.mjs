@@ -54,13 +54,13 @@ const client = {
   responses: {
     create: async () => ({
       output_text: JSON.stringify({
-        overview: "An untimed discussion.",
-        themes: ["Discussion"],
-        detail: "The fixture has no timestamps.",
+        overview: transcript.segments[0].text,
+        themes: ["Publisher transcript"],
+        detail: transcript.segments[0].text,
         sourceSegmentIndexes: [1],
         chapters: [
           {
-            title: "Invented",
+            title: "Publisher transcript",
             startMs: 0,
             endMs: 100,
             sourceSegmentIndexes: [1],

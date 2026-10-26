@@ -17,7 +17,7 @@ export function createReviewFixture(store = new LocalStore(":memory:")) {
     fetchTranscript: async () => transcript,
     client: { responses: { create: async () => {
       calls++;
-      return { output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Research"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Research", description: "Grounded research evidence", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 100, output_tokens: 100 } };
+      return { output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Research"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Research", description: "Radio Star fixture discusses reliable research, evidence review and grounded decision making.", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 100, output_tokens: 100 } };
     } } },
   });
   store.set("follow", "fixture", { feedUrl, id: "fixture", owner: "test", intelligenceEnabled: true });

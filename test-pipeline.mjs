@@ -50,9 +50,9 @@ const client = {
       await new Promise((r) => setTimeout(r, 25));
       return {
         output_text: JSON.stringify({
-          overview: "Researchers discuss compute limits.",
+          overview: "Researchers discuss how energy and compute constrain scientific discovery.",
           themes: ["Compute"],
-          detail: "The discussion compares compute and data quality.",
+          detail: segments[0].text,
           sourceSegmentIndexes: [1],
           chapters: [{ title: "Compute", sourceSegmentIndexes: [1] }],
         }),

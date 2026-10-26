@@ -41,7 +41,7 @@ const app = createStarCastServer({
       themes: ["Reliable research methods"],
       detail: "This conversation examines reliable research methods and how teams make decisions.",
       sourceSegmentIndexes: [1],
-      chapters: [{ title: "Reliable research", description: "The speakers examine reliable research methods.", sourceSegmentIndexes: [1] }],
+      chapters: [{ title: "Reliable research", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }],
     }),
     usage: { input_tokens: 100, output_tokens: 100 },
   }) } },

@@ -23,7 +23,7 @@ const app = createStarCastServer({
     audioUrl: `https://publisher.example/${episodeId}.mp3`, refs: [{ url: transcript.sourceUri, type: "text/vtt" }],
   }),
   fetchTranscript: async () => transcript,
-  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: "A grounded discussion of research practice and evidence.", themes: ["Research"], detail: "A grounded discussion of research practice and evidence.", sourceSegmentIndexes: [1], chapters: [{ title: "Research practice", description: "Grounded discussion.", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 10, output_tokens: 10 } }) } },
+  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Research"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Research practice", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 10, output_tokens: 10 } }) } },
 });
 app.store.set("follow", "fixture-follow", { id: "fixture-follow", feedUrl, owner: "anonymous-listener", createdAt: new Date().toISOString(), intelligenceEnabled: true });
 app.rights.set({

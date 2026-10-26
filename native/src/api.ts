@@ -378,11 +378,14 @@ export type ConversationResults = {
   query: string;
   coverage: {
     processedEpisodes: number;
+    partialEpisodes?: number;
     matchedEpisodes: number;
     scope: string;
   };
   synthesis: string;
   synthesisType: string;
+  answerState?: "NO_EVIDENCE" | "PARTIAL" | "SUPPORTED_EXCERPTS";
+  limitations?: string[];
   matches: ConversationMatch[];
   followUps: string[];
 };

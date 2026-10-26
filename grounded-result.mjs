@@ -1,53 +1,154 @@
-// A conservative, deterministic check, not a claim of full semantic validation.
-// Dates absent from the speech must not be inferred from model world knowledge.
+import {
+  validateClaims,
+  GROUNDING_VERSION,
+  claimsForResult,
+  claimBinding,
+  expandGroundingSources,
+} from "./claim-grounding.mjs";
+
+const sentences = (text) =>
+  [
+    ...new Intl.Segmenter("und", { granularity: "sentence" }).segment(
+      text || "",
+    ),
+  ].map((s) => s.segment.trim());
+
+// Keep supported material useful. Unsupported provider prose is never made
+// trustworthy by a citation ID; originals remain in protected checkpoints.
 export function groundResult(value, transcript) {
-  if (value.groundingVersion === "source-years-v1" || !value.brief)
-    return value;
-  const sourceText = transcript.segments.map((s) => s.text).join(" ");
-  const years = new Set(sourceText.match(/\b(?:18|19|20)\d{2}\b/g) || []);
-  const supported = (text) =>
-    (String(text).match(/\b(?:18|19|20)\d{2}\b/g) || []).every((year) =>
-      years.has(year),
+  value = expandGroundingSources(value, transcript);
+  if (!value.brief && !value.chapters?.length) return value;
+  const originalClaims = claimsForResult(value);
+  const assessment = validateClaims(value, transcript);
+  const supported = new Set(
+    assessment.claims.filter((c) => c.supported).map((c) => c.id),
+  );
+  const failed = assessment.claims.filter((c) => !c.supported);
+  if (!failed.length)
+    return {
+      ...value,
+      groundingVersion: GROUNDING_VERSION,
+      claimGrounding: assessment,
+    };
+
+  let brief = value.brief;
+  if (brief && failed.some((c) => c.id.startsWith("brief."))) {
+    const details = originalClaims.filter(
+      (c) => c.id.startsWith("brief.detail.") && supported.has(c.id),
     );
-  const { brief } = value;
-  const briefValid = [brief.overview, brief.detail, ...brief.themes].every(
-    supported,
-  );
-  const chapters = (value.chapters || []).filter(
-    (c) => supported(c.title) && supported(c.description),
-  );
-  if (briefValid && chapters.length === (value.chapters || []).length)
-    return { ...value, groundingVersion: "source-years-v1" };
-  // Preserve genuine speech, source IDs, accounting and original provider output.
-  // Never spend on a hidden repair request or reset a retry counter.
-  const first = Math.max(
-    0,
-    transcript.segments.findIndex((s) => s.text.trim().length >= 60),
-  );
-  const opening = transcript.segments.slice(first, first + 2);
-  const referenced = transcript.segments
-    .filter(
-      (s) => brief.sourceSegmentIds.includes(s.id) && !opening.includes(s),
+    const overview = originalClaims.filter((c) =>
+      c.id.startsWith("brief.overview."),
+    );
+    const safeOverview =
+      overview.length && overview.every((c) => supported.has(c.id))
+        ? brief.overview
+        : details[0]?.text;
+    if (safeOverview && details.length) {
+      brief = {
+        ...brief,
+        mode: "verified_partial",
+        overview: safeOverview,
+        detail: details.map((c) => c.text).join(" "),
+        themes: (brief.themes || []).filter((_, i) =>
+          supported.has(`brief.theme.${i}`),
+        ),
+      };
+    } else {
+      const excerpts = [];
+      let size = 0;
+      for (const source of transcript.segments.filter((s) =>
+        brief.sourceSegmentIds?.includes(s.id),
+      )) {
+        for (const text of sentences(source.text)) {
+          if (text.length < 12 || text.length > 300 || size + text.length > 600)
+            continue;
+          excerpts.push({ id: source.id, text });
+          size += text.length;
+          if (excerpts.length === 3) break;
+        }
+        if (excerpts.length === 3) break;
+      }
+      brief = excerpts.length
+        ? {
+            ...brief,
+            mode: "extractive",
+            overview: `“${excerpts[0].text}”`,
+            detail: excerpts.map((s) => `“${s.text}”`).join("\n"),
+            themes: [],
+            sourceSegmentIds: [...new Set(excerpts.map((s) => s.id))],
+          }
+        : undefined;
+    }
+  }
+
+  const chapters = [];
+  for (const [i, chapter] of (value.chapters || []).entries()) {
+    if (!failed.some((c) => c.id.startsWith(`chapter.${i}.`))) {
+      chapters.push(chapter);
+      continue;
+    }
+    const sources = transcript.segments.filter((s) =>
+      chapter.sourceSegmentIds?.includes(s.id),
+    );
+    if (
+      !sources.length ||
+      sources.length !== new Set(chapter.sourceSegmentIds).size
     )
-    .slice(0, 4);
-  const excerpts = [...opening, ...referenced];
+      continue;
+    const sentence = sentences(sources[0].text).find(
+      (s) => s.length >= 12 && s.length <= 300,
+    );
+    if (!sentence) continue;
+    const title =
+      sentence.length <= 90
+        ? sentence
+        : sentence.slice(0, 86).replace(/\s+\S*$/, "") + "…";
+    chapters.push({
+      ...chapter,
+      mode: "extractive",
+      title: `“${title}”`,
+      description: `“${sentence}”`,
+    });
+  }
+
+  const next = { ...value, brief, chapters };
+  // Projection may renumber sentences/chapters. Rebind only already-supported
+  // identical claims against the same source IDs; never promote failed claims.
+  if (value.claimReview) {
+    const reviews = [];
+    for (const claim of claimsForResult(next)) {
+      const original = originalClaims.find(
+        (c) =>
+          supported.has(c.id) &&
+          c.text === claim.text &&
+          c.label === claim.label &&
+          JSON.stringify(c.sourceSegmentIds) ===
+            JSON.stringify(claim.sourceSegmentIds),
+      );
+      const review =
+        original &&
+        value.claimReview.claims.find(
+          (c) =>
+            c.id === original.id &&
+            c.binding === claimBinding(original, transcript),
+        );
+      if (review)
+        reviews.push({
+          ...review,
+          id: claim.id,
+          binding: claimBinding(claim, transcript),
+        });
+    }
+    next.claimReview = { ...value.claimReview, claims: reviews };
+  }
   return {
-    ...value,
-    groundingVersion: "source-years-v1",
+    ...next,
+    groundingVersion: GROUNDING_VERSION,
+    claimGrounding: assessment,
     partialResult: true,
-    qualityNote: briefValid
-      ? "Some generated chapters could not be verified. The brief and remaining source-backed chapters are available."
-      : "The generated summary could not be verified. These are transcript excerpts, not a full episode summary.",
-    brief: briefValid
-      ? brief
-      : {
-          ...brief,
-          mode: "extractive",
-          overview: `“${opening.map((s) => s.text).join(" ")}”`,
-          themes: [],
-          detail: excerpts.map((s) => `“${s.text}”`).join("\n\n"),
-          sourceSegmentIds: excerpts.map((s) => s.id),
-        },
-    chapters,
+    qualityNote:
+      brief?.mode === "extractive"
+        ? "The generated summary could not be fully verified. Available text is a short source excerpt, not a complete episode summary."
+        : "Some generated claims could not be verified. Supported findings remain available; quoted chapter labels are source excerpts.",
   };
 }

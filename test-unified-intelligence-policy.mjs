@@ -14,7 +14,7 @@ const app = createStarCastServer({
   fetchFeed: async () => feed,
   resolveEpisode: async (_feed, id) => ({ id, title: id, showName: "Unified & policy fixture", publisher: "Fixture Publisher", duration: "05:00", audioUrl: `https://publisher.example/${id}.mp3`, refs: id === "ready-source" ? [{ url: transcript.sourceUri, type: "text/vtt" }] : [] }),
   fetchTranscript: async () => transcript,
-  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: "Grounded fixture intelligence.", themes: ["Policy"], detail: "Grounded fixture intelligence.", sourceSegmentIndexes: [1], chapters: [{ title: "Policy", description: "Grounded.", sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }) } },
+  client: { responses: { create: async () => ({ output_text: JSON.stringify({ overview: transcript.segments[0].text, themes: ["Policy"], detail: transcript.segments[0].text, sourceSegmentIndexes: [1], chapters: [{ title: "Policy", description: transcript.segments[0].text, sourceSegmentIndexes: [1] }] }), usage: { input_tokens: 1, output_tokens: 1 } }) } },
 });
 app.store.set("follow", "unified-policy-follow", { id: "unified-policy-follow", feedUrl, owner: "fixture", createdAt: new Date().toISOString(), intelligenceEnabled: true });
 app.rights.set({ feedUrl, episodeId: "ready-source", classification: RightsClassification.LICENSED, assessmentStatus: "APPROVED", explicitAuthorisation: true, canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true, podcast: "Unified & policy fixture", publisher: "Fixture Publisher" });

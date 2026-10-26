@@ -23,6 +23,8 @@ try {
     process.env.STARCAST_TRANSLATION_BUCKET = process.env.STARCAST_BACKUP_BUCKET;
     process.env.AWS_REGION = "eu-west-2";
   }
+  if (value.semanticSearchEnabled === true) process.env.STARCAST_SEMANTIC_SEARCH = "enabled";
+  if (value.claimReviewEnabled === true) process.env.STARCAST_CLAIM_REVIEW = "enabled";
   if (value.processingQueueUrl) process.env.STARCAST_PROCESSING_QUEUE_URL = value.processingQueueUrl;
   if (value.followMonitorEnabled === true) process.env.STARCAST_FOLLOW_MONITOR = "enabled";
   if (value.approvedTestCorpusEnabled === true && /^https:\/\/[a-z0-9]+\.cloudfront\.net$/.test(value.testCorpusOrigin || "")) {
