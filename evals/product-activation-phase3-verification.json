@@ -1,0 +1,77 @@
+{
+  "recordedAt": "2026-10-27",
+  "implementationCommit": "078ba51",
+  "automatedTests": {
+    "npmTest": "PASS",
+    "nativeTypeScript": "PASS",
+    "expoDoctor": "21/21 PASS",
+    "expoDependencies": "PASS",
+    "swiftDeadlineAndMutedMacOSPlayer": "PASS",
+    "swiftModuleSyntax": "PASS",
+    "fullIOSNativeCompile": "NOT RUN: full Xcode unavailable; Phase 4",
+    "productionIOSAndWebExport": "PASS; no dotenv/development credentials",
+    "diffCheck": "PASS",
+    "oldDiscoverBrowserHarness": "FAIL: removed Episodes from followed shows label"
+  },
+  "browserDiagnostics": {
+    "results": [
+      {
+        "width": 320,
+        "theme": "light",
+        "diagnosticCaptureExportAndClear": true,
+        "physicalDevice": false
+      },
+      {
+        "width": 375,
+        "theme": "dark",
+        "diagnosticCaptureExportAndClear": true,
+        "physicalDevice": false
+      },
+      {
+        "width": 390,
+        "theme": "light",
+        "diagnosticCaptureExportAndClear": true,
+        "physicalDevice": false
+      },
+      {
+        "width": 430,
+        "theme": "dark",
+        "diagnosticCaptureExportAndClear": true,
+        "physicalDevice": false
+      }
+    ],
+    "liveRequests": 0,
+    "physicalDevice": false
+  },
+  "publicHealth": {
+    "checkedAt": "2026-10-26T21:42:09.908Z",
+    "httpStatus": 200,
+    "service": "star-cast",
+    "backend": "ready",
+    "openai": {
+      "configured": true,
+      "enabled": true,
+      "audioEnabled": true,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1"
+    },
+    "persistence": "sqlite",
+    "features": {
+      "episodeBriefs": false,
+      "exploreEpisode": false,
+      "momentSearch": false,
+      "conversationSearch": false,
+      "adSkip": false
+    },
+    "providerVerified": true
+  },
+  "awsIdentity": {
+    "account": "208096650030",
+    "region": "eu-west-2",
+    "verifiedUsing": "STS"
+  },
+  "physicalDeviceVerified": false,
+  "paidModelCalls": 0,
+  "newTestFlightBuild": false,
+  "testLogSha256": "c8b40045e2e4ebabdd45ee935d4132e55cbeaae9e1b99d886b0d96042435f20a"
+}

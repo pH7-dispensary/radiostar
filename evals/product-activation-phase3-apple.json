@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-26",
+  "easBuildId": "bc729b2b-07c3-4d0c-b942-7fee5c1b7860",
+  "sourceCommit": "7e9bfc65d4e071745be1c4da8b8423d5bdbefb",
+  "appVersion": "1.0.0",
+  "nativeBuild": "13",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "Team (Expo)",
+  "buildInGroup": true,
+  "physicalInstallationVerified": false
+}
