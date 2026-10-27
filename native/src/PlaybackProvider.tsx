@@ -1,3 +1,6 @@
+import { AppState } from "react-native";
+import { nativeDiagnostics } from "./nativeDiagnostics.mjs";
+import { positionSnapshot, recoveredSleepPosition } from "./playbackRecovery.mjs";
 import { nativeEpisodeKey, migratePositions, positionForEpisode } from "../../episode-identity.mjs";
 import { loadListenerState } from "./listenerState";
 import {
@@ -65,6 +68,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [audioVariantFingerprint, setAudioVariantFingerprint] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const pendingStart = useRef<{at:number;baseline:number} | null>(null);
   const waitingSince = useRef<number | null>(null);
   const lastWaitingMs = useRef(0);
   let [snapshot, setSnapshot] = useState<PlaybackSnapshot>({
@@ -96,6 +100,23 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       waitingSince.current = null;
     }
   }, [audio.waiting]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => nativeDiagnostics.record('app_state', {state}));
+    return () => subscription.remove();
+  }, []);
+  useEffect(() => {
+    nativeDiagnostics.record('playback_state', {playing:!!status.playing, buffering:!!status.isBuffering,positionMs:(status.currentTime || 0)*1000});
+  }, [status.playing, status.isBuffering]);
+  useEffect(() => {
+    if (status.error || playbackError) nativeDiagnostics.record('playback_error');
+  }, [status.error, playbackError]);
+  useEffect(() => {
+    const pending = pendingStart.current;
+    if (pending && status.playing && !status.isBuffering && status.currentTime*1000 > pending.baseline+50) {
+      nativeDiagnostics.record('engine_position_advanced', {elapsedMs:Date.now()-pending.at,positionMs:status.currentTime*1000});
+      pendingStart.current = null;
+    }
+  }, [status.currentTime, status.playing, status.isBuffering]);
   const persistPosition = async (positionMs: number) => {
     const currentSource = sourceRef.current;
     if (!currentSource) return;
@@ -106,10 +127,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     );
     await writeLocalDocument(
       KEY,
-      JSON.stringify({
-        source: currentSource,
-        snapshot: { positionMs, speed: snapshot.speed },
-      }),
+      JSON.stringify(positionSnapshot(currentSource, positionMs, snapshot.speed)),
     );
   };
   useEffect(() => {
@@ -135,11 +153,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         let stored = JSON.parse(raw) as Persisted;
         if (!stored.source?.url || operation.current > 0) return;
         const sleep = await readNativeSleepRecord().catch(() => null);
-        const key = JSON.stringify([stored.source.feedUrl || "",stored.source.episodeId,stored.source.url]);
-        if (sleep?.state === "PAUSED" && sleep.sourceKey === key && Number.isFinite(sleep.positionMs) && (sleep.completedAt || 0) > (stored.savedAt || 0)) {
-          stored.snapshot.positionMs = sleep.positionMs!;
-          positions.current[nativeEpisodeKey(stored.source)] = sleep.positionMs!;
-        }
+        stored.snapshot.positionMs = recoveredSleepPosition(stored, sleep);
+        positions.current[nativeEpisodeKey(stored.source)] = stored.snapshot.positionMs;
         if (cancelled || operation.current > 0) return;
         sourceRef.current = { ...stored.source, startPositionMs: undefined };
         setSource(sourceRef.current);
@@ -222,7 +237,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       if (sourceRef.current) await value.play({ ...sourceRef.current, startPositionMs: snapshot.positionMs });
     },
     play: async (next) => {
+      const requestedAt = Date.now();
+      pendingStart.current = null;
       const currentOperation = ++operation.current;
+      nativeDiagnostics.record("play_requested", {operation:currentOperation});
       try {
       setPlaybackError(null);
       fadeOperation.current++;
@@ -230,6 +248,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       const switching = sourceRef.current?.url !== next.url || !sourceRef.current || nativeEpisodeKey(sourceRef.current) !== nativeEpisodeKey(next);
       const reload = switching || !player.isLoaded || audio.state === "FAILED";
       if (reload) {
+        nativeDiagnostics.record("source_changed", {operation:currentOperation});
         await sleepDriver.cancel();
         if (currentOperation !== operation.current) return;
         setConnecting(true);
@@ -271,6 +290,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         { showSeekBackward: true, showSeekForward: true },
       );
       player.setPlaybackRate(snapshot.speed);
+      pendingStart.current = {at:requestedAt,baseline:player.currentTime*1000};
       player.play();
       // Start the existing engine before any optional proof work. A cold
       // proof is cached for a later deliberate load; never swap active audio.
@@ -287,6 +307,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
     },
     pause: async () => {
+      pendingStart.current = null;
+      nativeDiagnostics.record("pause_requested", {positionMs:player.currentTime*1000});
       void sleepDriver.cancel();
       operation.current++;
       setConnecting(false);
@@ -314,6 +336,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       }
     },
     seek: async (ms) => {
+      pendingStart.current = null;
+      nativeDiagnostics.record("manual_seek", {targetMs:ms,positionMs:player.currentTime*1000});
       operation.current++;
       setConnecting(false);
       setManualSeekRevision((revision) => revision + 1);
@@ -342,12 +366,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         await new Promise<void>(resolve => setTimeout(resolve, 50));
       const observed = player.currentTime * 1000;
       if (generation !== operation.current || !player.isLoaded || Math.abs(observed - target) > 350) throw Error("Playback seek was not confirmed.");
+      nativeDiagnostics.record("automatic_seek_confirmed", {targetMs:target,positionMs:observed});
       await persistPosition(observed);
       return observed;
     },
     audioVariantFingerprint,
     manualSeekRevision,
     setSpeed: async (speed) => {
+      nativeDiagnostics.record("speed_changed", {speed});
       player.setPlaybackRate(speed);
       setSnapshot((s) => ({ ...s, speed }));
     },

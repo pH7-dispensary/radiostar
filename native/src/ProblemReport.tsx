@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, SafeAreaView, ScrollView, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Crypto from "expo-crypto";
 import { reportProblem } from "./listenerApi";
 import { usePlayback } from "./PlaybackProvider";
 import type { StarTheme } from "./design";
+import { DiagnosticControls } from './DiagnosticControls';
 
 const categories = [
   ["incorrect_skip", "Incorrect skip"], ["missed_advert", "Missed advert"], ["playback", "Playback"],
@@ -27,13 +28,14 @@ export function ProblemReport({ p, compact = false }: { p: StarTheme; compact?: 
       <Text style={{ color: p.accent2, fontWeight: "700" }}>Report a problem</Text>
     </Pressable>
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-      <View style={s.scrim}><View style={[s.sheet, { backgroundColor: p.bg, borderColor: p.line }]}>
+      <View style={s.scrim}><ScrollView style={{maxHeight:"90%", backgroundColor:p.bg, borderTopLeftRadius:26, borderTopRightRadius:26}} contentContainerStyle={[s.sheet, { borderColor:p.line, paddingBottom:22 }]} keyboardShouldPersistTaps="handled">
         <Text style={[s.title, { color: p.text }]}>Tell us what happened</Text>
         <View style={s.choices}>{categories.map(([value, label]) => <Pressable key={value} onPress={() => setCategory(value)} style={[s.choice, { borderColor: category === value ? p.accent2 : p.line, backgroundColor: category === value ? p.wash : p.surface }]}><Text style={{ color: p.text, fontSize: 12, fontWeight: "700" }}>{label}</Text></Pressable>)}</View>
         <TextInput value={note} onChangeText={setNote} maxLength={1000} multiline placeholder="Optional details" placeholderTextColor={p.muted} style={[s.input, { color: p.text, borderColor: p.line, backgroundColor: p.surface }]} />
         {message ? <Text style={{ color: p.muted }}>{message}</Text> : null}
         <View style={s.actions}><Pressable onPress={() => setOpen(false)} style={s.action}><Text style={{ color: p.muted }}>Close</Text></Pressable><Pressable onPress={() => void submit()} style={[s.action, { backgroundColor: p.accent2 }]}><Text style={{ color: p.onAccent, fontWeight: "800" }}>Send report</Text></Pressable></View>
-      </View></View>
+        <SafeAreaView><DiagnosticControls p={p} /></SafeAreaView>
+      </ScrollView></View>
     </Modal>
   </>;
 }

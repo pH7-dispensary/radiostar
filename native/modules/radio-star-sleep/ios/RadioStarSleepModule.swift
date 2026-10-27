@@ -27,6 +27,10 @@ public final class RadioStarSleepModule: Module {
   private var rateObserver: NSKeyValueObservation?
   public func definition() -> ModuleDefinition {
     Name("RadioStarSleep")
+    AsyncFunction("buildMetadata") { () -> String in
+      let value = ["nativeBuild": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "UNAVAILABLE", "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "UNAVAILABLE"]
+      return String(data: try JSONSerialization.data(withJSONObject: value), encoding: .utf8) ?? "{}"
+    }
     AsyncFunction("arm") { (player: AudioPlayer, id: String, sourceKey: String, sourceJSON: String, kind: String, remainingMs: Double, fadeMs: Double) -> String in
       self.deadline.cancel(reason: "superseded"); self.unobserve(); let adapter = ExistingPlayback(player.ref); self.playback = adapter
       try self.deadline.arm(player: adapter, id: id, sourceKey: sourceKey, sourceJSON: sourceJSON, kind: kind, remainingMs: remainingMs, fadeMs: fadeMs)

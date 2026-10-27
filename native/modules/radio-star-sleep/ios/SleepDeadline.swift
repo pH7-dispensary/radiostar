@@ -21,6 +21,10 @@ struct SleepRecord: Codable {
   var positionMs: Double?
   var recoveryMs: Double?
   var completedAt: Double?
+  var armedAt: Double?
+  var fadeStartedAt: Double?
+  var pauseConfirmedAt: Double?
+  var deadlineDriftMs: Double?
   var reason: String?
 }
 final class SleepDeadline {
@@ -48,6 +52,7 @@ final class SleepDeadline {
     generation += 1; self.player = player; identity = player.identity; originalVolume = player.volume
     deadline = uptime() + remainingMs
     record = SleepRecord(id: id, sourceKey: sourceKey, sourceJSON: sourceJSON, kind: kind, state: "ARMED", deadlineAt: wall()+remainingMs, fadeMs: min(fadeMs,remainingMs))
+    record?.armedAt = wall()
     persist(); install(delayMs: max(0,remainingMs-min(fadeMs,remainingMs)), repeating: false)
   }
   func extend(id: String, extraMs: Double) throws {
@@ -74,11 +79,14 @@ final class SleepDeadline {
     row.deadlineAt = wall() + max(0,left)
     if left <= 0 {
       row.state = "PAUSED"; row.positionMs = max(0,player.positionMs); row.recoveryMs = max(0,(row.positionMs ?? 0) - (row.kind == "ai" ? 300000 : 0)); row.completedAt = wall()
+      row.deadlineDriftMs = max(0,-left)
       record = row; persist() // Persist before our pause triggers observers.
       timer?.cancel(); timer = nil; generation += 1
       player.volume = 0; player.pause(); player.volume = originalVolume; self.player = nil
+      if !player.playing { record?.pauseConfirmedAt = wall(); persist() }
     } else if left <= row.fadeMs {
       let first = row.state != "FADING"
+      if first { row.fadeStartedAt = wall() }
       row.state = "FADING"; record = row
       player.volume = originalVolume * Float(max(0,min(1,left/max(1,row.fadeMs))))
       if first { persist(); install(delayMs: 50, repeating: true) }

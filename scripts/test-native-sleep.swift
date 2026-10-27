@@ -22,16 +22,22 @@ final class MeasuredPlayer: SleepPlayback {
   var time:Double=0;var wall:Double=100000;var records:[SleepRecord]=[]
   let p=FakeSleepPlayer();let c=SleepDeadline(uptime:{time},wall:{wall},schedule:false,save:{records.append($0)})
   func arm(_ id:String="one",_ duration:Double=60000)throws{try c.arm(player:p,id:id,sourceKey:"episode-a",sourceJSON:"{}",kind:"ai",remainingMs:duration,fadeMs:10000)}
-  try arm();time=50000;c.tick();assert(c.record?.state=="FADING");time=55000;c.tick();assert(abs(p.volume-0.35)<0.001)
+  try arm();assert(c.record?.armedAt==wall);time=50000;c.tick();assert(c.record?.state=="FADING"&&c.record?.fadeStartedAt==wall);time=55000;c.tick();assert(abs(p.volume-0.35)<0.001)
   for ms in [300000.0,900000.0,1800000.0]{try c.extend(id:"one",extraMs:ms)}
   assert(abs(p.volume-0.7)<0.001);assert(c.record!.deadlineAt == wall+3005000)
   c.cancel(id:"obsolete");assert(c.record?.state=="ARMED")
   time=60000;c.tick();assert(p.pauses==0);wall += 3600000;time=3060000;c.tick();assert(p.pauses==1)
-  assert(c.record?.positionMs==1000000&&c.record?.recoveryMs==700000);c.tick();assert(p.pauses==1)
+  assert(c.record?.positionMs==1000000&&c.record?.recoveryMs==700000);assert(c.record?.pauseConfirmedAt==wall&&c.record?.deadlineDriftMs==0);c.tick();assert(p.pauses==1)
   c.cancel(id:"one");assert(c.record?.state=="CANCELLED")
   p.playing=true;try arm("source");p.identity="episode-b";time+=60001;c.tick();assert(p.pauses==1&&c.record?.state=="CANCELLED")
   p.identity="episode-a";try arm("call");c.cancel(reason:"interruption");time+=60000;c.tick();assert(c.record?.state=="INTERRUPTED"&&p.pauses==1)
   try arm("restart");let restored=SleepDeadline(restored:c.record,schedule:false,save:{_ in});assert(restored.record?.state=="INTERRUPTED")
+  // Previously installed builds omit diagnostic fields. Preserve their recovery records.
+  let oldJSON = "{\"id\":\"legacy\",\"sourceKey\":\"episode-a\",\"sourceJSON\":\"{}\",\"kind\":\"manual\",\"state\":\"PAUSED\",\"deadlineAt\":100,\"fadeMs\":10,\"positionMs\":50}"
+  let oldRecord = try JSONDecoder().decode(SleepRecord.self, from:Data(oldJSON.utf8))
+  assert(oldRecord.positionMs==50 && oldRecord.pauseConfirmedAt==nil)
+  p.playing=true;try arm("drift",1000);time+=1025;c.tick()
+  assert(c.record?.deadlineDriftMs==25 && c.record?.pauseConfirmedAt==wall)
   p.playing=false;do{try arm("paused");assertionFailure("paused player armed")}catch{}
   print("Native Swift deterministic cases passed: fade/restore, rapid 5/15/30 extensions, stale cancellation, duplicate pause, clock jump, source, interruption, restart and recovery.")
 #if os(macOS)
@@ -48,8 +54,8 @@ final class MeasuredPlayer: SleepPlayback {
   }
   assert(result?.state=="PAUSED"&&audio.pauses==1&&audio.player.rate==0)
   assert(samples>5&&minimum<0.2&&abs(audio.volume-0.7)<0.001)
-  let report:[String:Any]=["platform":"macOS AVPlayer; muted output; NOT iPhone background or audible verification","elapsedMs":(ProcessInfo.processInfo.systemUptime-start)*1000,"targetMs":2000,"fadeSamples":samples,"minimumObservedVolume":minimum,"restoredVolume":audio.volume,"pausePositionMs":result?.positionMs ?? -1,"paused":audio.player.rate==0]
-  let data=try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]);try data.write(to:URL(fileURLWithPath:"evals/recovery-batch7-native.json"));print(String(data:data,encoding:.utf8)!)
+  let report:[String:Any]=["platform":"macOS AVPlayer; muted output; NOT iPhone background or audible verification","elapsedMs":(ProcessInfo.processInfo.systemUptime-start)*1000,"targetMs":2000,"fadeSamples":samples,"minimumObservedVolume":minimum,"restoredVolume":audio.volume,"pausePositionMs":result?.positionMs ?? -1,"paused":audio.player.rate==0,"nativeDeadlineDriftMs":result?.deadlineDriftMs ?? -1,"fadeStartedAt":result?.fadeStartedAt ?? -1,"pauseConfirmedAt":result?.pauseConfirmedAt ?? -1]
+  let data=try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]);try data.write(to:URL(fileURLWithPath:ProcessInfo.processInfo.environment["RADIOSTAR_SLEEP_TEST_OUTPUT"] ?? "evals/recovery-batch7-native.json"));print(String(data:data,encoding:.utf8)!)
 #endif
  }
 }

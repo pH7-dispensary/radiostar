@@ -207,6 +207,60 @@ try {
     });
     const started = performance.now();
     await page.goto(origin);
+    if (process.env.RADIOSTAR_DIAGNOSTICS_ONLY === "1") {
+      await page
+        .getByRole("button", { name: "Open now playing", exact: true })
+        .click();
+      await page.evaluate(() => {
+        navigator.share = async (data) => {
+          window.__diagnosticExport = JSON.parse(data.text);
+        };
+      });
+      await page
+        .getByRole("button", { name: "Report a problem", exact: true })
+        .last()
+        .click();
+      const capture = page.getByRole("switch", {
+        name: "Capture device diagnostics",
+      });
+      assert.equal(await capture.getAttribute("aria-checked"), "false");
+      await capture.click();
+      assert.equal(await capture.getAttribute("aria-checked"), "true");
+      await page
+        .getByRole("button", { name: "Export device diagnostics" })
+        .click();
+      await page.waitForFunction(
+        () => window.__diagnosticExport?.enabled === true,
+      );
+      const diagnostic = await page.evaluate(() => window.__diagnosticExport);
+      assert.equal(diagnostic.audiblePlayback, "NOT_MEASURED");
+      assert.equal(diagnostic.nativeBuild, "UNAVAILABLE");
+      assert.ok(!JSON.stringify(diagnostic).includes("fixture.invalid"));
+      await page.waitForTimeout(350); // Let the existing modal fade finish before visual review.
+      await page.screenshot({ path: `${output}/${width}-diagnostics.png` });
+      await capture.click();
+      await page
+        .getByRole("button", { name: "Export device diagnostics" })
+        .click();
+      await page.waitForFunction(
+        () => window.__diagnosticExport?.enabled === false,
+      );
+      assert.deepEqual(
+        await page.evaluate(() => window.__diagnosticExport.events),
+        [],
+      );
+      await page.getByText("Close", { exact: true }).click();
+
+      assert.deepEqual(errors, []);
+      results.push({
+        width,
+        theme: dark ? "dark" : "light",
+        diagnosticCaptureExportAndClear: true,
+        physicalDevice: false,
+      });
+      await context.close();
+      continue;
+    }
     await page
       .getByRole("tab", { name: "Discover", exact: true })
       .click({ timeout: 20000 });

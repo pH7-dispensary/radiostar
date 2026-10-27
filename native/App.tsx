@@ -1,3 +1,4 @@
+import { nativeDiagnostics } from "./src/nativeDiagnostics.mjs";
 import { refreshFollowedCatalogue } from "./src/catalogueRefresh.mjs";
 import { FollowSync } from "./src/FollowSyncNotice";
 import { nativeEpisodeKey, sameEpisode, sameShow } from "../episode-identity.mjs";
@@ -2168,6 +2169,7 @@ function Profile({
           onPress={() => Alert.alert("Delete listener profile?",
             "Removes your active server profile, listening records, follows, referrals and local listening data. Beta access ends. Minimal security revocation records and existing backups may remain. Apple subscriptions, if any, must be cancelled separately in Settings. This cannot be undone.",
             [{ text: "Cancel", style: "cancel" }, { text: "Delete profile", style: "destructive", onPress: () => {
+              nativeDiagnostics.clear();
               setDeletingProfile(true);
               void deleteListenerProfile().catch((error) => {
                 setDeletingProfile(false);

@@ -1,3 +1,4 @@
+import { nativeDiagnostics } from "./nativeDiagnostics.mjs";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import * as Crypto from "expo-crypto";
 import { AppState } from "react-native";
@@ -73,7 +74,7 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
     const current = () => activeIdentity.current === identity && live.current.getPlaybackRevision() === playbackRevision && live.current.manualSeekRevision === revision && refreshRevision.current === preferenceRevision;
     const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint };
     attempts.current.set(interval.id, { count: (attempts.current.get(interval.id)?.count || 0) + 1, after: Date.now() + 10_000 }); busy.current = true;
-    const report = (kind: string, positionMs: number, authorisationId?: string, code?: string) => listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind, positionMs, authorisationId, code }).catch(() => null);
+    const report = (kind: string, positionMs: number, authorisationId?: string, code?: string) => { nativeDiagnostics.record(kind, {positionMs}); return listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind, positionMs, authorisationId, code }).catch(() => null); };
     let leaseId: string | undefined;
     void report("skip_requested", positionMs);
     void executeVerifiedSkip({ interval, positionMs, durationMs: snapshot.durationMs || 0,
@@ -90,6 +91,7 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
     }).then(result => {
       if (!current()) return;
       consumed.current.add(interval.id);
+      nativeDiagnostics.record("automatic_skip", {positionMs:result.positionMs,originMs:result.originMs,durationMs:result.durationMs});
       const recorded = listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind: "automatic_skip", positionMs: result.positionMs, originMs: result.originMs, authorisationId: result.lease.authorisationId }).catch(() => null);
       let undone = false, undoing = false;
       onNotice({ id: interval.id, durationMs: result.durationMs, undo: async () => {
@@ -100,6 +102,7 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
         try {
           // Undo is a recovery action, available even after pause or kill switch.
           const restored = await live.current.seekAutomatically(result.originMs);
+          nativeDiagnostics.record("undo", {positionMs:restored});
           undone = true; onNotice(null);
           // Telemetry ordering must not hold the recovery action open offline.
           void recorded.then(() => listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind: "undo", positionMs: restored, authorisationId: result.lease.authorisationId })).catch(() => {});

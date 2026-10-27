@@ -28,4 +28,9 @@ export function createSleepDriver(player: AudioPlayer, currentSource: () => Sour
 }
 
 export async function readNativeSleepRecord(): Promise<SleepRecord | null> { return native ? JSON.parse(await native.state()) : null; }
+export async function readNativeBuildMetadata(): Promise<{nativeBuild:string;appVersion:string}> {
+  if(typeof native?.buildMetadata !== 'function')return {nativeBuild:'UNAVAILABLE',appVersion:'UNAVAILABLE'};
+  const value=JSON.parse(await native.buildMetadata());
+  return {nativeBuild:typeof value?.nativeBuild === 'string' && /^\d{1,8}$/.test(value.nativeBuild)?value.nativeBuild:'UNAVAILABLE',appVersion:typeof value?.appVersion === 'string' && /^\d+\.\d+\.\d+$/.test(value.appVersion)?value.appVersion:'UNAVAILABLE'};
+}
 export async function clearNativeSleepRecord() { privacyEpoch++; if(native) await native.clear(); }
