@@ -1,0 +1,619 @@
+{
+  "at": "2026-10-27T08:35:37.882Z",
+  "phase": "PRODUCT_ACTIVATION_PHASE_4",
+  "status": "PARTIALLY_VERIFIED",
+  "commits": [
+    "d53cb84",
+    "587ca82"
+  ],
+  "population": {
+    "installations": 9,
+    "nonRevokedInstallations": 9,
+    "intelligenceStates": {
+      "PARTIAL_READY": 12,
+      "FAILED": 2,
+      "READY": 5,
+      "BLOCKED": 2,
+      "CANCELLED": 1
+    },
+    "analysisCount": 12,
+    "transcripts": 19
+  },
+  "coverage": {
+    "eligibleProfiles": 2,
+    "followedFeeds": 6,
+    "currentWindow": 18,
+    "counts": {
+      "REVIEW_REQUIRED": 18
+    },
+    "estimatedBacklog": {
+      "knownUsd": 22.58712777777778,
+      "unknownEpisodes": 0,
+      "eligibleKnownUsd": 0,
+      "completionEta": null,
+      "reason": "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable."
+    },
+    "acquisition": {
+      "intelligenceCacheHits": 0,
+      "transcriptCacheHits": 0,
+      "publisherTranscriptsFound": 0,
+      "publisherReferencesUnverified": 3,
+      "requiringAudio": 15,
+      "eligibleRequiringAudio": 0,
+      "estimatedAudioHours": 42.28277777777778,
+      "unknownAudioDurations": 0
+    },
+    "discoverableCachedEpisodes": 9
+  },
+  "intelligence": {
+    "cachedEpisodes": [
+      {
+        "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 7,
+        "topics": 8,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      },
+      {
+        "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 8,
+        "topics": 13,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      },
+      {
+        "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 11,
+        "topics": 13,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      }
+    ],
+    "queryCases": [
+      {
+        "kind": "exact",
+        "matched": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 3
+        },
+        "sourceCount": 8
+      },
+      {
+        "kind": "paraphrase",
+        "matched": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 3
+        },
+        "sourceCount": 8
+      },
+      {
+        "kind": "Portuguese",
+        "matched": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 3
+        },
+        "sourceCount": 7
+      },
+      {
+        "kind": "Chinese",
+        "matched": true,
+        "answerState": "SUPPORTED_EXCERPTS",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 3
+        },
+        "sourceCount": 8
+      },
+      {
+        "kind": "absent",
+        "matched": true,
+        "answerState": "NO_EVIDENCE",
+        "retrieval": {
+          "mode": "semantic-with-lexical-fallback",
+          "semanticEpisodes": 3
+        },
+        "sourceCount": 0
+      }
+    ],
+    "momentTimestampMs": 219851,
+    "controlledFollow": {
+      "cachedLatestThree": [
+        {
+          "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        }
+      ],
+      "duplicateAcceptedWithoutNewJobs": true
+    },
+    "addedPaidCalls": 0
+  },
+  "adSkip": {
+    "counts": {
+      "candidates": 1,
+      "variantMatched": 4,
+      "verified": 2,
+      "disputed": 0,
+      "rejected": 0,
+      "processing": 0,
+      "failed": 0,
+      "automaticSkips": 3,
+      "undoEvents": 3,
+      "falsePositiveReports": 0,
+      "missedAdvertReports": 1
+    },
+    "release": {
+      "evaluationSkips": 1,
+      "evaluationUndos": 1,
+      "realEpisodeSkips": 2,
+      "eventProvenance": "Client-confirmed seek telemetry; not independent accuracy ground truth.",
+      "productionAutomaticSkipping": false,
+      "criteria": {
+        "labelledEpisodes": 30,
+        "verifiedIntervals": 1000,
+        "precision": 0.995,
+        "conversationSkips": 0,
+        "mismatchedVariantSkips": 0,
+        "p95DecisionMs": 500,
+        "undoRestorationRate": 1
+      },
+      "measured": null,
+      "status": "NOT_EVALUATED"
+    },
+    "analyses": 12,
+    "corpus": {
+      "metrics": {
+        "status": "AWAITING_HUMAN_REVIEW",
+        "episodes": 12,
+        "completeEpisodes": 0,
+        "reviewedLabels": 1,
+        "negativeEpisodes": 0,
+        "adverts": 0,
+        "predictions": 0,
+        "falsePositives": null,
+        "recall": null,
+        "precision": null,
+        "completeBreakCoverage": null,
+        "advertDurationCoverage": null,
+        "boundaryStartP95Ms": null,
+        "boundaryEndP95Ms": null,
+        "nonAdvertPredictedMs": null,
+        "productDiscussionOverlapMs": null,
+        "falsePositiveDurationRate": null,
+        "boundaryToleranceMs": 1000,
+        "formats": {},
+        "perEpisode": [],
+        "note": "Recall requires complete human review of entire episodes, including missed adverts. Candidate-only reviews do not establish recall. These are detector metrics, not production-safe skip accuracy."
+      },
+      "reviewed": [
+        {
+          "episodeId": "lup-690",
+          "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+          "complete": false,
+          "labels": [
+            {
+              "kind": "advert",
+              "format": "host_read",
+              "startMs": 0,
+              "endMs": 90415,
+              "independent": true,
+              "reviewedAt": "2026-10-26T21:33:02.230Z"
+            }
+          ],
+          "predictions": []
+        }
+      ]
+    },
+    "playback": {
+      "audioHash": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+      "interval": {
+        "id": "05e5d53bfde8f6f4991a6471c3ef7aaa35d387ebe50ee2330fb3e8d447764f33",
+        "type": "advert",
+        "startMs": 15200,
+        "endMs": 34500,
+        "targetMs": 34500
+      },
+      "originMs": 15219.229000000001,
+      "targetMs": 34500,
+      "skippedDurationMs": 19280.771,
+      "restoredMs": 15219.229000000001,
+      "undoSeeks": 1,
+      "paused": true,
+      "rate": 1.5,
+      "playPromiseMs": 1.7000000029802322,
+      "authorisationRoundTripMs": 28.900000005960464,
+      "seekConfirmationMs": 1.6000000089406967,
+      "undoConfirmationMs": 0.5,
+      "entryDelaySourceMs": 18.384000000000015,
+      "pollIntervalMs": 10,
+      "device": "Chromium, not a physical iPhone"
+    }
+  },
+  "sleep": {
+    "elapsedMs": 2017.521083340398,
+    "fadeSamples": 47,
+    "fadeStartedAt": 1793089374897.155,
+    "minimumObservedVolume": 0.024279994890093803,
+    "nativeDeadlineDriftMs": 15.035666659474373,
+    "pauseConfirmedAt": 1793089375909.09,
+    "paused": true,
+    "pausePositionMs": 1928.100186,
+    "platform": "macOS AVPlayer; muted output; NOT iPhone background or audible verification",
+    "restoredVolume": 0.699999988079071,
+    "targetMs": 2000
+  },
+  "admin": {
+    "emergencyLogin": true,
+    "individualMembers": 0,
+    "migration": {
+      "individualSuperAdminConfigured": false,
+      "individualSuperAdminVerified": false,
+      "emergencyRecoveryAvailable": true
+    },
+    "sessionHours": 8,
+    "proxy": "cloudfront-vpc",
+    "csrf": "rejected",
+    "anonymous": "rejected"
+  },
+  "infrastructure": {
+    "status": "DEGRADED",
+    "generatedAt": "2026-10-27T08:25:05.945Z",
+    "serverStartedAt": "2026-10-27T08:24:17.622Z",
+    "components": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY",
+        "reason": "This authenticated operations request reached the active backend.",
+        "observedAt": "2026-10-27T08:25:05.945Z"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY",
+        "reason": "SQLite quick check passed for the active server store."
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY",
+        "reason": "21% used \u00b7 23.7 GiB available; deployments require 3 GiB headroom.",
+        "detail": {
+          "totalBytes": 32132542464,
+          "availableBytes": 25452359680,
+          "usedPercent": 21
+        },
+        "observedAt": "2026-10-27T08:25:05.944Z"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED",
+        "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+        "detail": {
+          "retained": 3,
+          "limit": 2,
+          "protectedLegacy": 1
+        },
+        "observedAt": "2026-10-27T08:25:05.944Z"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY",
+        "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+        "observedAt": "2026-10-27T08:24:22.040Z"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY",
+        "reason": "SQS queue attributes were read successfully.",
+        "observedAt": "2026-10-27T08:25:05.944Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY",
+        "reason": "No messages are waiting in the dead-letter queue.",
+        "observedAt": "2026-10-27T08:25:05.944Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY",
+        "reason": "The single durable queue consumer is running."
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN",
+        "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN",
+        "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY",
+        "reason": "Release metadata was read from the protected server record.",
+        "observedAt": "2026-10-27T08:24:16.023Z",
+        "detail": {
+          "releaseSha": "14899f354b02b5ba0cbdcc585d6da683f8f3b2dd2cccca77682949c3eec946c0",
+          "previousReleaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+          "rollbackAvailable": true
+        }
+      }
+    ],
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "14899f354b02b5ba0cbdcc585d6da683f8f3b2dd2cccca77682949c3eec946c0",
+      "deployedAt": "2026-10-27T08:24:16.023Z",
+      "previousReleaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    }
+  },
+  "aws": {
+    "account": "208096650030",
+    "region": "eu-west-2",
+    "alarms": [
+      {
+        "name": "starcast-api-unavailable",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-backup-overdue",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-database-integrity",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-dead-letter",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-disk-critical",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-disk-warning",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-event-loop-delay",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-inodes-low",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-processing-failures",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-queue-age",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-telemetry-missing",
+        "status": "OK",
+        "enabled": true
+      },
+      {
+        "name": "starcast-worker-unavailable",
+        "status": "OK",
+        "enabled": true
+      }
+    ],
+    "snsConfirmed": false,
+    "backup": {
+      "bytes": 43106304,
+      "snapshotAt": "2026-10-27T08:14:22.308Z",
+      "sha256Verified": true,
+      "integrity": "ok"
+    },
+    "deploymentCommand": "c68ef18f-de50-4fe2-ad67-b246981ad336",
+    "postDeploymentIntegrity": "ok",
+    "ffmpeg": "executable"
+  },
+  "costs": {
+    "controls": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "usageEntries": 163,
+    "recordedUsd": 1.8183337399999997,
+    "reservations": 0,
+    "additionalPaidCalls": 0,
+    "standardCaps": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "existingTemporaryAllowance": {
+      "limits": {
+        "enabled": true,
+        "dailyUsd": 25,
+        "monthlyUsd": 125,
+        "dailyTranscriptionSeconds": 54000,
+        "maxEpisodeSeconds": 14400,
+        "textModel": "gpt-4.1-mini",
+        "transcriptionModel": "whisper-1",
+        "audioAnalysisEnabled": false
+      },
+      "temporaryExpiresAt": "2026-10-27T21:53:27.023Z",
+      "remainingDailyUsd": 25,
+      "remainingMonthlyUsd": 123.18166626,
+      "remainingAudioSeconds": 54000
+    },
+    "awsPeriod": {
+      "Start": "2026-10-01",
+      "End": "2026-10-28"
+    },
+    "awsEstimated": true,
+    "awsUnblendedUsd": 7.729996862,
+    "translation": {
+      "estimatedCostUsd": 0.06596,
+      "actualCostUsd": null,
+      "costEstimated": true,
+      "usageEntries": 1,
+      "reservations": 0,
+      "separateLedger": true
+    }
+  },
+  "tests": {
+    "fullSuite": "PASS",
+    "typeScript": "PASS",
+    "expoDoctor": "21/21 PASS",
+    "iosExport": "PASS",
+    "nativeWebJourney": "PASS four widths",
+    "swiftCore": "PASS",
+    "ownedSeekUndo": "PASS Chromium",
+    "physicalDevice": "NOT TESTED",
+    "backendAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "nativeAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 4,
+      "critical": 0,
+      "total": 4
+    }
+  },
+  "release": {
+    "backend": {
+      "status": "HEALTHY",
+      "releaseSha": "14899f354b02b5ba0cbdcc585d6da683f8f3b2dd2cccca77682949c3eec946c0",
+      "deployedAt": "2026-10-27T08:24:16.023Z",
+      "previousReleaseSha": "57f662c803671cc7e6d22ce06be357957c73ca2eca387dfe6b26799a7b6e9ebf",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    },
+    "easBuildId": "ff0549c3-a517-432c-8792-83b724420eb5",
+    "easBuildStatus": "FINISHED",
+    "sourceCommit": "d53cb8462ff57cfbd35f7db731ca8d051e4197cd",
+    "ipa": {
+      "version": "1.0.0",
+      "build": "14",
+      "bundleId": "app.radiostar.ios",
+      "team": "69F2T3M9C4",
+      "developmentEntitlement": false,
+      "backgroundModes": [
+        "audio"
+      ],
+      "splash": "SplashScreen",
+      "strictSignatureVerified": true,
+      "knownCredentialsAbsentFiles": 58,
+      "awsEndpointFound": true,
+      "nativeSleepLinked": true,
+      "ipaSha256": "914c10dc0ee3a9ab42827e45927e592de4e6835c5b25ce87167b63b5b0ca5563",
+      "ipaBytes": 12252494
+    },
+    "submissionId": "6025f3c9-050f-451d-b49a-08427e952fd1",
+    "submissionStatus": "FINISHED",
+    "appleStatus": "VALID",
+    "internalState": "IN_BETA_TESTING",
+    "internalGroup": "Team (Expo)",
+    "internalGroupContainsBuild": true,
+    "appleBuildId": "551dfed5-72a5-4d31-ab23-822db062b522",
+    "availableForInternalTesting": true
+  },
+  "score": {
+    "previous": 676,
+    "current": 687,
+    "method": "Function /30, real-world /25, recovery /20, UX /15, operations /10; engineering judgement, not measured accuracy"
+  },
+  "finalHealth": {
+    "at": "2026-10-27T08:40:46.409Z",
+    "status": 200,
+    "backend": "ready"
+  },
+  "searchBenchmark": {
+    "samples": 24,
+    "supportedSamples": 22,
+    "absentSamples": 2,
+    "recallAt5": 0.7727272727272727,
+    "mrr": 0.7727272727272727,
+    "abstentionAccuracy": 1,
+    "multilingualRecallAt5": 1,
+    "meanLatencyMs": 0.8850225416666669,
+    "queryProviderCostUsd": 0,
+    "provenance": {
+      "kind": "owned_synthetic",
+      "humanReviewed": false,
+      "limitations": "Engineering-labelled source references; authored multilingual fixtures test language handling. Not representative human-labelled real-world semantic quality."
+    }
+  }
+}
