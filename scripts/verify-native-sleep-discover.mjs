@@ -291,11 +291,11 @@ try {
       .getByRole("textbox", { name: "Search podcasts" })
       .fill("Thoughtful");
     await page
-      .getByText("Episodes from followed shows", { exact: true })
-      .waitFor();
-    await page
       .getByRole("button", { name: "Submit search", exact: true })
       .click();
+    await page
+      .getByText("Episodes from followed shows", { exact: true })
+      .waitFor();
     await page.screenshot({ path: `${output}/${width}-search.png` });
     await page.getByRole("tab", { name: "Conversations", exact: true }).click();
     await page
@@ -436,7 +436,7 @@ try {
     );
     await page.reload();
     await page.getByRole("button", { name: "Open now playing" }).click();
-    await page.getByText("Welcome back.", { exact: true }).waitFor();
+    await page.getByText(/^Welcome back\. /).waitFor();
     await page.getByRole("button", { name: /AI Sleep A gentler/ }).click();
     await page.getByText("Audio paused.", { exact: true }).waitFor();
     await page.waitForTimeout(350);
@@ -470,7 +470,7 @@ try {
       await appearance.click();
       await page.waitForFunction(
         () =>
-          JSON.parse(localStorage.getItem("star-cast-listener-state-v1"))
+          JSON.parse(localStorage.getItem("star-cast-listener-state-v2"))
             .nightMode === true,
       );
       await page.reload();

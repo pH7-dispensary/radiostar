@@ -7,7 +7,7 @@
 ## Device, build and acceptance evidence
 
 - Device model / iOS version: **unknown**. No accessible physical iPhone; USB inventory empty. This Mac has Command Line Tools, not full Xcode; `devicectl` and `xctrace` are unavailable. No frameworks were installed.
-- Apple read-only verification: **Radio Star 1.0.0 (13)** is `VALID`, `IN_BETA_TESTING`, and in the internal **Team (Expo)** group. EAS build `bc729b2b-07c3-4d0c-b942-7fee5c1b7860` is finished. Source commit `7e9bfc65d4e071745be1c4da8b8423d5bdbefb`. Availability does not prove installation or device behaviour. Evidence: `evals/product-activation-phase3-apple.json`.
+- Apple read-only verification: **Radio Star 1.0.0 (13)** is `VALID`, `IN_BETA_TESTING`, and in the internal **Team (Expo)** group. EAS build `bc729b2b-07c3-4d0c-b942-7fee5c1b7860` is finished. Source commit `7e9bfc65d4e071745be1c4da8b8a8423d5bdbefb`. Availability does not prove installation or device behaviour. Evidence: `evals/product-activation-phase3-apple.json`.
 - Build 13 predates Phase 2's native malformed-lease guards (`d00844a`) and this phase's native changes. These changes require a Phase 4 native release. Existing signing/build configuration is unchanged.
 - **One authoritative device matrix:** `evals/product-activation-phase3-device-matrix.json`. Its 25 cases contain all requested fields and reproduction steps. Every physical case is **NOT TESTED**; no automated or historical result is substituted for current device evidence.
 
@@ -47,7 +47,7 @@ The report sheet scrolls within a bounded height, uses the existing safe-area ap
 - **PASS:** compiled Swift core + deterministic tests + real muted macOS AVPlayer integration. Swift Expo module syntax parse passed. A full iOS module link/device run is **not available** on this Mac; production native compilation belongs to Phase 4.
 - **PASS:** production iOS Hermes and web exports using `EXPO_NO_DOTENV=1`, dedicated HTTPS origin and empty development/legacy/insecure overrides. Release environment guard passed. Export is not a signed native build.
 - **PASS:** new diagnostic browser workflow at 320, 375, 390 and 430 px in light/dark modes: opt-in state, explicit export, privacy, clear and no runtime errors. Browser evidence is not device evidence.
-- **KNOWN HARNESS LIMITATION:** the older full Discover/Sleep browser workflow times out on removed copy, “Episodes from followed shows.” It did not reach sleep checks. The diagnostic-only branch separately verifies the changed UI; this report does not call the old full browser scenario a pass.
+- **HISTORICAL HARNESS FAILURE:** the Phase 3 full Discover/Sleep workflow timed out before search results appeared; only its diagnostic branch passed then. Phase 4 established that the label still exists: the harness needed explicit search submission, the title-bearing recovery greeting, and the migrated v2 preferences key. Those test assumptions were corrected; the complete four-width workflow now passes. This correction does not upgrade physical-device evidence.
 - **PASS:** `git diff --check`; no configured standalone lint command.
 
 During development TypeScript/export caught an attempted import of an uninstalled safe-area package; it was removed in favour of the existing native component. Browser testing caught missing explicit web switch state; it was corrected and rerun.
