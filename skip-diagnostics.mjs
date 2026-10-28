@@ -8,15 +8,22 @@ export function skipDiagnostics(store, rights) {
   const attention = new Map(rows("intelligence-attention").map(row => [episodeKey(row.feedUrl, row.episodeId), row]));
   const analyses = new Map(rows("skip-analysis").map(row => [row.episodeKey, row]));
   const verification = new Map(rows("skip-audio-verification").map(row => [row.episodeKey, row]));
+  const sources = new Map(rows("skip-source").map(row => [row.key, row]));
+  const reviews = new Map(rows("skip-human-review").map(row => [row.key, row]));
   const intervals = rows("skip-interval"), events = rows("skip-execution"), feedback = rows("skip-feedback");
   const keys = new Set([...jobs.keys(), ...encounters.keys(), ...analyses.keys(), ...verification.keys(), ...intervals.map(row => row.episodeKey)]);
   return [...keys].map(key => {
-    const job = jobs.get(key), encounter = encounters.get(key), analysis = analyses.get(key), verified = verification.get(key);
-    const feedUrl = job?.feedUrl || job?.episode?.feedUrl || encounter?.feedUrl || analysis?.feedUrl;
-    const episodeId = job?.episodeId || job?.episode?.id || encounter?.episodeId || analysis?.episodeId;
+    const job = jobs.get(key), encounter = encounters.get(key), analysis = analyses.get(key), verified = verification.get(key), source = sources.get(key), review = reviews.get(key);
+    const feedUrl = job?.feedUrl || job?.episode?.feedUrl || encounter?.feedUrl || analysis?.feedUrl || source?.feedUrl;
+    const episodeId = job?.episodeId || job?.episode?.id || encounter?.episodeId || analysis?.episodeId || source?.episodeId;
     const candidates = intervals.filter(row => row.episodeKey === key && (!job?.transcript?.audioVariant || (row.sourceVariantKey || row.audioVariant) === job.transcript.audioVariant) && (!analysis?.activeIntervalIds || analysis.activeIntervalIds.includes(row.id)));
     const receipts = events.filter(row => row.episodeKey === key);
     const safe = candidates.filter(row => row.verificationState === "VERIFIED" && row.boundaryVerified && !row.disputed);
+    const audioIdentity = verified?.variant?.audioVariantFingerprint || null;
+    // Measure only recorded independent labels for this exact verified source.
+    // Missing labels remain unknown; this is never whole-episode recall.
+    const labels = audioIdentity && review?.audioContentHash === audioIdentity ? (review.labels || []).filter(label => label.independent === true && label.kind === 'advert' && label.audioContentHash === audioIdentity && Number.isFinite(label.startMs) && Number.isFinite(label.endMs) && label.startMs >= 0 && label.endMs > label.startMs) : [];
+    const complete = labels.filter(label => safe.some(interval => interval.type === 'advert' && interval.audioVariantFingerprint === audioIdentity && interval.startMs <= label.startMs && interval.endMs >= label.endMs)).length;
     const decision = feedUrl && episodeId ? rights?.evaluate({ feature: "ad-detection", feedUrl, episodeId }) : null;
     const latestPlayback = analysis?.playback;
     const failures = receipts.filter(row => row.kind === "seek_failed");
@@ -37,17 +44,20 @@ export function skipDiagnostics(store, rights) {
       analysis?.playbackAt && { at: analysis.playbackAt, stage: "Tester playback check", code: latestPlayback.code },
       ...receipts.map(row => ({ at: row.createdAt, stage: row.kind, code: row.code || row.provenance })),
     ].filter(Boolean).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-    return { episodeKey: key, feedUrl, episodeId, title: job?.episode?.title || attention.get(key)?.title || episodeId || "Episode metadata unavailable", podcast: job?.episode?.showName || attention.get(key)?.podcast || null,
+    return { episodeKey: key, feedUrl, episodeId, title: job?.episode?.title || source?.episode?.title || attention.get(key)?.title || episodeId || "Episode metadata unavailable", podcast: job?.episode?.showName || source?.episode?.showName || source?.provenance?.publisher || attention.get(key)?.podcast || null,
       analysis: analysis ? "COMPLETE" : candidates.length ? "LEGACY_EVIDENCE" : "NOT_STARTED", transcriptAvailable: Boolean(job?.transcript?.segments?.length),
       candidates: analysis || candidates.length ? candidates.length : null, verified: safe.length,
-      audioIdentity: verified?.variant?.audioVariantFingerprint || null,
+      audioIdentity,
       analysisDurationMs: analysis?.analysisDurationMs ?? null, verificationDurationMs: verified?.verificationDurationMs ?? null,
       verificationSourceReused: verified?.sourceCacheReused ?? null,
-      completeBreakCoverage: null, coverageReason: "Independent hash-bound complete-break labels have not been recorded for this episode.",
+      reviewedBreakLabels: labels.length,
+      completeBreakCoverage: labels.length ? complete / labels.length : null,
+      coverageReason: labels.length ? 'Coverage of recorded human-labelled intervals on this exact audio only; not full-episode recall or representative accuracy.' : 'No independent labels match the currently verified audio source.',
       groupedBreakCandidates: candidates.filter(row => row.breakCandidate).length,
       reviewOnlyBreakCandidates: candidates.filter(row => row.reviewOnly).length,
       verifiedAdvertIntervals: safe.filter(row => row.type === 'advert').length,
-      completeVerifiedBreaks: null,
+      completeVerifiedBreaks: labels.length ? complete : null,
+      automaticallyVerifiedCompleteBreaks: safe.filter(row => row.type === 'advert' && row.openingBreak && row.approvalSource === 'AUTOMATED_AUDIO_VERIFICATION' && row.audioVariantFingerprint === audioIdentity).length,
       verifiedDurationMs: safe.slice().sort((a,b)=>a.startMs-b.startMs).reduce((acc,row)=>({end:Math.max(acc.end,row.endMs),ms:acc.ms+Math.max(0,row.endMs-Math.max(acc.end,row.startMs))}),{end:0,ms:0}).ms,
       incorrectReports: feedback.filter(row=>row.episodeKey===key&&row.kind==="skipped_conversation").length,
       missedReports: feedback.filter(row=>row.episodeKey===key&&row.kind==="missed").length,
