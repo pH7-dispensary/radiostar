@@ -1,0 +1,484 @@
+{
+  "at": "2026-10-28T12:47:14.717Z",
+  "implementationCommit": "a5682ce",
+  "release": {
+    "status": "HEALTHY",
+    "releaseSha": "04ec9623bbdac21b100e7e766e55cece956d8bb92ac8f691327eb39138621bc3",
+    "deployedAt": "2026-10-28T12:40:29.643Z",
+    "previousReleaseSha": "56ca4cff5854ee9ad18982cc8273cb690740dc9dd7196807d46e0f4378c360a9",
+    "rollbackAvailable": true,
+    "reason": "Release metadata was read from the protected server record."
+  },
+  "registeredInstallations": 9,
+  "eligibleProfiles": 2,
+  "followed": {
+    "feeds": 6,
+    "episodes": 18,
+    "counts": {
+      "REVIEW_REQUIRED": 18
+    },
+    "acquisition": {
+      "intelligenceCacheHits": 0,
+      "transcriptCacheHits": 0,
+      "publisherTranscriptsFound": 0,
+      "publisherReferencesUnverified": 3,
+      "requiringAudio": 15,
+      "eligibleRequiringAudio": 0,
+      "estimatedAudioHours": 42.063055555555565,
+      "unknownAudioDurations": 0
+    },
+    "estimate": {
+      "knownUsd": 22.497041666666668,
+      "unknownEpisodes": 0,
+      "eligibleKnownUsd": 0,
+      "completionEta": null,
+      "reason": "End-to-end ETA unavailable until comparable followed-backlog throughput is measured; rights review and budget waits are not predictable."
+    },
+    "rows": [
+      {
+        "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+        "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+        "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+        "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+        "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://lexfridman.com/feed/podcast/",
+        "episodeId": "https://lexfridman.com/?p=7807",
+        "title": "#503 – AI Crisis in Math: Navier-Stokes, Riemann Hypothesis & Complexity Theory",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+        "episodeId": "ec566b6e-d169-11f1-9853-9b8f37aff08e",
+        "title": "The Holy Grail, Dark Age PSYCHOPATHS & Knights Templar Mystery | Medieval Mindset",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+        "episodeId": "b7430e18-d174-11f1-99de-4f00a1971780",
+        "title": "Murder, Drugs and Cover-Ups: Military Insider Exposes the Criminal Cartel Within the US Navy SEALs",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+        "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha74_Mania_for_Subjugation_IV.mp3",
+        "title": "Show 74 - Mania for Subjugation IV",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+        "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+        "title": "#2570 - Mystery Boys",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+        "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+        "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+        "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha73_Mania_for_Subjugation_III.mp3",
+        "title": "Show 73 - Mania for Subjugation III",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+        "episodeId": "ed2504ac-cdc1-11f1-b263-83f2c9b36709",
+        "title": "JRE MMA Show #187 with Robert Whittaker",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+        "episodeId": "8aa0a500-cfcb-11f1-ac84-8bd81ff6ec00",
+        "title": "Exposing the True Evils of the Uniparty: Soros Money, Surveillance, and the Rise of a Third Party",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+        "episodeId": "2d4d7a14-cfbb-11f1-aa9f-f3fabe5226fd",
+        "title": "EXPLOSIVE Jared Kushner Allegations, Shawn Ryan Drama & Lindsey Graham SHOCKER | Julian Dorey",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://lexfridman.com/feed/podcast/",
+        "episodeId": "https://lexfridman.com/?p=6554",
+        "title": "#502 – Psychiatry, Insane Asylums, Mental Illness, ECT, Lobotomies, Freud & Jung",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+        "episodeId": "59b62be4-cf0e-11f1-9839-0340ab207a22",
+        "title": "Expert Audits the True Cost of the Iran War and What the Pentagon Is Hiding From You",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+        "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha72_Mania_for_Subjugation_II.mp3",
+        "title": "Show 72 - Mania for Subjugation II",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+        "episodeId": "23251e48-ccfa-11f1-8407-c76a5ec426f3",
+        "title": "#2569 - Bill Thompson",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://lexfridman.com/feed/podcast/",
+        "episodeId": "https://lexfridman.com/?p=6506",
+        "title": "#501 – DHH: Future of Programming, AI, Agentic Engineering, Vibe Coding & Linux",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      },
+      {
+        "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+        "episodeId": "0d3cd494-ce40-11f1-836c-2f95e1bc9d29",
+        "title": "Exiled Professor WARNS: “They’re Funding a NEW Matrix and it’s Not What You Think!” | Neema Parvini",
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "inWindow": true,
+        "eligible": false
+      }
+    ]
+  },
+  "controlledFollow": {
+    "cachedLatestThree": [
+      {
+        "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      },
+      {
+        "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      },
+      {
+        "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+        "state": "PARTIAL_READY",
+        "transcriptCacheHit": true
+      }
+    ],
+    "duplicateAcceptedWithoutNewJobs": true
+  },
+  "cachedPublisherCases": [
+    {
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "state": "PARTIAL_READY",
+      "briefMode": "verified_partial",
+      "chapters": 7,
+      "topics": 8,
+      "features": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    },
+    {
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "state": "PARTIAL_READY",
+      "briefMode": "verified_partial",
+      "chapters": 8,
+      "topics": 13,
+      "features": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    }
+  ],
+  "fresh": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+    "title": "Red Hat's Project Lightwell with Mo Duffy",
+    "jobId": "545cc906-0247-4460-b117-d12ac5e6707c",
+    "state": "PARTIAL_READY",
+    "durationMs": 1951086,
+    "segments": 446,
+    "chapters": 5,
+    "topics": 5,
+    "features": {
+      "transcript": {
+        "state": "READY"
+      },
+      "brief": {
+        "state": "PARTIAL_READY"
+      },
+      "chapters": {
+        "state": "PARTIAL_READY"
+      },
+      "topics": {
+        "state": "READY"
+      },
+      "search": {
+        "state": "READY"
+      },
+      "moments": {
+        "state": "READY"
+      },
+      "adCandidates": {
+        "state": "READY",
+        "candidateCount": 0
+      }
+    },
+    "timeline": [
+      {
+        "at": "2026-10-28T12:34:09.817Z",
+        "state": "NOT_REQUESTED",
+        "stage": null,
+        "code": null
+      },
+      {
+        "at": "2026-10-28T12:34:31.734Z",
+        "state": "TRANSCRIBING",
+        "stage": "TRANSCRIBING",
+        "code": null
+      },
+      {
+        "at": "2026-10-28T12:35:38.278Z",
+        "state": "TRANSCRIBING",
+        "stage": "TRANSCRIBING",
+        "code": null,
+        "work": {
+          "completedChunks": 1,
+          "totalChunks": 2,
+          "completedSourceMs": 1200000,
+          "sourceDurationMs": 1951086
+        }
+      },
+      {
+        "at": "2026-10-28T12:36:20.886Z",
+        "state": "ANALYSING",
+        "stage": "ANALYSING",
+        "code": null,
+        "work": {
+          "completedChunks": 2,
+          "totalChunks": 2,
+          "completedSourceMs": 1951086,
+          "sourceDurationMs": 1951086
+        }
+      },
+      {
+        "at": "2026-10-28T12:36:31.912Z",
+        "state": "PARTIAL_READY",
+        "stage": "PARTIAL_READY",
+        "code": null,
+        "work": {
+          "completedChunks": 2,
+          "totalChunks": 2,
+          "completedSourceMs": 1951086,
+          "sourceDurationMs": 1951086,
+          "completedBatches": 1,
+          "totalBatches": 1,
+          "synthesisPending": false
+        }
+      }
+    ],
+    "preflightPlan": {
+      "uniqueNewEpisodes": 1,
+      "cachedFollowedEpisodes": 3,
+      "newAudioHours": 0.5422222222222223,
+      "estimatedAudioUsd": 0.1952,
+      "textPlanningUsd": 0.05,
+      "standardLimits": {
+        "enabled": true,
+        "dailyUsd": 5,
+        "monthlyUsd": 25,
+        "dailyTranscriptionSeconds": 10800,
+        "maxEpisodeSeconds": 7200,
+        "textModel": "gpt-4.1-mini",
+        "transcriptionModel": "whisper-1",
+        "audioAnalysisEnabled": true
+      },
+      "existingAllowance": {
+        "limits": {
+          "enabled": true,
+          "dailyUsd": 5,
+          "monthlyUsd": 25,
+          "dailyTranscriptionSeconds": 10800,
+          "maxEpisodeSeconds": 7200,
+          "textModel": "gpt-4.1-mini",
+          "transcriptionModel": "whisper-1",
+          "audioAnalysisEnabled": false
+        },
+        "temporaryExpiresAt": null,
+        "remainingDailyUsd": 5,
+        "remainingMonthlyUsd": 23.18166626,
+        "remainingAudioSeconds": 10800
+      }
+    },
+    "manualAnalysisRequests": 0,
+    "rightsChanges": 0,
+    "budgetChanges": 0,
+    "semantic": {
+      "state": "READY",
+      "cursor": 446,
+      "total": 446
+    },
+    "advertCandidates": 0,
+    "retrieval": {
+      "momentReferences": 5,
+      "searchReferences": 5,
+      "allReferencesMatchedPersistedSource": true,
+      "mode": "semantic-with-lexical-fallback"
+    }
+  },
+  "checkpointRecovery": {
+    "interruptedAtChunk": 1,
+    "freshProcessResumed": true,
+    "providerCalls": 0,
+    "result": {
+      "segments": 446,
+      "checkpoints": 2,
+      "durationMs": 1951086,
+      "audioHash": "99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f",
+      "exactTranscriptMatch": true
+    }
+  },
+  "costs": {
+    "beforeUsd": 1.8183337399999997,
+    "afterUsd": 2.030023859999999,
+    "additionalUsd": 0.21169012,
+    "providerBreakdown": {
+      "transcription": 0.1953,
+      "text": 0.0057656,
+      "grounding-review": 0.01048,
+      "embedding": 0.00014446
+    },
+    "retrievalEmbeddingUsd": 6e-8,
+    "usageEntries": 187,
+    "reservations": 0,
+    "controls": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    }
+  },
+  "health": "ready",
+  "infrastructure": [
+    {
+      "name": "Backend API",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Durable database",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Disk capacity",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Deployment retention",
+      "status": "DEGRADED"
+    },
+    {
+      "name": "Last verified backup",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Processing queue",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Dead-letter queue",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "Processing worker",
+      "status": "HEALTHY"
+    },
+    {
+      "name": "CloudWatch logs",
+      "status": "UNKNOWN"
+    },
+    {
+      "name": "S3 backups",
+      "status": "UNKNOWN"
+    },
+    {
+      "name": "Deployment",
+      "status": "HEALTHY"
+    }
+  ],
+  "admin": {
+    "emergencyLogin": true,
+    "individualMembers": 0,
+    "migration": {
+      "individualSuperAdminConfigured": false,
+      "individualSuperAdminVerified": false,
+      "emergencyRecoveryAvailable": true
+    },
+    "sessionHours": 8,
+    "proxy": "cloudfront-vpc",
+    "csrf": "rejected",
+    "anonymous": "rejected"
+  }
+}
