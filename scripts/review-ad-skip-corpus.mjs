@@ -26,13 +26,16 @@ export async function createCorpusReviewServer({root=corpusDirectory(),port=0,re
   const key=JSON.stringify([id,startMs,endMs]);if(contextCache.has(key))return contextCache.get(key);
   if(contextBusy)throw Object.assign(Error('Audio context is preparing; retry shortly.'),{status:429});contextBusy=true;
   try{
-   let segments=[];const names=await readdir(root);
-   if(names.includes(id+'-cache.json')){const cached=JSON.parse(await readFile(join(root,id+'-cache.json'),'utf8'));if(cached.transcript.audioContentHash!==ep.audioContentHash)throw Error('Transcript belongs to another variant');segments=cached.transcript.segments;if(createHash('sha256').update(JSON.stringify(segments)).digest('hex')!==ep.transcriptHash)throw Error('Cached transcript changed');}
+   let segments=[],alignment=ep.transcriptAlignment;const names=await readdir(root);
+   const windowTranscript=(ep.reviewTranscripts||[]).find(w=>w.startMs<=startMs&&w.endMs>=endMs);
+   if(windowTranscript){if(!/^[a-z0-9-]+\.json$/.test(windowTranscript.path))throw Error('Invalid review transcript path');const raw=await readFile(join(root,windowTranscript.path),'utf8');if(createHash('sha256').update(raw).digest('hex')!==windowTranscript.sha256)throw Error('Review transcript changed');const transcript=JSON.parse(raw);if(transcript.audioContentHash!==ep.audioContentHash)throw Error('Review transcript variant mismatch');segments=transcript.segments;alignment='HASH_BOUND_MACHINE_WINDOW; not independently reviewed';}
+   else if(ep.openingTranscriptHash && names.includes(id+'-opening.json') && endMs<=ep.openingCoverageEndMs){const raw=await readFile(join(root,id+'-opening.json'),'utf8');if(createHash('sha256').update(raw).digest('hex')!==ep.openingTranscriptHash)throw Error('Opening transcript changed');const opening=JSON.parse(raw);if(opening.audioContentHash!==ep.audioContentHash)throw Error('Opening transcript variant mismatch');segments=opening.segments;alignment='HASH_BOUND_MACHINE_OPENING; not independently reviewed';}
+   else if(names.includes(id+'-cache.json')){const cached=JSON.parse(await readFile(join(root,id+'-cache.json'),'utf8'));if(cached.transcript.audioContentHash!==ep.audioContentHash)throw Error('Transcript belongs to another variant');segments=cached.transcript.segments;if(createHash('sha256').update(JSON.stringify(segments)).digest('hex')!==ep.transcriptHash)throw Error('Cached transcript changed');}
    else if(names.includes(id+'.vtt')){const vtt=await readFile(join(root,id+'.vtt'),'utf8');if(createHash('sha256').update(vtt).digest('hex')!==ep.transcriptHash)throw Error('Publisher transcript changed');segments=parseTranscript(vtt,'text/vtt');}
    const nearby=segments.filter(s=>s.startMs<endMs&&s.endMs>startMs);
    const {stdout}=await promisify(execFile)(ffmpeg,['-v','error','-ss',String(startMs/1000),'-protocol_whitelist','file,pipe','-i',item.path,'-t',String((endMs-startMs)/1000),'-vn','-ac','1','-ar','8000','-f','s16le','pipe:1'],{encoding:'buffer',maxBuffer:6*1024*1024,timeout:30000});
    const samples=Math.floor(stdout.length/2),peaks=Array(400).fill(0);for(let i=0;i<samples;i++){const bin=Math.min(399,Math.floor(i*400/samples));peaks[bin]=Math.max(peaks[bin],Math.abs(stdout.readInt16LE(i*2))/32768);}
-   const value={audioContentHash:ep.audioContentHash,startMs,endMs,peaks,transcriptAlignment:ep.transcriptAlignment,transcript:nearby.slice(0,100).map(s=>({id:s.id,startMs:s.startMs,endMs:s.endMs,text:s.text.slice(0,400)})),truncated:nearby.length>100};
+   const value={audioContentHash:ep.audioContentHash,startMs,endMs,peaks,transcriptAlignment:alignment,transcript:nearby.slice(0,100).map(s=>({id:s.id,startMs:s.startMs,endMs:s.endMs,text:s.text.slice(0,400)})),truncated:nearby.length>100};
    if(contextCache.size>=20)contextCache.delete(contextCache.keys().next().value);contextCache.set(key,value);return value;
   }finally{contextBusy=false;}
  }

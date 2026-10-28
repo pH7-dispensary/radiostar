@@ -18,10 +18,30 @@ export class IntelligenceTestMode {
   context(id) { return this.allowed(id) ? { listenerId: id, version: this.configuration().version } : null; }
   // One global allowance, with the existing expiry; not a per-user budget.
   platformContext() { const c = this.configuration(); return c.active ? { platform: true, version: c.version } : null; }
-  adSkipAllowed(id) { return this.allowed(id) && this.configuration().adSkipPilotEnabled === true; }
+  adSkipConfiguration() {
+    const c=this.store.get('ad-skip-pilot','configuration') || {enabled:false,version:0,listenerIds:[],expiresAt:null};
+    return {...c,active:c.enabled===true && Date.parse(c.expiresAt)>this.now()};
+  }
+  setAdSkipPilot(input, actor) {
+    return this.store.transaction(()=>{
+      const prior=this.adSkipConfiguration();
+      if(input.expectedVersion!==prior.version || typeof input.enabled!=='boolean' || input.confirmation!==(input.enabled?'ENABLE AD SKIP PILOT':'DISABLE AD SKIP PILOT') || !String(input.reason||'').trim())throw Error('Confirm the current pilot version and reason.');
+      const listenerIds=[...new Set(input.listenerIds || prior.listenerIds)];
+      const expiresAt=input.expiresAt || prior.expiresAt;
+      if(listenerIds.length>5 || listenerIds.some(id=>typeof id!=='string') || (input.enabled && (!listenerIds.length || listenerIds.some(id=>!this.eligibleListener(id)) || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt)<=this.now() || Date.parse(expiresAt)>this.now()+7*86400000)))throw Error('Select up to five active enrolled testers and an expiry within seven days.');
+      const next={enabled:input.enabled,listenerIds,expiresAt,version:prior.version+1,updatedBy:actor,updatedAt:new Date(this.now()).toISOString(),reason:input.reason.trim().slice(0,1000)};
+      this.store.set('ad-skip-pilot','configuration',next);this.store.set('ad-skip-pilot-history',String(next.version),{previous:prior,current:next});return this.adSkipConfiguration();
+    });
+  }
+  adSkipAllowed(id) {
+    const c=this.adSkipConfiguration();
+    // Once separately configured, explicit disable/expiry must also revoke the
+    // old coupled pilot. Neither path alters the paid-processing allowance.
+    return c.version ? c.active && c.listenerIds.includes(id) && this.eligibleListener(id) : this.allowed(id) && this.configuration().adSkipPilotEnabled === true;
+  }
   // Preparation is shared across eligible episodes, not tied to the listener
   // whose encounter won the queue race. Execution remains tester-specific.
-  adSkipPreparationAllowed() { const c=this.configuration();return c.active && c.adSkipPilotEnabled===true && c.listenerIds.some(id=>this.allowed(id)); }
+  adSkipPreparationAllowed() { const c=this.adSkipConfiguration();return c.version ? c.active && c.listenerIds.some(id=>this.adSkipAllowed(id)) : this.configuration().listenerIds.some(id=>this.adSkipAllowed(id)); }
   limits(context) { return context && (context.platform === true ? this.configuration().active && context.version === this.configuration().version : this.allowed(context.listenerId, context.version)) ? testingLimits : {}; }
   set(input, actor) {
     return this.store.transaction(() => {

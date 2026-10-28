@@ -9,7 +9,7 @@ import { prepareAudio } from "./transcription.mjs";
 
 const exec = promisify(execFile);
 const boundaryWindowMs = 1_500;
-export const adSkipAudioVerificationVersion = "inward-silence-v2";
+export const adSkipAudioVerificationVersion = "automatic-opening-v4";
 // Coarse transcript boundaries need not coincide with a pause within 650 ms.
 // Search at most three seconds INSIDE the candidate. Never extend its span,
 // relax the silence threshold, or trim more than a third from either side.
@@ -122,6 +122,36 @@ async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs
   };
 }
 
+async function openingBoundaryEvidence(path, candidate, hash) {
+  const review = candidate.independentReview;
+  const reviewed = Boolean(review);
+  const automatic = !reviewed && candidate.automaticOpeningEvidence?.version==='commercial-opening-v1' && candidate.qualifiesForAudioVerification===true;
+  if (!candidate.openingBreak || candidate.startMs!==0 || !Number.isFinite(candidate.endMs) || !Number.isFinite(candidate.nextSpeechMs) || candidate.endMs<=0 || candidate.endMs>240000) return null;
+  if (reviewed && (review.independent!==true || review.audioContentHash!==hash || !review.chainHash || review.startMs!==0 || Math.abs(review.endMs-candidate.endMs)>1500 || review.endMs>=candidate.nextSpeechMs)) return null;
+  if (!reviewed && !automatic) return null;
+  const proposedEnd = reviewed ? review.endMs : candidate.endMs;
+  // A file starts at zero without needing silence. At the other edge require
+  // the cut to lie INSIDE an observed silent pause. Machine verification never
+  // trims final advert words or crosses into the next editorial speech.
+  const start = Math.max(0, proposedEnd-1500), finish = Math.min(candidate.nextSpeechMs, proposedEnd+1500);
+  const {stderr} = await exec(ffmpeg,['-nostdin','-v','info','-i',path,'-af',`atrim=start=${start/1000}:end=${finish/1000},asetpts=PTS-STARTPTS,silencedetect=noise=-42dB:d=0.12`,'-f','null','-'],{timeout:45000,maxBuffer:256000});
+  let silenceStart=null, pause=null;
+  for (const mark of parseSilence(stderr)) {
+    if (mark.kind==='start') silenceStart=start+mark.ms;
+    else if (silenceStart!==null && silenceStart<=proposedEnd && start+mark.ms>=proposedEnd) pause={startMs:silenceStart,endMs:start+mark.ms};
+  }
+  if (!pause) return null;
+  const endMs = reviewed ? proposedEnd : Math.round(Math.max(proposedEnd,(pause.startMs+pause.endMs)/2));
+  if (!reviewed && (pause.endMs-pause.startMs<200 || endMs+300>=candidate.nextSpeechMs || endMs>candidate.endMs+1500)) return null;
+  const fingerprints=[];
+  for (const ms of [0,Math.max(0,endMs-250)]) {
+    const {stdout}=await exec(ffmpeg,['-nostdin','-v','error','-i',path,'-af',`atrim=start=${ms/1000}:end=${(ms+500)/1000}`,'-ac','1','-ar','8000','-f','s16le','-'],{encoding:'buffer',timeout:45000,maxBuffer:64000});
+    if(stdout.length!==8000)return null;
+    fingerprints.push(createHash('sha256').update(stdout).digest('hex'));
+  }
+  return {id:candidate.id,boundaryVerified:true,startMs:0,endMs,approvalSource:reviewed?'HUMAN_REVIEW_PLUS_AUDIO':'AUTOMATED_AUDIO_VERIFICATION',acousticPause:pause,detectedEndMs:candidate.endMs,boundaryFingerprint:createHash('sha256').update(fingerprints.join(':')).digest('hex')};
+}
+
 /**
  * Derives evidence from the actual bytes delivered by an authorised publisher
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
@@ -138,6 +168,10 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
       return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
     const verified = [];
     for (const candidate of candidates) {
+      if (candidate.openingBreak) {
+        verified.push(await openingBoundaryEvidence(audio.path,candidate,audioVariantFingerprint) || {id:candidate.id,boundaryVerified:false,code:'COMPLETE_BREAK_AUDIO_EVIDENCE_INSUFFICIENT'});
+        continue;
+      }
       const inwardTrimMs = Math.min(maximumInwardTrimMs, Math.floor((candidate.endMs - candidate.startMs) / 3));
       if (!Number.isFinite(inwardTrimMs) || inwardTrimMs <= 0) { verified.push({id:candidate.id,boundaryVerified:false,code:"INVALID_CANDIDATE_BOUNDARIES"}); continue; }
       const [start, end] = await Promise.all([

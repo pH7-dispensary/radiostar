@@ -1323,6 +1323,8 @@ export class EpisodePipeline {
       removed.skipVerification++;
     }
     this.store.delete("skip-analysis", key);
+    if (this.store.get('skip-source',key)?.transcript) removed.transcripts++;
+    this.store.delete('skip-source',key);
     this.store.delete("search-index", key);
     this.store.delete("search-index-previous", key);
     this.store.delete("semantic-index", key);
@@ -1345,8 +1347,12 @@ export class EpisodePipeline {
   }
   purgeFeed(feed) {
     const totals = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
-    for (const [, value] of this.store.all("intelligence")) {
+    const records=[...this.store.all('intelligence'),...this.store.all('skip-source').map(([key,value])=>[key,{episode:{feedUrl:value.feedUrl,id:value.episodeId}}])];
+    const purged=new Set();
+    for (const [, value] of records) {
       if (value?.episode?.feedUrl !== feed) continue;
+      if(purged.has(value.episode.id))continue;
+      purged.add(value.episode.id);
       const removed = this.purgeEpisode(feed, value.episode.id);
       for (const [name, count] of Object.entries(removed)) totals[name] += count;
     }

@@ -27,6 +27,7 @@ import { acquireServerLock } from "./server-lock.mjs";
 import { ListenerService, ListenerError } from "./listener-service.mjs";
 import { SkipService } from "./skip-service.mjs";
 import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
+import { prepareAdSkipOpening, signedAdSkipVariant } from './ad-skip-source.mjs';
 import { RightsRegistry } from "./rights-registry.mjs";
 import { assessPublisherRights, publisherRightsEvidence } from "./rights-assessment.mjs";
 import { readyDiscovery } from "./ready-discovery.mjs";
@@ -189,7 +190,7 @@ export function createStarCastServer({
     const device = store.all("pilot-device").some(([,d])=>d.listenerId===listenerId && !d.revokedAt && Date.parse(d.expiresAt)>Date.now());
     const translateTester = id === "privateTranslate" && store.get("translation-beta",listenerId)?.enabled === true;
     return adminService.featureDecision(id, { id: listenerId,
-      internal: testingMode.allowed(listenerId) || translateTester,
+      internal: testingMode.allowed(listenerId) || (id==='adSkip' && testingMode.adSkipAllowed(listenerId)) || translateTester,
       privateBeta: device || (env.NODE_ENV !== "production" && env.STARCAST_PRIVATE_PILOT !== "enabled") }).allowed;
   };
   const listenerFeatures = (listenerId = undefined) => ({
@@ -430,6 +431,7 @@ export function createStarCastServer({
   });
   const skips = new SkipService(store, pipeline, {
     verifyAudio: verifyAdSkipAudio,
+    prepareSource: input => prepareAdSkipOpening({...input,store,ledger,client:pipeline.client || createOpenAIClient(),authorised:()=>pipeline.audioEnabled && input.authorised()}),
     // A generic PRIVATE_BETA/ENABLED flag is not tester membership or a
     // measured public safety release. Until that gate exists, leases are
     // available exclusively to the explicitly enrolled, unexpired pilot.
@@ -439,7 +441,7 @@ export function createStarCastServer({
     canVerifyAudio: ({ feedUrl, episodeId, value }) => {
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
         return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
-      if (!testingMode.adSkipPreparationAllowed())
+      if (!testingMode.adSkipPreparationAllowed() || !adminService.featureOperational('adSkip'))
         return {
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
@@ -1752,14 +1754,11 @@ export function createStarCastServer({
           });
         if (url.pathname === "/api/skips/status") {
           const preferences = listeners.summary(listener).preferences || {};
+          const status=skips.playback(input.feedUrl,input.episodeId,{audioUrl:input.audioUrl,audioVariantFingerprint:input.audioVariantFingerprint,audioMatchCode:input.audioMatchCode,listener,preferences});
+          try {status.variant=await signedAdSkipVariant(status.variant,{bucket:env.STARCAST_BACKUP_BUCKET});}
+          catch {status.variant=null;status.automaticSkipping=false;status.activeIntervals=[];status.code='VERIFIED_SOURCE_DELIVERY_UNAVAILABLE';}
           return send(res, 200, {
-            ...skips.playback(input.feedUrl, input.episodeId, {
-              audioUrl: input.audioUrl,
-              audioVariantFingerprint: input.audioVariantFingerprint,
-              audioMatchCode: input.audioMatchCode,
-              listener,
-              preferences,
-            }),
+            ...status,
             preferenceEnabled: preferences.adSkipEnabled === true,
           });
         }
@@ -1915,7 +1914,7 @@ export function createStarCastServer({
         const input = await requestBody(req);
         try {
           const change = store.transaction(() => {
-            const result = skips.review(input,actor);
+            const result = input.action==='attach-independent-review' ? skips.attachReview(input,actor) : skips.review(input,actor);
             adminService.appendAudit({actor,action:'ad-skip-'+input.action,resource:input.id,previousState:{state:result.previous},newState:{state:result.current},reason:input.reason,outcome:result.queued ? 'QUEUED' : result.previous===result.current ? 'UNCHANGED' : 'ALLOWED'});
             return result;
           });
@@ -2023,6 +2022,14 @@ export function createStarCastServer({
             processingStatus: v.feedUrl && v.episodeId ? listenerStatus(v.feedUrl, v.episodeId) : null,
           })),
         });
+      }
+      if (url.pathname === '/api/admin/ad-skip/pilot' && ['GET','POST'].includes(req.method)) {
+        const actor=adminActor(req,'intelligence:read',{write:req.method==='POST'});
+        if(!actor || (req.method==='POST' && (actor.role!=='SUPER_ADMIN' || actor.source!=='session')))return send(res,403,{error:'A protected Super Admin session is required.'});
+        if(req.method==='GET')return send(res,200,{configuration:testingMode.adSkipConfiguration(),paidAllowanceUnchanged:true});
+        const input=await requestBody(req);
+        try { const configuration=store.transaction(()=>{const previous=testingMode.adSkipConfiguration(),next=testingMode.setAdSkipPilot(input,actor.id);adminService.appendAudit({actor,action:'ad-skip-pilot-configured',resource:'ad-skip-pilot',previousState:previous,newState:next,reason:input.reason});return next;});return send(res,200,{configuration,paidAllowanceUnchanged:true}); }
+        catch(error){return send(res,409,{error:error.message});}
       }
       if (url.pathname === "/api/admin/intelligence/testing" && ["GET", "POST"].includes(req.method)) {
         const actor = adminActor(req, "intelligence:read", { write: req.method === "POST" });
