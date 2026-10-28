@@ -1,0 +1,453 @@
+{
+  "at": "2026-10-28T15:42:53.587Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "implementationCommit": "dce8709",
+  "deploymentCommand": "9e8e4179-4c37-4347-bdd9-84757b5a341a",
+  "httpsHealth": {
+    "service": "star-cast",
+    "backend": "ready",
+    "openai": {
+      "configured": true,
+      "enabled": true,
+      "audioEnabled": true,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1"
+    },
+    "persistence": "sqlite",
+    "features": {
+      "episodeBriefs": false,
+      "exploreEpisode": false,
+      "momentSearch": false,
+      "conversationSearch": false,
+      "adSkip": false
+    },
+    "providerVerified": true
+  },
+  "unauthorisedAdminStatus": 403,
+  "adminModuleExactMatch": true,
+  "infrastructure": {
+    "status": "DEGRADED",
+    "generatedAt": "2026-10-28T15:42:51.283Z",
+    "serverStartedAt": "2026-10-28T15:37:24.929Z",
+    "components": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY",
+        "reason": "This authenticated operations request reached the active backend.",
+        "observedAt": "2026-10-28T15:42:51.283Z"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY",
+        "reason": "SQLite quick check passed for the active server store."
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY",
+        "reason": "23% used · 23.2 GiB available; deployments require 3 GiB headroom.",
+        "detail": {
+          "totalBytes": 32132542464,
+          "availableBytes": 24890884096,
+          "usedPercent": 23
+        },
+        "observedAt": "2026-10-28T15:42:51.283Z"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED",
+        "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+        "detail": {
+          "retained": 3,
+          "limit": 2,
+          "protectedLegacy": 1
+        },
+        "observedAt": "2026-10-28T15:42:51.283Z"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY",
+        "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+        "observedAt": "2026-10-28T15:37:29.892Z"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY",
+        "reason": "SQS queue attributes were read successfully.",
+        "observedAt": "2026-10-28T15:42:51.282Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY",
+        "reason": "No messages are waiting in the dead-letter queue.",
+        "observedAt": "2026-10-28T15:42:51.282Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY",
+        "reason": "The single durable queue consumer is running."
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN",
+        "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN",
+        "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY",
+        "reason": "Release metadata was read from the protected server record.",
+        "observedAt": "2026-10-28T15:37:23.259Z",
+        "detail": {
+          "releaseSha": "7a9d8ad4e82a6e38f4cd89baaa3ae44fb9f7de60d9393390eaef8aee76762a0d",
+          "previousReleaseSha": "953d0554cbeb27110c6f18f15d1981035b941321157a2c1cfdeb3973343e0d6f",
+          "rollbackAvailable": true
+        }
+      }
+    ],
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "7a9d8ad4e82a6e38f4cd89baaa3ae44fb9f7de60d9393390eaef8aee76762a0d",
+      "deployedAt": "2026-10-28T15:37:23.259Z",
+      "previousReleaseSha": "953d0554cbeb27110c6f18f15d1981035b941321157a2c1cfdeb3973343e0d6f",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    }
+  },
+  "database": {
+    "integrity": "ok",
+    "availableBytes": 24890920960,
+    "verifiedReferences": 13,
+    "episodeKey": "e92e25c81a10042b8e4b8126835928dc75a9125a35e82066f12e7e57c99fe733",
+    "jobId": "b562d0e6-2052-4d0d-8236-75b851aa1f86",
+    "state": "PARTIAL_READY",
+    "completedAt": "2026-10-28T15:23:35.498Z",
+    "processingMs": 167063,
+    "transcriptSegments": 611,
+    "audioHash": "ba96f18992ad87eb33e8110af74ee9d04362ca29894fa88b373d4b74fda713b0",
+    "transcriptSource": "on_demand_audio",
+    "chapters": 15,
+    "topics": 15,
+    "checkpoints": [
+      {
+        "state": "READY"
+      },
+      {
+        "state": "READY"
+      },
+      {
+        "state": "READY"
+      }
+    ],
+    "jobUsage": {
+      "usd": 0.2681685999999999,
+      "seconds": 2442,
+      "byKind": {
+        "transcription": 0.2442,
+        "text": 0.0092764,
+        "grounding-review": 0.014522000000000002,
+        "embedding": 0.00017019999999999994
+      }
+    },
+    "reservations": 0
+  },
+  "checkpointRecovery": {
+    "interruptedAtChunk": 1,
+    "freshProcessResumed": true,
+    "providerCalls": 0,
+    "result": {
+      "segments": 611,
+      "checkpoints": 3,
+      "durationMs": 2439158,
+      "audioHash": "ba96f18992ad87eb33e8110af74ee9d04362ca29894fa88b373d4b74fda713b0",
+      "exactTranscriptMatch": true
+    }
+  },
+  "freshAutomaticIntelligence": {
+    "title": "CRA vulnerability reporting with Daniel Thompson",
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+    "jobId": "b562d0e6-2052-4d0d-8236-75b851aa1f86",
+    "trigger": "authenticated episode status GET with source=opened",
+    "initialState": "ACQUIRING_TRANSCRIPT",
+    "finalState": "PARTIAL_READY",
+    "transcriptProvenance": {
+      "sourceType": "on_demand_audio",
+      "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-daniel-cra.mp3?dest-id=542864",
+      "originalFormat": "verbose_json",
+      "language": "und",
+      "acquiredAt": "2026-10-28T15:22:40.267Z",
+      "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6",
+      "audioVariant": "38578db0f9b88390fb230213886fb1a0ab08541ec1ea9c26d3299848f85607ef",
+      "parserVersion": null
+    },
+    "processingMs": 167063,
+    "transcriptChunks": 3,
+    "transcriptSegments": 611,
+    "briefAvailable": true,
+    "chapters": 15,
+    "topics": 15,
+    "availableFeatures": {
+      "brief": true,
+      "chapters": true,
+      "topics": true,
+      "moments": true,
+      "search": true
+    },
+    "deliveryComplete": false,
+    "qualityNote": "The generated summary could not be fully verified. Available text is a short source excerpt, not a complete episode summary.",
+    "persistedAcrossDeployment": true,
+    "rightsBasis": "Explicit CC-BY 4.0 notice in publisher RSS; bounded features evaluated separately"
+  },
+  "retrieval": {
+    "query": "CRA vulnerability reporting",
+    "momentCount": 5,
+    "searchMatchCount": 8,
+    "validatedAgainstDatabase": 13,
+    "sourceReferences": [
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "0-169",
+        "startMs": 1037440,
+        "endMs": 1041840,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-37",
+        "startMs": 1332760,
+        "endMs": 1339040,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-314",
+        "startMs": 2154320,
+        "endMs": 2157640,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-290",
+        "startMs": 2081840,
+        "endMs": 2084920,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-142",
+        "startMs": 1629720,
+        "endMs": 1632520,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "0-169",
+        "startMs": 1037440,
+        "endMs": 1041840,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-37",
+        "startMs": 1332760,
+        "endMs": 1339040,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-314",
+        "startMs": 2154320,
+        "endMs": 2157640,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+        "segmentId": "0-276",
+        "startMs": 688440,
+        "endMs": 690360,
+        "transcriptVersion": "14ef4d0385a348e56b802a9f506ac87600cd2809dd31a62a8087b796d4dd8dd8"
+      },
+      {
+        "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+        "segmentId": "0-228",
+        "startMs": 565960,
+        "endMs": 569240,
+        "transcriptVersion": "14ef4d0385a348e56b802a9f506ac87600cd2809dd31a62a8087b796d4dd8dd8"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-290",
+        "startMs": 2081840,
+        "endMs": 2084920,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      },
+      {
+        "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+        "segmentId": "0-246",
+        "startMs": 612520,
+        "endMs": 615720,
+        "transcriptVersion": "14ef4d0385a348e56b802a9f506ac87600cd2809dd31a62a8087b796d4dd8dd8"
+      },
+      {
+        "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+        "segmentId": "1-142",
+        "startMs": 1629720,
+        "endMs": 1632520,
+        "transcriptVersion": "16b6c60bdbffb8840e2103d80589152bd5002ce6b6558238b0876449870c14c6"
+      }
+    ],
+    "newJobs": 0,
+    "cachedExample": {
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "state": "PARTIAL_READY",
+      "availableFeatures": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    }
+  },
+  "ordinaryFollowedCoverage": {
+    "activeInstallations": 2,
+    "uniqueFeeds": 6,
+    "latestPerFeed": 3,
+    "episodes": 18,
+    "readyOrPartialReady": 0,
+    "policyOpen": 18,
+    "legalBasisNotEstablished": 18,
+    "over7200Seconds": 14,
+    "publisherTranscriptReferencesUnverified": 3,
+    "cacheHits": 0,
+    "discoveryErrors": [],
+    "controlledTestFeedExcluded": true,
+    "ownerFollowsPreserved": true
+  },
+  "pilot": {
+    "at": "2026-10-28T15:38:34.187Z",
+    "active": true,
+    "featureOperational": true,
+    "publicAutomaticSkipping": false,
+    "selectedTesters": 2,
+    "preferencesEnabled": 2,
+    "preferencesEnabledBefore": 2,
+    "existingInvitationsConsumed": 0,
+    "renewed": false,
+    "expiresAt": "2026-10-29T14:11:12.730Z",
+    "previousVersion": 1,
+    "version": 2,
+    "paidAllowanceUnchanged": true,
+    "standardLimits": {
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200
+    }
+  },
+  "pilotAudit": [
+    {
+      "action": "ad-skip-pilot-configured",
+      "at": 1793201914016,
+      "hash": "48d4fdced85413809e81a33e987a8629061b1dfb8d47db1db3a63d4be5440915",
+      "outcome": "ALLOWED",
+      "version": 2
+    },
+    {
+      "action": "ad-skip-tester-preference-enabled",
+      "at": 1793201914016,
+      "hash": "84091de42cb82fd5b556e4247015b0fe35dc74f4410d8d7a437df13690cc2f83",
+      "outcome": "ALLOWED"
+    },
+    {
+      "action": "ad-skip-tester-preference-enabled",
+      "at": 1793201914015,
+      "hash": "86eb58913917d7c929de5e7e54ef595645f06ad26f7baf5606732f1f1c7391cb",
+      "outcome": "ALLOWED"
+    },
+    {
+      "action": "ad-skip-pilot-configured",
+      "at": 1793196672799,
+      "hash": "aee5caf635837e9858d9191d47ac76c66a94840c5d0936ac221dc184edb29231",
+      "outcome": "ALLOWED",
+      "version": 1
+    }
+  ],
+  "adSkipCounts": {
+    "candidates": 11,
+    "variantMatched": 4,
+    "verified": 4,
+    "disputed": 0,
+    "rejected": 0,
+    "processing": 0,
+    "failed": 0,
+    "automaticSkips": 9,
+    "undoEvents": 9,
+    "falsePositiveReports": 0,
+    "missedAdvertReports": 1
+  },
+  "publicAutomaticSkipping": false,
+  "costs": {
+    "initial": {
+      "day": 0.22969023999999996,
+      "month": 2.048023979999999,
+      "transcriptionSeconds": 2133
+    },
+    "final": {
+      "day": 0.4978589199999998,
+      "month": 2.31619266,
+      "transcriptionSeconds": 4575
+    },
+    "incrementalRecordedOpenAiUsd": 0.26816868,
+    "freshJob": {
+      "usd": 0.2681685999999999,
+      "seconds": 2442,
+      "byKind": {
+        "transcription": 0.2442,
+        "text": 0.0092764,
+        "grounding-review": 0.014522000000000002,
+        "embedding": 0.00017019999999999994
+      }
+    },
+    "additionalQueryUsd": 8e-8,
+    "standardLimits": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": false
+    },
+    "outstandingReservations": 0,
+    "acceleratedPaidAllowanceActive": false,
+    "incrementalAwsBillUsd": null,
+    "awsCostNote": "No new infrastructure; incremental metered AWS storage/request/deployment charges are not separately isolated."
+  },
+  "limitations": {
+    "physicalIphoneAdSkipVerified": false,
+    "newTestFlightBuild": false,
+    "coldFirstPlayback": "Existing player starts immediately; unverified dynamic publisher audio is not switched or skipped while asynchronous proof warms. Verified preserved source is used on a later deliberate load when cached.",
+    "independentHumanLabels": 1,
+    "completeHumanReviewedEpisodes": 0,
+    "fullCatalogueReadiness": false,
+    "firstPlaybackHarnessAttempt": "Confirmed seek/Undo receipts were recorded, but the fixed 300ms continuation/paused assertion failed. Not counted as a complete pass. Harness now waits up to 3 seconds for actual clock advancement and records failures; both subsequent trials passed."
+  }
+}

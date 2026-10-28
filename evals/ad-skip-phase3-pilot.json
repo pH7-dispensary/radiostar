@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-28T15:38:34.187Z",
+  "active": true,
+  "featureOperational": true,
+  "publicAutomaticSkipping": false,
+  "selectedTesters": 2,
+  "preferencesEnabled": 2,
+  "preferencesEnabledBefore": 2,
+  "existingInvitationsConsumed": 0,
+  "renewed": false,
+  "expiresAt": "2026-10-29T14:11:12.730Z",
+  "previousVersion": 1,
+  "version": 2,
+  "paidAllowanceUnchanged": true,
+  "standardLimits": {
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 7200
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-28T15:28:11.180Z",
+  "qaInstallationAlreadyEnrolled": true,
+  "invitesConsumed": 0,
+  "firstFollow": {
+    "state": "PREPARING",
+    "code": "DISCOVERING_FOLLOWED_EPISODES",
+    "reason": "Checking the latest episodes; individual episode status shows eligibility and preparation."
+  },
+  "repeatedFollow": {
+    "state": "PARTIAL_READY",
+    "code": "FOLLOW_CONFIRMED"
+  },
+  "episodes": [
+    {
+      "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "title": "Dependency attacks in 2026 with James Matchett",
+      "state": "PARTIAL_READY",
+      "eligible": true,
+      "cacheHit": true,
+      "transcriptCacheHit": true
+    },
+    {
+      "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "title": "Sovereignty, policy, and OpenUK with Amanda Brock",
+      "state": "PARTIAL_READY",
+      "eligible": true,
+      "cacheHit": true,
+      "transcriptCacheHit": true
+    },
+    {
+      "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "title": "The curl summer of Bliss with Daniel and Stefan",
+      "state": "PARTIAL_READY",
+      "eligible": true,
+      "cacheHit": true,
+      "transcriptCacheHit": true
+    }
+  ],
+  "newJobs": 0,
+  "newProviderUsageRecords": 0,
+  "additionalAiUsd": 0,
+  "ordinaryFollowedCatalogue": {
+    "feeds": 6,
+    "episodes": 18,
+    "ready": 0
+  },
+  "testFeedExcludedFromOrdinaryCoverage": true
+}
