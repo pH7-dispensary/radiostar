@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-28T16:13:56.996Z",
+  "csrfDenied": 403,
+  "pilotVersionUnchanged": 2,
+  "sourceMetadataVisible": true,
+  "reviewedLabelCoverage": 1,
+  "reviewedLabels": 1,
+  "machineOnlyCoverage": null,
+  "machineOnlyVerifiedCompleteOpenings": 1,
+  "productionBrowserLogin": true,
+  "productionBrowserLogout": true,
+  "browserConsoleErrors": 0,
+  "revokedSessionStatus": 403
+}

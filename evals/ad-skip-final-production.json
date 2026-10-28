@@ -1,0 +1,406 @@
+{
+  "at": "2026-10-28T16:25:11.507Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "implementationCommits": [
+    "54e0918",
+    "3f7c167",
+    "695a265"
+  ],
+  "backend": {
+    "status": "DEGRADED",
+    "generatedAt": "2026-10-28T16:15:45.214Z",
+    "serverStartedAt": "2026-10-28T16:07:22.346Z",
+    "components": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY",
+        "reason": "This authenticated operations request reached the active backend.",
+        "observedAt": "2026-10-28T16:15:45.214Z"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY",
+        "reason": "SQLite quick check passed for the active server store."
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY",
+        "reason": "23% used · 23.1 GiB available; deployments require 3 GiB headroom.",
+        "detail": {
+          "totalBytes": 32132542464,
+          "availableBytes": 24765333504,
+          "usedPercent": 23
+        },
+        "observedAt": "2026-10-28T16:15:45.214Z"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED",
+        "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+        "detail": {
+          "retained": 3,
+          "limit": 2,
+          "protectedLegacy": 1
+        },
+        "observedAt": "2026-10-28T16:15:45.214Z"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY",
+        "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+        "observedAt": "2026-10-28T16:07:27.341Z"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY",
+        "reason": "SQS queue attributes were read successfully.",
+        "observedAt": "2026-10-28T16:15:45.213Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY",
+        "reason": "No messages are waiting in the dead-letter queue.",
+        "observedAt": "2026-10-28T16:15:45.213Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY",
+        "reason": "The single durable queue consumer is running."
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN",
+        "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN",
+        "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY",
+        "reason": "Release metadata was read from the protected server record.",
+        "observedAt": "2026-10-28T16:07:20.881Z",
+        "detail": {
+          "releaseSha": "bf5210e498e0f704c45299d70df079e5de9b7657a736bedce7b1d0744c3d742f",
+          "previousReleaseSha": "7a9d8ad4e82a6e38f4cd89baaa3ae44fb9f7de60d9393390eaef8aee76762a0d",
+          "rollbackAvailable": true
+        }
+      }
+    ],
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "bf5210e498e0f704c45299d70df079e5de9b7657a736bedce7b1d0744c3d742f",
+      "deployedAt": "2026-10-28T16:07:20.881Z",
+      "previousReleaseSha": "7a9d8ad4e82a6e38f4cd89baaa3ae44fb9f7de60d9393390eaef8aee76762a0d",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    }
+  },
+  "health": {
+    "service": "star-cast",
+    "backend": "ready",
+    "openai": {
+      "configured": true,
+      "enabled": true,
+      "audioEnabled": true,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1"
+    },
+    "persistence": "sqlite",
+    "features": {
+      "episodeBriefs": false,
+      "exploreEpisode": false,
+      "momentSearch": false,
+      "conversationSearch": false,
+      "adSkip": false
+    },
+    "providerVerified": true
+  },
+  "database": {
+    "integrity": "ok",
+    "availableBytes": 24765530112,
+    "verifiedReferences": 13,
+    "episodeKey": "e92e25c81a10042b8e4b8126835928dc75a9125a35e82066f12e7e57c99fe733",
+    "jobId": "b562d0e6-2052-4d0d-8236-75b851aa1f86",
+    "state": "PARTIAL_READY",
+    "completedAt": "2026-10-28T15:23:35.498Z",
+    "processingMs": 167063,
+    "transcriptSegments": 611,
+    "audioHash": "ba96f18992ad87eb33e8110af74ee9d04362ca29894fa88b373d4b74fda713b0",
+    "transcriptSource": "on_demand_audio",
+    "chapters": 15,
+    "topics": 15,
+    "checkpoints": [
+      {
+        "state": "READY"
+      },
+      {
+        "state": "READY"
+      },
+      {
+        "state": "READY"
+      }
+    ],
+    "jobUsage": {
+      "usd": 0.2681685999999999,
+      "seconds": 2442,
+      "byKind": {
+        "transcription": 0.2442,
+        "text": 0.0092764,
+        "grounding-review": 0.014522000000000002,
+        "embedding": 0.00017019999999999994
+      }
+    },
+    "reservations": 0
+  },
+  "corpus": {
+    "sourceHashesVerified": 12,
+    "machineCueCandidates": 49,
+    "completeProposals": 10,
+    "automaticallyAudioVerified": 5,
+    "humanReviewedIntervals": 1,
+    "fullyReviewedEpisodes": 0,
+    "corpusPrecision": null,
+    "corpusRecall": null,
+    "falsePositiveRate": null,
+    "missedAdverts": null,
+    "reviewAuditSha256": "d739a26bdc398d718a88630f7b27cd3d042d12f3635f3b29e98d2da9125ff7f9",
+    "opening690": {
+      "id": "f17e74bae350eec26dcfd93d6625f2285dd6211d8001090cac6d9bc834456fc2",
+      "startMs": 0,
+      "endMs": 90459,
+      "proposedEndMs": 89920,
+      "verificationState": "VERIFIED",
+      "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+      "acousticPause": {
+        "startMs": 89893,
+        "endMs": 91024
+      },
+      "independent": false
+    },
+    "label690": {
+      "startMs": 0,
+      "endMs": 90415,
+      "startErrorMs": 0,
+      "endErrorMs": 44,
+      "completeLabelCoverage": 1,
+      "extraSilenceMs": 44,
+      "editorialSpeechIncludedMs": 0
+    },
+    "analysisP95Ms": 8.317416999999978,
+    "scope": "12 exact sources, first three minutes each, plus three additional windows; two shows from one publisher. Not complete episode annotation."
+  },
+  "skipChain": {
+    "audioHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+    "variantProof": {
+      "verified": true,
+      "verificationMs": 896.5852909999999,
+      "witnessBytes": 196608,
+      "fullSourceBytes": 63683114,
+      "ifMatchEnforced": true
+    },
+    "reviewChain": {
+      "id": "55b1e3df3122d680080ab895b42da671197f23fcd1595ab847945a90738f1c4a",
+      "chainHash": "0d677b90e4d7605af567b10ef5583f2935542bb460ca1574f65bcf5d645e5c39",
+      "startMs": 0,
+      "endMs": 90415
+    },
+    "automaticSeek": {
+      "originMs": 561.384,
+      "targetMs": 90415,
+      "restoredMs": 561.384,
+      "continuing": true,
+      "continuationMs": 52.400000005960464,
+      "advancedMs": 77.79100000000483,
+      "pausedAfterUndo": true,
+      "rate": 1.5,
+      "automaticSeeks": 1,
+      "undoSeeks": 1,
+      "sourcePreparationMs": 183.39999997615814,
+      "authorisationMs": 923.8000000119209,
+      "playStartupMs": 1.800000011920929,
+      "seekConfirmationMs": 4.399999976158142,
+      "undoMs": 2,
+      "device": "Chromium using shared native adapter; not physical iPhone"
+    },
+    "wrongVariantDenied": true,
+    "productionCounts": {
+      "candidates": 11,
+      "variantMatched": 4,
+      "verified": 4,
+      "disputed": 0,
+      "rejected": 0,
+      "processing": 0,
+      "failed": 0,
+      "automaticSkips": 11,
+      "undoEvents": 11,
+      "falsePositiveReports": 0,
+      "missedAdvertReports": 1
+    },
+    "realEpisodeConfirmedSkips": 10,
+    "reviewedIntervalCoverage": 1,
+    "reviewedIntervalDenominator": 1,
+    "storedVerifiedIntervals": [
+      {
+        "id": "4712ec1ba5e7168adae1611c22637411231eb237374a61c420b0378bc79e268b",
+        "startMs": 0,
+        "endMs": 90583,
+        "audioVariant": "c10cb5417527eed40d71200aaa3b31777d7dca3f96864a7a45919de426fa0b27",
+        "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+        "proposedStartMs": 0,
+        "proposedEndMs": 89920
+      },
+      {
+        "id": "534cbc74fdd0e05beb06f98e6dce1cd4a9da837faf2e5f9202e2f6a0ea090070",
+        "startMs": 15200,
+        "endMs": 34500,
+        "audioVariant": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+        "approvalSource": null,
+        "proposedStartMs": null,
+        "proposedEndMs": null
+      },
+      {
+        "id": "cee71c9d68545446a3918fba27154f022ad8b5d80529a88e8273147f7e98a9f4",
+        "startMs": 0,
+        "endMs": 90415,
+        "audioVariant": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+        "approvalSource": null,
+        "proposedStartMs": 0,
+        "proposedEndMs": 89900
+      },
+      {
+        "id": "f6ae5c5e5e76acbddec74caf6f9edbe060896d4c90e7bdca2b9cbd433165dba9",
+        "startMs": 716186,
+        "endMs": 720541,
+        "audioVariant": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+        "approvalSource": null,
+        "proposedStartMs": null,
+        "proposedEndMs": null
+      }
+    ]
+  },
+  "pilot": {
+    "active": true,
+    "expiresAt": "2026-10-29T14:11:12.730Z",
+    "version": 2,
+    "testers": 2,
+    "preferencesEnabled": 2,
+    "publicAutomaticSkipping": false,
+    "renewed": false,
+    "newInvitations": 0
+  },
+  "intelligence": {
+    "ordinaryUniqueFeeds": 6,
+    "ordinaryLatestEpisodes": 18,
+    "readyOrPartialReady": 0,
+    "blockers": {
+      "LEGAL_BASIS_NOT_ESTABLISHED": 18
+    },
+    "operationalOpen": 18,
+    "automaticFollowingEnabled": true,
+    "existingFreshEpisode": {
+      "jobId": "b562d0e6-2052-4d0d-8236-75b851aa1f86",
+      "state": "PARTIAL_READY",
+      "chapters": 15,
+      "topics": 15,
+      "availableFeatures": {
+        "brief": true,
+        "chapters": true,
+        "topics": true,
+        "moments": true,
+        "search": true
+      }
+    },
+    "phase3ControlledFollowEvidence": "evals/ad-skip-phase3-follow.json",
+    "newPaidJobs": 0
+  },
+  "costs": {
+    "phase4AdditionalOpenAiUsd": 0,
+    "dayUsd": 0.4978589199999998,
+    "monthUsd": 2.31619266,
+    "transcriptionSeconds": 4575,
+    "reservations": 0,
+    "standardLimits": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 10800,
+      "maxEpisodeSeconds": 7200,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": false
+    },
+    "translateLedgerUnchanged": true
+  },
+  "native": {
+    "typecheck": true,
+    "expoDoctor": {
+      "passed": 21,
+      "total": 21
+    },
+    "productionIosExport": true,
+    "fullBackendSuite": true,
+    "fullSwiftCoreAndMutedMacOSAVPlayer": true,
+    "physicalIphoneVerified": false,
+    "backgroundAndLockScreenDeviceVerified": false,
+    "iconHomeScreenDeviceVerified": false,
+    "hostDeviceControl": "devicectl unavailable; no physical-iPhone acceptance obtained"
+  },
+  "build": {
+    "id": "4626a285-4cde-4ab1-9fe2-0180a1d8fc88",
+    "status": "FINISHED",
+    "sourceCommit": "54e0918a863f8dcdca332e1d9dc69224e9d0969b",
+    "appVersion": "1.0.0",
+    "buildNumber": "15",
+    "completedAt": "2026-10-28T15:59:29.639Z",
+    "version": "1.0.0",
+    "build": "15",
+    "bundleId": "app.radiostar.ios",
+    "team": "69F2T3M9C4",
+    "developmentEntitlement": false,
+    "backgroundModes": [
+      "audio"
+    ],
+    "splash": "SplashScreen",
+    "strictSignatureVerified": true,
+    "knownCredentialsAbsentFiles": 58,
+    "awsEndpointFound": true,
+    "nativeSleepLinked": true,
+    "ipaSha256": "e668a857ba4f86d0b1742d10456d95fa9a4fc0da19e705bc24bed74c2280af4f",
+    "ipaBytes": 12252503,
+    "approvedIconSha256": "a4f00926754d36a335619fd5a299d7c5d0fdf062632a2b3c8e85d434efa2562d",
+    "approvedIconFoundInIpa": true,
+    "buildCount": 1,
+    "existingSigningCredentialsReused": true
+  },
+  "submission": {
+    "id": "af090c28-0f42-477b-98a6-d78dca407ff1",
+    "status": "IN_QUEUE",
+    "build": "4626a285-4cde-4ab1-9fe2-0180a1d8fc88",
+    "internalGroupRequested": "Team (Expo)",
+    "publicSubmission": false,
+    "initialSchedulingAttempt": "Rejected before a submission was created: optional changelog requires EAS Enterprise. Retried same build without changelog; no plan upgrade.",
+    "apple": null
+  },
+  "remaining": [
+    "Physical-iPhone launch/background/lock-screen/skip/Undo acceptance",
+    "Limited ordinary catalogue processing basis and partial intelligence quality",
+    "Representative independently labelled full-episode Ad Skip accuracy",
+    "Cold first-load unverified sources remain unskipped; no active audio hot swap",
+    "Real long-form provider quality remains limited",
+    "Existing protected legacy release-retention and monitoring-probe gaps"
+  ]
+}

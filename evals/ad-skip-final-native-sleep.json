@@ -1,0 +1,13 @@
+{
+  "elapsedMs" : 2021.9710000092164,
+  "fadeSamples" : 47,
+  "fadeStartedAt" : 1793203097912.2041,
+  "minimumObservedVolume" : 0.020650582388043404,
+  "nativeDeadlineDriftMs" : 15.158708333969116,
+  "pauseConfirmedAt" : 1793203098915.9661,
+  "paused" : true,
+  "pausePositionMs" : 1947.7289289999999,
+  "platform" : "macOS AVPlayer; muted output; NOT iPhone background or audible verification",
+  "restoredVolume" : 0.69999998807907104,
+  "targetMs" : 2000
+}
