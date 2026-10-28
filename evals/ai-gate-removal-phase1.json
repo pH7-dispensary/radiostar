@@ -1,0 +1,662 @@
+{
+  "at": "2026-10-28T12:19:41.142Z",
+  "implementationCommit": "aa2e3eb",
+  "release": "5966029ea3b71007b3cc801da9144659373a03d8f8d5b2c2eee8d118d11b4024",
+  "examined": 18,
+  "newlyEligible": 0,
+  "newJobs": 0,
+  "classificationChanges": 0,
+  "rows": [
+    {
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": "db3977cf-57ad-48f0-a46e-57b069897824"
+    },
+    {
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "https://lexfridman.com/?p=7807",
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "title": "#503 – AI Crisis in Math: Navier-Stokes, Riemann Hypothesis & Complexity Theory",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "ec566b6e-d169-11f1-9853-9b8f37aff08e",
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "title": "The Holy Grail, Dark Age PSYCHOPATHS & Knights Templar Mystery | Medieval Mindset",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "2024"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "b7430e18-d174-11f1-99de-4f00a1971780",
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "title": "Murder, Drugs and Cover-Ups: Military Insider Exposes the Criminal Cartel Within the US Navy SEALs",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "606167"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha74_Mania_for_Subjugation_IV.mp3",
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "title": "Show 74 - Mania for Subjugation IV",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "dancarlin.com"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "title": "#2570 - Mystery Boys",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha73_Mania_for_Subjugation_III.mp3",
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "title": "Show 73 - Mania for Subjugation III",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "dancarlin.com"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "ed2504ac-cdc1-11f1-b263-83f2c9b36709",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "title": "JRE MMA Show #187 with Robert Whittaker",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "8aa0a500-cfcb-11f1-ac84-8bd81ff6ec00",
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "title": "Exposing the True Evils of the Uniparty: Soros Money, Surveillance, and the Rise of a Third Party",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "606167"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "2d4d7a14-cfbb-11f1-aa9f-f3fabe5226fd",
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "title": "EXPLOSIVE Jared Kushner Allegations, Shawn Ryan Drama & Lindsey Graham SHOCKER | Julian Dorey",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "2024"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "https://lexfridman.com/?p=6554",
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "title": "#502 – Psychiatry, Insane Asylums, Mental Illness, ECT, Lobotomies, Freud & Jung",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "59b62be4-cf0e-11f1-9839-0340ab207a22",
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "title": "Expert Audits the True Cost of the Iran War and What the Pentagon Is Hiding From You",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "606167"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha72_Mania_for_Subjugation_II.mp3",
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "title": "Show 72 - Mania for Subjugation II",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "dancarlin.com"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "23251e48-ccfa-11f1-8407-c76a5ec426f3",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "title": "#2569 - Bill Thompson",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "https://lexfridman.com/?p=6506",
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "title": "#501 – DHH: Future of Programming, AI, Agentic Engineering, Vibe Coding & Linux",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    },
+    {
+      "episodeId": "0d3cd494-ce40-11f1-836c-2f95e1bc9d29",
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "title": "Exiled Professor WARNS: “They’re Funding a NEW Matrix and it’s Not What You Think!” | Neema Parvini",
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "2024"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "operationalPolicy": "OPEN",
+      "eligibility": "UNRESOLVED",
+      "jobId": null
+    }
+  ],
+  "liveVerification": {
+    "at": "2026-10-28T12:25:50.697Z",
+    "health": "ready",
+    "controlledFollow": {
+      "cachedLatestThree": [
+        {
+          "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "e542ae40-bc4d-4be7-8600-03709dbba409",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        },
+        {
+          "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+          "state": "PARTIAL_READY",
+          "transcriptCacheHit": true
+        }
+      ],
+      "duplicateAcceptedWithoutNewJobs": true
+    },
+    "costs": {
+      "controls": {
+        "enabled": true,
+        "dailyUsd": 5,
+        "monthlyUsd": 25,
+        "dailyTranscriptionSeconds": 10800,
+        "maxEpisodeSeconds": 7200,
+        "textModel": "gpt-4.1-mini",
+        "transcriptionModel": "whisper-1",
+        "audioAnalysisEnabled": true
+      },
+      "usageEntries": 163,
+      "recordedUsd": 1.8183337399999997,
+      "reservations": 0,
+      "additionalPaidCalls": 0
+    },
+    "cachedEpisodes": [
+      {
+        "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 7,
+        "topics": 8,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      },
+      {
+        "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 8,
+        "topics": 13,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      },
+      {
+        "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+        "state": "PARTIAL_READY",
+        "briefMode": "verified_partial",
+        "chapters": 11,
+        "topics": 13,
+        "features": {
+          "brief": true,
+          "chapters": true,
+          "topics": true,
+          "moments": true,
+          "search": true
+        }
+      }
+    ],
+    "queries": [
+      {
+        "kind": "exact",
+        "matched": true
+      },
+      {
+        "kind": "paraphrase",
+        "matched": true
+      },
+      {
+        "kind": "Portuguese",
+        "matched": true
+      },
+      {
+        "kind": "Chinese",
+        "matched": true
+      },
+      {
+        "kind": "absent",
+        "matched": true
+      }
+    ],
+    "admin": {
+      "emergencyLogin": true,
+      "individualMembers": 0,
+      "migration": {
+        "individualSuperAdminConfigured": false,
+        "individualSuperAdminVerified": false,
+        "emergencyRecoveryAvailable": true
+      },
+      "sessionHours": 8,
+      "proxy": "cloudfront-vpc",
+      "csrf": "rejected",
+      "anonymous": "rejected"
+    },
+    "infrastructure": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY"
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN"
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN"
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY"
+      }
+    ]
+  }
+}
