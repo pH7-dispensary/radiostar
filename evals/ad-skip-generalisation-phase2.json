@@ -1,0 +1,1002 @@
+{
+  "at": "2026-10-28T15:02:07.278Z",
+  "sourceHashesVerified": 12,
+  "baselineCandidates": 20,
+  "machineOpeningCandidates": 49,
+  "completeOpeningProposals": 10,
+  "humanLabels": 1,
+  "fullyReviewedEpisodes": 0,
+  "corpusPrecision": null,
+  "corpusRecall": null,
+  "falsePositiveRate": null,
+  "reason": "One independent interval label; no complete episode labels. Machine-only proposals cannot establish accuracy.",
+  "processingCostUsd": 0,
+  "model": "local faster-whisper/base.en",
+  "analysisP95Ms": 7.560583000000008,
+  "nodePeakRssKiB": 118672,
+  "reviewAuditSha256": "d739a26bdc398d718a88630f7b27cd3d042d12f3635f3b29e98d2da9125ff7f9",
+  "reviewQueue": [
+    {
+      "id": "lup-610",
+      "rank": 1,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "startMs": 0,
+      "endMs": 68100,
+      "proposedStartMs": 0,
+      "proposedEndMs": 60100,
+      "candidateIds": [
+        "810a6f4792fb298cba03e4a668363f31b59527707cfdbc7f50ed779689d0a8e6"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "CANDIDATE"
+    },
+    {
+      "id": "lup-635",
+      "rank": 1,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "c10cb5417527eed40d71200aaa3b31777d7dca3f96864a7a45919de426fa0b27",
+      "startMs": 0,
+      "endMs": 110560,
+      "proposedStartMs": 0,
+      "proposedEndMs": 90583,
+      "candidateIds": [
+        "4712ec1ba5e7168adae1611c22637411231eb237374a61c420b0378bc79e268b"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "VERIFIED"
+    },
+    {
+      "id": "lup-665",
+      "rank": 1,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "e9ce50054554c70547471c9f8964f251444a3ea6fe3af2d99fe8d8bded9dc953",
+      "startMs": 0,
+      "endMs": 79440,
+      "proposedStartMs": 0,
+      "proposedEndMs": 60000,
+      "candidateIds": [
+        "ac6ad8f519393f411f53453d41c2c9e237ae249d4bd14498ad1e4a5e281706bf"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "VARIANT_MATCHED"
+    },
+    {
+      "id": "lup-675",
+      "rank": 1,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "startMs": 0,
+      "endMs": 110400,
+      "proposedStartMs": 0,
+      "proposedEndMs": 90476,
+      "candidateIds": [
+        "67a4572b6b8f5e3296fcf28e48935c86243348ca224b991690f9457c60682953"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "VERIFIED"
+    },
+    {
+      "id": "lup-684",
+      "rank": 1,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "faaab582ade5d5cde3017212b7ff768bd2fb79fe156af693c74b8e047aa40137",
+      "startMs": 0,
+      "endMs": 79440,
+      "proposedStartMs": 0,
+      "proposedEndMs": 71440,
+      "candidateIds": [
+        "685579229e1066d9cb70b96d1cd0c912771eb557d87e4ed4e3b603858f10af87"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "CANDIDATE"
+    },
+    {
+      "id": "lup-598",
+      "rank": 2,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
+      "startMs": 0,
+      "endMs": 99200,
+      "proposedStartMs": 0,
+      "proposedEndMs": 91200,
+      "candidateIds": [
+        "660bf3fde8626daa22d3812f76551066019cb6221f71d2469dc717fd92da954e"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "CANDIDATE"
+    },
+    {
+      "id": "lup-600",
+      "rank": 2,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
+      "startMs": 0,
+      "endMs": 94840,
+      "proposedStartMs": 0,
+      "proposedEndMs": 60080,
+      "candidateIds": [
+        "179c358eb9e90fedca21ee270e6108473859296533e29b401073f9394e9931c9"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "CANDIDATE"
+    },
+    {
+      "id": "lup-620",
+      "rank": 2,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
+      "startMs": 0,
+      "endMs": 79760,
+      "proposedStartMs": 0,
+      "proposedEndMs": 60137,
+      "candidateIds": [
+        "82d550f9a2de8e32635320928fb678cbc7ea973fab12dfab785152152f1099bf"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "VERIFIED"
+    },
+    {
+      "id": "lup-650",
+      "rank": 2,
+      "priorityReason": "Optional quality review",
+      "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+      "startMs": 0,
+      "endMs": 110560,
+      "proposedStartMs": 0,
+      "proposedEndMs": 90459,
+      "candidateIds": [
+        "bfdd7c256a99dd0689e9b77783b8675ae11f351b9e437d7ba99a67ab176c220f"
+      ],
+      "question": "Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW",
+      "automaticState": "VERIFIED"
+    },
+    {
+      "id": "lan-164",
+      "rank": 4,
+      "priorityReason": "Potential negative example",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "startMs": 0,
+      "endMs": 120000,
+      "candidateIds": [],
+      "question": "Optional quality review. Insufficient machine evidence leaves this window unskipped without requiring an owner action.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW"
+    },
+    {
+      "id": "lan-299",
+      "rank": 4,
+      "priorityReason": "Potential negative example",
+      "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+      "startMs": 0,
+      "endMs": 120000,
+      "candidateIds": [],
+      "question": "Optional quality review. Insufficient machine evidence leaves this window unskipped without requiring an owner action.",
+      "independent": false,
+      "status": "OPTIONAL_REVIEW"
+    }
+  ],
+  "episodes": [
+    {
+      "id": "lup-690",
+      "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+      "baselineCandidates": 0,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "f17e74bae350eec26dcfd93d6625f2285dd6211d8001090cac6d9bc834456fc2",
+          "startMs": 0,
+          "endMs": 90459,
+          "proposedEndMs": 89920,
+          "verificationState": "VERIFIED",
+          "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+          "acousticPause": {
+            "startMs": 89893,
+            "endMs": 91024
+          },
+          "independent": false
+        }
+      ],
+      "humanLabels": 1,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 7.560583000000008,
+      "verificationMs": 3862.9045000000006,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "226ff0b2d6e1fa840a236f7a74e95b728e1ec0ac4d7da24f80bf12005bf5bae2",
+          "startMs": 77000,
+          "endMs": 79080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "3d4b85243d252e22766a1e18b4cba27e1b584943f1a6795d4d92235023363ce7",
+          "startMs": 0,
+          "endMs": 2900,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "50bf6ac82a8a5fb783d294426efdb95ea27349d6389bba1050d651327ee5b68f",
+          "startMs": 73000,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "9d6a698ce993673740da34dd27db14de1466c7bc8592fa6748cf6ca8852678b7",
+          "startMs": 0,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "f17e74bae350eec26dcfd93d6625f2285dd6211d8001090cac6d9bc834456fc2",
+          "startMs": 0,
+          "endMs": 90459,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.97,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        }
+      ]
+    },
+    {
+      "id": "lup-684",
+      "audioContentHash": "faaab582ade5d5cde3017212b7ff768bd2fb79fe156af693c74b8e047aa40137",
+      "baselineCandidates": 0,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "685579229e1066d9cb70b96d1cd0c912771eb557d87e4ed4e3b603858f10af87",
+          "startMs": 0,
+          "endMs": 71440,
+          "verificationState": "CANDIDATE",
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 3.500708000000486,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "222d51a40a7c56dddaac600273a59a162c7f9b202e2272c66199363acd363797",
+          "startMs": 47640,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "28d5711d5edf57d217c44503efbdbb7f6c56be98ded740c0ad0bace97f3e8033",
+          "startMs": 51320,
+          "endMs": 55000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "56eb838c7624dd69fe2544a7a7063c9b633bf0a29ec92afe09143ce5db60989f",
+          "startMs": 0,
+          "endMs": 3060,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "685579229e1066d9cb70b96d1cd0c912771eb557d87e4ed4e3b603858f10af87",
+          "startMs": 0,
+          "endMs": 71440,
+          "openingBreak": true,
+          "reviewOnly": true,
+          "confidence": 0.8,
+          "decisionReason": "Sponsor opening, offer and explicit editorial return bound a complete-break proposal. Automatic qualification requires a commercial closing and measured audio boundary; optional review cannot replace audio identity."
+        },
+        {
+          "id": "c42d7dcdaabc55aea07e3cfebaa4055f437fde0c40eec353dabdcf134fd89043",
+          "startMs": 0,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required."
+        }
+      ]
+    },
+    {
+      "id": "lup-675",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "baselineCandidates": 3,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "67a4572b6b8f5e3296fcf28e48935c86243348ca224b991690f9457c60682953",
+          "startMs": 0,
+          "endMs": 90476,
+          "proposedEndMs": 89920,
+          "verificationState": "VERIFIED",
+          "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+          "acousticPause": {
+            "startMs": 89893,
+            "endMs": 91059
+          },
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 4.969500000000153,
+      "verificationMs": 4519.798042,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "01f56385b7389cbbe57a24b7b4eb749c4c8d41c29ffb5185080677966e61e121",
+          "startMs": 73040,
+          "endMs": 79120,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "417c537a9a0195ff30a310ee70faa12fc77283e22f333f9d99cd41007837a585",
+          "startMs": 75280,
+          "endMs": 79120,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "4448e52799774bbbb46045b340fb84448d47372db80847576f2a726cee352c70",
+          "startMs": 0,
+          "endMs": 79120,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "67a4572b6b8f5e3296fcf28e48935c86243348ca224b991690f9457c60682953",
+          "startMs": 0,
+          "endMs": 90476,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.97,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        },
+        {
+          "id": "e01a453ff4fec0f0b22c30c4c49010047d918c92567083978839c273b80e1007",
+          "startMs": 0,
+          "endMs": 2920,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-665",
+      "audioContentHash": "e9ce50054554c70547471c9f8964f251444a3ea6fe3af2d99fe8d8bded9dc953",
+      "baselineCandidates": 0,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "ac6ad8f519393f411f53453d41c2c9e237ae249d4bd14498ad1e4a5e281706bf",
+          "startMs": 0,
+          "endMs": 60000,
+          "verificationState": "VARIANT_MATCHED",
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.4992089999996097,
+      "verificationMs": 4115.02175,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "5a073f04855ac4de57774854e93ae55c9443522b856c516b251cab0ba0812aac",
+          "startMs": 0,
+          "endMs": 3080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "82d7e4b7e4fc12317114f49c4296f6a2281cd7b55ec3c724deebb25fc6a73fb3",
+          "startMs": 51320,
+          "endMs": 55000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "ac6ad8f519393f411f53453d41c2c9e237ae249d4bd14498ad1e4a5e281706bf",
+          "startMs": 0,
+          "endMs": 60000,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        },
+        {
+          "id": "c125368f49fa5fdeb03eba2152b043c99c550e708e759687435b5cd64237f008",
+          "startMs": 0,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required."
+        },
+        {
+          "id": "c947cfeb319d32ebb21618d086e2703a0d7a6c4b313b5a54f65bfe54315cf685",
+          "startMs": 47640,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-650",
+      "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+      "baselineCandidates": 2,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "bfdd7c256a99dd0689e9b77783b8675ae11f351b9e437d7ba99a67ab176c220f",
+          "startMs": 0,
+          "endMs": 90459,
+          "proposedEndMs": 89920,
+          "verificationState": "VERIFIED",
+          "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+          "acousticPause": {
+            "startMs": 89893,
+            "endMs": 91025
+          },
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.506375000000844,
+      "verificationMs": 3131.131708000001,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "6a793134a50045362fff037941fe0a607ddc2fb421969509ec37174bd2b20fcf",
+          "startMs": 0,
+          "endMs": 2920,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "78c2a45969efd195ddeeff2d2946e5786e141c739208947fddaa852f2797ceb0",
+          "startMs": 73000,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "bfdd7c256a99dd0689e9b77783b8675ae11f351b9e437d7ba99a67ab176c220f",
+          "startMs": 0,
+          "endMs": 90459,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.97,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        },
+        {
+          "id": "cbb0bac848d7a8e85141b3e34fb2dcac2422d74a3da43d133d37f74cbe93ce67",
+          "startMs": 0,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "cc2ecff8e4ef7c24c2613e6858ff925517c66b466a95de7998bc9eb75bbe7634",
+          "startMs": 77000,
+          "endMs": 79080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-635",
+      "audioContentHash": "c10cb5417527eed40d71200aaa3b31777d7dca3f96864a7a45919de426fa0b27",
+      "baselineCandidates": 0,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "4712ec1ba5e7168adae1611c22637411231eb237374a61c420b0378bc79e268b",
+          "startMs": 0,
+          "endMs": 90583,
+          "proposedEndMs": 89920,
+          "verificationState": "VERIFIED",
+          "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+          "acousticPause": {
+            "startMs": 89893,
+            "endMs": 91273
+          },
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.8994579999998678,
+      "verificationMs": 4619.453791,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "128c264b3382f546ce38b21197b74b17ba5a56d5e2909801ae4faec946fde3e3",
+          "startMs": 77000,
+          "endMs": 79080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "4712ec1ba5e7168adae1611c22637411231eb237374a61c420b0378bc79e268b",
+          "startMs": 0,
+          "endMs": 90583,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.97,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        },
+        {
+          "id": "98fa94ca465bae99d107b4fe760975ee194842067ff1594e8a5aa2c363b8cd83",
+          "startMs": 73000,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "f4553f00759db305aa5a91bc1742ebcc9fe93d82661ca7a9ca1ac8989b16aab0",
+          "startMs": 0,
+          "endMs": 2900,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "f7798ac4c0f872ddf45da163a5f9b9c3997c45be0b1060bd3ce8ef13b2ed6058",
+          "startMs": 0,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        }
+      ]
+    },
+    {
+      "id": "lup-620",
+      "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
+      "baselineCandidates": 1,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "82d550f9a2de8e32635320928fb678cbc7ea973fab12dfab785152152f1099bf",
+          "startMs": 0,
+          "endMs": 60137,
+          "proposedEndMs": 60080,
+          "verificationState": "VERIFIED",
+          "approvalSource": "AUTOMATED_AUDIO_VERIFICATION",
+          "acousticPause": {
+            "startMs": 59988,
+            "endMs": 60285
+          },
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.7228329999998095,
+      "verificationMs": 3139.5919170000016,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "280572460948b263321b70f879ec92d7d0f0dfbac75f8446d0ed19560ed73247",
+          "startMs": 136200,
+          "endMs": 143200,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "52d88c87c41a19a767f2eaed5da15e8c8cd098dbbaf0417ff9e7e7f3de5c6d16",
+          "startMs": 0,
+          "endMs": 3040,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "82d550f9a2de8e32635320928fb678cbc7ea973fab12dfab785152152f1099bf",
+          "startMs": 0,
+          "endMs": 60137,
+          "openingBreak": true,
+          "reviewOnly": false,
+          "confidence": 0.97,
+          "decisionReason": "Source-bound sponsor declaration, commercial offer, closing action and editorial transition qualify for automatic acoustic verification. No manual approval is required."
+        },
+        {
+          "id": "c0542b3dc261e34da1f799edc097fe59a02c2af45501dd5f85659b8d639ac4ee",
+          "startMs": 0,
+          "endMs": 54960,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required."
+        },
+        {
+          "id": "e12f91615a9cd597a83a6471f3b548ec0e261a1dd850d794e4179825544d3cad",
+          "startMs": 44960,
+          "endMs": 54960,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-610",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "baselineCandidates": 7,
+      "machineOpeningCandidates": 4,
+      "completeOpeningProposals": [
+        {
+          "id": "810a6f4792fb298cba03e4a668363f31b59527707cfdbc7f50ed779689d0a8e6",
+          "startMs": 0,
+          "endMs": 60100,
+          "verificationState": "CANDIDATE",
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.3662079999994603,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "0a1b7582f1255c41698441784bb39c21038000c4ae543aca2e93cac0ddad56fc",
+          "startMs": 0,
+          "endMs": 3000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "810a6f4792fb298cba03e4a668363f31b59527707cfdbc7f50ed779689d0a8e6",
+          "startMs": 0,
+          "endMs": 60100,
+          "openingBreak": true,
+          "reviewOnly": true,
+          "confidence": 0.8,
+          "decisionReason": "Sponsor opening, offer and explicit editorial return bound a complete-break proposal. Automatic qualification requires a commercial closing and measured audio boundary; optional review cannot replace audio identity."
+        },
+        {
+          "id": "927d5f8590ebc8713890ff28c99c5152bdf63cd8017345dbe48eb6a570dff9fb",
+          "startMs": 0,
+          "endMs": 54600,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required."
+        },
+        {
+          "id": "c34c9328fbbcd9cf376e645c2b3b5e49ec9b3cd1ea3312412ba9739c58d69bdb",
+          "startMs": 49600,
+          "endMs": 54600,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-600",
+      "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
+      "baselineCandidates": 1,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "179c358eb9e90fedca21ee270e6108473859296533e29b401073f9394e9931c9",
+          "startMs": 0,
+          "endMs": 60080,
+          "verificationState": "CANDIDATE",
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.2475000000013097,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "179c358eb9e90fedca21ee270e6108473859296533e29b401073f9394e9931c9",
+          "startMs": 0,
+          "endMs": 60080,
+          "openingBreak": true,
+          "reviewOnly": true,
+          "confidence": 0.8,
+          "decisionReason": "Sponsor opening, offer and explicit editorial return bound a complete-break proposal. Automatic qualification requires a commercial closing and measured audio boundary; optional review cannot replace audio identity."
+        },
+        {
+          "id": "4d732bedd359955f6c77c1c01d2f3831e471249ea6d4c1b484b065913ab0f5b4",
+          "startMs": 51320,
+          "endMs": 55000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "8e7b271d8af357ece3190c58e593387e879ddf3732febd8f58f899c47b8da892",
+          "startMs": 0,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Sponsor declaration and commercial offer; independent audio evidence still required."
+        },
+        {
+          "id": "a4bcbae3c3f97618e1dc0bac180008af569df0748cbb0eee5ba3080622488cea",
+          "startMs": 0,
+          "endMs": 3080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "d40dccbded14304c4ce621e7a58f5f12b12b13b6a8da869e952bb14c682edd3c",
+          "startMs": 47640,
+          "endMs": 51320,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lup-598",
+      "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
+      "baselineCandidates": 1,
+      "machineOpeningCandidates": 5,
+      "completeOpeningProposals": [
+        {
+          "id": "660bf3fde8626daa22d3812f76551066019cb6221f71d2469dc717fd92da954e",
+          "startMs": 0,
+          "endMs": 91200,
+          "verificationState": "CANDIDATE",
+          "independent": false
+        }
+      ],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 2.344583000001876,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": [
+        {
+          "id": "2d690c3d318a900488c054f63c6c0c29d15b3163daf1f7b9c0a4991d24516e29",
+          "startMs": 77000,
+          "endMs": 79080,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        },
+        {
+          "id": "660bf3fde8626daa22d3812f76551066019cb6221f71d2469dc717fd92da954e",
+          "startMs": 0,
+          "endMs": 91200,
+          "openingBreak": true,
+          "reviewOnly": true,
+          "confidence": 0.8,
+          "decisionReason": "Sponsor opening, offer and explicit editorial return bound a complete-break proposal. Automatic qualification requires a commercial closing and measured audio boundary; optional review cannot replace audio identity."
+        },
+        {
+          "id": "6bdacd366bf1ec3c926eaf64d67aeef5fe1f3b92bc7616c5f18723ca813d8ffb",
+          "startMs": 73000,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "7bcbc199b0527123ca67b790b0253f58b2513209bb92d401bc170ee311ef62be",
+          "startMs": 0,
+          "endMs": 77000,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.95,
+          "decisionReason": "Referral address, addressed sign-up instruction and account offer; independent audio evidence still required."
+        },
+        {
+          "id": "e218f40a2e3755ea206794662d26cc794799be073a8212dbcc6a543c2084445c",
+          "startMs": 0,
+          "endMs": 2900,
+          "openingBreak": false,
+          "reviewOnly": false,
+          "confidence": 0.62,
+          "decisionReason": "Single contextual cue only; insufficient evidence for automatic verification."
+        }
+      ]
+    },
+    {
+      "id": "lan-299",
+      "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+      "baselineCandidates": 0,
+      "machineOpeningCandidates": 0,
+      "completeOpeningProposals": [],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 0.3134170000012091,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": []
+    },
+    {
+      "id": "lan-164",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "baselineCandidates": 5,
+      "machineOpeningCandidates": 0,
+      "completeOpeningProposals": [],
+      "humanLabels": 0,
+      "fullEpisodeReviewed": false,
+      "analysisMs": 0.3462919999983569,
+      "coverage": {
+        "startMs": 0,
+        "endMs": 180000
+      },
+      "candidateEvidence": []
+    }
+  ],
+  "windowEvaluations": [
+    {
+      "id": "lan-164",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "startMs": 520000,
+      "endMs": 750000,
+      "candidates": [
+        {
+          "id": "6c5680930051d948c992e3da8f0203d4209639cf4e3f71f4335e2a06fd15d5f4",
+          "startMs": 716680,
+          "endMs": 723080,
+          "reviewOnly": false
+        },
+        {
+          "id": "a9a4aab8fe52e8f66ab071e642b4ad120ceb3b5ddad9537af2fa8883c5d8aa0c",
+          "startMs": 541920,
+          "endMs": 546400,
+          "reviewOnly": false
+        }
+      ],
+      "analysisMs": 0.7756249999983993,
+      "independent": false
+    },
+    {
+      "id": "lup-610",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "startMs": 1939000,
+      "endMs": 2080000,
+      "candidates": [
+        {
+          "id": "09b8fb9897d5b57eca4eba86c3dbb96d5bdcd148443bc048443caf28b79d4847",
+          "startMs": 2073060,
+          "endMs": 2078380,
+          "reviewOnly": false
+        }
+      ],
+      "analysisMs": 0.23291700000117999,
+      "independent": false
+    },
+    {
+      "id": "lup-675",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "startMs": 2689000,
+      "endMs": 2840000,
+      "candidates": [
+        {
+          "id": "1cefcd1bec08ddbdbd288c71dc5ff8f2f78ab23f87413325ae6ce886231165b4",
+          "startMs": 2799920,
+          "endMs": 2802680,
+          "reviewOnly": false
+        }
+      ],
+      "analysisMs": 0.26033400000233087,
+      "independent": false
+    }
+  ]
+}

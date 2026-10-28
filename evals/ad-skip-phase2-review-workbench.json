@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-28T14:49:06.275Z",
+  "authenticatedContext": true,
+  "exactAudioRange": true,
+  "window": {
+    "startMs": 520000,
+    "endMs": 750000,
+    "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4"
+  },
+  "segments": 66,
+  "alignment": "HASH_BOUND_MACHINE_WINDOW; not independently reviewed",
+  "annotationsWritten": false
+}

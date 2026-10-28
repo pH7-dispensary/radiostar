@@ -1,0 +1,178 @@
+{
+  "at": "2026-10-28T15:08:17.346Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "health": {
+    "service": "star-cast",
+    "backend": "ready",
+    "openai": {
+      "configured": true,
+      "enabled": true,
+      "audioEnabled": true,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1"
+    },
+    "persistence": "sqlite",
+    "features": {
+      "episodeBriefs": false,
+      "exploreEpisode": false,
+      "momentSearch": false,
+      "conversationSearch": false,
+      "adSkip": false
+    },
+    "providerVerified": true
+  },
+  "infrastructure": {
+    "status": "DEGRADED",
+    "generatedAt": "2026-10-28T15:08:16.956Z",
+    "serverStartedAt": "2026-10-28T15:05:05.515Z",
+    "components": [
+      {
+        "name": "Backend API",
+        "status": "HEALTHY",
+        "reason": "This authenticated operations request reached the active backend.",
+        "observedAt": "2026-10-28T15:08:16.956Z"
+      },
+      {
+        "name": "Durable database",
+        "status": "HEALTHY",
+        "reason": "SQLite quick check passed for the active server store."
+      },
+      {
+        "name": "Disk capacity",
+        "status": "HEALTHY",
+        "reason": "22% used \u00b7 23.3 GiB available; deployments require 3 GiB headroom.",
+        "detail": {
+          "totalBytes": 32132542464,
+          "availableBytes": 24976986112,
+          "usedPercent": 22
+        },
+        "observedAt": "2026-10-28T15:08:16.956Z"
+      },
+      {
+        "name": "Deployment retention",
+        "status": "DEGRADED",
+        "reason": "3 retained deployment copies; retention limit is two. 1 legacy directory contains macOS metadata outside the cleanup allowlist and is deliberately preserved for review.",
+        "detail": {
+          "retained": 3,
+          "limit": 2,
+          "protectedLegacy": 1
+        },
+        "observedAt": "2026-10-28T15:08:16.956Z"
+      },
+      {
+        "name": "Last verified backup",
+        "status": "HEALTHY",
+        "reason": "SQLite backup passed integrity verification and S3 upload succeeded at the recorded time. Remote restoration has not been tested by this check.",
+        "observedAt": "2026-10-28T15:05:10.665Z"
+      },
+      {
+        "name": "Processing queue",
+        "status": "HEALTHY",
+        "reason": "SQS queue attributes were read successfully.",
+        "observedAt": "2026-10-28T15:08:16.955Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Dead-letter queue",
+        "status": "HEALTHY",
+        "reason": "No messages are waiting in the dead-letter queue.",
+        "observedAt": "2026-10-28T15:08:16.955Z",
+        "detail": {
+          "visible": 0,
+          "inFlight": 0,
+          "delayed": 0
+        }
+      },
+      {
+        "name": "Processing worker",
+        "status": "HEALTHY",
+        "reason": "The single durable queue consumer is running."
+      },
+      {
+        "name": "CloudWatch logs",
+        "status": "UNKNOWN",
+        "reason": "Log delivery is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "S3 backups",
+        "status": "UNKNOWN",
+        "reason": "Backup object freshness is not queried by the application; no browser credentials are exposed."
+      },
+      {
+        "name": "Deployment",
+        "status": "HEALTHY",
+        "reason": "Release metadata was read from the protected server record.",
+        "observedAt": "2026-10-28T15:05:04.017Z",
+        "detail": {
+          "releaseSha": "953d0554cbeb27110c6f18f15d1981035b941321157a2c1cfdeb3973343e0d6f",
+          "previousReleaseSha": "44856b6d04993555dbaa1392e5847789fb7c71e5a3711152a61703fe8e134350",
+          "rollbackAvailable": true
+        }
+      }
+    ],
+    "release": {
+      "status": "HEALTHY",
+      "releaseSha": "953d0554cbeb27110c6f18f15d1981035b941321157a2c1cfdeb3973343e0d6f",
+      "deployedAt": "2026-10-28T15:05:04.017Z",
+      "previousReleaseSha": "44856b6d04993555dbaa1392e5847789fb7c71e5a3711152a61703fe8e134350",
+      "rollbackAvailable": true,
+      "reason": "Release metadata was read from the protected server record."
+    }
+  },
+  "databaseIntegrity": "ok",
+  "availableBytes": 24977620992,
+  "reservations": 0,
+  "adSkipCounts": {
+    "candidates": 11,
+    "variantMatched": 4,
+    "verified": 4,
+    "disputed": 0,
+    "rejected": 0,
+    "processing": 0,
+    "failed": 0,
+    "automaticSkips": 6,
+    "undoEvents": 6,
+    "falsePositiveReports": 0,
+    "missedAdvertReports": 1
+  },
+  "publicAutomaticSkipping": false,
+  "pilot": {
+    "active": true,
+    "testerCount": 2,
+    "expiresAt": "2026-10-29T14:11:12.730Z"
+  },
+  "acceleratedPaidAllowanceActive": false,
+  "limits": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 7200,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": false
+  },
+  "recordedCosts": {
+    "day": 0.22969023999999996,
+    "month": 2.048023979999999,
+    "transcriptionSeconds": 2133
+  },
+  "incrementalRecordedOpenAiUsd": 0.018,
+  "incrementalTranscriptionSeconds": 180,
+  "incrementalAwsBillUsd": null,
+  "existingIntelligence": {
+    "authenticatedReadyEpisodeCount": 10,
+    "featuresStillAvailable": [
+      "brief",
+      "chapters",
+      "moments",
+      "search",
+      "topics"
+    ]
+  }
+}
