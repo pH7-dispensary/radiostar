@@ -1,3 +1,4 @@
+import {PROCESSING_VERSION} from "./openai-intelligence.mjs";
 import { createStarCastServer } from "./server.mjs";
 import {refreshFollowedCatalogue} from "./native/src/catalogueRefresh.mjs";
 import assert from 'node:assert/strict';
@@ -84,6 +85,15 @@ try {
       app.followedPreparation.rows=()=>states.map((state,i)=>({feedUrl:other,episodeId:String(i),inWindow:true,state}));
       const retry=await follow(other,true,1);assert.equal(retry.changed,false);assert.equal(retry.processing.state,expected);
     }
+    app.rights.set({feedUrl:other,classification:'LICENSED',assessmentStatus:'APPROVED',canProcessForAi:true,canRetain:true,canDisplayDerivedIntelligence:true});
+    app.followedPreparation.rows=()=>[{feedUrl:other,episodeId:'finished',inWindow:true,state:'QUEUED'}];
+    apiStore.set('intelligence',episodeKey(other,'finished'),{processingVersion:PROCESSING_VERSION,jobId:'completed-fixture',state:'PARTIAL_READY',completedAt:new Date().toISOString(),feedUrl:other,episodeId:'finished',episode:{id:'finished',feedUrl:other},featureStatus:{},transcript:{segments:[]}});
+    const replay=await follow(other,true,1);
+    assert.equal(replay.processing.state,'PARTIAL_READY','Persisted worker completion replaces stale demand QUEUED state on duplicate follow');
+    assert.equal(app.pipeline.status(other,'finished').jobId,'completed-fixture','Replay cannot enqueue another job');
+    app.rights.suspend(other,'finished','Fixture takedown');
+    assert.equal((await follow(other,true,1)).processing.state,'UNAVAILABLE','Completed cache cannot hide a subsequent rights hold');
+    apiStore.delete('intelligence',episodeKey(other,'finished'));
   } finally {app.followedPreparation.rows=actualRows;}
   assert.equal((await follow(other,false,2)).following,false);
   assert.equal((await follow(feed,true,1)).following,false);
