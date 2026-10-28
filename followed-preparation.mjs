@@ -26,7 +26,7 @@ export class FollowedPreparation {
     Object.assign(this, { audienceEligible, canonicalFeed, resolveFeedIdentity, store, pipeline, ledger, testingMode, rights, discover, assess, enabled, allowed, inspect, resumeDerived, status });
     this.refreshing = null; this.draining = null;
   }
-  configuration() { return this.store.get(kind, "configuration") || { enabled: false, version: 0 }; }
+  configuration() { return this.store.get(kind, "configuration") || { enabled: true, version: 0 }; }
   listeners() {
     const devices = this.store.all("pilot-device").map(([, v]) => v);
     return this.store.all("installation").map(([, v]) => v).filter(v => !v.revokedAt && v.intelligenceEnabled !== false && this.audienceEligible(v) &&
@@ -109,7 +109,11 @@ export class FollowedPreparation {
     const encounterPriority = Math.max(source === "playing" ? 100 : 80, recent(old || {}, new Set(this.listeners().map(v => v.id))) ? old.encounterPriority || 0 : 0);
     const row = { ...old, key, feedUrl, episodeId, priority: Math.max(old?.manualPriority || 0, encounterPriority), encounterPriority, source, encounterOwner: listenerId, encounteredAt: iso(), createdAt: old?.createdAt || iso() };
     this.put(row);
-    void this.drain().catch(() => {});
+    // An opened episode may be the first request after installation. Establish
+    // the bounded planning snapshot before dispatch, even with no follows yet.
+    if (!this.store.get(kind, "snapshot")) await this.refresh();
+    else if (this.refreshing) await this.refreshing;
+    await this.drain();
   }
   async drain() {
     if (this.draining) return this.draining;

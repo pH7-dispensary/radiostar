@@ -5,14 +5,15 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {verifyAwsIdentity} from './aws-account-guard.mjs';
 if(!process.argv.includes('--activate'))throw Error('Use --activate only for the authorised single-episode paid acceptance.');
 verifyAwsIdentity();
-const feedUrl='https://opensourcesecuritypodcast.libsyn.com/rss',episodeId='5e9a9317-8373-41d0-9465-641a66b2f90d';
+const feedUrl='https://opensourcesecuritypodcast.libsyn.com/rss',episodeId=process.env.RADIOSTAR_ACTIVATION_EPISODE_ID || '5e9a9317-8373-41d0-9465-641a66b2f90d';
+assert(/^[a-f0-9-]{36}$/.test(episodeId),'An exact existing publisher episode ID is required');
 const c=JSON.parse(readFileSync('.starcast/cloud-connection.json')),a=JSON.parse(readFileSync('.starcast/cloud-admin.json')),q=JSON.parse(readFileSync('.starcast/translation-verification.json'));
 assert.equal(c.url,'https://d3ri12f40b85i3.cloudfront.net');
 const gateway={'content-type':'application/json','x-star-cast-dev-token':c.token},listener={'content-type':'application/json','x-star-cast-pilot-token':q.deviceToken,authorization:'Bearer '+q.credential};
 const login=await fetch(c.url+'/api/admin/session',{method:'POST',headers:gateway,body:JSON.stringify({adminToken:a.token,emergency:true})});assert.equal(login.status,201);
 const cookie=login.headers.getSetCookie().map(v=>v.split(';')[0]).join('; '),csrf=cookie.match(/starcast_admin_csrf=([^;]+)/)[1],admin={...gateway,cookie,'x-star-cast-csrf':csrf};
 async function api(path,headers=admin,body){const r=await fetch(c.url+path,{headers,method:body?'POST':'GET',body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});assert([200,202].includes(r.status),path+': HTTP '+r.status);return r.json();}
-const sum=r=>r.usage.reduce((n,v)=>n+v.usd,0),save=()=>writeFileSync('.starcast/activation-live.json',JSON.stringify(report,null,2)+'\n',{mode:0o600});
+const sum=r=>r.usage.reduce((n,v)=>n+v.usd,0),save=()=>writeFileSync(process.env.RADIOSTAR_ACTIVATION_OUTPUT || '.starcast/activation-live.json',JSON.stringify(report,null,2)+'\n',{mode:0o600});
 const report={startedAt:new Date().toISOString(),feedUrl,episodeId,timeline:[],manualAnalysisRequests:0,rightsChanges:0,budgetChanges:0};let added=false,version=Date.now();
 try{
  const before=await api('/api/admin/intelligence');report.before={costUsd:sum(before),usageEntries:before.usage.length,jobs:before.jobs.length};

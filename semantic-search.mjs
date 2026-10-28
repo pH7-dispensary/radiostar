@@ -112,6 +112,15 @@ export class SemanticSearch {
       previous.checksum === semanticChecksum(previous);
     const rows = resumable ? [...previous.rows] : [];
     let cursor = resumable ? previous.cursor : 0;
+    // Persist intent before the first paid batch. If it fails or the worker
+    // restarts, automatic follow recovery can find this index and resume it.
+    // The provider request ledger still controls retries and unknown outcomes.
+    if (!resumable && inputs.length) {
+      const initial = { version: SEMANTIC_VERSION, fingerprint: index.fingerprint,
+        cursor: 0, total: inputs.length, rows: [], state: "BUILDING", builtAt: new Date().toISOString() };
+      initial.checksum = semanticChecksum(initial);
+      this.store.set("semantic-index", key, initial);
+    }
     for (let batch = 0; cursor < inputs.length && batch < maxBatches; batch++) {
       const chunk = inputs.slice(cursor, cursor + 32),
         vectors = await this.embed(
