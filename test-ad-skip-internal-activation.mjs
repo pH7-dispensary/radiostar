@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {LocalStore} from './persistence.mjs';
+import {createStarCastServer} from './server.mjs';
+import {IntelligenceTestMode} from './intelligence-test-mode.mjs';
+import {adSkipPilotPanel} from './admin.ad-skip-pilot.js';
+
+const directory=await mkdtemp(join(tmpdir(),'radio-pilot-')),path=join(directory,'test.sqlite');
+const store=new LocalStore(path),app=createStarCastServer({store,env:{STARCAST_ADMIN_TOKEN:'test-only-admin',STARCAST_DEV_INTELLIGENCE_TOKEN:'test-only-gateway'}});
+const tester=app.listeners.register('test-only-existing-enrolled-installation-credential'),other=app.listeners.register('test-only-not-enrolled-installation-credential');
+store.set('pilot-device','test-device',{listenerId:tester.id,expiresAt:new Date(Date.now()+86400000).toISOString()});
+store.set('feature-flag','adSkip',{id:'adSkip',state:'PRIVATE_BETA',rolloutPercent:100});
+await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
+const url=`http://127.0.0.1:${app.server.address().port}/api/admin/ad-skip/pilot`;
+const session=app.adminService.startSession({id:'super-test',role:'SUPER_ADMIN',name:'Test only'});
+const headers={'content-type':'application/json',cookie:`starcast_admin=${session.id}`,'x-star-cast-csrf':session.csrf};
+const post=(body,h=headers)=>fetch(url,{method:'POST',headers:h,body:JSON.stringify(body)});
+const expiry=new Date(Date.now()+3600000).toISOString();
+const input={enabled:true,listenerIds:[tester.id],expectedVersion:0,expiresAt:expiry,enableListenerPreferences:true,reason:'Explicit internal test activation',confirmation:'ENABLE AD SKIP PILOT'};
+let snapshot;
+try{
+ assert.equal((await fetch(new URL('/admin.ad-skip-pilot.js',url))).status,200,'browser module must be served by the static allowlist');
+ assert.equal((await fetch(url)).status,403);
+ const read=app.adminService.startSession({id:'reader',role:'READ_ONLY',name:'Reader'});
+ assert.equal((await post(input,{...headers,cookie:`starcast_admin=${read.id}`,'x-star-cast-csrf':read.csrf})).status,403);
+ assert.equal((await post(input,{...headers,'x-star-cast-csrf':'invalid'})).status,403);
+ for(const malformed of [{listenerIds:[other.id]},{listenerIds:tester.id},{enableListenerPreferences:'yes'},{expiresAt:new Date(Date.now()-1000).toISOString()},{expiresAt:new Date(Date.now()+8*86400000).toISOString()}])assert.equal((await post({...input,...malformed})).status,409);
+ assert.equal(new IntelligenceTestMode(store).adSkipConfiguration().version,0);
+ assert.equal((await post(input)).status,200);
+ assert.equal(app.listeners.summary(tester).preferences.adSkipEnabled,true);assert.equal(app.listeners.summary(tester).preferences.advert,true);
+ assert.equal(app.listeners.summary(other).preferences.adSkipEnabled,false);
+ assert.equal(store.all('intelligence-test-mode').length,0,'pilot must not create a paid allowance');
+ assert.equal((await post(input)).status,409,'stale version cannot replay mutation');
+ snapshot=await (await fetch(url,{headers})).json();assert.equal(snapshot.listeners.length,1);assert(snapshot.listeners[0].preferenceEnabled&&snapshot.listeners[0].advertEnabled&&snapshot.featureOperational);
+ assert.equal(snapshot.configuration.expiresAt,expiry);assert.equal(snapshot.publicAutomaticSkipping,false);
+ assert.equal(new IntelligenceTestMode(store).adSkipAllowed(tester.id),true);
+ assert.equal(new IntelligenceTestMode(store,{now:()=>Date.parse(expiry)+1}).adSkipAllowed(tester.id),false,'an enabled pilot must stop at its explicit expiry');
+ assert(!JSON.stringify(snapshot).includes('credentialHash'));assert(!JSON.stringify(snapshot).includes(tester.credentialHash));
+ const escape=value=>String(value).replaceAll('<','&lt;');
+ const page=adSkipPilotPanel(snapshot,{html:escape,when:v=>v||'none',isSuperAdmin:true});assert(page.includes('Ad Skip pilot')&&page.includes('Suspend pilot now'));
+ assert(!adSkipPilotPanel(snapshot,{html:escape,when:v=>v||'none',isSuperAdmin:false}).includes('<form'));
+ assert.equal((await post({...input,enabled:false,expectedVersion:1,enableListenerPreferences:false,confirmation:'DISABLE AD SKIP PILOT'})).status,200);
+ assert.equal(new IntelligenceTestMode(store).adSkipAllowed(tester.id),false,'kill switch revokes eligibility immediately');
+ assert.equal(app.listeners.summary(tester).preferences.adSkipEnabled,true,'suspension preserves preference');
+ const audit=store.all('admin-audit').map(([,r])=>r);assert(audit.some(e=>e.action==='ad-skip-tester-preference-enabled'));assert(audit.some(e=>e.action==='ad-skip-pilot-configured'));
+}finally{await new Promise(r=>app.server.close(r));store.close();}
+const reopened=new LocalStore(path);
+try{assert.equal(new IntelligenceTestMode(reopened).adSkipConfiguration().enabled,false);assert.equal(reopened.all('installation').map(([,r])=>r).find(r=>r.id===tester.id).preferences.adSkipEnabled,true);assert.equal(new IntelligenceTestMode(reopened,{now:()=>Date.now()+2*86400000}).adSkipAllowed(tester.id),false);}finally{reopened.close();await rm(directory,{recursive:true,force:true});}
+console.log('Internal Ad Skip: persisted tester preference, explicit expiry, kill switch, RBAC/CSRF, stale updates, no credentials and no paid allowance changes passed.');

@@ -69,12 +69,17 @@ try {
   const result=await executeVerifiedSkip({interval,positionMs:audio.currentTime*1000,durationMs:audio.duration*1000,current:()=>true,getPosition:()=>audio.currentTime*1000,authorise:async()=>lease,seek,onStage:(kind,{positionMs})=>{attempt=window.receipt({intervalId:interval.id,kind,positionMs,authorisationId:lease.authorisationId});}});
   const seekConfirmationMs=performance.now()-seekStart;await attempt;
   await window.receipt({intervalId:interval.id,kind:'automatic_skip',positionMs:result.positionMs,originMs:result.originMs,authorisationId:lease.authorisationId});
-  const after=audio.currentTime;await new Promise(r=>setTimeout(r,300));const continuing=!audio.paused&&audio.currentTime>after;
+  // A confirmed seek can still be followed by decoder buffering. Observe real
+  // clock advancement within a bounded window, without issuing another play.
+  const after=audio.currentTime,continuationStart=performance.now();
+  while(!audio.paused&&audio.currentTime<=after&&performance.now()-continuationStart<3000)await new Promise(r=>setTimeout(r,50));
+  const continuing=!audio.paused&&audio.currentTime>after,continuationMs=performance.now()-continuationStart,advancedMs=(audio.currentTime-after)*1000,automaticSeeks=seeks;
   audio.pause();const beforeUndoSeeks=seeks,undoStart=performance.now();const restored=await Promise.all([result.undo(),result.undo()]);const undoMs=performance.now()-undoStart;
   await window.receipt({intervalId:interval.id,kind:'undo',positionMs:restored[0],authorisationId:lease.authorisationId});
-  return {originMs:result.originMs,targetMs:result.positionMs,restoredMs:restored[0],continuing,pausedAfterUndo:audio.paused,rate:audio.playbackRate,automaticSeeks:1,undoSeeks:seeks-beforeUndoSeeks,sourcePreparationMs,authorisationMs,playStartupMs,seekConfirmationMs,undoMs,device:'Chromium using shared native adapter; not physical iPhone'};
+  return {originMs:result.originMs,targetMs:result.positionMs,restoredMs:restored[0],continuing,continuationMs,advancedMs,pausedAfterUndo:audio.paused,rate:audio.playbackRate,automaticSeeks,undoSeeks:seeks-beforeUndoSeeks,sourcePreparationMs,authorisationMs,playStartupMs,seekConfirmationMs,undoMs,device:'Chromium using shared native adapter; not physical iPhone'};
  },{interval,hash:spec.audioContentHash});
- assert(playback.continuing&&playback.pausedAfterUndo);assert.equal(playback.rate,1.5);assert.equal(playback.undoSeeks,1);assert(Math.abs(playback.restoredMs-playback.originMs)<=350);assert(Math.abs(playback.targetMs-interval.endMs)<=350);
+ try {assert(playback.continuing&&playback.pausedAfterUndo);assert.equal(playback.rate,1.5);assert.equal(playback.automaticSeeks,1);assert.equal(playback.undoSeeks,1);assert(Math.abs(playback.restoredMs-playback.originMs)<=350);assert(Math.abs(playback.targetMs-interval.endMs)<=350);}
+ catch(error){writeFileSync(outputPath+'.failed.json',JSON.stringify({at:new Date().toISOString(),passed:false,playback,error:error.message},null,2)+'\n');throw error;}
  const after=await api('/api/admin/intelligence/testing',null,admin);assert.deepEqual(after.configuration,paidBefore.configuration);assert.deepEqual(after.standardLimits,paidBefore.standardLimits);
  const result={at:new Date().toISOString(),source:'preserved exact publisher MP3; private S3 delivery verified with the native range verifier',audioContentHash:spec.audioContentHash,feedUrl:spec.feedUrl,episodeId:spec.episodeId,interval,review:gold?{id:gold.id,chainHash:spec.events.at(-1).hash,startMs:gold.startMs,endMs:gold.endMs}:null,approvalSource:machineOnly?'AUTOMATED_AUDIO_VERIFICATION':'HUMAN_REVIEW_PLUS_AUDIO',independentAccuracyEvidence:!machineOnly,rangeProof,playback,mismatchDenied:true,paidAllowanceUnchanged:true,physicalIphoneVerified:false};
  writeFileSync(outputPath,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

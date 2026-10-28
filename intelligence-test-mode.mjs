@@ -26,6 +26,7 @@ export class IntelligenceTestMode {
     return this.store.transaction(()=>{
       const prior=this.adSkipConfiguration();
       if(input.expectedVersion!==prior.version || typeof input.enabled!=='boolean' || input.confirmation!==(input.enabled?'ENABLE AD SKIP PILOT':'DISABLE AD SKIP PILOT') || !String(input.reason||'').trim())throw Error('Confirm the current pilot version and reason.');
+      if(input.listenerIds!==undefined && (!Array.isArray(input.listenerIds)||input.listenerIds.some(id=>typeof id!=='string')))throw Error('Choose an explicit list of existing enrolled testers.');
       const listenerIds=[...new Set(input.listenerIds || prior.listenerIds)];
       const expiresAt=input.expiresAt || prior.expiresAt;
       if(listenerIds.length>5 || listenerIds.some(id=>typeof id!=='string') || (input.enabled && (!listenerIds.length || listenerIds.some(id=>!this.eligibleListener(id)) || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt)<=this.now() || Date.parse(expiresAt)>this.now()+7*86400000)))throw Error('Select up to five active enrolled testers and an expiry within seven days.');

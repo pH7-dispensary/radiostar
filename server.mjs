@@ -134,6 +134,7 @@ const staticFiles = new Map([
   ["/admin.css", "admin.css"],
   ["/admin.js", "admin.js"],
   ["/admin.rights.js", "admin.rights.js"],
+  ["/admin.ad-skip-pilot.js", "admin.ad-skip-pilot.js"],
   ["/admin.rights.css", "admin.rights.css"],
   ...[
     "playback",
@@ -2026,9 +2027,24 @@ export function createStarCastServer({
       if (url.pathname === '/api/admin/ad-skip/pilot' && ['GET','POST'].includes(req.method)) {
         const actor=adminActor(req,'intelligence:read',{write:req.method==='POST'});
         if(!actor || (req.method==='POST' && (actor.role!=='SUPER_ADMIN' || actor.source!=='session')))return send(res,403,{error:'A protected Super Admin session is required.'});
-        if(req.method==='GET')return send(res,200,{configuration:testingMode.adSkipConfiguration(),paidAllowanceUnchanged:true});
+        if(req.method==='GET') {
+          const configuration=testingMode.adSkipConfiguration();
+          const devices=store.all('pilot-device').map(([,row])=>row);
+          const enrolled=store.all('installation').map(([,row])=>row).filter(row=>configuration.listenerIds.includes(row.id)||testingMode.eligibleListener(row.id)).map(row=>({id:row.id,enrolled:testingMode.eligibleListener(row.id),selected:configuration.listenerIds.includes(row.id),preferenceEnabled:row.preferences?.adSkipEnabled===true,advertEnabled:row.preferences?.advert===true,deviceExpiresAt:devices.filter(d=>d.listenerId===row.id&&!d.revokedAt).map(d=>d.expiresAt).sort().at(-1)||null}));
+          return send(res,200,{configuration,listeners:enrolled,featureOperational:adminService.featureOperational('adSkip'),publicAutomaticSkipping:false,paidAllowanceUnchanged:true,standardLimits:{dailyUsd:ledger.controls.dailyUsd,monthlyUsd:ledger.controls.monthlyUsd,dailyTranscriptionSeconds:ledger.controls.dailyTranscriptionSeconds,maxEpisodeSeconds:ledger.controls.maxEpisodeSeconds}});
+        }
         const input=await requestBody(req);
-        try { const configuration=store.transaction(()=>{const previous=testingMode.adSkipConfiguration(),next=testingMode.setAdSkipPilot(input,actor.id);adminService.appendAudit({actor,action:'ad-skip-pilot-configured',resource:'ad-skip-pilot',previousState:previous,newState:next,reason:input.reason});return next;});return send(res,200,{configuration,paidAllowanceUnchanged:true}); }
+        try { const configuration=store.transaction(()=>{
+          if(input.enableListenerPreferences!==undefined&&typeof input.enableListenerPreferences!=='boolean')throw Error('Choose whether to enable tester advert preferences.');
+          if(input.enableListenerPreferences&&!input.enabled)throw Error('Tester preferences can only be enabled for an active pilot.');
+          const previous=testingMode.adSkipConfiguration(),next=testingMode.setAdSkipPilot(input,actor.id);
+          if(input.enableListenerPreferences)for(const id of next.listenerIds){
+            const listener=store.all('installation').map(([,row])=>row).find(row=>row.id===id);
+            const before=listener.preferences||{},changed=listeners.preferences(listener,{adSkipEnabled:true,advert:true});
+            adminService.appendAudit({actor,action:'ad-skip-tester-preference-enabled',resource:id,previousState:before,newState:changed.preferences,reason:input.reason});
+          }
+          adminService.appendAudit({actor,action:'ad-skip-pilot-configured',resource:'ad-skip-pilot',previousState:previous,newState:next,reason:input.reason});return next;
+        });return send(res,200,{configuration,paidAllowanceUnchanged:true}); }
         catch(error){return send(res,409,{error:error.message});}
       }
       if (url.pathname === "/api/admin/intelligence/testing" && ["GET", "POST"].includes(req.method)) {
