@@ -492,13 +492,9 @@ export class EpisodePipeline {
     // reassessed. A current duration refusal is not an unlimited retry token.
     const stale = !previous.transcriptChecks?.publisherTranscriptChecked && !previous.reassessedFromJobId;
     const processing = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
-    const permissions = this.rights?.resolve(feedUrl, episodeId);
-    // Reopening old failures is a new processing decision, not a licence
-    // inferred from a legacy approval checkbox or an administrator's assertion.
-    const documentedBasis = Boolean(permissions?.approvalAssessment ||
-      (permissions?.licence && permissions.assessmentEvidence?.some((item) => item.type === "PUBLISHER_LICENSE")) ||
-      (permissions?.assessmentSource === "super-admin-technical-review" && permissions.assessmentEvidence?.some((item) => item.type === "INDEPENDENT_FEATURE_AUTHORISATION")) ||
-      (permissions?.classification === "OWNED" && permissions.legalBasis && permissions.assessmentEvidence?.length));
+    // Evidence validation belongs to the rights evaluator; recovery must not
+    // maintain a second whitelist of approval forms or legal-basis sources.
+    const documentedBasis = processing?.basisEstablished === true;
     const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, "intelligence");
     this.ledger.refresh();
     const totals = this.ledger.totals();

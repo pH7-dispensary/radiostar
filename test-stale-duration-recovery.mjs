@@ -69,6 +69,18 @@ try {
   assert.equal(noSource.transcriptChecks.publisherTranscriptChecked, true);
   assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "no-source", trigger: "automatic" })).jobId, noSource.jobId, "unchanged automatic triggers cannot loop");
 
+  // A recorded applicable exception does not need the newer approval form.
+  seed("exception");
+  rights.set({ feedUrl: feed, episodeId: "exception", classification: "TDM_ELIGIBLE", assessmentStatus: "APPROVED", legalBasis: "Fixture jurisdiction-specific processing exception", assessmentEvidence: [{ type: "APPLICABLE_EXCEPTION", source: "independent fixture reviewer", value: "Recorded scope covers internal processing of this owned test text" }], canAcquireTranscript: true, canProcessForAi: true, canDisplayDerivedIntelligence: true, canRetain: true, canRegenerate: true });
+  rights.setOverride({ feedUrl: feed, episodeId: "exception", mode: "LITE", reason: "Fixture documented exception" });
+  const exceptionVariant = createHash("sha256").update((await resolveEpisode(feed, "exception")).audioUrl).digest("hex");
+  store.set("transcript", `${episodeKey(feed, "exception")}:${exceptionVariant}`, transcript);
+  assert.equal(pipeline.transcriptRecovery(feed, "exception", await resolveEpisode(feed, "exception")).eligible, true);
+  await pipeline.request({ feedUrl: feed, episodeId: "exception", trigger: "automatic" });
+  await Promise.all(pipeline.inflight.values());
+  assert.equal(pipeline.status(feed, "exception").state, "READY");
+  assert.equal(calls, 3);
+
   seed("current", { transcriptChecks: { publisherTranscriptChecked: true, audioTranscriptionRequired: true } });
   assert.equal(pipeline.transcriptRecovery(feed, "current", await resolveEpisode(feed, "current")).eligible, false);
   assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "current", trigger: "automatic" })).jobId, "old-current");
@@ -92,7 +104,7 @@ try {
   ledger.reserve({ id: "budget-exhaustion", usd: ledger.controls.dailyUsd - ledger.totals().day });
   assert.equal(pipeline.transcriptRecovery(feed, "budget", await resolveEpisode(feed, "budget")).eligible, false);
   assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "budget", trigger: "automatic" })).jobId, "old-budget");
-  assert.equal(calls, 2);
+  assert.equal(calls, 3);
   assert.equal(ledger.controls.maxEpisodeSeconds, 7200);
   ledger.reconcile("budget-exhaustion", { usd: 0 });
   store.close();

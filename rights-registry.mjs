@@ -77,6 +77,17 @@ const optionalFeatureFor = Object.freeze({
   "intelligence-display": "intelligenceDisplay",
   "conversation-search": "conversationSearch",
 });
+// A factual evidence check, independent of optional policy and technical state.
+// It does not grant any feature: evaluate still applies reservations, scope,
+// expiry, takedowns and feature permissions before allowing work.
+const documentedProcessingBasis = (record) => Boolean(record?.approvalAssessment ||
+      (record?.licence && record.assessmentEvidence?.some((item) => item.type === "PUBLISHER_LICENSE")) ||
+      (record?.assessmentSource === "super-admin-technical-review" && record.assessmentEvidence?.some((item) => item.type === "INDEPENDENT_FEATURE_AUTHORISATION")) ||
+      (record?.classification === "OWNED" && record.legalBasis && record.assessmentEvidence?.length) ||
+      (["LICENSED", "TDM_ELIGIBLE"].includes(record?.classification) &&
+       record.assessmentStatus === "APPROVED" && record.legalBasis &&
+       record.assessmentEvidence?.some(item =>
+         ["APPLICABLE_EXCEPTION", "CREATOR_AUTHORISATION", "INDEPENDENT_FEATURE_AUTHORISATION", "OWNED"].includes(item.type) && item.value && item.source)));
 const defaultPolicy = () => ({
   id: policyKey,
   version: 1,
@@ -422,9 +433,13 @@ export class RightsRegistry {
     // episode record cannot be used to sidestep the publisher's mandatory hold.
     const covered = !podcast?.approvalAssessment || !episodeId || podcast.approvalAssessment.coverage.futureEpisodes ||
       podcast.approvalAssessment.coverage.episodeIds.includes(episodeId);
-    // A documented channel approval supersedes an automatic missing-basis
-    // assessment, never an explicit episode restriction or human assessment.
-    const automaticMissing = episode?.assessmentSource?.startsWith("publisher-rss-") && episode?.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED";
+    // A documented channel approval supersedes a factual missing-basis
+    // finding, never an explicit episode restriction or human permission hold.
+    const automaticMissing = episode?.blockerCode === "LEGAL_BASIS_NOT_ESTABLISHED" &&
+      !episode.approvalAssessment &&
+      (episode.assessmentSource?.startsWith("publisher-rss-") ||
+       (episode.assessmentSource === "super-admin-technical-review" && !episode.reservedFeatures?.length &&
+        episode.assessmentEvidence?.some(item => item.type === "EVIDENCE_REVIEW_NO_BASIS")));
     const documentedChannel = podcast?.legalBasis && podcast?.assessmentEvidence?.length &&
       podcast?.canProcessForAi && podcast?.assessmentStatus === RightsAssessmentStatus.APPROVED;
     const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast
@@ -480,7 +495,7 @@ export class RightsRegistry {
       outputProfile = "short-grounded";
       reason = "Allowed with short, grounded, non-substitutive intelligence.";
     }
-    const decision = { allowed, code, reason, feature, mode, policyVersion: policy.version, outputProfile, classification: rights.classification, testMode: policy.testMode?.enabled === true, rights, override: override ? { id: override.id, scope: override.episodeId ? "episode" : "publisher" } : null };
+    const decision = { allowed, basisEstablished: documentedProcessingBasis(rights), code, reason, feature, mode, policyVersion: policy.version, outputProfile, classification: rights.classification, testMode: policy.testMode?.enabled === true, rights, override: override ? { id: override.id, scope: override.episodeId ? "episode" : "publisher" } : null };
     if (audit) this.auditDecision(decision, { feedUrl, episodeId });
     return decision;
   }
