@@ -11,6 +11,9 @@ import {corpusDirectory,currentReviews,verifyReviewChain} from '../ad-skip-corpu
 const root=corpusDirectory(),asrRoot=process.argv[2];assert(asrRoot,'Supply the directory of source-hashed machine opening transcripts.');
 const apply=process.argv.includes('--prepare-review');
 const verifyAudio=process.argv.includes('--verify-audio');
+const outputArgument=process.argv.indexOf('--output');
+const outputPath=outputArgument<0?'evals/ad-skip-generalisation-phase2.json':process.argv[outputArgument+1];
+assert(outputPath&&!outputPath.startsWith('--'),'Supply a path after --output.');
 const manifest=JSON.parse(await readFile(join(root,'manifest.json'))),events=JSON.parse(await readFile(join(root,'reviews.json')));verifyReviewChain(events);
 const reviewDigest=createHash('sha256').update(await readFile(join(root,'reviews.json'))).digest('hex');
 const baselinePath=join(root,'manifest-before-source-openings.json');
@@ -49,4 +52,4 @@ if(apply){const previous=JSON.parse(await readFile(join(root,'review-clips.json'
 assert.equal(createHash('sha256').update(await readFile(join(root,'reviews.json'))).digest('hex'),reviewDigest,'Human annotations must remain byte-identical');
 const result={at:new Date().toISOString(),sourceHashesVerified:rows.length,baselineCandidates:rows.reduce((n,r)=>n+r.baselineCandidates,0),machineOpeningCandidates:rows.reduce((n,r)=>n+r.machineOpeningCandidates,0),completeOpeningProposals:rows.reduce((n,r)=>n+r.completeOpeningProposals.length,0),humanLabels:rows.reduce((n,r)=>n+r.humanLabels,0),fullyReviewedEpisodes:rows.filter(r=>r.fullEpisodeReviewed).length,corpusPrecision:null,corpusRecall:null,falsePositiveRate:null,reason:'One independent interval label; no complete episode labels. Machine-only proposals cannot establish accuracy.',processingCostUsd:0,model:'local faster-whisper/base.en',analysisP95Ms:durations.sort((a,b)=>a-b)[Math.ceil(durations.length*.95)-1],nodePeakRssKiB:process.resourceUsage().maxRSS,reviewAuditSha256:reviewDigest,reviewQueue:queue,episodes:rows};
 result.windowEvaluations=windowEvaluations;
-await writeFile('evals/ad-skip-generalisation-phase2.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({episodes:rows.length,baselineCandidates:result.baselineCandidates,openingCandidates:result.machineOpeningCandidates,completeProposals:result.completeOpeningProposals,humanLabels:result.humanLabels,reviewItems:queue.length,analysisP95Ms:result.analysisP95Ms}));
+await writeFile(outputPath,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({episodes:rows.length,baselineCandidates:result.baselineCandidates,openingCandidates:result.machineOpeningCandidates,completeProposals:result.completeOpeningProposals,humanLabels:result.humanLabels,reviewItems:queue.length,analysisP95Ms:result.analysisP95Ms}));
