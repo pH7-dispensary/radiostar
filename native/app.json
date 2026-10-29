@@ -10,7 +10,7 @@
     },
     "ios": {
       "bundleIdentifier": "app.radiostar.ios",
-      "buildNumber": "15",
+      "buildNumber": "16",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
