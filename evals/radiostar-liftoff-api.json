@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "rightsAwareCache": true,
+  "approvedCorpusOnly": true,
+  "paidCalls": 0,
+  "intelligenceState": "PARTIAL_READY",
+  "qualityNote": "The generated summary could not be fully verified. Available text is a short source excerpt, not a complete episode summary.",
+  "chapters": 6,
+  "topics": 6,
+  "publicAccessRejected": true,
+  "adminSeparation": true,
+  "coverage": {
+    "processedEpisodes": 1,
+    "partialEpisodes": 0,
+    "matchedEpisodes": 1,
+    "scope": "My Podcasts"
+  },
+  "totals": {
+    "day": 0,
+    "month": 2.31619266,
+    "transcriptionSeconds": 0
+  },
+  "timings": [
+    {
+      "path": "/api/admin/intelligence",
+      "ms": 2399
+    },
+    {
+      "path": "/api/admin/ad-skip",
+      "ms": 98
+    },
+    {
+      "path": "/api/intelligence/status",
+      "ms": 8416
+    },
+    {
+      "path": "/api/intelligence/moment",
+      "ms": 1008
+    },
+    {
+      "path": "/api/search/conversations",
+      "ms": 1031
+    },
+    {
+      "path": "/api/intelligence/status",
+      "ms": 6303
+    },
+    {
+      "path": "/api/catalogue/search",
+      "ms": 91
+    },
+    {
+      "path": "/api/admin/intelligence",
+      "ms": 1050
+    }
+  ],
+  "physicalIPhoneVerified": false
+}

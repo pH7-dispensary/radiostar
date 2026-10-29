@@ -1,0 +1,1467 @@
+{
+  "at": "2026-10-29T19:01:45.396Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "episodes": [
+    {
+      "podcast": "Danny Jones Podcast",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:8cb04923e9514c30",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "publishedAt": "Mon, 26 Oct 2026 17:06:00 -0000",
+      "duration": "11798",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "channel",
+        "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": "Correction of unsupported legacy approval: the prior phrase \"i said yes\" supplied no publisher licence, legal exception assessment or rights-holder evidence. No publisher prohibition is inferred. Processing requires documented evidence.",
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "EVIDENCE_REVIEW_NO_BASIS",
+            "source": "Radio Star technical evidence review",
+            "scope": "podcast",
+            "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "3ca58e7bc09e317bc36e25743c95814fe13c4d80c6f6b7a716fcf011e6388966",
+        "recordedAt": "2026-10-29T19:00:28.692Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "channel"
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:9d8a7a48ef324c49",
+      "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+      "publishedAt": "Sat, 24 Oct 2026 17:00:00 -0000",
+      "duration": "10838",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "channel",
+        "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": "Correction of unsupported legacy approval: the prior phrase \"i said yes\" supplied no publisher licence, legal exception assessment or rights-holder evidence. No publisher prohibition is inferred. Processing requires documented evidence.",
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "EVIDENCE_REVIEW_NO_BASIS",
+            "source": "Radio Star technical evidence review",
+            "scope": "podcast",
+            "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "3ca58e7bc09e317bc36e25743c95814fe13c4d80c6f6b7a716fcf011e6388966",
+        "recordedAt": "2026-10-29T19:00:31.154Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "channel"
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:24d135b738561419",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "publishedAt": "Mon, 19 Oct 2026 17:32:00 -0000",
+      "duration": "10048",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "channel",
+        "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": "Correction of unsupported legacy approval: the prior phrase \"i said yes\" supplied no publisher licence, legal exception assessment or rights-holder evidence. No publisher prohibition is inferred. Processing requires documented evidence.",
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "EVIDENCE_REVIEW_NO_BASIS",
+            "source": "Radio Star technical evidence review",
+            "scope": "podcast",
+            "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "3ca58e7bc09e317bc36e25743c95814fe13c4d80c6f6b7a716fcf011e6388966",
+        "recordedAt": "2026-10-29T19:00:26.540Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "channel"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:39589f3cb0ef4923",
+      "title": "#2572 - Colum Tyrrell",
+      "publishedAt": "Thu, 29 Oct 2026 17:00:00 -0000",
+      "duration": "11089",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "episode",
+        "recordId": "1959e989a1d1731b1d523c6bab54cf89b6ed49a6967308bf64fc93c0d208c8cf",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": null,
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "0935f03f1c0901e396ef606d3f6f9d9c14c13f2b580af9acdc5d9b4ee80f428e",
+        "recordedAt": "2026-10-29T19:00:30.843Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "episode"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:6f1b5330eeadc765",
+      "title": "#2571 - Jimmy Carr",
+      "publishedAt": "Wed, 28 Oct 2026 19:00:00 -0000",
+      "duration": "10595",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "episode",
+        "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": null,
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "dfc406b3da4f56cac702d11095a68bd9ca3e5379cfe24ade9ed8c67c3583960b",
+        "recordedAt": "2026-10-29T19:00:28.556Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "episode"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:97e358f1d81aa887",
+      "title": "#2570 - Mystery Boys",
+      "publishedAt": "Fri, 23 Oct 2026 17:00:00 -0000",
+      "duration": "10181",
+      "hasPublisherTranscript": false,
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      },
+      "processingState": "UNAVAILABLE",
+      "processingCode": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "assessment": {
+        "version": "processing-activities-v1",
+        "deploymentRegion": "eu-west-2",
+        "decisionScope": "rights-only",
+        "executionJurisdiction": "GB",
+        "operatorJurisdiction": "NOT_INFERRED_FROM_SERVER_REGION",
+        "activityPurpose": "Podcast listener service and internal advertisement analysis; not solely non-commercial research",
+        "scope": "episode",
+        "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+        "evidenceTerritories": [],
+        "territoryNote": "An empty territory list does not establish worldwide exception coverage.",
+        "legalBasis": null,
+        "rightsReservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "publisherEvidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          },
+          {
+            "type": "TDM_REVIEW",
+            "source": "server-policy",
+            "scope": "processing",
+            "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+          }
+        ],
+        "operationalGates": "Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.",
+        "statutoryConsiderations": [
+          {
+            "provision": "UK CDPA 29A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/29A",
+            "guidance": "https://www.gov.uk/guidance/exceptions-to-copyright",
+            "status": "PURPOSE_NOT_ESTABLISHED",
+            "rationale": "This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose."
+          },
+          {
+            "provision": "UK CDPA 28A",
+            "url": "https://www.legislation.gov.uk/ukpga/1988/48/section/28A",
+            "status": "CONDITIONS_NOT_ESTABLISHED",
+            "rationale": "Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception."
+          },
+          {
+            "provision": "EU Directive 2019/790 Articles 3 and 4",
+            "url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng",
+            "status": "TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED",
+            "rationale": "Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient."
+          }
+        ],
+        "decisions": {
+          "bounded-audio-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "bounded-audio-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription",
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF",
+            "maximumSeconds": 180,
+            "maximumAcquiredBytes": 8388608,
+            "distribution": false
+          },
+          "internal-transcription": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "audio-transcription"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "internal-ai-analysis": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-processing"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "displayed-intelligence": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "intelligence-display"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "advertisement-detection": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "ad-detection"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "automatic-ad-skip": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "automatic-skipping"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "public-transcript-distribution": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "transcript-distribution"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "playback-captions": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "captions"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "translation": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "translation-text"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "dubbing": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "dubbing-audio"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          },
+          "voice-replication": {
+            "allowed": false,
+            "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+            "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+            "basisEstablished": false,
+            "requiredPermissions": [
+              "voice-cloning"
+            ],
+            "policyVersion": 2,
+            "mode": "OFF"
+          }
+        },
+        "permissionsChanged": false,
+        "fingerprint": "6dfe43d83236014d8ef82921a299866d22f37b82b8fa952da58303774406b022",
+        "recordedAt": "2026-10-29T19:00:32.384Z"
+      },
+      "actualPublisherReservation": false,
+      "scope": "episode"
+    }
+  ],
+  "pilot": {
+    "active": true,
+    "enabled": true,
+    "enrolledTesters": 2,
+    "expiresAt": "2026-10-31T17:59:01.994Z",
+    "changed": false
+  },
+  "standardLimits": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": false
+  },
+  "testingModeChanged": false,
+  "paidCalls": 0,
+  "usageRecords": 225,
+  "reservations": 0,
+  "costTotals": {
+    "day": 0,
+    "month": 2.31619266,
+    "transcriptionSeconds": 0
+  }
+}

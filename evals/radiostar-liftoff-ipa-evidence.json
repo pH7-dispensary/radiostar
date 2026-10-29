@@ -1,0 +1,27 @@
+{
+  "buildId": "dcb5dbe1-429b-4aa1-827d-54ee4dcc8a77",
+  "sourceRevision": "5dee7ec7b9920375a9680f031702fb6940067c71",
+  "ipaSha256": "3f0ae2a8495399e4d6fb6eec1b78f21649c4f8bc6d27204ce1b846560230e9a9",
+  "bundle": "app.radiostar.ios",
+  "version": "1.0.0",
+  "build": "16",
+  "team": "69F2T3M9C4",
+  "signatureVerified": true,
+  "backgroundAudio": true,
+  "developmentEntitlement": false,
+  "compiledSymbols": {
+    "RadioStarSleep": true,
+    "DeliveredAudioLoader": true,
+    "DeliveredAudioPrefix": true,
+    "matchDeliveredAudio": true,
+    "replaceWithDeliveredAudio": true
+  },
+  "awsEndpoint": true,
+  "iconFiles": [
+    "AppIcon60x60@2x.png",
+    "AppIcon76x76@2x~ipad.png"
+  ],
+  "knownSecretScan": true,
+  "scannedFiles": 58,
+  "extractionNote": "Removed local filesystem extended attributes from extracted copy; signed file bytes and original IPA unchanged."
+}

@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-29T18:33:54.359Z",
+  "files": 421,
+  "sourceCommit": "5dee7ec7b9920375a9680f031702fb6940067c71",
+  "nativeFiles": {
+    "modules/radio-star-sleep/ios/DeliveredAudioLoader.swift": "561558284ec3e92bba04ef5e4200ae3b0f93fe567c3fd1c66a7ea725b6f97a2a",
+    "modules/radio-star-sleep/ios/DeliveredAudioPrefix.swift": "d686edf4b6628052a56709de31cfe15ba3e549a656ca43d2db6b77c6384ba55d",
+    "modules/radio-star-sleep/ios/RadioStarSleepModule.swift": "3703b7358fad5b03ce4831be819c196de6086f5fcaefdb3e2e97e983574a94dc",
+    "src/PlaybackProvider.tsx": "b79cc6594a5fe3bc1b150391d9486cdac51153bb9b0e72baca029659ed88b2f4",
+    "src/AdSkipRuntime.tsx": "d27e45d4c31b2503a1fce98657546139fe50235298015ce5b7c54d4ff8769d4a",
+    "src/deliveredAudio.ts": "a00fe69b962f7b12b821da372f75f11e3d00b88b2dcae29e016e7080757a2f3f",
+    "src/deliveredAudioProof.mjs": "4f16af4cd2c2d14cbef10133aa86da01656b1ec89717eabf979a5614ece4f254",
+    "assets/radio-star-icon.png": "a4f00926754d36a335619fd5a299d7c5d0fdf062632a2b3c8e85d434efa2562d"
+  },
+  "bundle": "app.radiostar.ios",
+  "buildBefore": "15",
+  "backgroundAudio": true,
+  "knownCredentialsAbsent": true
+}

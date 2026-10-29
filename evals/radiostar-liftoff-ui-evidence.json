@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-29T18:54:25.266Z",
+  "fixture": true,
+  "authenticatedEpisodePage": true,
+  "activities": 12,
+  "mandatoryRestrictionVisible": true,
+  "statutoryRationaleVisible": true,
+  "widths": [
+    1440,
+    768,
+    390
+  ],
+  "pageErrors": [],
+  "paidCalls": 0
+}

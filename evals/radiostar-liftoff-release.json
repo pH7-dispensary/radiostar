@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-29T19:03:36.104110+00:00",
+  "sourceRevision": "5dee7ec7b9920375a9680f031702fb6940067c71",
+  "backendSourceRevision": "f856629",
+  "nativeConfigCommit": "d470671",
+  "buildId": "dcb5dbe1-429b-4aa1-827d-54ee4dcc8a77",
+  "buildNumber": "16",
+  "buildStatus": "FINISHED",
+  "submissionId": "b1c0e887-dc06-4249-a136-13354ee70376",
+  "submissionStatus": "IN_QUEUE",
+  "requestedInternalGroup": "Team (Expo)",
+  "appleBuild16": null,
+  "latestAppleBuild": {
+    "buildNumber": "15",
+    "processingState": "VALID",
+    "internalState": "IN_BETA_TESTING",
+    "uploadedDate": "2026-10-28T09:49:54-07:00"
+  },
+  "publicSubmission": false,
+  "physicalIphoneVerified": false,
+  "deployment": {
+    "releaseSha": "5c0fb3c136152faf4e83a51663659ede7242f62ee3f2d8413d44486dcc650feb",
+    "previousReleaseSha": "6948ea714e0f1ae7afbd0bdaf8f2c4524b78365b165927949e39527e3d49136b",
+    "deployedAt": "2026-10-29T19:00:19.114Z",
+    "rollbackAvailable": true
+  },
+  "newModelCostUsd": 0
+}

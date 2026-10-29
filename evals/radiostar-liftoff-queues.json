@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-29T19:01:29.959Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "queues": [
+    {
+      "queue": "starcast-phase1-processing",
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    },
+    {
+      "queue": "starcast-phase1-processing-dlq",
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    }
+  ]
+}
