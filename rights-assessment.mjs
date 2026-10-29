@@ -21,6 +21,55 @@ const compact = (value, length = 500) => text(value).slice(0, length);
 const hash = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const unique = (items) => [...new Set(items.filter(Boolean))];
 
+// Explain activities through the existing evaluator. This records deployment
+// facts and unresolved statutory predicates; it never grants permissions.
+export function assessProcessingActivities({ rights, feedUrl, episodeId, deploymentRegion = null }) {
+  const record = rights.resolve(feedUrl, episodeId);
+  const activities = {
+    'bounded-audio-analysis': ['ad-detection'],
+    'bounded-audio-transcription': ['audio-transcription', 'ad-detection'],
+    'internal-transcription': ['audio-transcription'],
+    'internal-ai-analysis': ['intelligence-processing'],
+    'displayed-intelligence': ['intelligence-display'],
+    'advertisement-detection': ['ad-detection'],
+    'automatic-ad-skip': ['automatic-skipping'],
+    'public-transcript-distribution': ['transcript-distribution'],
+    'playback-captions': ['captions'],
+    translation: ['translation-text'], dubbing: ['dubbing-audio'], 'voice-replication': ['voice-cloning'],
+  };
+  const decisions = Object.fromEntries(Object.entries(activities).map(([activity, features]) => {
+    const checks = features.map(feature => rights.evaluate({feature, feedUrl, episodeId}));
+    const refusal = checks.find(check => !check.allowed);
+    return [activity, { allowed: !refusal, code: refusal?.code || 'ALLOWED_BY_EXISTING_RECORD',
+      reason: refusal?.reason || 'The current scoped rights record permits this activity; no duplicate approval is needed.',
+      basisEstablished: checks.every(check => check.basisEstablished), requiredPermissions: features,
+      policyVersion: checks[0].policyVersion, mode: checks[0].mode,
+      ...(activity.startsWith('bounded-') ? {maximumSeconds:180,maximumAcquiredBytes:8*1024*1024,distribution:false} : {}) }];
+  }));
+  const context = {
+    version: 'processing-activities-v1', deploymentRegion, decisionScope: 'rights-only',
+    executionJurisdiction: deploymentRegion === 'eu-west-2' ? 'GB' : 'UNESTABLISHED',
+    operatorJurisdiction: 'NOT_INFERRED_FROM_SERVER_REGION',
+    activityPurpose: 'Podcast listener service and internal advertisement analysis; not solely non-commercial research',
+    scope: record.id ? record.episodeId ? 'episode' : 'channel' : 'unassessed', recordId: record.id || null,
+    evidenceTerritories: record.approvalAssessment?.territories || [],
+    territoryNote: 'An empty territory list does not establish worldwide exception coverage.',
+    legalBasis: record.legalBasis || null, rightsReservations: record.reservedFeatures || [],
+    evidence: rights.assessment(feedUrl, episodeId).evidence,
+    operationalGates: 'Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.',
+    statutoryConsiderations: [
+      {provision:'UK CDPA 29A',url:'https://www.legislation.gov.uk/ukpga/1988/48/section/29A',
+        guidance:'https://www.gov.uk/guidance/exceptions-to-copyright',status:'PURPOSE_NOT_ESTABLISHED',
+        rationale:'This exception requires analysis solely for non-commercial research. Free listener features do not establish that research purpose.'},
+      {provision:'UK CDPA 28A',url:'https://www.legislation.gov.uk/ukpga/1988/48/section/28A',status:'CONDITIONS_NOT_ESTABLISHED',
+        rationale:'Temporary local audio is deleted, but derived transcripts are retained. The lawful-use, provider-copy retention and independent-economic-significance conditions have not been established for every relevant act. A short window is not itself an exception.'},
+      {provision:'EU Directive 2019/790 Articles 3 and 4',url:'https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng',status:'TERRITORIAL_AND_ACTIVITY_BASIS_NOT_ESTABLISHED',
+        rationale:'Article 3 requires a qualifying research organisation or cultural heritage institution and scientific research. Article 4 requires applicable national implementation, lawful access and an appropriate rights-reservation check. A UK processing region does not establish EU territorial coverage; absent RSS reservations alone are insufficient.'},
+    ], decisions, permissionsChanged: false,
+  };
+  return {...context,fingerprint:hash(context)};
+}
+
 const elementValues = (xml, name) => [...String(xml || "").matchAll(new RegExp(
   `<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "gi",
 ))].map((match) => compact(match[1]));

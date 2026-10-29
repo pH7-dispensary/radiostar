@@ -29,7 +29,7 @@ import { SkipService } from "./skip-service.mjs";
 import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
 import { prepareAdSkipOpening, signedAdSkipVariant } from './ad-skip-source.mjs';
 import { RightsRegistry } from "./rights-registry.mjs";
-import { assessPublisherRights, publisherRightsEvidence } from "./rights-assessment.mjs";
+import { assessPublisherRights, publisherRightsEvidence, assessProcessingActivities } from "./rights-assessment.mjs";
 import { readyDiscovery } from "./ready-discovery.mjs";
 import { IntelligencePolicyRegistry, intelligenceLevel } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
@@ -423,7 +423,15 @@ export function createStarCastServer({
       episodeTitle: episode.title || null,
       ...assessment,
     });
-    return { episode, assessment: result.record, reused: result.reused, mandatory: result.mandatory };
+    const activities = assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null});
+    const activityKey = episodeKey(feedUrl,episodeId);
+    if (store.get('rights-activity-assessment',activityKey)?.fingerprint !== activities.fingerprint) store.transaction(() => {
+      const previous=store.get('rights-activity-assessment',activityKey);
+      const current={...activities,feedUrl,episodeId,assessedAt:new Date().toISOString()};
+      store.set('rights-activity-assessment',activityKey,current);
+      rights.audit('processing-activities-assessed',activities.recordId || activityKey,'system:publisher-rss',{previous,current});
+    });
+    return { episode, assessment: result.record, reused: result.reused, mandatory: result.mandatory, activities };
   };
   pipeline.assessEpisodeRights = assessEpisodeRights;
   const listeners = new ListenerService(store, {
@@ -1048,6 +1056,8 @@ export function createStarCastServer({
     return {
       podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId },
       episode: { ...episode, processingStatus: status },
+      activityAssessment: {...assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null}),
+        recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null},
       processingHistory: history,
       timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
       estimatedMedianProcessingMs: processingEstimate(),
@@ -1230,6 +1240,8 @@ export function createStarCastServer({
     ...rights.assessment(feedUrl, episodeId),
     feedUrl, episodeId: episodeId || null, canonicalEpisodeId: episodeId ? canonicalEpisodeId(feedUrl, episodeId) : null,
     record: rights.resolve(feedUrl, episodeId),
+    activityAssessment: episodeId ? {...assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null}),
+      recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null} : null,
     revision: rights.assessmentRevision(feedUrl, episodeId),
     policy: intelligencePolicy.effective(feedUrl, episodeId),
     history: store.all("rights-review-history").map(([, value]) => value)
