@@ -23,7 +23,7 @@ const unique = (items) => [...new Set(items.filter(Boolean))];
 
 // Explain activities through the existing evaluator. This records deployment
 // facts and unresolved statutory predicates; it never grants permissions.
-export function assessProcessingActivities({ rights, feedUrl, episodeId, deploymentRegion = null }) {
+export function assessProcessingActivities({ rights, feedUrl, episodeId, deploymentRegion = null, publisherEvidence = [] }) {
   const record = rights.resolve(feedUrl, episodeId);
   const activities = {
     'bounded-audio-analysis': ['ad-detection'],
@@ -56,6 +56,7 @@ export function assessProcessingActivities({ rights, feedUrl, episodeId, deploym
     territoryNote: 'An empty territory list does not establish worldwide exception coverage.',
     legalBasis: record.legalBasis || null, rightsReservations: record.reservedFeatures || [],
     evidence: rights.assessment(feedUrl, episodeId).evidence,
+    publisherEvidence,
     operationalGates: 'Budget, acquisition limits, exact audio verification, active private pilot, listener preference and suspension controls still apply independently.',
     statutoryConsiderations: [
       {provision:'UK CDPA 29A',url:'https://www.legislation.gov.uk/ukpga/1988/48/section/29A',

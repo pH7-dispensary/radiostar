@@ -44,6 +44,8 @@ try {
   await assess();result = await review();
   assert.equal(result.scope,'channel');
   assert.equal(result.recordId,channel.id);
+  assert(result.publisherEvidence.some(row=>row.type==='LAWFUL_ACCESS_OBSERVED'),'fresh publisher observations survive a preserved channel record');
+  assert(result.evidence.some(row=>row.type==='OWNED'),'effective channel permission evidence remains separate');
   for (const key of ['bounded-audio-analysis','bounded-audio-transcription','internal-transcription','internal-ai-analysis','displayed-intelligence','advertisement-detection','automatic-ad-skip']) {
     assert.equal(result.decisions[key].allowed,true,key);
     assert.equal(result.decisions[key].basisEstablished,true,key);

@@ -406,6 +406,10 @@ export function createStarCastServer({
     if(env.STARCAST_SEMANTIC_SEARCH==="enabled")pipeline.semanticSearch=new SemanticSearch({store,requests});
     if(env.STARCAST_CLAIM_REVIEW==="enabled")pipeline.claimReviewer=(value,transcript,key)=>reviewClaims(value,transcript,requests,{sourceKey:key});
   }
+  const activityAssessmentFor = (feedUrl, episodeId, publisherEvidence) => assessProcessingActivities({
+    rights, feedUrl, episodeId, deploymentRegion: env.AWS_REGION || null,
+    publisherEvidence: publisherEvidence ?? store.get('rights-activity-assessment', episodeKey(feedUrl,episodeId))?.publisherEvidence ?? [],
+  });
   const assessEpisodeRights = async (feedUrl, episodeId, suppliedEpisode = null) => {
     const episode = suppliedEpisode?.rightsEvidence
       ? suppliedEpisode
@@ -423,7 +427,7 @@ export function createStarCastServer({
       episodeTitle: episode.title || null,
       ...assessment,
     });
-    const activities = assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null});
+    const activities = activityAssessmentFor(feedUrl, episodeId, assessment.assessmentEvidence);
     const activityKey = episodeKey(feedUrl,episodeId);
     if (store.get('rights-activity-assessment',activityKey)?.fingerprint !== activities.fingerprint) store.transaction(() => {
       const previous=store.get('rights-activity-assessment',activityKey);
@@ -1056,7 +1060,7 @@ export function createStarCastServer({
     return {
       podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId },
       episode: { ...episode, processingStatus: status },
-      activityAssessment: {...assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null}),
+      activityAssessment: {...activityAssessmentFor(feedUrl,episodeId),
         recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null},
       processingHistory: history,
       timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
@@ -1240,7 +1244,7 @@ export function createStarCastServer({
     ...rights.assessment(feedUrl, episodeId),
     feedUrl, episodeId: episodeId || null, canonicalEpisodeId: episodeId ? canonicalEpisodeId(feedUrl, episodeId) : null,
     record: rights.resolve(feedUrl, episodeId),
-    activityAssessment: episodeId ? {...assessProcessingActivities({rights,feedUrl,episodeId,deploymentRegion:env.AWS_REGION || null}),
+    activityAssessment: episodeId ? {...activityAssessmentFor(feedUrl,episodeId),
       recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null} : null,
     revision: rights.assessmentRevision(feedUrl, episodeId),
     policy: intelligencePolicy.effective(feedUrl, episodeId),
