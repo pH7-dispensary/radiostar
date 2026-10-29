@@ -58,21 +58,19 @@ export async function prepareAdAudioWindow(audioUrl, { windowSeconds = AD_WINDOW
   try {
     const source = await acquire(audioUrl, path, { signal });
     let proofBytes = source.bytes, contentHash = source.contentHash;
-    if (!source.completeSource) {
-      // For MP3, packet positions give an exact prefix boundary even with VBR.
-      // Do not make the phone buffer eight minutes of low-bitrate audio just
-      // to verify a three-minute opening. No time/byte-ratio approximation.
-      const {stdout:index} = await exec(ffprobe.path,['-v','error','-protocol_whitelist','file,pipe','-select_streams','a:0',
-        '-read_intervals',`%+${windowSeconds+1.5}`,'-show_entries','format=format_name:packet=pos,size','-of','json',path],
-      {signal,timeout:30000,maxBuffer:4*1024*1024});
-      const indexed=JSON.parse(index);
-      if(indexed.format?.format_name==='mp3') {
-        const ends=(indexed.packets || []).map(p=>Number(p.pos)+Number(p.size)).filter(n=>Number.isSafeInteger(n)&&n>0&&n<=source.bytes);
-        if(!ends.length)throw Error('Audio window has no trustworthy MP3 packet positions.');
-        proofBytes=Math.max(...ends);
-        await truncate(path,proofBytes);
-        const hash=createHash('sha256');for await(const bytes of createReadStream(path))hash.update(bytes);contentHash=hash.digest('hex');
-      }
+    // For MP3, packet positions give an exact prefix boundary even with VBR.
+    // Do not make the phone buffer eight minutes of low-bitrate audio just
+    // to verify a three-minute opening. No time/byte-ratio approximation.
+    const {stdout:index} = await exec(ffprobe.path,['-v','error','-protocol_whitelist','file,pipe','-select_streams','a:0',
+      '-read_intervals',`%+${windowSeconds+1.5}`,'-show_entries','format=format_name:packet=pos,size','-of','json',path],
+    {signal,timeout:30000,maxBuffer:4*1024*1024});
+    const indexed=JSON.parse(index);
+    if(indexed.format?.format_name==='mp3') {
+      const ends=(indexed.packets || []).map(p=>Number(p.pos)+Number(p.size)).filter(n=>Number.isSafeInteger(n)&&n>0&&n<=source.bytes);
+      if(!ends.length)throw Error('Audio window has no trustworthy MP3 packet positions.');
+      proofBytes=Math.max(...ends);
+      await truncate(path,proofBytes);
+      const hash=createHash('sha256');for await(const bytes of createReadStream(path))hash.update(bytes);contentHash=hash.digest('hex');
     }
     // Count decoded samples, not the whole-file duration in Xing/ID3 headers.
     // One extra second protects the verification boundary at the window end.

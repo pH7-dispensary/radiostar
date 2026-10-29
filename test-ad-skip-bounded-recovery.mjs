@@ -14,6 +14,9 @@ import { transcribeOnDemand } from './transcription.mjs';
 import { matchDeliveredPrefix } from './native/src/deliveredAudioProof.mjs';
 import { EpisodePipeline, episodeKey } from './episode-pipeline.mjs';
 import { RightsRegistry } from './rights-registry.mjs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import ffmpeg from 'ffmpeg-static';
 
 const directory = await mkdtemp(join(tmpdir(),'starcast-bounded-test-'));
 const digest = b => createHash('sha256').update(b).digest('hex');
@@ -55,6 +58,14 @@ try {
   let active=true;assert.equal(await matchDeliveredPrefix(proof.variant,{match:async()=>{active=false;return true;},current:()=>active}),null,'source switch during proof fails closed');
   assert.equal(await matchDeliveredPrefix({...proof.variant,windowProof:{...proof.variant.windowProof,byteLength:AD_WINDOW_MAX_BYTES+1}},native),null);
   assert.equal(await matchDeliveredPrefix({...proof.variant,audioVariantFingerprint:'a'.repeat(64)},native),null);
+  const vbrPath=join(directory,'owned-vbr.mp3');
+  await promisify(execFile)(ffmpeg,['-nostdin','-v','error','-stream_loop','3','-i','fixtures/ad-skip-owned-v1.mp3','-t','200','-c:a','libmp3lame','-q:a','4',vbrPath],{timeout:30000});
+  const vbrBytes=await readFile(vbrPath);
+  assert(vbrBytes.length<AD_WINDOW_MAX_BYTES);
+  const vbr=await prepareAdAudioWindow(url,{acquire:async(_url,path)=>{await writeFile(path,vbrBytes);return {bytes:vbrBytes.length,contentHash:digest(vbrBytes),completeSource:true,delivery:{url,headers:{}}};}});
+  assert(vbr.windowProof.byteLength<vbrBytes.length,'A complete low-bitrate source still gets an exact opening-only prefix');
+  assert.equal(vbr.windowProof.coverageEndMs,180000);assert.equal(vbr.contentHash,digest(vbrBytes.subarray(0,vbr.windowProof.byteLength)));
+  await vbr.cleanup();
   const store=new LocalStore(':memory:');
   let preparations=0,release;
   const transcript={segments:[{id:'opening',startMs:0,endMs:10000,text:'Welcome to an ordinary editorial discussion.'}],transcriptVersion:'owned',audioContentHash:hash,audioVariant:hash,durationMs:acquired.durationMs};
