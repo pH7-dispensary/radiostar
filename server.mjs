@@ -439,7 +439,9 @@ export function createStarCastServer({
     automaticEnabled: (listener) => Boolean(listener && !listener.revokedAt && testingMode.adSkipAllowed(listener.id) && featureEnabled("adSkip", listener.id)),
     testingContext: (listener) => testingMode.context(listener?.id),
     maxAudioSeconds: (value) => testingMode.limits(value?.testingContext).maxEpisodeSeconds || ledger.controls.maxEpisodeSeconds,
-    canVerifyAudio: ({ feedUrl, episodeId, value }) => {
+    canVerifyAudio: ({ feedUrl, episodeId, value, operation }) => {
+      if (operation === 'transcribe-window' && !pipeline.audioEnabled)
+        return {allowed:false,code:'AUDIO_DISABLED',reason:'Audio transcription is disabled on this server.'};
       if (!intelligencePolicy.allows(feedUrl, episodeId, "adCandidates").allowed)
         return { allowed: false, reason: "New audio verification is paused by the effective intelligence policy." };
       if (!testingMode.adSkipPreparationAllowed() || !adminService.featureOperational('adSkip'))
@@ -447,17 +449,14 @@ export function createStarCastServer({
           allowed: false,
           reason: "Ad Skip is not enabled for this controlled rollout.",
         };
-      const processing = rights.evaluate({
-        feature: "intelligence-processing",
-        feedUrl,
-        episodeId,
-      });
-      const audio = rights.evaluate({ feature: "audio-transcription", feedUrl, episodeId });
-      if (!rights.evaluate({ feature: "ad-detection", feedUrl, episodeId }).allowed || !processing.allowed || !audio.allowed)
+      const detection = rights.evaluate({ feature: 'ad-detection', feedUrl, episodeId });
+      const audio = operation === 'transcribe-window' ? rights.evaluate({ feature: 'audio-transcription', feedUrl, episodeId }) : {allowed:true};
+      if (!detection.allowed || !audio.allowed)
         return {
           allowed: false,
-          reason: !processing.allowed
-            ? processing.reason
+          code: !detection.allowed ? detection.code : audio.code,
+          reason: !detection.allowed
+            ? detection.reason
             : !audio.allowed
               ? audio.reason
               : "Audio verification is not authorised for this episode.",
@@ -499,7 +498,7 @@ export function createStarCastServer({
     assess: assessEpisodeRights,
     enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
     allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,
-    inspect: (feed, id) => skips.inspect(feed, id),
+    inspect: (feed, id, episode) => skips.inspect(feed, id, {episode}),
     resumeDerived: async (feed,id) => {
       const key=episodeKey(feed,id),semantic=store.get("semantic-index",key),index=store.get("search-index",key);
       // Continue only an already-started canonical index. Existing request
@@ -1755,6 +1754,12 @@ export function createStarCastServer({
           });
         if (url.pathname === "/api/skips/status") {
           const preferences = listeners.summary(listener).preferences || {};
+          // Resolve metadata independently of canonical intelligence. Assessing
+          // never grants permission; SkipService applies its own scoped gates.
+          if (!skips.source(input.feedUrl,input.episodeId)?.episode?.audioUrl && testingMode.adSkipAllowed(listener.id) && preferences.adSkipEnabled === true) {
+            const {episode}=await assessEpisodeRights(input.feedUrl,input.episodeId);
+            skips.inspect(input.feedUrl,input.episodeId,{episode});
+          }
           const status=skips.playback(input.feedUrl,input.episodeId,{audioUrl:input.audioUrl,audioVariantFingerprint:input.audioVariantFingerprint,audioMatchCode:input.audioMatchCode,listener,preferences});
           try {status.variant=await signedAdSkipVariant(status.variant,{bucket:env.STARCAST_BACKUP_BUCKET});}
           catch {status.variant=null;status.automaticSkipping=false;status.activeIntervals=[];status.code='VERIFIED_SOURCE_DELIVERY_UNAVAILABLE';}

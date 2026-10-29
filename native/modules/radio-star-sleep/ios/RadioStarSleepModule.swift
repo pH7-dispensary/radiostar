@@ -25,8 +25,25 @@ public final class RadioStarSleepModule: Module {
   private var itemObserver: NSKeyValueObservation?
   private var statusObserver: NSKeyValueObservation?
   private var rateObserver: NSKeyValueObservation?
+  private var deliveredAudio: DeliveredAudioLoader?
+  private weak var deliveredItem: AVPlayerItem?
+  private var deliveredSourceKey: String?
   public func definition() -> ModuleDefinition {
     Name("RadioStarSleep")
+    AsyncFunction("replaceWithDeliveredAudio") { (player: AudioPlayer, url: String, sourceKey: String) -> Bool in
+      guard let source = URL(string:url), DeliveredAudioLoader.allowed(source) else { return false }
+      self.deliveredAudio?.cancel()
+      let loader = DeliveredAudioLoader(url:source), item = AVPlayerItem(asset:loader.asset)
+      item.preferredForwardBufferDuration = 185
+      self.deliveredAudio = loader; self.deliveredItem = item; self.deliveredSourceKey = sourceKey
+      if let queue = player.ref as? AVQueuePlayer { queue.removeAllItems(); queue.insert(item,after:nil) }
+      else { player.ref.replaceCurrentItem(with:item) }
+      return true
+    }.runOnQueue(.main)
+    AsyncFunction("matchDeliveredAudio") { (player: AudioPlayer, sourceKey: String, bytes: Int, sha256: String) -> Bool in
+      guard let item = self.deliveredItem, item.status == .readyToPlay, player.ref.currentItem === item, sourceKey == self.deliveredSourceKey, let loader = self.deliveredAudio else { return false }
+      return loader.prefix.matches(bytes:bytes,sha256:sha256)
+    }.runOnQueue(.main)
     AsyncFunction("buildMetadata") { () -> String in
       let value = ["nativeBuild": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "UNAVAILABLE", "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "UNAVAILABLE"]
       return String(data: try JSONSerialization.data(withJSONObject: value), encoding: .utf8) ?? "{}"
@@ -48,7 +65,7 @@ public final class RadioStarSleepModule: Module {
       self.deadline.clear(); self.unobserve(); self.playback = nil
       UserDefaults.standard.removeObject(forKey: Self.key)
     }.runOnQueue(.main)
-    OnDestroy { DispatchQueue.main.async { self.deadline.cancel(reason: "module_destroyed"); self.unobserve() } }
+    OnDestroy { DispatchQueue.main.async { self.deadline.cancel(reason: "module_destroyed"); self.unobserve(); self.deliveredAudio?.cancel() } }
   }
   private func stateJSON() -> String {
     guard let row = deadline.record, let data = try? JSONEncoder().encode(row), let json = String(data: data, encoding: .utf8) else { return "null" }

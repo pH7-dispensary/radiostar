@@ -105,7 +105,7 @@ try {
   assert.equal(pipeline.transcriptRecovery(feed, "budget", await resolveEpisode(feed, "budget")).eligible, false);
   assert.equal((await pipeline.request({ feedUrl: feed, episodeId: "budget", trigger: "automatic" })).jobId, "old-budget");
   assert.equal(calls, 3);
-  assert.equal(ledger.controls.maxEpisodeSeconds, 7200);
+  assert.equal(ledger.controls.maxEpisodeSeconds, 14400);
   ledger.reconcile("budget-exhaustion", { usd: 0 });
   store.close();
   store = new LocalStore(file);

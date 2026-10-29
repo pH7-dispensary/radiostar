@@ -85,12 +85,17 @@ export function mergeTranscriptSegments(segments) {
   return merged;
 }
 export async function prepareAudio(audioUrl, maxSeconds) {
+  if (!Number.isFinite(maxSeconds) || maxSeconds <= 0 || maxSeconds > 14400) throw Error('Invalid audio processing duration limit.');
   if (!publicUrl(audioUrl))
     throw Error("A public HTTPS audio source is required.");
   const directory = await mkdtemp(join(tmpdir(), "starcast-audio-")),
     path = join(directory, "source.audio");
   try {
-    const delivery = await downloadPublicAudio(audioUrl, path);
+    // Full canonical transcription is an explicit, separately budgeted job.
+    // Allow four hours up to 512 kb/s plus tags, with a 1 GiB disk ceiling.
+    // Ad-only acquisition never enters this whole-source path.
+    const maximumBytes = Math.min(1024 ** 3, Math.ceil(maxSeconds * 64000) + 8 * 1024 ** 2);
+    const delivery = await downloadPublicAudio(audioUrl, path, maximumBytes);
     const { stdout } = await exec(
       ffprobe.path,
       [

@@ -119,7 +119,7 @@ console.log(
       : "not yet verified by a live request."),
 );
 console.log(
-  "Paid text and explicitly requested audio processing authorised: $5/day, $25/month, 3 audio hours/day, 2 hours/episode.",
+  "Paid text and explicitly requested audio processing authorised: $5/day, $25/month, 3 audio hours/day, 4 hours/episode.",
 );
 console.log(
   "Starting Expo. When its QR code appears, scan it with your iPhone on the same Wi-Fi. iPhone connection pending.",

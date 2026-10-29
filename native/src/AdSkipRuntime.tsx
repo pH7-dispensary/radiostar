@@ -8,7 +8,7 @@ import { executeVerifiedSkip } from "./adSkipExecution.mjs";
 
 export type AdSkipNotice = { id: string; durationMs: number; undo: () => Promise<void> };
 export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<AdSkipNotice | null>> }) {
-  const { source, snapshot, seekAutomatically, manualSeekRevision, audioVariantFingerprint, getPositionMs, getPlaybackRevision } = usePlayback();
+  const { source, snapshot, seekAutomatically, manualSeekRevision, audioVariantFingerprint, getPositionMs, getPlaybackRevision, attachAudioProof } = usePlayback();
   const [status, setStatus] = useState<SkipStatus | null>(null);
   const eligibility = useRef<SkipStatus | null>(null);
   const live = useRef({ source, snapshot, seekAutomatically, manualSeekRevision, audioVariantFingerprint, getPositionMs, getPlaybackRevision });
@@ -41,6 +41,11 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
       const revision = refreshRevision.current;
       try {
         const next = await listenerRequest("/api/skips/status", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint });
+        if (!stopped && revision === refreshRevision.current && !audioVariantFingerprint && next.variant?.windowProof && next.pilotEnabled && next.preferenceEnabled) {
+          // Native matching examines bytes delivered through the current item,
+          // with source/privacy guards. No seek or restart occurs here.
+          if (await attachAudioProof(next.variant)) return;
+        }
         if (!stopped && revision === refreshRevision.current) { eligibility.current = next; setStatus(next); }
       } catch { if (!stopped) { eligibility.current = null; setStatus(null); } } finally { loading = false; }
     };

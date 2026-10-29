@@ -22,7 +22,7 @@ const before=await request("/api/admin/intelligence",null,true);
 // Assert the actual release gate, not the UI feature-availability flag.
 const skipOperations = await request('/api/admin/ad-skip', null, true);
 assert.equal(skipOperations.release.productionAutomaticSkipping, false);
-for(const [key,value] of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:7200}))
+for(const [key,value] of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:14400}))
   assert.equal(before.controls[key],value);
 for (const path of ["/api/catalogue/search?q=podcast","/api/admin/intelligence","/api/listener/summary"])
   assert.equal((await fetch(connection.url+path)).status,403);

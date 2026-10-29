@@ -8,9 +8,12 @@ import {LocalStore} from '../persistence.mjs';
 import {SkipService} from '../skip-service.mjs';
 import {verifyAdSkipAudio} from '../ad-skip-verification.mjs';
 import {corpusDirectory,currentReviews,verifyReviewChain} from '../ad-skip-corpus.mjs';
+import {prepareAdAudioWindow,acquireAudioPrefix} from '../bounded-audio.mjs';
 const root=corpusDirectory(),asrRoot=process.argv[2];assert(asrRoot,'Supply the directory of source-hashed machine opening transcripts.');
 const apply=process.argv.includes('--prepare-review');
 const verifyAudio=process.argv.includes('--verify-audio');
+const boundedAudio=process.argv.includes('--bounded-audio');
+assert(!boundedAudio || (verifyAudio && !apply),'Bounded evaluation requires audio verification and never modifies the review corpus.');
 const outputArgument=process.argv.indexOf('--output');
 const outputPath=outputArgument<0?'evals/ad-skip-generalisation-phase2.json':process.argv[outputArgument+1];
 assert(outputPath&&!outputPath.startsWith('--'),'Supply a path after --output.');
@@ -22,16 +25,42 @@ const baseline=await readFile(baselinePath,'utf8').then(JSON.parse).catch(()=>ma
 const rows=[],queue=[],durations=[],windowEvaluations=[];
 for(const ep of manifest.episodes){
  const h=createHash('sha256');for await(const b of createReadStream(join(root,ep.audioPath)))h.update(b);assert.equal(h.digest('hex'),ep.audioContentHash);
- const raw=await readFile(join(asrRoot,ep.id+'.json'),'utf8'),transcript=JSON.parse(raw);
+ const raw=await readFile(join(asrRoot,ep.id+'.json'),'utf8');let transcript=JSON.parse(raw),preparedAudio;
  assert.equal(transcript.audioContentHash,ep.audioContentHash);assert.equal(transcript.independent,false);assert(transcript.coverageEndMs<=180000);
+ if(boundedAudio){
+  const size=(await stat(join(root,ep.audioPath))).size;
+  preparedAudio=await prepareAdAudioWindow(ep.audioUrl,{acquire:(url,path,options)=>acquireAudioPrefix(url,path,{...options,openStream:async(_url,_redirects,_trail,{range})=>{
+   const end=Math.min(size-1,Number(range.split('-')[1]));
+   const response=createReadStream(join(root,ep.audioPath),{start:0,end});response.statusCode=206;
+   response.headers={'content-range':`bytes 0-${end}/${size}`,'content-length':String(end+1),'content-type':'audio/mpeg'};
+   return {response,url};
+  }})});
+  // The machine transcript was made from this exact hash-checked parent file.
+  // Bind its opening to the unchanged prefix; never relabel human evidence.
+  assert(preparedAudio.windowProof.coverageEndMs>=transcript.coverageEndMs);
+  transcript={...transcript,audioContentHash:preparedAudio.contentHash,audioVariant:preparedAudio.contentHash,
+   durationMs:preparedAudio.durationMs,windowProof:preparedAudio.windowProof,
+   provenance:{...transcript.provenance,parentAudioContentHash:ep.audioContentHash}};
+ }
  const store=new LocalStore(':memory:'),service=new SkipService(store,{status:()=>({state:'TRANSCRIPT_READY',episode:{audioUrl:ep.audioUrl},transcript})},{canVerifyAudio:()=>verifyAudio,verifyAudio:verifyAudio?verifyAdSkipAudio:null});
- const t=performance.now();service.inspect(ep.feedUrl,ep.episodeId,verifyAudio?{preparedAudio:{path:join(root,ep.audioPath),durationMs:transcript.durationMs,delivery:{url:ep.audioUrl,headers:{}}}}:{});const analysisMs=performance.now()-t;durations.push(analysisMs);
+ const t=performance.now();service.inspect(ep.feedUrl,ep.episodeId,verifyAudio?{preparedAudio:preparedAudio || {path:join(root,ep.audioPath),durationMs:transcript.durationMs,delivery:{url:ep.audioUrl,headers:{}}}}:{});const analysisMs=performance.now()-t;durations.push(analysisMs);
  await Promise.all(service.inflight.values());
  const verification=service.verification((await import('../episode-pipeline.mjs')).episodeKey(ep.feedUrl,ep.episodeId));
  const candidates=store.all('skip-interval').map(([,v])=>({...v,evaluationOrigin:'hash-bound-opening',independent:false,audioContentHash:ep.audioContentHash,transcriptAlignment:'HASH_BOUND_MACHINE_OPENING',reviewStatus:'UNREVIEWED'})).filter(v=>v.type==='advert');store.close();
  const previous=baseline.episodes.find(e=>e.id===ep.id).candidates;
  const complete=candidates.filter(c=>c.openingBreak),review=currentReviews(events,ep);
  rows.push({id:ep.id,audioContentHash:ep.audioContentHash,baselineCandidates:previous.length,machineOpeningCandidates:candidates.length,completeOpeningProposals:complete.map(c=>({id:c.id,startMs:c.startMs,endMs:c.endMs,proposedEndMs:c.proposedEndMs,verificationState:c.verificationState,approvalSource:c.approvalSource,acousticPause:c.acousticPause,independent:false})),humanLabels:review.labels.length,fullEpisodeReviewed:review.complete,analysisMs,verificationMs:verification?.verificationDurationMs,coverage:{startMs:0,endMs:transcript.coverageEndMs},candidateEvidence:candidates.map(c=>({id:c.id,startMs:c.startMs,endMs:c.endMs,openingBreak:c.openingBreak,reviewOnly:c.reviewOnly,confidence:c.confidence,decisionReason:c.decisionReason}))});
+ if(preparedAudio){
+  rows.at(-1).boundedAcquisition={...preparedAudio.delivery.acquisition,windowProof:preparedAudio.windowProof,fullSourceBytes:(await stat(join(root,ep.audioPath))).size};
+  rows.at(-1).independentBoundaryComparison=review.labels.filter(l=>l.kind==='advert').map(label=>{
+   const match=complete.find(c=>c.verificationState==='VERIFIED'&&c.startMs<=label.endMs&&c.endMs>=label.startMs);
+   return {annotation:label,detected:match?{startMs:match.startMs,endMs:match.endMs}:null,
+    startErrorMs:match?match.startMs-label.startMs:null,endErrorMs:match?match.endMs-label.endMs:null,
+    completeBreakCoverage:match?Math.max(0,Math.min(match.endMs,label.endMs)-Math.max(match.startMs,label.startMs))/(label.endMs-label.startMs):0,
+    outsideAnnotatedBreakMs:match?Math.max(0,label.startMs-match.startMs)+Math.max(0,match.endMs-label.endMs):0};
+  });
+  await preparedAudio.cleanup();
+ }
  for(const c of complete){if(review.labels.some(l=>l.kind==='advert'&&l.startMs===0&&Math.abs(l.endMs-c.endMs)<=1500))continue;
   queue.push({id:ep.id,rank:previous.some(c=>c.type==='advert'&&c.startMs<180000)?2:1,priorityReason:'Optional quality review',audioContentHash:ep.audioContentHash,startMs:0,endMs:Math.min(transcript.coverageEndMs,c.nextSpeechMs+8000),proposedStartMs:c.startMs,proposedEndMs:c.endMs,candidateIds:[c.id],question:'Optional: inspect the sponsor closing and editorial transition. Routine processing does not wait for this review.',independent:false,status:'OPTIONAL_REVIEW',automaticState:c.verificationState});
  }

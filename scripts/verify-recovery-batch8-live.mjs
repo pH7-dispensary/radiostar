@@ -25,7 +25,7 @@ try{
  const session=await api('/api/admin/session');assert.equal(session.viewerIdentification,'cloudfront-vpc');
  assert.equal((await fetch(connection.url+'/api/admin/operations')).status,403);
  assert.equal((await fetch(connection.url+'/api/admin/configuration',{method:'POST',headers:administrative,body:'{}'})).status,403,'CSRF is mandatory');
- for(const [key,value]of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:7200}))assert.equal(before.controls[key],value);
+ for(const [key,value]of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:14400}))assert.equal(before.controls[key],value);
  assert.equal(skips.release.productionAutomaticSkipping,false);
  const feedUrl='https://opensourcesecuritypodcast.libsyn.com/rss',episodeId='b866917c-0245-4bcf-a06a-83f55ea44ca6';
  for(const id of [episodeId,'d04532a8-4020-449e-acd6-98fa8a1b6159',...(process.env.RADIOSTAR_INCLUDE_ACTIVATION_EPISODE === '1' ? ['5e9a9317-8373-41d0-9465-641a66b2f90d'] : [])]){

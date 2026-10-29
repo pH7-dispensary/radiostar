@@ -26,7 +26,7 @@ for await(const part of createReadStream(audioPath))hash.update(part);
 assert.equal(hash.digest('hex'),spec.audioContentHash);assert.equal(statSync(audioPath).size,spec.contentLength);
 assert.equal(spec.transcript.audioContentHash,spec.audioContentHash);
 assert.equal(spec.transcript.complete,false,'This importer only supports bounded source evidence');
-assert(spec.transcript.coverageStartMs===0 && spec.transcript.coverageEndMs<=180000 && spec.durationMs<=7200000);
+assert(spec.transcript.coverageStartMs===0 && spec.transcript.coverageEndMs<=180000 && spec.durationMs<=14400000);
 verifyReviewChain(spec.events || []);
 const store=new LocalStore('/var/lib/starcast/backend.sqlite'),rights=new RightsRegistry(store),admin=new AdminService(store),mode=new IntelligenceTestMode(store),policy=new IntelligencePolicyRegistry(store);
 const key=episodeKey(spec.feedUrl,spec.episodeId),actor={id:identity.Arn,role:'SUPER_ADMIN',name:'Authenticated AWS maintenance operator'};
@@ -68,7 +68,7 @@ try {
   assert.equal(status.verifiedCount,1,JSON.stringify(status));
   const verification=service.verification(key),current=store.all('skip-interval').map(([,v])=>v).filter(v=>v.episodeKey===key&&v.verificationState==='VERIFIED'&&!v.disputed);
   assert(allowed());
-  const checked=await verifyAdSkipAudio({audioUrl:spec.audioUrl,expectedContentHash:spec.audioContentHash,preparedAudio,candidates:current,maxSeconds:7200});
+  const checked=await verifyAdSkipAudio({audioUrl:spec.audioUrl,expectedContentHash:spec.audioContentHash,preparedAudio,candidates:current,maxSeconds:14400});
   assert(allowed() && checked.state==='READY' && checked.variant.windows.length,'Exact stream witnesses are required for this large cached source');
   for(const row of current)assert(checked.candidates.some(c=>c.id===row.id&&c.boundaryVerified&&c.startMs===row.startMs&&c.endMs===row.endMs),'Reverification must preserve the approved exact interval');
   store.set('skip-audio-verification',key,{...verification,variant:{...checked.variant,privateCache:{bucket,key:objectKey}}});

@@ -31,7 +31,7 @@ const before = await get("/api/admin/intelligence");
 assert.equal(before.controls.dailyUsd, 5);
 assert.equal(before.controls.monthlyUsd, 25);
 assert.equal(before.controls.dailyTranscriptionSeconds, 10800);
-assert.equal(before.controls.maxEpisodeSeconds, 7200);
+assert.equal(before.controls.maxEpisodeSeconds, 14400);
 assert.equal(before.controls.enabled, true);
 const catalogue = await get("/api/catalogue/search?q=Python%20Bytes");
 assert.ok(catalogue.results.some((s) => s.name.includes("Python Bytes")));

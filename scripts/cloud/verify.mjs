@@ -24,7 +24,7 @@ async function request(path, data) {
   return response.json();
 }
 const before = await request("/api/admin/intelligence");
-for (const [name, value] of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:7200}))
+for (const [name, value] of Object.entries({dailyUsd:5,monthlyUsd:25,dailyTranscriptionSeconds:10800,maxEpisodeSeconds:14400}))
   assert.equal(before.controls[name], value);
 assert.equal(before.reservations.length, 0);
 assert.equal((await fetch(url + "/api/catalogue/search?q=Python")).status, 403);

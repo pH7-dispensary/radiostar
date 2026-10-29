@@ -85,8 +85,9 @@ const ledger={controls:{enabled:true,dailyUsd:5,monthlyUsd:25,dailyTranscription
 let calls=0,cleaned=0;
 const options={episodeId:episode,audioUrl:url,ledger,store,client:{},authorised:()=>true,audioFactory:async()=>({contentHash:digest,durationMs:4000000,cleanup:async()=>cleaned++}),transcribe:async input=>{calls++;assert.equal(input.durationMs,180000);assert(input.checkpointPrefix.includes(digest));input.beforePaid();return {segments,transcriptVersion:'mock'};}};
 const acquired=await prepareAdSkipOpening(options);assert.equal(calls,1);assert.equal(acquired.transcript.complete,false);assert.equal(acquired.transcript.durationMs,4000000);await acquired.preparedAudio.cleanup();
-await assert.rejects(prepareAdSkipOpening({...options,audioFactory:async()=>({contentHash:digest,durationMs:7200001,cleanup:async()=>cleaned++})}),/limits/);assert.equal(calls,1,'opening window cannot evade full episode cap');
-await assert.rejects(prepareAdSkipOpening({...options,ledger:{...ledger,totals:()=>({day:5,month:0,transcriptionSeconds:0})}}),/budget/);assert.equal(calls,1);
+const longOpening=await prepareAdSkipOpening({...options,audioFactory:async()=>({contentHash:digest,durationMs:18000001,cleanup:async()=>cleaned++})});
+assert.equal(calls,2,'bounded opening is independent of even a five-hour source');assert.equal(longOpening.transcript.coverageEndMs,180000);await longOpening.preparedAudio.cleanup();
+await assert.rejects(prepareAdSkipOpening({...options,ledger:{...ledger,totals:()=>({day:5,month:0,transcriptionSeconds:0})}}),/budget/);assert.equal(calls,2);
 const mode=new IntelligenceTestMode(store,{now:()=>100000});store.set('installation','tester',{id:'tester'});store.set('pilot-device','tester',{listenerId:'tester',expiresAt:new Date(500000).toISOString()});
 mode.setAdSkipPilot({enabled:true,listenerIds:['tester'],expiresAt:new Date(400000).toISOString(),expectedVersion:0,confirmation:'ENABLE AD SKIP PILOT',reason:'Separate safety pilot'},'test');assert(mode.adSkipAllowed('tester'));assert(mode.adSkipPreparationAllowed());assert(!mode.allowed('tester'));assert.deepEqual(mode.limits(mode.context('tester')),{},'no accelerated allowance');
 assert(!mode.adSkipAllowed('ordinary'));store.set('pilot-device','tester',{listenerId:'tester',expiresAt:new Date(99999).toISOString()});assert(!mode.adSkipAllowed('tester'));assert(!mode.adSkipPreparationAllowed());
@@ -106,4 +107,4 @@ try{
  assert.equal(httpStore.all('intelligence-test-mode').length,0,'HTTP pilot controls cannot create a paid allowance');
 }finally{await new Promise(r=>app.server.close(r));httpStore.close();}
 store.close();unbound.close();
-console.log('Opening break, editorial negatives, immutable hash-bound review, deduplicated source acquisition, full-source cap and separate pilot limits passed.');
+console.log('Opening break, editorial negatives, immutable hash-bound review, deduplicated source acquisition, independent bounded windows and separate pilot limits passed.');

@@ -491,6 +491,9 @@ export class EpisodePipeline {
     // Only the legacy duration-before-discovery defect is automatically
     // reassessed. A current duration refusal is not an unlimited retry token.
     const stale = !previous.transcriptChecks?.publisherTranscriptChecked && !previous.reassessedFromJobId;
+    const currentDuration = durationMs(episode.duration);
+    const audioEligibilityRecovered = this.audioEnabled && currentDuration > 0 && currentDuration <= this.ledger.controls.maxEpisodeSeconds * 1000 &&
+      previous.durationPolicySeconds !== this.ledger.controls.maxEpisodeSeconds && this.rights?.evaluate({feature:'audio-transcription',feedUrl,episodeId}).allowed === true;
     const processing = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId });
     // Evidence validation belongs to the rights evaluator; recovery must not
     // maintain a second whitelist of approval forms or legal-basis sources.
@@ -499,10 +502,10 @@ export class EpisodePipeline {
     this.ledger.refresh();
     const totals = this.ledger.totals();
     const budgetAvailable = this.ledger.controls.enabled && totals.day < this.ledger.controls.dailyUsd && totals.month < this.ledger.controls.monthlyUsd;
-    const eligible = stale && documentedBasis && processing?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
+    const eligible = (stale || audioEligibilityRecovered) && documentedBasis && processing?.allowed !== false && operational?.allowed !== false && this.enabled && this.configured && budgetAvailable;
     return {
       historicalFailure: { jobId: previous.jobId, code: previous.code, reason: previous.reason, at: previous.completedAt || previous.startedAt },
-      stale, eligible, documentedBasis,
+      stale, eligible, documentedBasis, audioEligibilityRecovered,
       blockerCode: processing?.allowed === false ? processing.code
         : !documentedBasis ? "LEGAL_BASIS_NOT_ESTABLISHED"
         : operational?.allowed === false ? "INTELLIGENCE_POLICY_HIGH"
@@ -513,6 +516,7 @@ export class EpisodePipeline {
         : operational?.allowed === false ? "New intelligence processing is paused by policy."
         : !this.enabled || !this.configured ? "Episode analysis is temporarily unavailable."
         : !budgetAvailable ? "The intelligence budget is unavailable or exhausted."
+        : audioEligibilityRecovered ? "The current source-duration policy now permits this episode. Reuse checkpoints and enforce the current daily budget."
         : stale ? "The historical duration refusal predates transcript discovery. Recheck authorised transcripts without paid audio."
         : previous.reason || "Audio transcription exceeds the current duration limit.",
       sources: { canonicalOrMatchingAudioCache: cacheFound ? "FOUND" : "UNAVAILABLE", publisherTranscript: publisherReference ? "REFERENCE_FOUND" : "UNAVAILABLE", publisherTranscriptFetched: "NOT_CHECKED", audioFallback: "NOT_REQUESTED" },
@@ -558,6 +562,11 @@ export class EpisodePipeline {
     }
     let previous = this.status(feedUrl, episodeId),
       forcePublisherRefresh = false;
+    this.ledger.refresh();
+    const currentTotals = this.ledger.totals();
+    const budgetRecovery = platformProcessing && previous?.code === 'BUDGET_LIMIT' && Date.parse(previous.resumeAfter || '') <= Date.now() &&
+      currentTotals.day < this.ledger.controls.dailyUsd && currentTotals.month < this.ledger.controls.monthlyUsd &&
+      (previous.transcript?.segments?.length || currentTotals.transcriptionSeconds + 1200 <= this.ledger.controls.dailyTranscriptionSeconds);
     const rightsRecovery = this.rightsRecovery(feedUrl, episodeId);
     if (rightsRecovery) {
       // A rights refusal spent no provider attempt. A newly permitted attempt
@@ -567,7 +576,7 @@ export class EpisodePipeline {
     let recovery = null;
     if (previous?.code === "DURATION_LIMIT" && ["FAILED", "BLOCKED"].includes(previous.state)) {
       recovery = this.transcriptRecovery(feedUrl, episodeId, await this.resolveEpisode(feedUrl, episodeId));
-      if (recovery?.eligible) allowAudio = false;
+      if (recovery?.eligible && !recovery.audioEligibilityRecovered) allowAudio = false;
       if (recovery?.stale && !recovery.documentedBasis)
         return { state: "BLOCKED", code: recovery.blockerCode, reason: recovery.reason, retryable: false };
     }
@@ -585,7 +594,7 @@ export class EpisodePipeline {
     if (
       trigger === "automatic" &&
       previous &&
-      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !(platformProcessing && (retry && previous.retryable || ["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "AUDIO_TRANSCRIPTION_NOT_AUTHORISED", "RIGHTS_RESTRICTED", "LEGAL_BASIS_NOT_ESTABLISHED", "TESTING_EXPIRED"].includes(previous.code))) && !(testingContext && (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code) || (previous.code === "TESTING_EXPIRED" && previous.testingContext?.version !== testingContext.version)))
+      ["FAILED", "BLOCKED", "UNAVAILABLE", "CANCELLED"].includes(previous.state) && !recovery?.eligible && !budgetRecovery && !(platformProcessing && (retry && previous.retryable || ["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "AUDIO_TRANSCRIPTION_NOT_AUTHORISED", "RIGHTS_RESTRICTED", "LEGAL_BASIS_NOT_ESTABLISHED", "TESTING_EXPIRED"].includes(previous.code))) && !(testingContext && (["AUDIO_CONSENT_REQUIRED", "AUDIO_DISABLED", "DURATION_LIMIT"].includes(previous.code) || (previous.code === "TESTING_EXPIRED" && previous.testingContext?.version !== testingContext.version)))
     )
       return publicIntelligence(previous);
     if (!completed(previous) && previous?.attempts >= 2 && !recovery?.eligible)
@@ -644,6 +653,7 @@ export class EpisodePipeline {
       jobId: randomUUID(),
       attempts,
       processingVersion: PROCESSING_VERSION,
+      durationPolicySeconds: this.ledger.controls.maxEpisodeSeconds,
       rightsPolicy: { mode: processingDecision?.mode || null, version: processingDecision?.policyVersion || null, outputProfile: processingDecision?.outputProfile || "standard" },
       intelligencePolicy: operational ? { tier: operational.tier, source: operational.source, version: operational.policyVersion } : null,
       startedAt: new Date().toISOString(),
@@ -931,7 +941,7 @@ export class EpisodePipeline {
       if (!rightsAllowed())
         throw Error("Rights permission does not allow AI processing for this episode.");
       controller.signal.throwIfAborted();
-      // The two-hour cap protects paid audio acquisition and transcription. It
+      // The source-duration cap protects paid acquisition and transcription. It
       // is not a limit on an authorised cached or publisher-provided text
       // transcript: those paths do not download or transcribe the episode.
       let transcript = forcePublisherRefresh
@@ -1045,15 +1055,17 @@ export class EpisodePipeline {
           });
           return;
         }
-        // Check budget before downloading; actual measured duration is reserved before provider calls.
+        // Gate the next bounded chunk, not the whole four-hour job. Completed
+        // chunks survive a daily pause; each new chunk is atomically reserved.
         ledger.refresh();
         const totals = ledger.totals();
+        const nextChunkSeconds = Math.min(1200, Math.ceil(duration / 1000));
         if (
-          totals.day + (duration / 1000) * 0.0001 >
+          totals.day + nextChunkSeconds * 0.0001 >
             ledger.controls.dailyUsd ||
-          totals.month + (duration / 1000) * 0.0001 >
+          totals.month + nextChunkSeconds * 0.0001 >
             ledger.controls.monthlyUsd ||
-          totals.transcriptionSeconds + duration / 1000 >
+          totals.transcriptionSeconds + nextChunkSeconds >
             ledger.controls.dailyTranscriptionSeconds
         )
           throw Error("The intelligence budget has been reached.");
@@ -1325,6 +1337,10 @@ export class EpisodePipeline {
     this.store.delete("skip-analysis", key);
     if (this.store.get('skip-source',key)?.transcript) removed.transcripts++;
     this.store.delete('skip-source',key);
+    this.store.delete('skip-episode',key);
+    for (const [digest,row] of this.store.all('skip-window-transcript')) if (row.origins?.includes(key)) {
+      this.store.delete('skip-window-transcript',digest); removed.transcripts++;
+    }
     this.store.delete("search-index", key);
     this.store.delete("search-index-previous", key);
     this.store.delete("semantic-index", key);

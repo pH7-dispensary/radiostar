@@ -6,10 +6,11 @@ import { promisify } from "node:util";
 import ffmpeg from "ffmpeg-static";
 import ffprobe from "ffprobe-static";
 import { prepareAudio } from "./transcription.mjs";
+import { prepareAdAudioWindow } from './bounded-audio.mjs';
 
 const exec = promisify(execFile);
 const boundaryWindowMs = 1_500;
-export const adSkipAudioVerificationVersion = "automatic-opening-v4";
+export const adSkipAudioVerificationVersion = "delivered-prefix-v5";
 // Coarse transcript boundaries need not coincide with a pause within 650 ms.
 // Search at most three seconds INSIDE the candidate. Never extend its span,
 // relax the silence threshold, or trim more than a third from either side.
@@ -157,9 +158,9 @@ async function openingBoundaryEvidence(path, candidate, hash) {
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
  * validator or a non-silent boundary leaves the interval unverified.
  */
-export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, preparedAudio = null, audioFactory = prepareAudio }) {
+export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, expectedWindow = null, preparedAudio = null, audioFactory = prepareAudio }) {
   if (!/^[a-f0-9]{64}$/.test(expectedContentHash || "")) return { state: "UNAVAILABLE", reason: "The transcript has not been aligned to these exact audio bytes. Automatic skipping remains off.", candidates: [] };
-  const audio = preparedAudio || await audioFactory(audioUrl, maxSeconds);
+  const audio = preparedAudio || (expectedWindow ? await prepareAdAudioWindow(audioUrl) : await audioFactory(audioUrl, maxSeconds));
   try {
     const etag = audio.delivery?.headers?.etag || null;
     const streamSafe = strongEtag(etag) && !/(?:^|,)\s*(?:user-agent|cookie|authorization)\s*(?:,|$)/i.test(String(audio.delivery?.headers?.vary || ""));
@@ -168,6 +169,9 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
       return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
     const verified = [];
     for (const candidate of candidates) {
+      if (audio.windowProof && (candidate.startMs < audio.windowProof.coverageStartMs || candidate.endMs + 1500 > audio.windowProof.coverageEndMs)) {
+        verified.push({id:candidate.id,boundaryVerified:false,code:'COMPLETE_BREAK_OUTSIDE_ACQUIRED_WINDOW'}); continue;
+      }
       if (candidate.openingBreak) {
         verified.push(await openingBoundaryEvidence(audio.path,candidate,audioVariantFingerprint) || {id:candidate.id,boundaryVerified:false,code:'COMPLETE_BREAK_AUDIO_EVIDENCE_INSUFFICIENT'});
         continue;
@@ -205,6 +209,9 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
         contentLength: Number(audio.delivery.headers?.contentLength) || null,
         audioVariantFingerprint,
         durationMs: audio.durationMs,
+        // The native resource loader must match the actual delivered prefix.
+        // This does NOT identify the rest of the episode or permit URL probes.
+        windowProof: audio.windowProof || null,
         windows,
       },
       candidates: verified,

@@ -158,7 +158,7 @@ export function EpisodeIntelligenceView({
       const check = await preflightEpisode(source.feedUrl, source.episodeId);
       if (!alive.current) return;
       if (!check.withinLimit)
-        setMessage("Choose an episode under the two-hour analysis limit.");
+        setMessage("Full-episode transcription supports up to four hours. Ad Skip can analyse eligible shorter windows separately.");
       else if (!check.analysisEnabled || !check.audioEnabled)
         setMessage(
           "Audio analysis is not available on your listening server. You can keep listening.",

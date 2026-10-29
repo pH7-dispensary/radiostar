@@ -78,7 +78,7 @@ const pipeline = new EpisodePipeline({
   resolveEpisode: async (feedUrl, episodeId) => ({
     id: episodeId,
     title: episodeId,
-    duration: episodeId.includes("long") ? "180:00" : "30:00",
+    duration: episodeId.includes("long") ? "300:00" : "30:00",
     audioUrl: `https://publisher.example/${episodeId}.mp3`,
     refs: episodeId === "long-publisher" ? [{ url: transcript.sourceUri, type: "text/vtt" }] : [],
     feedUrl,

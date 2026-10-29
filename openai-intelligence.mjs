@@ -11,7 +11,8 @@ export const defaultControls = Object.freeze({
   dailyUsd: 5,
   monthlyUsd: 25,
   dailyTranscriptionSeconds: 10_800,
-  maxEpisodeSeconds: 7_200,
+  // Four-hour source eligibility; daily audio time and dollar ceilings stay independent.
+  maxEpisodeSeconds: 14_400,
   textModel: "gpt-4.1-mini",
   transcriptionModel: "whisper-1",
   audioAnalysisEnabled: false,

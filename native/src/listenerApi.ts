@@ -95,7 +95,7 @@ export const reportProblem = (input: Record<string, unknown>) =>
   listenerRequest("/api/reports", input);
 export type SkipStatus = {
   pilotEnabled?: boolean;
-  variant?: { deliveryUrl: string; etag: string; contentLength: number; audioVariantFingerprint: string; durationMs: number; windows?: {start: number; end: number; sha256: string}[] } | null;
+  variant?: { deliveryUrl: string; etag: string | null; contentLength: number | null; audioVariantFingerprint: string; durationMs: number; windows?: {start: number; end: number; sha256: string}[]; windowProof?: {version: string; byteLength: number; sha256: string; coverageStartMs: number; coverageEndMs: number} | null } | null;
   code?: string;
   automaticSkipping: boolean;
   preferenceEnabled?: boolean;

@@ -126,7 +126,7 @@ export class FollowedPreparation {
     let slots = Math.max(0, 2 - this.store.all("intelligence").filter(([, j]) => activeStates.has(j.state) && !j.completedAt).length);
     for (const row of this.rows().map(row => ({ ...row, priority: priorityFor(row, listeners) })).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
       await yieldToRequests();
-      if (row.paused || Date.parse(row.retryAfter || "") > Date.now()) continue;
+      if (row.paused || (row.state !== 'REVIEW_REQUIRED' && Date.parse(row.retryAfter || "") > Date.now())) continue;
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
       if (!(row.inWindow && feeds.has(row.feedUrl)) && !recentEncounter) continue;
       const cached = this.pipeline.status(row.feedUrl, row.episodeId);
@@ -139,12 +139,16 @@ export class FollowedPreparation {
         continue;
       }
       if (activeStates.has(cached?.state) && !cached.completedAt) {
+        this.inspect(row.feedUrl, row.episodeId, cached.episode);
         if ((cached.priority || 0) < row.priority) this.store.set("intelligence", row.key, { ...cached, priority: row.priority });
         continue;
       }
-      if (!slots) break;
       try {
         const { episode } = await this.assess(row.feedUrl, row.episodeId);
+        // Ad-only preparation has its own pilot/permissions/budget. A general
+        // rights-review backoff or occupied full-analysis slot cannot block it.
+        this.inspect(row.feedUrl, row.episodeId, episode);
+        if (Date.parse(row.retryAfter || '') > Date.now() || !slots) continue;
         const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl: row.feedUrl, episodeId: row.episodeId });
         const decision = processing;
         if (!processing.allowed) {

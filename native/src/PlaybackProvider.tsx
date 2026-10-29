@@ -20,6 +20,8 @@ import {
 import type { PlaybackSnapshot } from "./contracts";
 import { playbackPresentation, type AudioFeedback } from "./playbackPresentation.mjs";
 import { verifiedPlaybackCopy, cachedVerifiedPlaybackSource, invalidateVerifiedPlaybackSource } from "./verifiedAudio";
+import { replaceWithDeliveredAudio, matchActiveAudio } from './deliveredAudio';
+import type { SkipStatus } from './listenerApi';
 
 import { createSleepDriver, readNativeSleepRecord, type SleepDriver } from "./nativeSleep";
 
@@ -51,6 +53,7 @@ type PlaybackContextValue = {
   getPositionMs: () => number;
   getPlaybackRevision: () => number;
   audioVariantFingerprint: string | null;
+  attachAudioProof: (variant: NonNullable<SkipStatus['variant']>) => Promise<boolean>;
   manualSeekRevision: number;
   setSpeed: (speed: number) => Promise<void>;
   fadeAndPause: (durationMs: number) => Promise<number>;
@@ -91,6 +94,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const restoreFadeVolume = () => { if (fadeVolume.current !== null) { player.volume = fadeVolume.current; fadeVolume.current = null; } };
   const positions = useRef<Record<string, number>>({});
   const sourceRef = useRef(source);
+  const sourceGeneration = useRef(0);
   sourceRef.current = source;
   const audio = playbackPresentation(status, { connecting, error: playbackError, hasSource: !!source });
   useEffect(() => {
@@ -109,6 +113,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   }, [status.playing, status.isBuffering]);
   useEffect(() => {
     if (status.error || playbackError) nativeDiagnostics.record('playback_error');
+    if (status.error) setAudioVariantFingerprint(null);
   }, [status.error, playbackError]);
   useEffect(() => {
     const pending = pendingStart.current;
@@ -161,7 +166,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setConnecting(true);
         setSnapshot((previous) => ({ ...previous, episodeId: stored.source.episodeId,
           positionMs: stored.snapshot.positionMs || 0, speed: stored.snapshot.speed || 1 }));
-        player.replace(stored.source.url);
+        sourceGeneration.current++;
+        const captured = await replaceWithDeliveredAudio(player,stored.source);
+        if (cancelled || operation.current > 0) return;
+        if (!captured) player.replace(stored.source.url);
         player.setPlaybackRate(stored.snapshot.speed || 1);
         const started = Date.now();
         while (
@@ -172,6 +180,11 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         )
           await new Promise((resolve) => setTimeout(resolve, 100));
         if (cancelled || operation.current > 0) return;
+        if (!player.isLoaded && captured) {
+          player.replace(stored.source.url);
+          const fallbackStart=Date.now();
+          while (!player.isLoaded && !cancelled && operation.current === 0 && Date.now()-fallbackStart<15000) await new Promise(resolve=>setTimeout(resolve,100));
+        }
         if (!player.isLoaded) throw Error("Audio restore failed");
         await player.seekTo((stored.snapshot.positionMs || 0) / 1000);
         if (!cancelled) {
@@ -233,6 +246,16 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     snapshot,
     source,
     audio,
+    attachAudioProof: async variant => {
+      const active = sourceRef.current, generation = sourceGeneration.current;
+      if (!active) return false;
+      const current = () => sourceRef.current?.url === active.url && sourceRef.current?.episodeId === active.episodeId && sourceGeneration.current === generation;
+      const fingerprint = await matchActiveAudio(player, active, variant, current);
+      if (!fingerprint || !current()) return false;
+      setAudioVariantFingerprint(fingerprint);
+      nativeDiagnostics.record('active_audio_matched', {positionMs:player.currentTime*1000});
+      return true;
+    },
     retry: async () => {
       if (sourceRef.current) await value.play({ ...sourceRef.current, startPositionMs: snapshot.positionMs });
     },
@@ -248,6 +271,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       const switching = sourceRef.current?.url !== next.url || !sourceRef.current || nativeEpisodeKey(sourceRef.current) !== nativeEpisodeKey(next);
       const reload = switching || !player.isLoaded || audio.state === "FAILED";
       if (reload) {
+        sourceGeneration.current++;
         nativeDiagnostics.record("source_changed", {operation:currentOperation});
         await sleepDriver.cancel();
         if (currentOperation !== operation.current) return;
@@ -257,7 +281,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setAudioVariantFingerprint(null);
         const verified = cachedVerifiedPlaybackSource(next);
         if (currentOperation !== operation.current) return;
-        player.replace(verified ? { uri: verified.uri, headers: verified.headers } : next.url);
+        let captured = false;
+        if (verified) player.replace({uri:verified.uri,headers:verified.headers});
+        else { captured = await replaceWithDeliveredAudio(player,next); if (!captured) player.replace(next.url); }
+        if (currentOperation !== operation.current) return;
         setAudioVariantFingerprint(verified?.fingerprint || null);
         setSnapshot((s) => ({
           ...s,
@@ -269,11 +296,19 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         const started = Date.now();
         while (
           !player.isLoaded &&
-          Date.now() - started < 20000 &&
+          Date.now() - started < (captured ? 5000 : 20000) &&
           currentOperation === operation.current
         )
           await new Promise((resolve) => setTimeout(resolve, 100));
         if (currentOperation !== operation.current) return;
+        if (!player.isLoaded && captured) {
+          // An unsupported publisher/container must not remove ordinary
+          // listening. Fall back once with no proof and no automatic skips.
+          player.replace(next.url);
+          const fallbackStart=Date.now();
+          while (!player.isLoaded && currentOperation===operation.current && Date.now()-fallbackStart<20000) await new Promise(resolve=>setTimeout(resolve,100));
+          if (currentOperation !== operation.current) return;
+        }
         if (!player.isLoaded)
           throw Error("Audio could not load. Please try again.");
       }
@@ -292,8 +327,8 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       player.setPlaybackRate(snapshot.speed);
       pendingStart.current = {at:requestedAt,baseline:player.currentTime*1000};
       player.play();
-      // Start the existing engine before any optional proof work. A cold
-      // proof is cached for a later deliberate load; never swap active audio.
+      // Ordinary playback precedes AI/proof. Runtime may attach proof to the
+      // SAME captured item later; it never swaps an already playing source.
       if (reload) void verifiedPlaybackCopy(next).catch(() => null);
       } catch (error) {
         if (currentOperation === operation.current) {

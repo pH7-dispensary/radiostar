@@ -71,7 +71,7 @@ const resolveEpisode = async (_feed, id) => ({
   id,
   title: "Science discussion",
   showName: "Science",
-  duration: id.startsWith("long") ? "168:00" : "2:00",
+  duration: id.startsWith("long") ? "300:00" : "2:00",
   audioUrl: "https://publisher.example/audio.mp3",
   refs: id === "long-audio" ? [] : [{ url: transcript.sourceUri, type: "text/vtt" }],
 });

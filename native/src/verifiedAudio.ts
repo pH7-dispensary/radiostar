@@ -52,10 +52,13 @@ async function prepareCopy(source: Source): Promise<VerifiedSource | null> {
       new Promise<never>((_, reject) => { statusTimer = setTimeout(() => reject(Error("Optional Ad Skip lookup timed out")), 2000); }),
     ]).finally(() => clearTimeout(statusTimer)) as SkipStatus;
     const variant = status.variant;
+    // A bounded prefix identifies only captured bytes in the active native
+    // item. Never mistake it for a whole-file hash or use an independent fetch.
+    if (variant?.windowProof) return null;
     if (!status.pilotEnabled || !status.preferenceEnabled || !variant || !/^[a-f0-9]{64}$/.test(variant.audioVariantFingerprint) || !variant.contentLength) return null;
-    if (variant.windows?.length) {
+    if (variant.windows?.length && variant.etag) {
       try {
-        const pinned = await verifyAudioRanges(variant, { fetcher: streamFetch as typeof fetch, nonce: Crypto.randomUUID(), signal: abort.signal, digest: async bytes => {
+        const pinned = await verifyAudioRanges({...variant,etag:variant.etag,contentLength:variant.contentLength}, { fetcher: streamFetch as typeof fetch, nonce: Crypto.randomUUID(), signal: abort.signal, digest: async bytes => {
           const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
           return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
         } });

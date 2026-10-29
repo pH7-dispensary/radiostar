@@ -42,7 +42,7 @@ export function publicUrl(value) {
     return null;
   }
 }
-async function streamPublic(value, redirects = 0, trail = []) {
+export async function streamPublic(value, redirects = 0, trail = [], options = {}) {
   const url = publicUrl(value);
   if (!url || redirects > 5)
     throw Error("A public HTTPS publisher source is required.");
@@ -54,10 +54,11 @@ async function streamPublic(value, redirects = 0, trail = []) {
     const req = request(
       url,
       {
-        signal: AbortSignal.timeout(180_000),
+        signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(180_000)]) : AbortSignal.timeout(180_000),
         headers: {
           "user-agent": "StarCast/0.2",
           "accept-encoding": "identity",
+          ...(options.range ? { range: options.range } : {}),
         },
         lookup: (_host, options, cb) =>
           options.all
@@ -73,17 +74,18 @@ async function streamPublic(value, redirects = 0, trail = []) {
     req.end();
   });
   if (response.statusCode >= 300 && response.statusCode < 400) {
-    response.resume();
+    response.destroy();
     if (!response.headers.location)
       throw Error("Publisher redirect is missing a location.");
     return streamPublic(
       new URL(response.headers.location, url).href,
       redirects + 1,
       [...trail, { from: url.href, to: new URL(response.headers.location, url).href, status: response.statusCode }],
+      options,
     );
   }
-  if (response.statusCode !== 200) {
-    response.resume();
+  if (response.statusCode !== 200 && !(options.range && response.statusCode === 206)) {
+    response.destroy();
     throw Error("Publisher source is unavailable.");
   }
   return { response, url: url.href, redirects: trail };

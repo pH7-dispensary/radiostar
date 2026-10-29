@@ -18,7 +18,7 @@ const report={startedAt:new Date().toISOString(),feedUrl,episodeId,timeline:[],m
 try{
  const before=await api('/api/admin/intelligence');report.before={costUsd:sum(before),usageEntries:before.usage.length,jobs:before.jobs.length};
  assert(!before.jobs.some(j=>(j.episodeId||j.episode?.id)===episodeId),'A job exists: inspect it rather than repeat paid acceptance');
- assert.equal(before.reservations.length,0);assert.equal(before.controls.dailyUsd,5);assert.equal(before.controls.monthlyUsd,25);assert.equal(before.controls.maxEpisodeSeconds,7200);assert.equal(before.controls.dailyTranscriptionSeconds,10800);
+ assert.equal(before.reservations.length,0);assert.equal(before.controls.dailyUsd,5);assert.equal(before.controls.monthlyUsd,25);assert.equal(before.controls.maxEpisodeSeconds,14400);assert.equal(before.controls.dailyTranscriptionSeconds,10800);
  const {feed}=await api('/api/catalogue/feed?'+new URLSearchParams({url:feedUrl}),listener);
  const latest=feed.episodes.filter(e=>e.publishedAt&&Date.parse(e.publishedAt)<=Date.now()).sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,3);
  const ready=await api('/api/intelligence/ready',listener);assert.equal(latest.length,3);assert(latest.every(e=>ready.episodes.some(r=>r.id===e.id&&r.feedUrl===feedUrl)),'Latest-three must be cached; this acceptance pays for only one explicitly selected opened episode');

@@ -46,7 +46,7 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
   const disputed = previous.some((item) => item.disputed && (item.sourceVariantKey || item.audioVariant) === transcript.audioVariant && item.startMs < segment.endMs && item.endMs > segment.startMs);
   const transcriptConfidence = segment.reviewOnly ? 0.8 : strongAdvertText(text) ? 0.95 : 0.62;
   return {
-    id: hash(`${key}:${transcript.transcriptVersion || transcript.contentHash}:${segment.id}`),
+    id: hash(`${key}:${transcript.transcriptVersion || transcript.contentHash}:${transcript.windowProof ? transcript.audioVariant + ':' : ''}${segment.id}`),
     episodeKey: key,
     type,
     startMs: segment.startMs,
@@ -109,13 +109,14 @@ function listenerState({ value, intervals, verification }) {
 }
 
 export class SkipService {
-  constructor(store, pipeline, { prepareSource = null, verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, testingContext = () => null, maxAudioSeconds = 7200, clock = Date.now } = {}) {
+  constructor(store, pipeline, { prepareSource = null, verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, testingContext = () => null, maxAudioSeconds = 14400, clock = Date.now } = {}) {
     this.store = store;
     this.pipeline = pipeline;
     this.verifyAudio = verifyAudio;
     this.prepareSource = prepareSource;
     this.sourceInflight = new Map();
     this.sourceTail = Promise.resolve();
+    this.sourceOwner = randomUUID();
     this.canVerifyAudio = canVerifyAudio;
     this.automaticEnabled = automaticEnabled;
     this.testingContext = testingContext;
@@ -126,9 +127,10 @@ export class SkipService {
   }
   verification(key) { return this.store.get("skip-audio-verification", key) || null; }
   source(feed, episode) {
-    const value = this.pipeline.status(feed, episode), source = this.store.get('skip-source', episodeKey(feed, episode));
+    const value = this.pipeline.status(feed, episode) || (this.store.get('skip-episode', episodeKey(feed, episode)) ? {state:'NOT_REQUESTED',episode:this.store.get('skip-episode', episodeKey(feed, episode))} : null), source = this.store.get('skip-source', episodeKey(feed, episode));
+    if (source?.transcript?.windowProof && source.validUntil <= this.clock()) return value;
     if (!value && source?.state==='READY' && source.episode?.audioUrl===source.audioUrl && source.transcript?.audioContentHash) return {state:'TRANSCRIPT_READY',episode:source.episode,transcript:source.transcript};
-    return value && !value.transcript?.audioContentHash && source?.state === 'READY' && source.audioUrl === value.episode?.audioUrl ? { ...value, transcript: source.transcript } : value;
+    return value && (!value.transcript?.audioContentHash || source?.transcript?.windowProof) && source?.state === 'READY' && source.audioUrl === value.episode?.audioUrl ? { ...value, transcript: source.transcript } : value;
   }
   attachReview(input, actor) {
     if (actor?.role !== 'SUPER_ADMIN' || actor.source !== 'session' || input.confirmation !== 'CONFIRM' || !String(input.reason || '').trim()) throw Error('A protected, confirmed Super Admin review is required.');
@@ -145,26 +147,39 @@ export class SkipService {
     return {previous:'UNREVIEWED',current:'REVIEW_RECORDED',queued:false};
   }
   scheduleSource(feed, episode, value) {
-    if (!this.prepareSource || !value?.transcript?.segments?.length || value.transcript.audioContentHash || !value.episode?.audioUrl) return;
-    const key = episodeKey(feed, episode), prior = this.store.get('skip-source', key);
-    if (this.sourceInflight.has(key) || (prior?.audioUrl === value.episode.audioUrl && (prior.state === 'READY' || prior.attempts >= 2 || prior.code === 'PROVIDER_OUTCOME_UNKNOWN' || Date.parse(prior.retryAfter || '') > this.clock()))) return;
-    const allowed = () => { const p = this.canVerifyAudio({feedUrl:feed,episodeId:episode,value}); return typeof p === 'boolean' ? p : p?.allowed; };
+    const key = episodeKey(feed, episode), verification = this.verification(key);
+    const needsDeliveredWindow = verification?.state === 'DYNAMIC_VARIANT' || (verification?.state === 'READY' && !verification.variant?.windowProof &&
+      !verification.variant?.privateCache && !verification.variant?.etag && verification.variant?.contentLength > 32*1024*1024);
+    if (!this.prepareSource || (value?.transcript?.audioContentHash && (value.transcript.windowProof || !needsDeliveredWindow)) || !value?.episode?.audioUrl) return;
+    const prior = this.store.get('skip-source', key);
+    const expired = prior?.transcript?.windowProof && prior.validUntil <= this.clock();
+    if (this.sourceInflight.has(key) || this.sourceInflight.size >= 2 || (prior?.audioUrl === value.episode.audioUrl && ((!expired && prior.state === 'READY') || (!expired && prior.attempts >= 2) || prior.code === 'PROVIDER_OUTCOME_UNKNOWN' || Date.parse(prior.retryAfter || '') > this.clock()))) return;
+    const allowed = () => { const p = this.canVerifyAudio({feedUrl:feed,episodeId:episode,value,operation:'transcribe-window'}); return typeof p === 'boolean' ? p : p?.allowed; };
     if (!allowed()) return;
-    const attempts = prior?.audioUrl === value.episode.audioUrl ? (prior.attempts || 0) + 1 : 1;
-    const record = {feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,attempts,updatedAt:nowIso()};
-    this.store.set('skip-source',key,{...record,state:'QUEUED'});
+    const attempts = !expired && prior?.audioUrl === value.episode.audioUrl ? (prior.attempts || 0) + 1 : 1;
+    const record = {feedUrl:feed,episodeId:episode,episode:value.episode,audioUrl:value.episode.audioUrl,attempts,updatedAt:nowIso()};
+    // SQLite serialises this claim across HTTP/worker processes. A crashed
+    // process can be recovered after the lease; paid checkpoints still veto
+    // replays with an unknown provider outcome.
+    const claimed = this.store.transaction(() => {
+      const current = this.store.get('skip-source',key);
+      if (current?.claimUntil > this.clock() || (!expired && current?.audioUrl === record.audioUrl && (current.state === 'READY' || current.attempts >= 2))) return false;
+      this.store.set('skip-source',key,{...record,state:'QUEUED',claimOwner:this.sourceOwner,claimUntil:this.clock()+15*60000}); return true;
+    });
+    if (!claimed) return;
     const task = this.sourceTail.then(async () => {
       let acquired;
       try {
         if (!allowed()) throw Error('Audio preparation permission changed.');
-        this.store.set('skip-source',key,{...record,state:'PROCESSING'});
+        this.store.set('skip-source',key,{...record,state:'PROCESSING',claimOwner:this.sourceOwner,claimUntil:this.clock()+15*60000});
         acquired = await this.prepareSource({feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,authorised:allowed});
-        if (!allowed() || this.pipeline.status(feed,episode)?.episode?.audioUrl !== value.episode.audioUrl) throw Error('Audio source or permission changed.');
-        this.store.set('skip-source',key,{...record,state:'READY',transcript:acquired.transcript,updatedAt:nowIso()});
+        if (!allowed() || this.source(feed,episode)?.episode?.audioUrl !== value.episode.audioUrl) throw Error('Audio source or permission changed.');
+        this.store.set('skip-source',key,{...record,state:'READY',transcript:acquired.transcript,validUntil:this.clock()+6*3600000,updatedAt:nowIso()});
         this.inspect(feed,episode,{preparedAudio:acquired.preparedAudio});
         await this.inflight.get(key);
       } catch (error) {
-        this.store.set('skip-source',key,{...record,state:'FAILED',code:error.code || 'SOURCE_PREPARATION_FAILED',reason:String(error.message).slice(0,300),retryAfter:new Date(this.clock()+60000).toISOString()});
+        const budget = /budget/i.test(String(error.message));
+        this.store.set('skip-source',key,{...record,state:'FAILED',attempts:budget?0:record.attempts,code:error.code || (budget?'BUDGET_LIMIT':'SOURCE_PREPARATION_FAILED'),reason:String(error.message).slice(0,300),retryAfter:new Date(this.clock()+(budget?3600000:60000)).toISOString()});
       } finally { await acquired?.preparedAudio?.cleanup(); }
     }).finally(() => this.sourceInflight.delete(key));
     this.sourceInflight.set(key,task); this.sourceTail = task.catch(()=>{});
@@ -172,7 +187,8 @@ export class SkipService {
   inspect(feed, episode, context = {}) {
     const inspectionStarted = performance.now();
     const rights = this.pipeline.rights;
-    const refusal = rights && ["ad-detection", "intelligence-processing"].map(feature => rights.evaluate({ feature, feedUrl: feed, episodeId: episode })).find(decision => !decision.allowed);
+    if (context.episode?.audioUrl) this.store.set('skip-episode', episodeKey(feed, episode), context.episode);
+    const refusal = rights && ["ad-detection"].map(feature => rights.evaluate({ feature, feedUrl: feed, episodeId: episode })).find(decision => !decision.allowed);
     if (refusal) return { state: "UNAVAILABLE", code: refusal.code || "RIGHTS_NOT_ESTABLISHED", reason: refusal.reason, intervals: [], activeIntervals: [], verifiedCount: 0, candidateCount: null, automaticSkipping: false };
     const stored = this.source(feed, episode);
     this.scheduleSource(feed, episode, stored);
@@ -249,6 +265,21 @@ export class SkipService {
     this.scheduleVerification(feed, episode, value, intervals, context.preparedAudio);
     const verification = this.verification(key), sourcePreparation=this.store.get('skip-source',key);
     let [state, reason] = listenerState({ value, intervals, verification }), alignmentCode=null;
+    if (!transcript?.segments?.length && this.prepareSource && value?.episode?.audioUrl) {
+      const permission = this.canVerifyAudio({feedUrl:feed,episodeId:episode,value,operation:'transcribe-window'});
+      const allowed = typeof permission === 'boolean' ? permission : permission?.allowed;
+      if (!allowed) {
+        state='UNAVAILABLE'; alignmentCode=permission?.code || 'AUDIO_PREPARATION_NOT_AUTHORISED';
+        reason=permission?.reason || 'Opening-audio analysis is not available for this episode.';
+      } else if (sourcePreparation?.state === 'FAILED') {
+        state=sourcePreparation.code === 'BUDGET_LIMIT' ? 'UNAVAILABLE' : 'FAILED';
+        alignmentCode=sourcePreparation.code;
+        reason=sourcePreparation.code === 'BUDGET_LIMIT' ? 'Audio analysis is waiting for the processing budget to become available.' : 'Opening-audio analysis did not complete. Playback is still available.';
+      } else {
+        state='ANALYSING'; alignmentCode='AUDIO_WINDOW_PENDING';
+        reason=sourcePreparation?.state === 'PROCESSING' ? 'Checking the opening audio for complete advertisements.' : 'Opening-audio analysis is queued. You can keep listening.';
+      }
+    }
     if(this.prepareSource && transcript?.segments?.length && !transcript.audioContentHash){
       const preparing=['QUEUED','PROCESSING'].includes(sourcePreparation?.state);
       state=preparing?'ANALYSING':'UNAVAILABLE';alignmentCode=preparing?'AUDIO_ALIGNMENT_PENDING':'AUDIO_ALIGNMENT_REQUIRED';
@@ -309,7 +340,7 @@ export class SkipService {
       if (!currentSource() || !allowed()) {
         this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:currentSource()?"AUDIO_VERIFICATION_NOT_AUTHORISED":"SOURCE_CHANGED",reason:"The source or permission changed before verification began.",updatedAt:nowIso()});return;
       }
-      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
+      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, expectedWindow:value.transcript?.windowProof || null, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
       this.store.transaction(() => {
         if (!currentSource()) {
           this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:"SOURCE_CHANGED",reason:"The transcript or audio source changed during verification; no intervals were published.",updatedAt:nowIso()});return;
@@ -322,7 +353,7 @@ export class SkipService {
         const at = nowIso();
         this.store.set("skip-audio-verification", key, {
           episodeKey: key, state: result.state || "READY", inputKey, verifierVersion:adSkipAudioVerificationVersion, code: result.code || (result.state === "DYNAMIC_VARIANT" ? "VARIANT_MISMATCH" : result.state === "UNAVAILABLE" ? "AUDIO_BINDING_REQUIRED" : null), inputHash: value.transcript?.audioContentHash || null, attempts: attempt, updatedAt: at, completedAt: at, reason: result.reason || null,
-          variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs, windows: result.variant.windows || [] } : null,
+      variant: result.variant ? { deliveryUrl: result.variant.deliveryUrl, etag: result.variant.etag, contentLength: result.variant.contentLength, audioVariantFingerprint: result.variant.audioVariantFingerprint, durationMs: result.variant.durationMs, windows: result.variant.windows || [], windowProof: result.variant.windowProof || null } : null,
           verificationDurationMs: performance.now()-verificationStarted,
           sourceCacheReused: Boolean(preparedAudio),
         });
@@ -363,7 +394,7 @@ export class SkipService {
     const exactSource = typeof audioUrl === "string" && Boolean(value?.episode?.audioUrl) && audioUrl === value.episode.audioUrl;
     const verification = this.verification(episodeKey(feed, episode));
     const variant = verification?.state === "READY" ? verification.variant : null;
-    const displayAllowed = !this.pipeline.rights || ["intelligence-display", "automatic-skipping"].every(feature => this.pipeline.rights.evaluate({ feature, feedUrl: feed, episodeId: episode }).allowed);
+    const displayAllowed = !this.pipeline.rights || this.pipeline.rights.evaluate({ feature:'automatic-skipping',feedUrl:feed,episodeId:episode }).allowed;
     const permitted = exactSource && displayAllowed && inspection.state !== "UNAVAILABLE" && this.automaticEnabled(listener) && preferences.adSkipEnabled === true;
     const sourceMatched = Boolean(permitted && variant?.audioVariantFingerprint && audioVariantFingerprint === variant.audioVariantFingerprint);
     const recordedIntervals = this.store.all("skip-interval").map(([, item]) => item);
