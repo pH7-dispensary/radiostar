@@ -96,6 +96,17 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const sourceRef = useRef(source);
   const sourceGeneration = useRef(0);
   sourceRef.current = source;
+  useEffect(() => {
+    const subscription = player.addListener('playbackStatusUpdate', event => {
+      if (!event.mediaServicesDidReset) return;
+      // Expo restores ordinary audio using its source bookkeeping. The new
+      // player item has not delivered a matching prefix: revoke old proof.
+      sourceGeneration.current++;
+      operation.current++;
+      setAudioVariantFingerprint(null);
+    });
+    return () => subscription.remove();
+  }, [player]);
   const audio = playbackPresentation(status, { connecting, error: playbackError, hasSource: !!source });
   useEffect(() => {
     if (audio.waiting && waitingSince.current === null) waitingSince.current = Date.now();

@@ -51,7 +51,7 @@ import AVFoundation
     player.pause();var undone=false
     player.seek(to:CMTime(seconds:origin,preferredTimescale:1000),toleranceBefore:.zero,toleranceAfter:.zero){undone=$0}
     guard wait(5,{undone}),abs(player.currentTime().seconds-origin)<0.35,player.rate==0,player.currentItem === item else { throw NSError(domain:"native-undo",code:6) }
-    let output:[String:Any]=["platform":"macOS AVPlayer","physicalIPhoneVerified":false,"actualDeliveredBytes":loader.prefix.data.count,"sourceSha256":expected,"lateAttachedWithoutReplacement":true,"originMs":origin*1000,"destinationMs":destination*1000,"undoMs":player.currentTime().seconds*1000,"rateBeforeSkip":rate,"pausedUndo":true]
+    let output:[String:Any]=["platform":"macOS AVPlayer","physicalIPhoneVerified":false,"actualDeliveredBytes":loader.prefix.data.count,"deliveredPrefixSha256":expected,"proofBytes":bytes,"lateAttachedWithoutReplacement":true,"originMs":origin*1000,"destinationMs":destination*1000,"undoMs":player.currentTime().seconds*1000,"rateBeforeSkip":rate,"pausedUndo":true]
     print(String(data:try JSONSerialization.data(withJSONObject:output,options:[.sortedKeys]),encoding:.utf8)!)
     loader.cancel()
   }
