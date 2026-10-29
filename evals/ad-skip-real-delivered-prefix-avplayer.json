@@ -1,0 +1,13 @@
+{
+  "actualDeliveredBytes": 8388608,
+  "destinationMs": 90459,
+  "lateAttachedWithoutReplacement": true,
+  "originMs": 200,
+  "pausedUndo": true,
+  "physicalIPhoneVerified": false,
+  "platform": "macOS AVPlayer",
+  "rateBeforeSkip": 1.5,
+  "undoMs": 200,
+  "deliveredPrefixSha256": "60447f5c50149154f17092afc073585fcda30324cc05e6bf2ea8558286012563",
+  "proofBytes": 3024699
+}

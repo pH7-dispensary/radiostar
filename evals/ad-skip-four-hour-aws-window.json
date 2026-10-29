@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-29T18:18:41.423Z",
+  "deployedRuntime": true,
+  "productionDataModified": false,
+  "canonicalIntelligenceRequired": false,
+  "cachedSourceTranscriptReused": true,
+  "rightsAllowed": true,
+  "paidCalls": 0,
+  "modelCostUsd": 0,
+  "acquisition": {
+    "rangeHonoured": true,
+    "bytes": 8388608,
+    "maxBytes": 8388608,
+    "streamingFallback": false
+  },
+  "windowProof": {
+    "version": "delivered-prefix-v1",
+    "byteLength": 3024699,
+    "sha256": "60447f5c50149154f17092afc073585fcda30324cc05e6bf2ea8558286012563",
+    "coverageStartMs": 0,
+    "coverageEndMs": 180000
+  },
+  "intervals": [
+    {
+      "id": "a81f4e99b62843487a8abf8c33245b02daaedf34b3d86ce0aa953b8607afb50d",
+      "type": "advert",
+      "startMs": 0,
+      "endMs": 90459,
+      "verificationState": "VERIFIED"
+    }
+  ],
+  "ssmCommandId": "979adbfe-dc70-492b-b46a-11535e223fb2",
+  "account": "208096650030",
+  "region": "eu-west-2"
+}

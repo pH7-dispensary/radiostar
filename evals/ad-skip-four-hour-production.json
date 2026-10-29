@@ -1,0 +1,92 @@
+{
+  "at": "2026-10-29T18:18:39.000Z",
+  "integrity": "ok",
+  "freeBytes": 24663293952,
+  "release": {
+    "releaseSha": "96bee5b924b5a78a1e22b937371998825ddbb80d1632e58f332e179243cf830c",
+    "previousReleaseSha": "7167b561524576683eccaa7cbeb043f8646d3097b55896d2d4c2757415078f78",
+    "deployedAt": "2026-10-29T18:16:37.593Z",
+    "rollbackAvailable": true
+  },
+  "monitor": {
+    "_aws": {
+      "Timestamp": 1793297919025,
+      "CloudWatchMetrics": [
+        {
+          "Namespace": "RadioStar/Operations",
+          "Dimensions": [
+            [
+              "Environment"
+            ]
+          ],
+          "Metrics": [
+            {
+              "Name": "ApiReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "WorkerReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DatabaseIntegrity",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DiskUsedPercent",
+              "Unit": "Percent",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "FreeInodes",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "BackupAgeSeconds",
+              "Unit": "Seconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "EventLoopP99Ms",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProcessingFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "TelemetryHeartbeat",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ApiLatencyMs",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            }
+          ]
+        }
+      ]
+    },
+    "Environment": "production",
+    "ApiReady": 1,
+    "WorkerReady": 1,
+    "DatabaseIntegrity": 1,
+    "DiskUsedPercent": 23.245057686823944,
+    "FreeInodes": 15626445,
+    "BackupAgeSeconds": 114.656,
+    "EventLoopP99Ms": 23.396351,
+    "ProcessingFailures5m": 0,
+    "TelemetryHeartbeat": 1,
+    "ApiLatencyMs": 902.6983459999999
+  },
+  "ssmCommandId": "ea12cb64-d674-4c37-970f-262217d2ed93",
+  "account": "208096650030",
+  "region": "eu-west-2"
+}

@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-29T17:59:02.223Z",
+  "active": true,
+  "version": 3,
+  "expiresAt": "2026-10-31T17:59:01.994Z",
+  "enrolledTesterCount": 2,
+  "reason": "User-authorised Operation Ad Skip live activation: same two enrolled testers for 48 hours, unchanged paid allowances and public automatic skipping disabled.",
+  "paidAllowanceUnchanged": true,
+  "publicAutomaticSkipping": false
+}

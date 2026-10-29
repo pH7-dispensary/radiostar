@@ -1,0 +1,2198 @@
+{
+  "at": "2026-10-28T22:08:11.470Z",
+  "scope": "READ_ONLY_AUDIT",
+  "repositoryHead": "706a19a3559189ed70be14ce285bd5831cd985fb",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "release": {
+    "releaseSha": "bf5210e498e0f704c45299d70df079e5de9b7657a736bedce7b1d0744c3d742f",
+    "previousReleaseSha": "7a9d8ad4e82a6e38f4cd89baaa3ae44fb9f7de60d9393390eaef8aee76762a0d",
+    "deployedAt": "2026-10-28T16:07:20.881Z",
+    "rollbackAvailable": true
+  },
+  "sourceHashes": {
+    "server.mjs": "2245720b93e58871203c7fcfc7490c9eaea7eaeb761a2126053a403cae0f8b8b",
+    "skip-service.mjs": "b9fc34970d4988d93306d4c766c7cbf5d54d3ca03870822d64d3fa88b65e3761",
+    "ad-skip-source.mjs": "5902a8c452f8e0e33cb125c7673eb8298ec8514d53722dd502a8ce16789f424a",
+    "ad-skip-verification.mjs": "a40b71a5e09b7b4edd0e7a309aa6e8c23eabc948af8a82ad7db4694caf33a66e",
+    "episode-pipeline.mjs": "ef0a204561ee3beae5b3f9a3a40f85e5c27831ed733f377b748f84832b539b08",
+    "transcription.mjs": "6c83f5227f01cd06609c53622946cd7dcb16f6d29c8957a6eaa42e95ca1309bd",
+    "rights-registry.mjs": "7bed93c8e864b8c4d4824794f6133c5041d06fc1331ef490bba6b458583a0cde",
+    "intelligence-policy.mjs": "a60493db1b80acbd2a3b09696c00b7010d1c6e7e223168a3e8a7d46a603d1498",
+    "followed-preparation.mjs": "694f3c6dd03d7eace9ab5daba1b64631d6e1ad895f4f17cef952e80f2e73cb3a"
+  },
+  "recordSnapshotAt": "2026-10-28T21:52:54.933Z",
+  "episodes": [
+    {
+      "podcast": "Danny Jones Podcast",
+      "canonicalPodcastId": "9b9be6e898e4d6db",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:8cb04923e9514c30",
+      "episodeKey": "623c46dbfcf4893890d8a4cb6ed5b74ec973783a80bf61ddba579a18da3066d8",
+      "episodeGuid": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "currentThree": true,
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "publishedAt": "2026-10-26T17:06:00.000Z",
+      "durationSeconds": 11798,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "audioEnclosure": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+      "sourceUrlSha256": "c890a1eb55787f8a53e606f20f9642c5622f039134de578d7e4912cd845fc3b1",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "753144b839dcd58de647bb9c0de9d7b30c189afe44369d99d0f28a37df553135"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-28T20:45:15.289Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:32:25.030Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:53:45.719Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/467974266",
+          "totalBytes": 467974266,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "a03f7863be6e6711ac853024dd0938ff27ecbc4dd49b1173b7c841ef7e2a8a88",
+          "audioPayloadSampleSha256": "b15deea73e82e014d15dcf1089cfa82c973eb034edb20491ca6c8da193b79b7e",
+          "id3Bytes": 58514,
+          "delivery": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://dcs.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:53:47.532Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/467974266",
+          "totalBytes": 467974266,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "a03f7863be6e6711ac853024dd0938ff27ecbc4dd49b1173b7c841ef7e2a8a88",
+          "audioPayloadSampleSha256": "b15deea73e82e014d15dcf1089cfa82c973eb034edb20491ca6c8da193b79b7e",
+          "id3Bytes": 58514,
+          "delivery": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://dcs.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:53:53.015Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 467908730-467974265/467974266",
+          "totalBytes": 467974266,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "ceb36f1eebdd2c1e3b5d93106c9e9da18a3c0b447aa5afa81a397adb85b0e231",
+          "audioPayloadSampleSha256": "ceb36f1eebdd2c1e3b5d93106c9e9da18a3c0b447aa5afa81a397adb85b0e231",
+          "id3Bytes": 0,
+          "delivery": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD6248400310.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:31.562Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/463614954",
+          "totalBytes": 463614954,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "b3e05520657e31a6f6e3af74ba167135c89912f36c2c3b0e00bf043281d6f152",
+          "audioPayloadSampleSha256": "734e13d8c528e448ab286c25eeaf44a6592b4a1341a95b9e074e995139079f8b",
+          "id3Bytes": 58514,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD6248400310.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6248400310.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/QCD6248400310.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD6248400310.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": false,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "320000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "FULL_SOURCE_ABOVE_300MB_DOWNLOADER_CAP",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "canonicalPodcastId": "9b9be6e898e4d6db",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:9d8a7a48ef324c49",
+      "episodeKey": "142b11fb353c7d1a81d3f682ef6fdd544dfe4e487eded03bc51c7089ed76f887",
+      "episodeGuid": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "currentThree": true,
+      "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+      "publishedAt": "2026-10-24T17:00:00.000Z",
+      "durationSeconds": 10838,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "audioEnclosure": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+      "sourceUrlSha256": "7e874ae0719ab92a166c7f8fc7c5aebd61caab2e4d1e40ce3ea6abe2bb986edd",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "753144b839dcd58de647bb9c0de9d7b30c189afe44369d99d0f28a37df553135"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-26T21:02:26.370Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:31:27.720Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:02.068Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/431744805",
+          "totalBytes": 431744805,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "531c8d847d1c9a1a1ff648f6d69fde6d3bcd0b37b81859691a0b34cff1ca6027",
+          "audioPayloadSampleSha256": "787a98eafa72bbcda5448e7256052462cf073b5756a99d1d33776de8f02ff18f",
+          "id3Bytes": 59846,
+          "delivery": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://dcs.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:04.086Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/431744805",
+          "totalBytes": 431744805,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "531c8d847d1c9a1a1ff648f6d69fde6d3bcd0b37b81859691a0b34cff1ca6027",
+          "audioPayloadSampleSha256": "787a98eafa72bbcda5448e7256052462cf073b5756a99d1d33776de8f02ff18f",
+          "id3Bytes": 59846,
+          "delivery": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://dcs.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:10.260Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 431679269-431744804/431744805",
+          "totalBytes": 431744805,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "ceb36f1eebdd2c1e3b5d93106c9e9da18a3c0b447aa5afa81a397adb85b0e231",
+          "audioPayloadSampleSha256": "ceb36f1eebdd2c1e3b5d93106c9e9da18a3c0b447aa5afa81a397adb85b0e231",
+          "id3Bytes": 0,
+          "delivery": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs.megaphone.fm/QCD1522445505.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:31.626Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/425205837",
+          "totalBytes": 425205837,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "5e2a69c02031928b4a66aa33a567662fe340afc596f70f279d929544cb2556aa",
+          "audioPayloadSampleSha256": "67fbff3e3e87c1fc9f7b4166330452107183eb56fb95b0eff97276d0c64352d0",
+          "id3Bytes": 59846,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD1522445505.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://traffic.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD1522445505.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/QCD1522445505.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD1522445505.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": false,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "320000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "FULL_SOURCE_ABOVE_300MB_DOWNLOADER_CAP",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "canonicalPodcastId": "9b9be6e898e4d6db",
+      "canonicalEpisodeId": "9b9be6e898e4d6db:24d135b738561419",
+      "episodeKey": "85d68137d9db426ecff790643b9a99ea12ceb94a54ad1cca8c9ddaee6d309f42",
+      "episodeGuid": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "currentThree": true,
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "publishedAt": "2026-10-19T17:32:00.000Z",
+      "durationSeconds": 10048,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "audioEnclosure": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+      "sourceUrlSha256": "c0b810dd4a557ce543dd6d711c1e49f1aabbea9a01cd52ec4942070c86465b37",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "2024"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "753144b839dcd58de647bb9c0de9d7b30c189afe44369d99d0f28a37df553135"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "recordScope": "channel",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-28T20:45:11.863Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:14:25.062Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [
+        {
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "state": "CANCELLED",
+          "code": "CANCELLED_BY_ADMINISTRATOR",
+          "completedAt": "2026-10-20T21:01:22.073Z"
+        }
+      ],
+      "events": [
+        {
+          "id": "9e78257e-e66d-422d-b55f-8770f047fbc9:1",
+          "at": "2026-10-20T15:29:59.004Z",
+          "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+          "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+          "jobId": "9e78257e-e66d-422d-b55f-8770f047fbc9",
+          "previousState": null,
+          "state": "QUEUED",
+          "previousStage": null,
+          "stage": "QUEUED",
+          "type": "JOB_QUEUED",
+          "code": null,
+          "reason": null,
+          "processingVersion": "2.0.0"
+        },
+        {
+          "id": "9e78257e-e66d-422d-b55f-8770f047fbc9:2",
+          "at": "2026-10-20T15:29:59.053Z",
+          "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+          "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+          "jobId": "9e78257e-e66d-422d-b55f-8770f047fbc9",
+          "previousState": "QUEUED",
+          "state": "PROCESSING",
+          "previousStage": "QUEUED",
+          "stage": "CHECKING",
+          "type": "WORKER_STARTED",
+          "code": null,
+          "reason": null,
+          "processingVersion": "2.0.0"
+        },
+        {
+          "id": "9e78257e-e66d-422d-b55f-8770f047fbc9:3",
+          "at": "2026-10-20T15:29:59.077Z",
+          "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+          "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+          "jobId": "9e78257e-e66d-422d-b55f-8770f047fbc9",
+          "previousState": "PROCESSING",
+          "state": "BLOCKED",
+          "previousStage": "CHECKING",
+          "stage": "CHECKING",
+          "type": "PROCESSING_UNAVAILABLE",
+          "code": "DURATION_LIMIT",
+          "reason": "This episode exceeds the current processing limit. Try a shorter episode.",
+          "processingVersion": "2.0.0"
+        },
+        {
+          "id": "db3977cf-57ad-48f0-a46e-57b069897824:2",
+          "at": "2026-10-20T21:01:22.073Z",
+          "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+          "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "previousState": "QUEUED",
+          "state": "CANCELLED",
+          "previousStage": "QUEUED",
+          "stage": "QUEUED",
+          "type": "PROCESSING_CANCELLED",
+          "code": "CANCELLED_BY_ADMINISTRATOR",
+          "reason": "This queued processing request was cancelled by an administrator before a worker started.",
+          "processingVersion": "2.0.0"
+        },
+        {
+          "id": "db3977cf-57ad-48f0-a46e-57b069897824:4",
+          "at": "2026-10-20T20:55:23.191Z",
+          "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+          "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "previousState": "BLOCKED",
+          "state": "QUEUED",
+          "previousStage": "CHECKING",
+          "stage": "QUEUED",
+          "type": "JOB_QUEUED",
+          "code": null,
+          "reason": null,
+          "processingVersion": "2.0.0"
+        }
+      ],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:17.672Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/393593542",
+          "totalBytes": 393593542,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "45cd359ea0f896fbf0113bd223eb91d2cada56feb3f635090ddf46f4305de49b",
+          "audioPayloadSampleSha256": "825c47d064afe92b1ec23a3e1b70bced326e62028a87fee225b0b8b59aade86a",
+          "id3Bytes": 57804,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:19.843Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/393593542",
+          "totalBytes": 393593542,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "45cd359ea0f896fbf0113bd223eb91d2cada56feb3f635090ddf46f4305de49b",
+          "audioPayloadSampleSha256": "825c47d064afe92b1ec23a3e1b70bced326e62028a87fee225b0b8b59aade86a",
+          "id3Bytes": 57804,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:20.304Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 393528006-393593541/393593542",
+          "totalBytes": 393593542,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "312110e5c869fee2a53765d310fb760a669248a86915d6c33cfaf7d1152eba71",
+          "audioPayloadSampleSha256": "312110e5c869fee2a53765d310fb760a669248a86915d6c33cfaf7d1152eba71",
+          "id3Bytes": 0,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:31.871Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/393593542",
+          "totalBytes": 393593542,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "45cd359ea0f896fbf0113bd223eb91d2cada56feb3f635090ddf46f4305de49b",
+          "audioPayloadSampleSha256": "825c47d064afe92b1ec23a3e1b70bced326e62028a87fee225b0b8b59aade86a",
+          "id3Bytes": 57804,
+          "delivery": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://traffic.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/QCD6302366251.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/QCD6302366251.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": true,
+        "sameCrossLocationLength": true,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "320000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "FULL_SOURCE_ABOVE_300MB_DOWNLOADER_CAP",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "canonicalPodcastId": "a8cbb9fe29ae668e",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:6f1b5330eeadc765",
+      "episodeKey": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+      "episodeGuid": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "currentThree": true,
+      "title": "#2571 - Jimmy Carr",
+      "publishedAt": "2026-10-28T19:00:00.000Z",
+      "durationSeconds": 10355,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "audioEnclosure": "https://traffic.megaphone.fm/GLT7178896407.mp3",
+      "sourceUrlSha256": "b1b9a093e9331f7c465069d07b52ed628c41cca21cd2643853ba40d2e39d4b37",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "7f2e64cd713e028383a4f8834550c4aa2e2eac22bf1d1038a967101b08c299eb"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-28T20:45:17.614Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:40:12.605Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:20.667Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/143351863",
+          "totalBytes": 143351863,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "151c80ee0c5b450c212bdb9772fa412f46f95d3613c7659e53f7e306d8d4e0bb",
+          "audioPayloadSampleSha256": "f16e7c336fbe35479358b6c5477e5a18d2d7156efe019a5d26ced79f723663df",
+          "id3Bytes": 60983,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT7178896407.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:20.828Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/143351863",
+          "totalBytes": 143351863,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "151c80ee0c5b450c212bdb9772fa412f46f95d3613c7659e53f7e306d8d4e0bb",
+          "audioPayloadSampleSha256": "f16e7c336fbe35479358b6c5477e5a18d2d7156efe019a5d26ced79f723663df",
+          "id3Bytes": 60983,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT7178896407.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:20.874Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 143286327-143351862/143351863",
+          "totalBytes": 143351863,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "837c16f41844770100e09995e4ea70c0e243867dbf343998aca63e2e7c2ed3b1",
+          "audioPayloadSampleSha256": "837c16f41844770100e09995e4ea70c0e243867dbf343998aca63e2e7c2ed3b1",
+          "id3Bytes": 0,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:25.397Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/143872640",
+          "totalBytes": 143872640,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "743c34b34893d171c5f20729768343a5c96e73f77bc7315b2b59f51eba42626a",
+          "audioPayloadSampleSha256": "68b1b4d26a5e517216e0d1e3066c72fba55237298ee5e595542af37b96681635",
+          "id3Bytes": 60983,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT7178896407.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT7178896407.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": false,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "112000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "canonicalPodcastId": "a8cbb9fe29ae668e",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:97e358f1d81aa887",
+      "episodeKey": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+      "episodeGuid": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "currentThree": true,
+      "title": "#2570 - Mystery Boys",
+      "publishedAt": "2026-10-23T17:00:00.000Z",
+      "durationSeconds": 10181,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "audioEnclosure": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+      "sourceUrlSha256": "81a399295d98ef8e9c2790b9809137bad35401801a0b026ca81d8bb76a6ef6eb",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "7f2e64cd713e028383a4f8834550c4aa2e2eac22bf1d1038a967101b08c299eb"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-27T08:40:14.763Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:45:37.129Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:21.188Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/137557759",
+          "totalBytes": 137557759,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "275f8c21a6ebc156b1b91a21552c31b1bd21175ef25578022298af1890e627aa",
+          "audioPayloadSampleSha256": "c1a63165e8554d1787e492e15668bfc44e89b3223f9806c8a577c0293387abe5",
+          "id3Bytes": 61256,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:21.354Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/137557759",
+          "totalBytes": 137557759,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "275f8c21a6ebc156b1b91a21552c31b1bd21175ef25578022298af1890e627aa",
+          "audioPayloadSampleSha256": "c1a63165e8554d1787e492e15668bfc44e89b3223f9806c8a577c0293387abe5",
+          "id3Bytes": 61256,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:21.370Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 137492223-137557758/137557759",
+          "totalBytes": 137557759,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "262ed7e27c471da74a64941ef35aec8a0b7c1cf9b1db4142e8e1b6b10f08b913",
+          "audioPayloadSampleSha256": "262ed7e27c471da74a64941ef35aec8a0b7c1cf9b1db4142e8e1b6b10f08b913",
+          "id3Bytes": 0,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:25.430Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/138499472",
+          "totalBytes": 138499472,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "275f8c21a6ebc156b1b91a21552c31b1bd21175ef25578022298af1890e627aa",
+          "audioPayloadSampleSha256": "c1a63165e8554d1787e492e15668bfc44e89b3223f9806c8a577c0293387abe5",
+          "id3Bytes": 61256,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT2538626371.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": true,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "112000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "canonicalPodcastId": "a8cbb9fe29ae668e",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:be61ab3c67a13cb8",
+      "episodeKey": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+      "episodeGuid": "ed2504ac-cdc1-11f1-b263-83f2c9b36709",
+      "currentThree": true,
+      "title": "JRE MMA Show #187 with Robert Whittaker",
+      "publishedAt": "2026-10-22T17:00:00.000Z",
+      "durationSeconds": 10495,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "audioEnclosure": "https://traffic.megaphone.fm/GLT1470402625.mp3",
+      "sourceUrlSha256": "cb9a661bb6f35e4e67a6a56b4a71e3e538d3334c2d5af0603689d971903a6ec0",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "7f2e64cd713e028383a4f8834550c4aa2e2eac22bf1d1038a967101b08c299eb"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "65e4416d9b3a6aff956d44b7cf05aa1b16d154e496e4bd5d6a9e1a983279c01f",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-24T05:07:26.197Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T22:45:37.784Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:21.748Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/141952755",
+          "totalBytes": 141952755,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "bd4502b19a5750979d1ca01b8987026a3c808340eeb03e8207339266003df11c",
+          "audioPayloadSampleSha256": "bf20428aae2d30f64dbb327ffedb6c82c989c4528de2a04848cfd6206de0c6e3",
+          "id3Bytes": 61464,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT1470402625.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:21.917Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/141952755",
+          "totalBytes": 141952755,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "bd4502b19a5750979d1ca01b8987026a3c808340eeb03e8207339266003df11c",
+          "audioPayloadSampleSha256": "bf20428aae2d30f64dbb327ffedb6c82c989c4528de2a04848cfd6206de0c6e3",
+          "id3Bytes": 61464,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT1470402625.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:22.025Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 141887219-141952754/141952755",
+          "totalBytes": 141952755,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "76f92d5075294290fa83402298e41e1b41e66acd3471580b524c6a6f98fcf1f5",
+          "audioPayloadSampleSha256": "76f92d5075294290fa83402298e41e1b41e66acd3471580b524c6a6f98fcf1f5",
+          "id3Bytes": 0,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:25.456Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/142473532",
+          "totalBytes": 142473532,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "bd4502b19a5750979d1ca01b8987026a3c808340eeb03e8207339266003df11c",
+          "audioPayloadSampleSha256": "bf20428aae2d30f64dbb327ffedb6c82c989c4528de2a04848cfd6206de0c6e3",
+          "id3Bytes": 61464,
+          "delivery": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT1470402625.mp3",
+              "location": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-spotify.megaphone.fm/GLT1470402625.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": true,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "112000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "canonicalPodcastId": "a8cbb9fe29ae668e",
+      "canonicalEpisodeId": "a8cbb9fe29ae668e:c61a58a9518edef5",
+      "episodeKey": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+      "episodeGuid": "23251e48-ccfa-11f1-8407-c76a5ec426f3",
+      "currentThree": false,
+      "title": "#2569 - Bill Thompson",
+      "publishedAt": "2026-10-21T17:00:00.000Z",
+      "durationSeconds": 10382,
+      "durationSource": "Publisher RSS; full media duration not independently measured",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "audioEnclosure": "https://traffic.megaphone.fm/GLT2078242472.mp3",
+      "sourceUrlSha256": "38c5b9435d230195c61a7f1760b24c043618018e9fdbfd7f2dfa8e781b48b59c",
+      "sourceUrlHashIsNotAudioFingerprint": true,
+      "followedByEnrolledTester": true,
+      "rssEvidence": {
+        "licences": [],
+        "reservations": [],
+        "evidence": [
+          {
+            "type": "COPYRIGHT_NOTICE",
+            "source": "publisher-rss",
+            "scope": "podcast",
+            "value": "© All rights reserved"
+          },
+          {
+            "type": "LAWFUL_ACCESS_OBSERVED",
+            "source": "publisher-rss",
+            "scope": "feed",
+            "value": "The publisher HTTPS feed was retrieved by the server."
+          }
+        ],
+        "fingerprint": "7f2e64cd713e028383a4f8834550c4aa2e2eac22bf1d1038a967101b08c299eb"
+      },
+      "publisherTranscriptReferences": [],
+      "transcriptPresent": false,
+      "intelligenceReady": false,
+      "analysisState": "NOT_STARTED",
+      "candidateCount": null,
+      "verifiedIntervals": 0,
+      "matchingWholeSourceHash": null,
+      "decisions": {
+        "ad-detection": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-processing": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "intelligence-display": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        },
+        "automatic-skipping": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "mode": "OFF",
+          "basisEstablished": false,
+          "recordId": "c198eaccf50c30569ae6bb4be85bfedb2e721a905b8689bcea756e8abf0ce7b0",
+          "recordScope": "episode",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+        }
+      },
+      "operationalPolicy": {
+        "tier": "ZERO",
+        "source": "global"
+      },
+      "calculatedPlayback": {
+        "code": "DISPLAY_NOT_AUTHORISED",
+        "intervals": 0,
+        "variant": null
+      },
+      "demand": {
+        "state": "REVIEW_REQUIRED",
+        "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+        "encounteredAt": "2026-10-24T05:07:26.444Z",
+        "lastSourceField": "followed",
+        "eligible": false,
+        "retryAfter": "2026-10-28T19:42:36.348Z",
+        "firstQueuedAt": null
+      },
+      "jobs": [],
+      "events": [],
+      "audio": {
+        "local": {
+          "at": "2026-10-28T21:54:22.338Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/140377785",
+          "totalBytes": 140377785,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "42a6a5ce6bb0ee6f6dd20100087caa91fc21a45644b8a63fac52587c94090548",
+          "audioPayloadSampleSha256": "11dadbcf591f5622eb4ed20c98dfbcfd31380fd99e2dbb5393b0c2fc085cff28",
+          "id3Bytes": 60894,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2078242472.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+              "location": null
+            }
+          ]
+        },
+        "repeat": {
+          "at": "2026-10-28T21:54:22.498Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/140377785",
+          "totalBytes": 140377785,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "42a6a5ce6bb0ee6f6dd20100087caa91fc21a45644b8a63fac52587c94090548",
+          "audioPayloadSampleSha256": "11dadbcf591f5622eb4ed20c98dfbcfd31380fd99e2dbb5393b0c2fc085cff28",
+          "id3Bytes": 60894,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2078242472.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+              "location": null
+            }
+          ]
+        },
+        "tail": {
+          "at": "2026-10-28T21:54:22.521Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 140312249-140377784/140377785",
+          "totalBytes": 140377785,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "46ef9a2540cbce588e956b16d0083facc0590915aa3e22049c1a6db30c39f721",
+          "audioPayloadSampleSha256": "46ef9a2540cbce588e956b16d0083facc0590915aa3e22049c1a6db30c39f721",
+          "id3Bytes": 0,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+          "redirects": [
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+              "location": null
+            }
+          ]
+        },
+        "wrongIfMatchStatus": 206,
+        "aws": {
+          "at": "2026-10-28T21:54:25.416Z",
+          "status": 206,
+          "contentType": "audio/mpeg",
+          "contentRange": "bytes 0-65535/140898562",
+          "totalBytes": 140898562,
+          "etag": null,
+          "acceptRanges": "bytes",
+          "cacheControl": "max-age=0, no-cache, no-store",
+          "bytesHashed": 65536,
+          "sampleSha256": "42a6a5ce6bb0ee6f6dd20100087caa91fc21a45644b8a63fac52587c94090548",
+          "audioPayloadSampleSha256": "11dadbcf591f5622eb4ed20c98dfbcfd31380fd99e2dbb5393b0c2fc085cff28",
+          "id3Bytes": 60894,
+          "delivery": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+          "redirects": [
+            {
+              "status": 302,
+              "url": "https://traffic.megaphone.fm/GLT2078242472.mp3",
+              "location": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3"
+            },
+            {
+              "status": 206,
+              "url": "https://dcs-cached.megaphone.fm/GLT2078242472.mp3",
+              "location": null
+            }
+          ]
+        },
+        "sameLocalPrefix": true,
+        "sameAcrossLocations": true,
+        "sameCrossLocationLength": false,
+        "media": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "mp3",
+              "sample_rate": "44100",
+              "bit_rate": "112000"
+            },
+            {
+              "codec_name": "mjpeg"
+            }
+          ],
+          "format": {}
+        }
+      },
+      "firstBlocker": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "secondaryBlockers": [
+        "NO_TRANSCRIPT_SOURCE_SCHEDULING_GUARD",
+        "SOURCE_DURATION_ABOVE_7200_SECONDS",
+        "STRONG_ETAG_UNAVAILABLE",
+        "IF_MATCH_IGNORED",
+        "SOURCE_ABOVE_32_MIB_NATIVE_FALLBACK",
+        "COLD_LOAD_HAS_NO_ACTIVE_FINGERPRINT"
+      ],
+      "nativeExecutionObserved": false
+    }
+  ],
+  "pilot": {
+    "active": true,
+    "expiry": "2026-10-29T14:11:12.730Z",
+    "testers": [
+      {
+        "alias": "QA-tester",
+        "allowed": true,
+        "feature": {
+          "allowed": true,
+          "code": "ROLLOUT_ELIGIBLE",
+          "audience": "PRIVATE_BETA",
+          "version": 5
+        },
+        "preferences": {
+          "adSkipEnabled": true,
+          "advert": true,
+          "intro": false,
+          "title_sequence": false,
+          "preview": false,
+          "outro": false
+        }
+      },
+      {
+        "alias": "physical-TestFlight-tester",
+        "allowed": true,
+        "feature": {
+          "allowed": true,
+          "code": "ROLLOUT_ELIGIBLE",
+          "audience": "PRIVATE_BETA",
+          "version": 5
+        },
+        "preferences": {
+          "adSkipEnabled": true,
+          "advert": true,
+          "intro": true,
+          "title_sequence": true,
+          "preview": true,
+          "outro": false
+        }
+      }
+    ],
+    "preparationAllowed": true,
+    "acceleratedAllowanceActive": false
+  },
+  "featureFlag": [
+    {
+      "id": "adSkip",
+      "name": "Ad Skip",
+      "state": "PRIVATE_BETA",
+      "rolloutPercent": 100,
+      "eligibilityRules": null,
+      "dependencies": [
+        "independent verification",
+        "matching audio variant"
+      ],
+      "environment": "production",
+      "updatedAt": 1793031455102,
+      "updatedBy": "system:batch3-audience-migration",
+      "version": 5,
+      "reason": "Restore original private-beta feature metadata after deploying mandatory explicit internal tester membership. Flag cannot grant automatic skipping; rights, exact audio and pilot safeguards remain enforced.",
+      "audience": "PRIVATE_BETA"
+    }
+  ],
+  "rightsPolicy": [
+    {
+      "id": "global",
+      "version": 2,
+      "mode": "OFF",
+      "features": {
+        "intelligenceProcessing": true,
+        "intelligenceDisplay": true,
+        "conversationSearch": true
+      },
+      "testMode": {
+        "enabled": false,
+        "updatedAt": null,
+        "updatedBy": null,
+        "reason": null
+      },
+      "updatedAt": 1792494481979,
+      "updatedBy": "automation"
+    }
+  ],
+  "configurationChanged": false,
+  "productionJobsCreated": 0,
+  "paidCalls": 0,
+  "paidAiCostUsd": 0,
+  "budget": {
+    "dayUsd": 0.4978589199999998,
+    "monthUsd": 2.31619266,
+    "dayTranscriptionSeconds": 4575,
+    "reservations": 0,
+    "dailyUsdLimit": 5,
+    "monthlyUsdLimit": 25,
+    "dailyTranscriptionSecondsLimit": 10800,
+    "maxEpisodeSeconds": 7200
+  },
+  "runtime": {
+    "at": "2026-10-28T21:56:51.502Z",
+    "active": "active",
+    "health": {
+      "at": 1793224593630,
+      "workerRunning": true,
+      "eventLoopP99Ms": 20.398079
+    },
+    "freeDiskBytes": 24751984640,
+    "queues": {},
+    "logWindow": {
+      "lines": 500,
+      "eventCounts": {
+        "undefined": 448,
+        "backup-complete": 34,
+        "cloud-ready": 5,
+        "processing-queue-job-started": 1,
+        "intelligence": 12
+      },
+      "events": [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {
+          "event": "backup-complete"
+        },
+        {},
+        {}
+      ]
+    }
+  },
+  "queues": {
+    "at": "2026-10-28T21:57:44.912Z",
+    "queues": [
+      {
+        "name": "starcast-phase1-processing",
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0",
+        "ApproximateNumberOfMessagesDelayed": "0"
+      },
+      {
+        "name": "starcast-phase1-processing-dlq",
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0",
+        "ApproximateNumberOfMessagesDelayed": "0"
+      }
+    ]
+  },
+  "tests": {
+    "realRecordsReplay": 7,
+    "permissionOnlyChangeDidNotSchedule": 7,
+    "windowDuration": {
+      "durationError": "Exact source exceeds processing limits or has no hash.",
+      "factoryCalls": 1,
+      "cacheReads": 0,
+      "providerCalls": 0,
+      "cleanup": 1
+    },
+    "stream": {
+      "noEtag": "RANGE_PROOF_UNAVAILABLE",
+      "ignoredPrecondition": "AUDIO_PRECONDITION_UNSUPPORTED",
+      "actualSourceSizeExceedsNativeFallback": true
+    },
+    "durationCacheReusePassed": true,
+    "fourHourMockRestartPassed": true,
+    "openingRegressionPassed": true
+  },
+  "telemetry": {
+    "lastMatchingClock": [
+      {
+        "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+        "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+        "at": "2026-10-28T20:45:27.164Z",
+        "positionMs": 7089,
+        "playing": false,
+        "speed": 1
+      }
+    ],
+    "missedReports": [
+      {
+        "intervalId": null,
+        "episodeKey": "85d68137d9db426ecff790643b9a99ea12ceb94a54ad1cca8c9ddaee6d309f42",
+        "kind": "missed",
+        "positionMs": 1858,
+        "createdAt": "2026-10-19T20:09:19.969Z",
+        "provenance": "listener_report"
+      }
+    ],
+    "skipReceiptCount": 0,
+    "deviceBuildUnknown": true,
+    "fullListeningHistoryUnavailableByDesign": true
+  },
+  "limits": [
+    "Prefix hashes are not full audio fingerprints.",
+    "Different representations observed; changed advertisement semantics not reviewed.",
+    "No actual iPhone trace or installed-build identity acquired.",
+    "No legal exception or publisher permission asserted."
+  ]
+}

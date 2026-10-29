@@ -1,0 +1,193 @@
+{
+  "at": "2026-10-29T17:55:55.002Z",
+  "episodes": [
+    {
+      "podcast": "Danny Jones Podcast",
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "duration": "11798",
+      "audioUrl": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6248400310.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+      "basisEstablished": false,
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+      "duration": "10838",
+      "audioUrl": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD1522445505.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+      "basisEstablished": false,
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    },
+    {
+      "podcast": "Danny Jones Podcast",
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "duration": "10048",
+      "audioUrl": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/433/claritaspod.com/measure/traffic.megaphone.fm/QCD6302366251.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+      "basisEstablished": false,
+      "assessmentSource": "super-admin-technical-review",
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "title": "#2572 - Colum Tyrrell",
+      "duration": "11089",
+      "audioUrl": "https://traffic.megaphone.fm/GLT3844762456.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+      "basisEstablished": false,
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "\u00a9 All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "title": "#2571 - Jimmy Carr",
+      "duration": "10595",
+      "audioUrl": "https://traffic.megaphone.fm/GLT7178896407.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+      "basisEstablished": false,
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "\u00a9 All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    },
+    {
+      "podcast": "The Joe Rogan Experience",
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "title": "#2570 - Mystery Boys",
+      "duration": "10181",
+      "audioUrl": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+      "allowed": false,
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+      "basisEstablished": false,
+      "assessmentSource": "publisher-rss-v4",
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "\u00a9 All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "rightsReserved": false,
+      "suspendedAt": null,
+      "detectedAdverts": null,
+      "automaticSeeks": 0,
+      "status": "BLOCKED_PROCESSING_BASIS"
+    }
+  ],
+  "newAudioAcquired": false,
+  "paidCalls": 0
+}
