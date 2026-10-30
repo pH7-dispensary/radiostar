@@ -17,5 +17,17 @@
   "quotaResetDate": "2026-11-01",
   "localBuildBlocker": "Full Xcode absent; no valid local code-signing identities.",
   "billingChanged": false,
-  "physicalIPhoneVerified": false
+  "physicalIPhoneVerified": false,
+  "starterUpgradeApproval": {
+    "recordedAt": "2026-10-30T18:13:06.345654+00:00",
+    "plan": "Starter",
+    "monthlyUsd": 19,
+    "includedBuildCreditOnly": true,
+    "additionalUsageAuthorised": false,
+    "checkoutPrepared": true,
+    "checkoutCurrency": "USD",
+    "paymentSubmitted": false,
+    "subscriptionVerifiedActive": false,
+    "blocker": "Hosted checkout requires payment details or Apple Pay from the user."
+  }
 }
