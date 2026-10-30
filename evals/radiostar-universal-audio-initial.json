@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-30T13:01:26.504Z",
+  "region": "eu-west-2",
+  "method": "HEAD",
+  "variantIdentityVerified": false,
+  "results": [
+    {
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "464824946",
+      "finalHost": "dcs.megaphone.fm",
+      "audioBodyDownloaded": false
+    },
+    {
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "available": false,
+      "error": "TypeError",
+      "audioBodyDownloaded": false
+    },
+    {
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "393593542",
+      "finalHost": "dcs-spotify.megaphone.fm",
+      "audioBodyDownloaded": false
+    },
+    {
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "150728699",
+      "finalHost": "dcs-spotify.megaphone.fm",
+      "audioBodyDownloaded": false
+    },
+    {
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "143872640",
+      "finalHost": "dcs-cached.megaphone.fm",
+      "audioBodyDownloaded": false
+    },
+    {
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "138078536",
+      "finalHost": "dcs-spotify.megaphone.fm",
+      "audioBodyDownloaded": false
+    }
+  ]
+}

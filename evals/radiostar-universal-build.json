@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-30T13:19:34.842121+00:00",
+  "build17": {
+    "id": "2510d99a-4f19-45aa-96cb-4c3a98225d34",
+    "status": "FINISHED",
+    "platform": "IOS",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "17",
+    "gitCommitHash": "423d1c061c2b9a68d49e59c83cae17c7e747b8d8",
+    "createdAt": "2026-10-30T13:08:03.659Z",
+    "completedAt": "2026-10-30T13:11:32.433Z"
+  },
+  "build17Submitted": false,
+  "reason": "Superseded by a guard preventing proof rollover while a seek is pending.",
+  "correctedBuildNumber": "18",
+  "correctedBuildStatus": "BLOCKED_FREE_IOS_BUILD_QUOTA",
+  "quotaResetDate": "2026-11-01",
+  "localBuildBlocker": "Full Xcode absent; no valid local code-signing identities.",
+  "billingChanged": false,
+  "physicalIPhoneVerified": false
+}

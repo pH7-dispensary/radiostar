@@ -1,0 +1,16 @@
+{
+  "actualDeliveredBytes": 8388608,
+  "chainVerified": true,
+  "destinationMs": 220000,
+  "lateAttachedWithoutReplacement": true,
+  "originMs": 200000,
+  "pausedUndo": true,
+  "physicalIPhoneVerified": false,
+  "platform": "macOS AVPlayer",
+  "proofBytes": 3080192,
+  "rateBeforeSkip": 1.5,
+  "rollingWitnessBytes": 8388608,
+  "undoMs": 200000,
+  "windowSha256": "8e27f56c7e6c9db759c3ad5981a3ea645660d2254c6e0f0e10b0201de32d170d",
+  "testScope": "Exact native progressive delivery, late attachment, seek and Undo mechanics; the 200\u2013220 second interval is not asserted to be an advertisement."
+}

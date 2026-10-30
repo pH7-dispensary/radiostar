@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-30T13:16:17.363Z",
+  "region": "eu-west-2",
+  "method": "HEAD",
+  "variantIdentityVerified": false,
+  "results": [
+    {
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "status": 200,
+      "available": true,
+      "contentType": "audio/mpeg",
+      "contentLength": "427607013",
+      "finalHost": "dcs.megaphone.fm",
+      "audioBodyDownloaded": false
+    }
+  ]
+}

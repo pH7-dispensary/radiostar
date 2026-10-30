@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-30T13:11:07.857Z",
+  "source": "preserved exact publisher MP3; private S3 delivery verified with the native range verifier",
+  "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+  "feedUrl": "https://linuxunplugged.com/rss",
+  "episodeId": "001d7139-1aed-4d0f-9f38-91cbc11cda8b",
+  "interval": {
+    "id": "cee71c9d68545446a3918fba27154f022ad8b5d80529a88e8273147f7e98a9f4",
+    "type": "advert",
+    "startMs": 0,
+    "endMs": 90415,
+    "targetMs": 90415
+  },
+  "review": {
+    "id": "55b1e3df3122d680080ab895b42da671197f23fcd1595ab847945a90738f1c4a",
+    "chainHash": "0d677b90e4d7605af567b10ef5583f2935542bb460ca1574f65bcf5d645e5c39",
+    "startMs": 0,
+    "endMs": 90415
+  },
+  "approvalSource": "HUMAN_REVIEW_PLUS_AUDIO",
+  "independentAccuracyEvidence": true,
+  "rangeProof": {
+    "verified": true,
+    "verificationMs": 797.9294169999998,
+    "witnessBytes": 196608,
+    "fullSourceBytes": 63683114,
+    "ifMatchEnforced": true
+  },
+  "playback": {
+    "originMs": 766.2379999999999,
+    "targetMs": 90415,
+    "restoredMs": 766.2379999999999,
+    "continuing": true,
+    "continuationMs": 53.69999999552965,
+    "advancedMs": 85.77400000000068,
+    "pausedAfterUndo": true,
+    "rate": 1.5,
+    "automaticSeeks": 1,
+    "undoSeeks": 1,
+    "sourcePreparationMs": 193.39999999850988,
+    "authorisationMs": 2286.7000000029802,
+    "playStartupMs": 1.4000000059604645,
+    "seekConfirmationMs": 5.799999997019768,
+    "undoMs": 4.299999997019768,
+    "device": "Chromium using shared native adapter; not physical iPhone"
+  },
+  "mismatchDenied": true,
+  "paidAllowanceUnchanged": true,
+  "physicalIphoneVerified": false
+}

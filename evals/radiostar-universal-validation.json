@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-30T13:19:34.842121+00:00",
+  "fullBackendSuite": "PASS: npm test including posttest",
+  "nativeTypeScript": "PASS",
+  "expoDoctor": "21/21",
+  "productionIosExport": "PASS",
+  "nativeSwiftWitnessTests": "PASS: prefix and chain, immutability, gaps, eviction, re-delivery mismatch, EOF, memory bounds",
+  "realCorpusEpisodes": 12,
+  "progressiveOwnedFixture": {
+    "passed": true,
+    "windows": 6,
+    "verifiedMidroll": true,
+    "verifiedPostroll": true,
+    "acquisitions": 8,
+    "maxAcquisitionBytes": 2409663,
+    "paidCalls": 0
+  },
+  "laterNativeChanges": "TypeScript, iOS export, Ad Skip recovery and final integration rerun after proof-refresh guard",
+  "paidProviders": "Mocked in automated suite",
+  "physicalIPhoneVerified": false,
+  "taskScopedDiffCheck": "PASS",
+  "wholeTreeDiffCheckLimitation": "Pre-existing whitespace changes in docs/AI_ACTIVATION_FINAL_ACCEPTANCE.md left untouched"
+}

@@ -1,0 +1,230 @@
+{
+  "at": "2026-10-30T13:12:11.008Z",
+  "pilot": {
+    "active": true,
+    "enabled": true,
+    "enrolledTesters": 2,
+    "expiresAt": "2026-10-31T17:59:01.994Z"
+  },
+  "configuration": {
+    "enabled": true,
+    "version": 1,
+    "at": "2026-10-23T09:24:47.501Z",
+    "actor": "automation"
+  },
+  "snapshot": {
+    "at": "2026-10-30T12:29:04.837Z",
+    "activeUsers": 2,
+    "follows": 6,
+    "feeds": 6,
+    "errors": []
+  },
+  "counts": {
+    "REVIEW_REQUIRED": 18
+  },
+  "uniqueEpisodes": 18,
+  "rows": [
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "podcast": "Danny Jones Podcast",
+      "title": "#442 - \"It Wasn't Russia\" 27-Year CIA Agent Drops DNC Hack Bombshell | Ray McGovern",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "podcast": "Danny Jones Podcast",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "podcast": "The Joe Rogan Experience",
+      "title": "#2571 - Jimmy Carr",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "podcast": "Danny Jones Podcast",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+      "podcast": "Open Source Security",
+      "title": "Finding difficult vulnerabilities with Jaya Baloo from AISLE",
+      "inWindow": false,
+      "state": "PARTIAL_READY",
+      "code": null
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "episodeId": "ec566b6e-d169-11f1-9853-9b8f37aff08e",
+      "podcast": "Julian Dorey Podcast",
+      "title": "The Holy Grail, Dark Age PSYCHOPATHS & Knights Templar Mystery | Medieval Mindset",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "podcast": "The Joe Rogan Experience",
+      "title": "#2572 - Colum Tyrrell",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "episodeId": "https://lexfridman.com/?p=7807",
+      "podcast": "Lex Fridman Podcast",
+      "title": "#503 – AI Crisis in Math: Navier-Stokes, Riemann Hypothesis & Complexity Theory",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "episodeId": "f9eac7fe-d35b-11f1-938e-8388da5101bb",
+      "podcast": "The Tucker Carlson Show",
+      "title": "Jeffrey Sachs on Netanyahu’s Struggle to Keep Control of the World’s Most Bloodthirsty Ethnostate",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+      "episodeId": "starcast-approved-test-episode-v1",
+      "inWindow": false,
+      "state": "PARTIAL_READY"
+    },
+    {
+      "feedUrl": "https://publisher.example/feed",
+      "episodeId": "unapproved",
+      "inWindow": false,
+      "state": "WAITING",
+      "code": "SOURCE_UNAVAILABLE"
+    },
+    {
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha74_Mania_for_Subjugation_IV.mp3",
+      "podcast": "Dan Carlin's Hardcore History",
+      "title": "Show 74 - Mania for Subjugation IV",
+      "rank": 0,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha73_Mania_for_Subjugation_III.mp3",
+      "podcast": "Dan Carlin's Hardcore History",
+      "title": "Show 73 - Mania for Subjugation III",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "episodeId": "b7430e18-d174-11f1-99de-4f00a1971780",
+      "podcast": "The Tucker Carlson Show",
+      "title": "Murder, Drugs and Cover-Ups: Military Insider Exposes the Criminal Cartel Within the US Navy SEALs",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "episodeId": "2d4d7a14-cfbb-11f1-aa9f-f3fabe5226fd",
+      "podcast": "Julian Dorey Podcast",
+      "title": "EXPLOSIVE Jared Kushner Allegations, Shawn Ryan Drama & Lindsey Graham SHOCKER | Julian Dorey",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "episodeId": "https://lexfridman.com/?p=6554",
+      "podcast": "Lex Fridman Podcast",
+      "title": "#502 – Psychiatry, Insane Asylums, Mental Illness, ECT, Lobotomies, Freud & Jung",
+      "rank": 1,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "episodeId": "http://traffic.libsyn.com/dancarlinhh/dchha72_Mania_for_Subjugation_II.mp3",
+      "podcast": "Dan Carlin's Hardcore History",
+      "title": "Show 72 - Mania for Subjugation II",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "episodeId": "8aa0a500-cfcb-11f1-ac84-8bd81ff6ec00",
+      "podcast": "The Tucker Carlson Show",
+      "title": "Exposing the True Evils of the Uniparty: Soros Money, Surveillance, and the Rise of a Third Party",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "episodeId": "https://lexfridman.com/?p=6506",
+      "podcast": "Lex Fridman Podcast",
+      "title": "#501 – DHH: Future of Programming, AI, Agentic Engineering, Vibe Coding & Linux",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "episodeId": "0d3cd494-ce40-11f1-836c-2f95e1bc9d29",
+      "podcast": "Julian Dorey Podcast",
+      "title": "Exiled Professor WARNS: “They’re Funding a NEW Matrix and it’s Not What You Think!” | Neema Parvini",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "podcast": "The Joe Rogan Experience",
+      "title": "#2570 - Mystery Boys",
+      "rank": 2,
+      "inWindow": true,
+      "state": "REVIEW_REQUIRED",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-30T13:16:14.094Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "aws": {
+    "ResultsByTime": [
+      {
+        "TimePeriod": {
+          "Start": "2026-10-01",
+          "End": "2026-10-31"
+        },
+        "Total": {
+          "UnblendedCost": {
+            "Amount": "9.5205449923",
+            "Unit": "USD"
+          }
+        },
+        "Groups": [],
+        "Estimated": true
+      }
+    ],
+    "DimensionValueAttributes": []
+  },
+  "newInfrastructureResources": 0,
+  "incrementalAwsCost": "Unavailable: usage-based requests are not separately attributed to this execution.",
+  "paidModelCallsThisExecution": 0,
+  "modelSpendThisExecutionUsd": 0
+}

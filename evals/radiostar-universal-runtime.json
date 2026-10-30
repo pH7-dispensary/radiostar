@@ -1,0 +1,73 @@
+{
+  "at": "2026-10-30T13:11:01.435Z",
+  "deployedRuntime": true,
+  "productionDataModified": false,
+  "canonicalIntelligenceRequired": false,
+  "cachedSourceTranscriptReused": true,
+  "rightsAllowed": true,
+  "paidCalls": 0,
+  "modelCostUsd": 0,
+  "acquisition": {
+    "rangeHonoured": true,
+    "bytes": 8388608,
+    "maxBytes": 8388608,
+    "streamingFallback": false
+  },
+  "windowProof": {
+    "version": "delivered-prefix-v1",
+    "byteLength": 3024699,
+    "sha256": "60447f5c50149154f17092afc073585fcda30324cc05e6bf2ea8558286012563",
+    "coverageStartMs": 0,
+    "coverageEndMs": 180000
+  },
+  "intervals": [
+    {
+      "id": "a81f4e99b62843487a8abf8c33245b02daaedf34b3d86ce0aa953b8607afb50d",
+      "type": "advert",
+      "startMs": 0,
+      "endMs": 90459,
+      "verificationState": "VERIFIED",
+      "excerpt": " This episode of Linux Unplugged is brought to you by Incogni.  You know, we spend a lot of time talking about taking control of our digital lives.  We self-host, we use open-source software, and we lock down our networks.  But what about all that personal information that's already out there?  There are entire companies, you and I know it, called Databrokers,  whose business is collecting and selling information about you,  your address, your phone number, even information about your family.  That information can be used by scammers to target you.  It's happened to my family.  That's why I li"
+    }
+  ],
+  "progressive": [
+    {
+      "acquisition": {
+        "rangeHonoured": true,
+        "bytes": 8388608,
+        "maxBytes": 8388608,
+        "streamingFallback": false
+      },
+      "proof": {
+        "version": "delivered-chain-v1",
+        "byteStart": 983040,
+        "byteLength": 3014656,
+        "byteEnd": 3997696,
+        "sha256": "8c8e5f99f49bc21a75b9a26a978f3fcc7ae925510f7efabe3f7c509eebac37ea",
+        "chainHash": "d99552da5c319422800ea38628fdf9d4ba8748d71239a712a6e184fcd7147855",
+        "blockBytes": 65536,
+        "coverageStartMs": 60000,
+        "coverageEndMs": 240000
+      }
+    },
+    {
+      "acquisition": {
+        "rangeHonoured": true,
+        "bytes": 8388608,
+        "maxBytes": 8388608,
+        "streamingFallback": false
+      },
+      "proof": {
+        "version": "delivered-chain-v1",
+        "byteStart": 1900544,
+        "byteLength": 3080192,
+        "byteEnd": 4980736,
+        "sha256": "8e27f56c7e6c9db759c3ad5981a3ea645660d2254c6e0f0e10b0201de32d170d",
+        "chainHash": "20b3d19d225fd007dd6c983c6a0d8b7575a1033fa7daf6aa56a6ac278785fd6c",
+        "blockBytes": 65536,
+        "coverageStartMs": 120000,
+        "coverageEndMs": 300000
+      }
+    }
+  ]
+}
