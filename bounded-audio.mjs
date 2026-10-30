@@ -8,25 +8,31 @@ import { promisify } from 'node:util';
 import ffmpeg from 'ffmpeg-static';
 import ffprobe from 'ffprobe-static';
 import { toFile } from 'openai';
+import { nextAudioCursor } from './progressive-audio.mjs';
 import { streamPublic } from './safe-network.mjs';
 
 export const AD_WINDOW_SECONDS = 180;
 export const AD_WINDOW_MAX_BYTES = 8 * 1024 * 1024;
 const exec = promisify(execFile);
 
-/** Prefix only: never estimate byte offsets from VBR duration or file size.
+/** Bounded ranges: never estimate offsets from VBR duration or file size.
  * A 200 response is a streaming fallback, cancelled at the SAME hard ceiling.
  * The hash identifies these bytes, not the remainder of a dynamic episode.
  */
-export async function acquireAudioPrefix(url, path, { maxBytes = AD_WINDOW_MAX_BYTES, signal, openStream = streamPublic } = {}) {
+export async function acquireAudioPrefix(url, path, { maxBytes = AD_WINDOW_MAX_BYTES, startByte = 0, signal, openStream = streamPublic } = {}) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > AD_WINDOW_MAX_BYTES) throw Error('Invalid audio window ceiling.');
+  if (!Number.isSafeInteger(startByte) || startByte < 0 || startByte + maxBytes > 2 * 1024 ** 3) throw Error('Invalid audio window offset.');
   signal?.throwIfAborted();
-  const result = await openStream(url, 0, [], { range: `bytes=0-${maxBytes - 1}`, signal });
+  const result = await openStream(url, 0, [], { range: `bytes=${startByte}-${startByte + maxBytes - 1}`, signal });
   const { response } = result;
   let file;
   try {
     if (![200, 206].includes(response.statusCode) || ![undefined, 'identity'].includes(response.headers['content-encoding'])) throw Error('Unsupported audio window response.');
-    const range = /^bytes 0-(\d+)\/(\d+|\*)$/.exec(response.headers['content-range'] || '');
+    if (startByte && response.statusCode !== 206) throw Error('A progressive source must honour byte ranges.');
+    const parsed = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec(response.headers['content-range'] || '');
+    if (parsed && Number(parsed[1]) !== startByte) throw Error('Audio window starts at the wrong byte.');
+    if (parsed && (!parsed.slice(1,3).every(value=>Number.isSafeInteger(Number(value))) || Number(parsed[2])<startByte || (parsed[3]!=='*' && !Number.isSafeInteger(Number(parsed[3]))))) throw Error('Invalid audio content range.');
+    const range = parsed && [parsed[0],String(Number(parsed[2])-startByte),parsed[3]==='*'?'*':String(Number(parsed[3])-startByte)];
     if (response.statusCode === 206 && (!range || Number(range[1]) >= maxBytes || (range[2] !== '*' && Number(range[1]) >= Number(range[2])))) throw Error('Publisher did not honour the audio range.');
     const declared = response.headers['content-length'];
     if (declared !== undefined && (!/^\d+$/.test(String(declared)) || Number(declared) < 1)) throw Error('Invalid audio content length.');
@@ -43,8 +49,8 @@ export async function acquireAudioPrefix(url, path, { maxBytes = AD_WINDOW_MAX_B
       if (bytes === maxBytes) break;
     }
     if (!bytes || (expected !== null && bytes !== Math.min(expected, maxBytes))) throw Error('Audio window was interrupted.');
-    const totalBytes = range && range[2] !== '*' ? Number(range[2]) : response.statusCode === 200 && expected !== null ? expected : null;
-    return { bytes, contentHash: digest.digest('hex'), completeSource: totalBytes === bytes,
+    const totalBytes = range && range[2] !== '*' ? startByte + Number(range[2]) : response.statusCode === 200 && expected !== null ? expected : null;
+    return { bytes, contentHash: digest.digest('hex'), completeSource: totalBytes === startByte + bytes,
       delivery: { url: result.url, headers: { etag: response.headers.etag || null, contentLength: totalBytes, contentType: response.headers['content-type'] || null },
         acquisition: { rangeHonoured: response.statusCode === 206, bytes, maxBytes, streamingFallback: response.statusCode === 200 } } };
   } finally { response.destroy(); await file?.close(); }
@@ -79,7 +85,8 @@ export async function prepareAdAudioWindow(audioUrl, { windowSeconds = AD_WINDOW
     { encoding: 'buffer', signal, timeout: 60000, maxBuffer: (windowSeconds + 2) * 16000 });
     const durationMs = Math.floor(stdout.length / 16);
     if (durationMs < 1000) throw Error('Audio window has no usable decoded duration.');
-    return { path, durationMs, contentHash, delivery: source.delivery, cleanup,
+    const cursor = indexed.format?.format_name === 'mp3' ? await nextAudioCursor(path, {coverageEndMs:Math.min(windowSeconds*1000,durationMs-500)}) : null;
+    return { path, durationMs, contentHash, delivery: source.delivery, cleanup, cursor,
       windowProof: { version: 'delivered-prefix-v1', byteLength: proofBytes, sha256: contentHash,
         coverageStartMs: 0, coverageEndMs: Math.min(windowSeconds * 1000, durationMs - 500) },
       completeSource: source.completeSource && durationMs < windowSeconds * 1000,

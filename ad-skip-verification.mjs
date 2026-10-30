@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import ffmpeg from "ffmpeg-static";
 import ffprobe from "ffprobe-static";
 import { prepareAudio } from "./transcription.mjs";
+import { prepareProgressiveAudioWindow } from './progressive-audio.mjs';
 import { prepareAdAudioWindow } from './bounded-audio.mjs';
 
 const exec = promisify(execFile);
@@ -61,7 +62,7 @@ const parseSilence = (output) => {
   return marks.filter((mark) => Number.isFinite(mark.ms));
 };
 
-async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs) {
+async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs, exactDecode = false) {
   const startMs = Math.max(0, boundaryMs - (side === "end" ? inwardTrimMs : boundaryWindowMs));
   const windowMs = Math.min(durationMs - startMs, inwardTrimMs + boundaryWindowMs);
   if (windowMs <= 0) return null;
@@ -71,15 +72,12 @@ async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs
       "-nostdin",
       "-v",
       "info",
-      "-ss",
-      String(startMs / 1000),
-      "-i",
-      path,
-      "-t",
-      String(windowMs / 1000),
+      ...(!exactDecode ? ["-ss",String(startMs/1000)] : []),
+      "-i", path,
+      "-t",String(windowMs/1000),
       "-vn",
       "-af",
-      "silencedetect=noise=-42dB:d=0.12",
+      `${exactDecode ? `atrim=start=${startMs/1000}:end=${(startMs+windowMs)/1000},asetpts=PTS-STARTPTS,` : ""}silencedetect=noise=-42dB:d=0.12`,
       "-f",
       "null",
       "-",
@@ -99,12 +97,9 @@ async function boundaryEvidence(path, boundaryMs, durationMs, side, inwardTrimMs
       "-nostdin",
       "-v",
       "error",
-      "-ss",
-      String(clipStartMs / 1000),
-      "-i",
-      path,
-      "-t",
-      "0.5",
+      ...(!exactDecode ? ["-ss",String(clipStartMs/1000)] : []),
+      "-i", path, "-t", "0.5",
+      ...(exactDecode ? ["-af",`atrim=start=${clipStartMs/1000}:end=${(clipStartMs+500)/1000},asetpts=PTS-STARTPTS`] : []),
       "-vn",
       "-ac",
       "1",
@@ -158,9 +153,9 @@ async function openingBoundaryEvidence(path, candidate, hash) {
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
  * validator or a non-silent boundary leaves the interval unverified.
  */
-export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, expectedWindow = null, preparedAudio = null, audioFactory = prepareAudio }) {
+export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, expectedWindow = null, expectedCursor = null, preparedAudio = null, audioFactory = prepareAudio }) {
   if (!/^[a-f0-9]{64}$/.test(expectedContentHash || "")) return { state: "UNAVAILABLE", reason: "The transcript has not been aligned to these exact audio bytes. Automatic skipping remains off.", candidates: [] };
-  const audio = preparedAudio || (expectedWindow ? await prepareAdAudioWindow(audioUrl) : await audioFactory(audioUrl, maxSeconds));
+  const audio = preparedAudio || (expectedWindow?.version==='delivered-chain-v1' ? await prepareProgressiveAudioWindow(audioUrl,{cursor:expectedCursor}) : expectedWindow ? await prepareAdAudioWindow(audioUrl) : await audioFactory(audioUrl, maxSeconds));
   try {
     const etag = audio.delivery?.headers?.etag || null;
     const streamSafe = strongEtag(etag) && !/(?:^|,)\s*(?:user-agent|cookie|authorization)\s*(?:,|$)/i.test(String(audio.delivery?.headers?.vary || ""));
@@ -168,8 +163,10 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
     if (!expectedContentHash || expectedContentHash !== audioVariantFingerprint)
       return { state: "DYNAMIC_VARIANT", reason: "The transcript is not bound to these exact audio bytes. Independent alignment is required before automatic skipping.", candidates: [] };
     const verified = [];
-    for (const candidate of candidates) {
-      if (audio.windowProof && (candidate.startMs < audio.windowProof.coverageStartMs || candidate.endMs + 1500 > audio.windowProof.coverageEndMs)) {
+    for (const globalCandidate of candidates) {
+      const offset=audio.timelineOffsetMs || 0;
+      const candidate={...globalCandidate,startMs:globalCandidate.startMs-offset,endMs:globalCandidate.endMs-offset,...(Number.isFinite(globalCandidate.nextSpeechMs)?{nextSpeechMs:globalCandidate.nextSpeechMs-offset}:{})};
+      if (audio.windowProof && (globalCandidate.startMs < audio.windowProof.coverageStartMs || globalCandidate.endMs + 1500 > audio.windowProof.coverageEndMs)) {
         verified.push({id:candidate.id,boundaryVerified:false,code:'COMPLETE_BREAK_OUTSIDE_ACQUIRED_WINDOW'}); continue;
       }
       if (candidate.openingBreak) {
@@ -179,8 +176,8 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
       const inwardTrimMs = Math.min(maximumInwardTrimMs, Math.floor((candidate.endMs - candidate.startMs) / 3));
       if (!Number.isFinite(inwardTrimMs) || inwardTrimMs <= 0) { verified.push({id:candidate.id,boundaryVerified:false,code:"INVALID_CANDIDATE_BOUNDARIES"}); continue; }
       const [start, end] = await Promise.all([
-        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs, "start", inwardTrimMs),
-        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs, "end", inwardTrimMs),
+        boundaryEvidence(audio.path, candidate.startMs, audio.durationMs-offset, "start", inwardTrimMs, Boolean(audio.windowProof)),
+        boundaryEvidence(audio.path, candidate.endMs, audio.durationMs-offset, "end", inwardTrimMs, Boolean(audio.windowProof)),
       ]);
       if (!start || !end) {
         verified.push({ id: candidate.id, boundaryVerified: false, code: !start && !end ? "BOTH_BOUNDARIES_UNCERTAIN" : !start ? "START_BOUNDARY_UNCERTAIN" : "END_BOUNDARY_UNCERTAIN" });
@@ -189,8 +186,8 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
       verified.push({
         id: candidate.id,
         boundaryVerified: true,
-        startMs: start.boundaryMs,
-        endMs: end.boundaryMs,
+        startMs: Math.round(start.boundaryMs+offset),
+        endMs: Math.round(end.boundaryMs+offset),
         boundaryFingerprint: createHash("sha256")
           .update(`${start.fingerprint}:${end.fingerprint}`)
           .digest("hex"),
@@ -199,7 +196,7 @@ export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expe
     let windows = [];
     // Unsupported container packet indexing must not invalidate otherwise
     // safe exact-file playback. It just leaves bounded streaming unavailable.
-    try { if (streamSafe) windows = await byteWitnesses(audio.path, verified); } catch {}
+    try { if (streamSafe && !audio.windowProof) windows = await byteWitnesses(audio.path, verified); } catch {}
     return {
       state: "READY",
       variant: {

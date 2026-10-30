@@ -13,8 +13,9 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
   const eligibility = useRef<SkipStatus | null>(null);
   const live = useRef({ source, snapshot, seekAutomatically, manualSeekRevision, audioVariantFingerprint, getPositionMs, getPlaybackRevision });
   live.current = { source, snapshot, seekAutomatically, manualSeekRevision, audioVariantFingerprint, getPositionMs, getPlaybackRevision };
+  const consumedRanges = useRef<{startMs:number;endMs:number}[]>([]);
   const consumed = useRef(new Set<string>()), manualUntil = useRef(0), busy = useRef(false);
-  const identity = source ? `${source.feedUrl}:${source.episodeId}:${source.url}:${audioVariantFingerprint}` : "";
+  const identity = source ? `${source.feedUrl}:${source.episodeId}:${source.url}` : "";
   const activeIdentity = useRef(identity); activeIdentity.current = identity;
   const refreshRevision = useRef(0);
   const attempts = useRef(new Map<string, { count: number; after: number }>());
@@ -22,8 +23,10 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
   const prefetched = useRef<{ id: string; lease: any; revision: number; preferenceRevision: number } | null>(null);
   const prefetching = useRef<string | null>(null);
   const [boundaryTick, setBoundaryTick] = useState(0);
+  const alreadyConsumed = (item:{id:string;startMs:number;endMs:number}) => consumed.current.has(item.id) || consumedRanges.current.some(row=>row.startMs<item.endMs && row.endMs>item.startMs);
+  useEffect(()=>{busy.current=false;prefetching.current=null;consumed.current=new Set();consumedRanges.current=[];attempts.current.clear();prefetched.current=null;eligibility.current=null;setStatus(null);onNotice(null);},[identity]);
   const nearBoundary = Boolean(snapshot.playing && status?.automaticSkipping && status.activeIntervals?.some(item =>
-    !consumed.current.has(item.id) && snapshot.positionMs >= item.startMs-5000 && snapshot.positionMs < item.endMs));
+    !alreadyConsumed(item) && snapshot.positionMs >= item.startMs-5000 && snapshot.positionMs < item.endMs));
   useEffect(() => {
     if (!nearBoundary) return;
     // Poll only this small runtime near a known break. Do not drive the whole
@@ -34,14 +37,14 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
 
   useEffect(() => {
     let stopped = false, loading = false;
-    consumed.current = new Set(); attempts.current.clear(); prefetched.current = null; prefetching.current = null; eligibility.current = null; busy.current = false; setStatus(null); onNotice(null);
+    prefetched.current = null; prefetching.current = null; eligibility.current = null; setStatus(null);
     const refresh = async () => {
       if (loading || !source?.feedUrl) return;
       loading = true;
       const revision = refreshRevision.current;
       try {
-        const next = await listenerRequest("/api/skips/status", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint });
-        if (!stopped && revision === refreshRevision.current && !audioVariantFingerprint && next.variant?.windowProof && next.pilotEnabled && next.preferenceEnabled) {
+        const next = await listenerRequest("/api/skips/status", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, positionMs:getPositionMs(),audioProofVersion:"delivered-chain-v1" });
+        if (!stopped && revision === refreshRevision.current && audioVariantFingerprint !== next.variant?.audioVariantFingerprint && next.variant?.windowProof && next.pilotEnabled && next.preferenceEnabled) {
           // Native matching examines bytes delivered through the current item,
           // with source/privacy guards. No seek or restart occurs here.
           if (await attachAudioProof(next.variant)) return;
@@ -54,7 +57,7 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
     const foreground = AppState.addEventListener("change", state => { if (state === "active") void refresh(); });
     const unsubscribe = onAdSkipPreferenceChange(() => { refreshRevision.current++; setStatus(null); void refresh(); });
     return () => { stopped = true; clearInterval(poll); foreground.remove(); unsubscribe(); };
-  }, [identity]);
+  }, [identity,audioVariantFingerprint]);
   useEffect(() => {
     if (previousManualRevision.current !== manualSeekRevision) manualUntil.current = Date.now() + 10_000;
     previousManualRevision.current = manualSeekRevision;
@@ -63,21 +66,21 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
   useEffect(() => {
     if (!source?.feedUrl || !audioVariantFingerprint || !status?.automaticSkipping || !snapshot.playing || busy.current || Date.now() < manualUntil.current) return;
     const positionMs = getPositionMs();
-    const ahead = status.activeIntervals?.find(item => !consumed.current.has(item.id) && positionMs < item.startMs && item.startMs - positionMs <= Math.min(5000, 2000 * snapshot.speed));
+    const ahead = status.activeIntervals?.find(item => !alreadyConsumed(item) && positionMs < item.startMs && item.startMs - positionMs <= Math.min(5000, 2000 * snapshot.speed));
     if (ahead && !prefetching.current && (attempts.current.get(`prefetch:${ahead.id}`)?.count || 0) < 2 && (attempts.current.get(`prefetch:${ahead.id}`)?.after || 0) <= Date.now() && (!prefetched.current || prefetched.current.id !== ahead.id || prefetched.current.lease.expiresAt <= Date.now() + 1000)) {
       const requestedIdentity = identity, requestedRevision = manualSeekRevision, requestedPreference = refreshRevision.current;
       prefetching.current = ahead.id;
       const attemptKey = `prefetch:${ahead.id}`;
       attempts.current.set(attemptKey, { count: (attempts.current.get(attemptKey)?.count || 0) + 1, after: Date.now() + 3000 });
-      void listenerRequest("/api/skips/authorise", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, intervalId: ahead.id, positionMs, prefetch: true })
+      void listenerRequest("/api/skips/authorise", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, intervalId: ahead.id, positionMs, audioProofVersion:"delivered-chain-v1", prefetch: true })
         .then(lease => { if (activeIdentity.current === requestedIdentity && live.current.manualSeekRevision === requestedRevision && refreshRevision.current === requestedPreference) prefetched.current = { id: ahead.id, lease, revision: requestedRevision, preferenceRevision: requestedPreference }; })
         .catch(() => {}).finally(() => { if (activeIdentity.current === requestedIdentity) prefetching.current = null; });
     }
-    const interval = status.activeIntervals?.find(item => !consumed.current.has(item.id) && (attempts.current.get(item.id)?.count || 0) < 2 && (attempts.current.get(item.id)?.after || 0) <= Date.now() && positionMs >= item.startMs && positionMs < item.endMs);
+    const interval = status.activeIntervals?.find(item => !alreadyConsumed(item) && (attempts.current.get(item.id)?.count || 0) < 2 && (attempts.current.get(item.id)?.after || 0) <= Date.now() && positionMs >= item.startMs && positionMs < item.endMs);
     if (!interval) return;
     const revision = manualSeekRevision, preferenceRevision = refreshRevision.current, playbackRevision = getPlaybackRevision();
     const current = () => activeIdentity.current === identity && live.current.getPlaybackRevision() === playbackRevision && live.current.manualSeekRevision === revision && refreshRevision.current === preferenceRevision;
-    const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint };
+    const episode = { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, audioProofVersion:"delivered-chain-v1" };
     attempts.current.set(interval.id, { count: (attempts.current.get(interval.id)?.count || 0) + 1, after: Date.now() + 10_000 }); busy.current = true;
     const report = (kind: string, positionMs: number, authorisationId?: string, code?: string) => { nativeDiagnostics.record(kind, {positionMs}); return listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind, positionMs, authorisationId, code }).catch(() => null); };
     let leaseId: string | undefined;
@@ -86,7 +89,8 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
       current: () => current() && live.current.snapshot.playing && Boolean(eligibility.current?.automaticSkipping && eligibility.current.activeIntervals?.some(row => row.id === interval.id && row.startMs === interval.startMs && row.endMs === interval.endMs)),
       getPosition: () => live.current.getPositionMs(),
       onStage: (stage, detail) => { leaseId = detail.lease.authorisationId; void report(stage, detail.positionMs, leaseId); },
-      authorise: input => {
+      authorise: async input => {
+        if (status.variant?.windowProof && !(await attachAudioProof(status.variant))) throw Error("Delivered audio proof is no longer current");
         const cached = prefetched.current;
         prefetched.current = null;
         return cached?.id === interval.id && cached.revision === revision && cached.preferenceRevision === preferenceRevision && cached.lease.expiresAt > Date.now() + 500
@@ -95,7 +99,7 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
       seek: ms => live.current.seekAutomatically(ms),
     }).then(result => {
       if (!current()) return;
-      consumed.current.add(interval.id);
+      consumed.current.add(interval.id);consumedRanges.current.push({startMs:interval.startMs,endMs:interval.endMs});
       nativeDiagnostics.record("automatic_skip", {positionMs:result.positionMs,originMs:result.originMs,durationMs:result.durationMs});
       const recorded = listenerRequest("/api/skips/events", { ...episode, eventId: Crypto.randomUUID(), intervalId: interval.id, kind: "automatic_skip", positionMs: result.positionMs, originMs: result.originMs, authorisationId: result.lease.authorisationId }).catch(() => null);
       let undone = false, undoing = false;

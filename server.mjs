@@ -443,6 +443,7 @@ export function createStarCastServer({
     friendBonusMinutes: Number(env.STARCAST_FRIEND_BONUS_MINUTES || 0),
   });
   const skips = new SkipService(store, pipeline, {
+    progressive: true,
     verifyAudio: verifyAdSkipAudio,
     prepareSource: input => prepareAdSkipOpening({...input,store,ledger,client:pipeline.client || createOpenAIClient(),authorised:()=>pipeline.audioEnabled && input.authorised()}),
     // A generic PRIVATE_BETA/ENABLED flag is not tester membership or a
@@ -510,7 +511,7 @@ export function createStarCastServer({
     assess: assessEpisodeRights,
     enabled: () => featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
     allowed: (feed, id) => intelligencePolicy.effective(feed, id).applyToFuture !== false && intelligencePolicy.allows(feed, id, "intelligence").allowed,
-    inspect: (feed, id, episode) => skips.inspect(feed, id, {episode}),
+    inspect: (feed, id, episode, context = {}) => skips.inspect(feed, id, {episode,...context}),
     resumeDerived: async (feed,id) => {
       const key=episodeKey(feed,id),semantic=store.get("semantic-index",key),index=store.get("search-index",key);
       // Continue only an already-started canonical index. Existing request
@@ -520,6 +521,25 @@ export function createStarCastServer({
     },
     status: (feed, id) => intelligenceDimensions(feed, id, true),
   });
+  const adEncounters = new Map();
+  const adEncounter = async (listenerId, feedUrl, episodeId, source = "opened") => {
+    if (!valid({feedUrl,episodeId}) || !testingMode.adSkipAllowed(listenerId) || !featureEnabled('adSkip',listenerId)) return;
+    const listener=store.all('installation').map(([,row])=>row).find(row=>row.id===listenerId);
+    if (!listener || listener.revokedAt || listeners.summary(listener).preferences?.adSkipEnabled !== true) return;
+    const key=episodeKey(feedUrl,episodeId),priority=source==='playing'?100:source==='followed'?40:80;
+    skips.sourceQueue.promote(key,priority);
+    if(adEncounters.has(key))return adEncounters.get(key);
+    const task=(async()=>{
+      const previous=store.get('skip-encounter',key);
+      let episode=skips.source(feedUrl,episodeId)?.episode;
+      if(!episode || !previous || Date.now()-Date.parse(previous.assessedAt)>300000) {
+        ({episode}=await assessEpisodeRights(feedUrl,episodeId));
+        store.set('skip-encounter',key,{feedUrl,episodeId,assessedAt:new Date().toISOString()});
+      }
+      return skips.inspect(feedUrl,episodeId,{episode,priority});
+    })().finally(()=>adEncounters.delete(key));
+    adEncounters.set(key,task);return task;
+  };
   const encounter = async (listenerId, feedUrl, episodeId, source = "opened") => {
     if (followedPreparation.configuration().enabled && valid({ feedUrl, episodeId })) return followedPreparation.encounter(listenerId, feedUrl, episodeId, source);
     if (followedPreparation.configuration().version > 0) return; // Explicit pause must not fall through to the legacy scheduler.
@@ -547,7 +567,9 @@ export function createStarCastServer({
     encounters.set(key, task);
     return task;
   };
-  const backgroundEncounter = (...args) => encounter(...args).catch(() => console.error(JSON.stringify({ event: "internal-encounter-deferred", code: "SOURCE_UNAVAILABLE" })));
+  const backgroundEncounter = (...args) => Promise.allSettled([adEncounter(...args), encounter(...args)]).then(results => {
+    if(results.some(row=>row.status==='rejected')) console.error(JSON.stringify({event:'internal-encounter-deferred',code:'SOURCE_UNAVAILABLE'}));
+  });
   const scheduleFollowedFeed = async (feedUrl, listenerId = null) => {
     if (followedPreparation.configuration().enabled) {
       void followedPreparation.refresh({ newlyFollowed: feedUrl }).then(() => followedPreparation.drain()).catch(() => {});
@@ -1772,11 +1794,9 @@ export function createStarCastServer({
           const preferences = listeners.summary(listener).preferences || {};
           // Resolve metadata independently of canonical intelligence. Assessing
           // never grants permission; SkipService applies its own scoped gates.
-          if (!skips.source(input.feedUrl,input.episodeId)?.episode?.audioUrl && testingMode.adSkipAllowed(listener.id) && preferences.adSkipEnabled === true) {
-            const {episode}=await assessEpisodeRights(input.feedUrl,input.episodeId);
-            skips.inspect(input.feedUrl,input.episodeId,{episode});
-          }
-          const status=skips.playback(input.feedUrl,input.episodeId,{audioUrl:input.audioUrl,audioVariantFingerprint:input.audioVariantFingerprint,audioMatchCode:input.audioMatchCode,listener,preferences});
+          if (!skips.source(input.feedUrl,input.episodeId)?.episode?.audioUrl) await adEncounter(listener.id,input.feedUrl,input.episodeId);
+          else void adEncounter(listener.id,input.feedUrl,input.episodeId).catch(()=>{});
+          const status=skips.playback(input.feedUrl,input.episodeId,{audioUrl:input.audioUrl,audioVariantFingerprint:input.audioVariantFingerprint,audioMatchCode:input.audioMatchCode,positionMs:input.positionMs,audioProofVersion:input.audioProofVersion,listener,preferences});
           try {status.variant=await signedAdSkipVariant(status.variant,{bucket:env.STARCAST_BACKUP_BUCKET});}
           catch {status.variant=null;status.automaticSkipping=false;status.activeIntervals=[];status.code='VERIFIED_SOURCE_DELIVERY_UNAVAILABLE';}
           return send(res, 200, {

@@ -1338,6 +1338,9 @@ export class EpisodePipeline {
     if (this.store.get('skip-source',key)?.transcript) removed.transcripts++;
     this.store.delete('skip-source',key);
     this.store.delete('skip-episode',key);
+    for(const kind of ['skip-source','skip-episode','skip-analysis','skip-audio-verification'])
+      for(const [windowKey] of this.store.all(kind)) if(windowKey.startsWith(key+':window:'))this.store.delete(kind,windowKey);
+    this.store.delete('skip-encounter',key);
     for (const [digest,row] of this.store.all('skip-window-transcript')) if (row.origins?.includes(key)) {
       this.store.delete('skip-window-transcript',digest); removed.transcripts++;
     }

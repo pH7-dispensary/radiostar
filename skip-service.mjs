@@ -1,3 +1,5 @@
+import { adWindowStore } from "./ad-window-store.mjs";
+import { AdWorkQueue } from "./ad-work-queue.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { episodeKey } from "./episode-pipeline.mjs";
 import { feedback, Verification } from "./ad-skip.mjs";
@@ -53,6 +55,7 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
     endMs: segment.endMs,
     // A cache/source key is deliberately not an acoustic fingerprint.
     sourceVariantKey: transcript.audioVariant || null,
+    audioSourceEpoch: transcript.audioSourceEpoch || transcript.audioContentHash || null,
     audioVariantFingerprint: null,
     confidence: disputed || denied ? 0.5 : transcriptConfidence,
     verificationState: disputed ? Verification.DISPUTED : denied ? Verification.REJECTED : Verification.CANDIDATE,
@@ -109,13 +112,15 @@ function listenerState({ value, intervals, verification }) {
 }
 
 export class SkipService {
-  constructor(store, pipeline, { prepareSource = null, verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, testingContext = () => null, maxAudioSeconds = 14400, clock = Date.now } = {}) {
+  constructor(store, pipeline, { prepareSource = null, verifyAudio = null, canVerifyAudio = () => ({ allowed: false, reason: "Audio verification is not authorised for this episode." }), automaticEnabled = () => false, testingContext = () => null, maxAudioSeconds = 14400, clock = Date.now, sourceQueue = new AdWorkQueue(), progressive = false, workSuffix = "" } = {}) {
     this.store = store;
     this.pipeline = pipeline;
     this.verifyAudio = verifyAudio;
     this.prepareSource = prepareSource;
     this.sourceInflight = new Map();
     this.sourceTail = Promise.resolve();
+    this.sourceQueue = sourceQueue;
+    this.progressive = progressive; this.workSuffix = workSuffix;
     this.sourceOwner = randomUUID();
     this.canVerifyAudio = canVerifyAudio;
     this.automaticEnabled = automaticEnabled;
@@ -146,18 +151,20 @@ export class SkipService {
       this.store.set('skip-interval',id,{...interval,verificationState:Verification.CANDIDATE,boundaryVerified:false});
     return {previous:'UNREVIEWED',current:'REVIEW_RECORDED',queued:false};
   }
-  scheduleSource(feed, episode, value) {
+  scheduleSource(feed, episode, value, priority = 0) {
     const key = episodeKey(feed, episode), verification = this.verification(key);
     const needsDeliveredWindow = verification?.state === 'DYNAMIC_VARIANT' || (verification?.state === 'READY' && !verification.variant?.windowProof &&
       !verification.variant?.privateCache && !verification.variant?.etag && verification.variant?.contentLength > 32*1024*1024);
     if (!this.prepareSource || (value?.transcript?.audioContentHash && (value.transcript.windowProof || !needsDeliveredWindow)) || !value?.episode?.audioUrl) return;
     const prior = this.store.get('skip-source', key);
     const expired = prior?.transcript?.windowProof && prior.validUntil <= this.clock();
-    if (this.sourceInflight.has(key) || this.sourceInflight.size >= 2 || (prior?.audioUrl === value.episode.audioUrl && ((!expired && prior.state === 'READY') || (!expired && prior.attempts >= 2) || prior.code === 'PROVIDER_OUTCOME_UNKNOWN' || Date.parse(prior.retryAfter || '') > this.clock()))) return;
+    this.sourceQueue.promote(key+this.workSuffix,priority);
+    if (this.sourceInflight.has(key)) { this.sourceQueue.promote(key+this.workSuffix,priority); return; }
+    if (!this.sourceQueue.hasCapacity() || (prior?.audioUrl === value.episode.audioUrl && ((!expired && prior.state === 'READY') || (!expired && prior.attempts >= 2) || prior.code === 'PROVIDER_OUTCOME_UNKNOWN' || Date.parse(prior.retryAfter || '') > this.clock()))) return;
     const allowed = () => { const p = this.canVerifyAudio({feedUrl:feed,episodeId:episode,value,operation:'transcribe-window'}); return typeof p === 'boolean' ? p : p?.allowed; };
     if (!allowed()) return;
     const attempts = !expired && prior?.audioUrl === value.episode.audioUrl ? (prior.attempts || 0) + 1 : 1;
-    const record = {feedUrl:feed,episodeId:episode,episode:value.episode,audioUrl:value.episode.audioUrl,attempts,updatedAt:nowIso()};
+    const record = {feedUrl:feed,episodeId:episode,priority,episode:value.episode,audioUrl:value.episode.audioUrl,attempts,updatedAt:nowIso()};
     // SQLite serialises this claim across HTTP/worker processes. A crashed
     // process can be recovered after the lease; paid checkpoints still veto
     // replays with an unknown provider outcome.
@@ -167,21 +174,27 @@ export class SkipService {
       this.store.set('skip-source',key,{...record,state:'QUEUED',claimOwner:this.sourceOwner,claimUntil:this.clock()+15*60000}); return true;
     });
     if (!claimed) return;
-    const task = this.sourceTail.then(async () => {
+    const task = this.sourceQueue.add(key+this.workSuffix, async () => {
       let acquired;
       try {
+        const started=this.store.transaction(()=>{
+          const claim=this.store.get('skip-source',key);
+          if(claim?.claimOwner!==this.sourceOwner || claim.state!=='QUEUED')return false;
+          this.store.set('skip-source',key,{...record,state:'PROCESSING',claimOwner:this.sourceOwner,claimUntil:this.clock()+15*60000});return true;
+        });
+        if(!started)return; // Another process recovered or invalidated this claim.
         if (!allowed()) throw Error('Audio preparation permission changed.');
-        this.store.set('skip-source',key,{...record,state:'PROCESSING',claimOwner:this.sourceOwner,claimUntil:this.clock()+15*60000});
-        acquired = await this.prepareSource({feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,authorised:allowed});
-        if (!allowed() || this.source(feed,episode)?.episode?.audioUrl !== value.episode.audioUrl) throw Error('Audio source or permission changed.');
+        acquired = await this.prepareSource({feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,authorised:()=>allowed() && this.store.get('skip-source',key)?.claimOwner===this.sourceOwner});
+        if (this.store.get('skip-source',key)?.claimOwner!==this.sourceOwner || !allowed() || this.source(feed,episode)?.episode?.audioUrl !== value.episode.audioUrl) throw Error('Audio source or permission changed.');
         this.store.set('skip-source',key,{...record,state:'READY',transcript:acquired.transcript,validUntil:this.clock()+6*3600000,updatedAt:nowIso()});
         this.inspect(feed,episode,{preparedAudio:acquired.preparedAudio});
         await this.inflight.get(key);
       } catch (error) {
+        if(this.store.get('skip-source',key)?.claimOwner!==this.sourceOwner)return;
         const budget = /budget/i.test(String(error.message));
         this.store.set('skip-source',key,{...record,state:'FAILED',attempts:budget?0:record.attempts,code:error.code || (budget?'BUDGET_LIMIT':'SOURCE_PREPARATION_FAILED'),reason:String(error.message).slice(0,300),retryAfter:new Date(this.clock()+(budget?3600000:60000)).toISOString()});
       } finally { await acquired?.preparedAudio?.cleanup(); }
-    }).finally(() => this.sourceInflight.delete(key));
+    }, priority).finally(() => this.sourceInflight.delete(key));
     this.sourceInflight.set(key,task); this.sourceTail = task.catch(()=>{});
   }
   inspect(feed, episode, context = {}) {
@@ -191,7 +204,7 @@ export class SkipService {
     const refusal = rights && ["ad-detection"].map(feature => rights.evaluate({ feature, feedUrl: feed, episodeId: episode })).find(decision => !decision.allowed);
     if (refusal) return { state: "UNAVAILABLE", code: refusal.code || "RIGHTS_NOT_ESTABLISHED", reason: refusal.reason, intervals: [], activeIntervals: [], verifiedCount: 0, candidateCount: null, automaticSkipping: false };
     const stored = this.source(feed, episode);
-    this.scheduleSource(feed, episode, stored);
+    this.scheduleSource(feed, episode, stored, context.priority || 0);
     const value = stored && { ...stored, ...(context.testingContext ? { testingContext: context.testingContext } : {}) }, key = episodeKey(feed, episode), transcript = value?.transcript;
     const all = this.store.all("skip-interval").map(([, item]) => item);
     const prior = all.filter((item) => item.episodeKey === key);
@@ -340,7 +353,7 @@ export class SkipService {
       if (!currentSource() || !allowed()) {
         this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:currentSource()?"AUDIO_VERIFICATION_NOT_AUTHORISED":"SOURCE_CHANGED",reason:"The source or permission changed before verification began.",updatedAt:nowIso()});return;
       }
-      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, expectedWindow:value.transcript?.windowProof || null, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
+      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, expectedWindow:value.transcript?.windowProof || null, expectedCursor:value.transcript?.acquisitionCursor || null, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
       this.store.transaction(() => {
         if (!currentSource()) {
           this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:"SOURCE_CHANGED",reason:"The transcript or audio source changed during verification; no intervals were published.",updatedAt:nowIso()});return;
@@ -389,7 +402,38 @@ export class SkipService {
       });
     }
   }
-  playback(feed, episode, { audioUrl, audioVariantFingerprint, audioMatchCode, listener, preferences = {} } = {}) {
+  progressiveSelection(feed, episode, positionMs) {
+    if (!this.progressive || !Number.isFinite(positionMs) || positionMs < 0) return this;
+    const root=this.source(feed,episode),epoch=root?.transcript?.audioContentHash;
+    if (!root?.transcript?.windowProof || !epoch) return this;
+    let selected=this,prior=root;
+    for(let index=1;index<=512;index++) {
+      const cursor=prior?.transcript?.nextWindowCursor;
+      if(!cursor || positionMs < prior.transcript.coverageEndMs-60000) break;
+      const store=adWindowStore(this.store,epoch,index), previousTranscript=prior.transcript;
+      const currentRoot=()=>this.source(feed,episode)?.transcript?.audioContentHash===epoch;
+      const child=new SkipService(store,{status:()=>null,rights:this.pipeline.rights},{
+        sourceQueue:this.sourceQueue,workSuffix:store.suffix,clock:this.clock,automaticEnabled:this.automaticEnabled,testingContext:this.testingContext,
+        maxAudioSeconds:this.maxAudioSeconds,verifyAudio:this.verifyAudio,
+        prepareSource:async input=>{const acquired=await this.prepareSource({...input,cursor,previousTranscript});return {...acquired,transcript:{...acquired.transcript,audioSourceEpoch:epoch}};},
+        canVerifyAudio:input=>currentRoot()?this.canVerifyAudio(input):{allowed:false,code:'SOURCE_CHANGED',reason:'The preceding audio source changed.'},
+      });
+      child.inspect(feed,episode,{episode:root.episode,priority:100});
+      const next=child.source(feed,episode);
+      if(!next?.transcript?.windowProof) break;
+      // Keep an existing complete break until it has passed; overlapping windows
+      // must not replace its lease with a partial later view.
+      const existing=selected.inspect(feed,episode).intervals || [];
+      if(positionMs>=next.transcript.coverageStartMs && !existing.some(row=>row.verificationState==='VERIFIED' && row.startMs<=positionMs && row.endMs>positionMs))selected=child;
+      prior=next;
+    }
+    return selected;
+  }
+  playback(feed, episode, { audioUrl, audioVariantFingerprint, audioMatchCode, listener, preferences = {}, positionMs, audioProofVersion } = {}) {
+    if(this.progressive && audioProofVersion==='delivered-chain-v1' && this.automaticEnabled(listener) && preferences.adSkipEnabled===true) {
+      const selected=this.progressiveSelection(feed,episode,positionMs);
+      if(selected!==this)return selected.playback(feed,episode,{audioUrl,audioVariantFingerprint,audioMatchCode,listener,preferences,positionMs});
+    }
     const inspection = this.inspect(feed, episode, { testingContext: this.testingContext(listener) }), value = this.source(feed, episode);
     const exactSource = typeof audioUrl === "string" && Boolean(value?.episode?.audioUrl) && audioUrl === value.episode.audioUrl;
     const verification = this.verification(episodeKey(feed, episode));
@@ -399,7 +443,7 @@ export class SkipService {
     const sourceMatched = Boolean(permitted && variant?.audioVariantFingerprint && audioVariantFingerprint === variant.audioVariantFingerprint);
     const recordedIntervals = this.store.all("skip-interval").map(([, item]) => item);
     const vetoed = item => recordedIntervals.some(other => other.episodeKey === item.episodeKey &&
-      (other.sourceVariantKey || other.audioVariant) === (item.sourceVariantKey || item.audioVariant) &&
+      ((other.sourceVariantKey || other.audioVariant) === (item.sourceVariantKey || item.audioVariant) || (item.audioSourceEpoch && other.audioSourceEpoch === item.audioSourceEpoch)) &&
       (other.disputed || [Verification.DISPUTED, Verification.REJECTED].includes(other.verificationState)) && other.startMs < item.endMs && other.endMs > item.startMs);
     const activeIntervals = sourceMatched ? recordedIntervals
       .filter(item => inspection.intervals.some(current => current.id === item.id))

@@ -23,6 +23,7 @@ export async function matchActiveAudio(player: AudioPlayer, source: Source, vari
   if (privacy.paused || typeof native?.matchDeliveredAudio !== 'function') return null;
   return matchDeliveredPrefix(variant, {
     match: (bytes: number, hash: string) => native.matchDeliveredAudio(player, key(source), bytes, hash),
+    matchChain: typeof native?.matchDeliveredAudioChain==='function' ? (endByte:number,hash:string)=>native.matchDeliveredAudioChain(player,key(source),endByte,hash) : undefined,
     current: () => current() && !localPrivacyState().paused && localPrivacyState().revision === privacy.revision,
   });
 }

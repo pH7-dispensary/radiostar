@@ -3,11 +3,12 @@ import AVFoundation
 import UniformTypeIdentifiers
 
 /// A resource delegate for the EXISTING Expo AVPlayer. It streams ordinary
-/// playback immediately and captures at most 8 MiB; no proxy server or second
+/// playback immediately and captures an 8 MiB prefix plus an 8 MiB rolling witness; no proxy server or second
 /// player, whole-file cache, transcript, or cloud upload is introduced.
 final class DeliveredAudioLoader: NSObject, AVAssetResourceLoaderDelegate, URLSessionDataDelegate {
   let source: URL
   let prefix = DeliveredAudioPrefix()
+  let chain = DeliveredAudioChain()
   let asset: AVURLAsset
   private var totalLength: Int64?
   private var resolvedURL: URL?
@@ -104,7 +105,7 @@ final class DeliveredAudioLoader: NSObject, AVAssetResourceLoaderDelegate, URLSe
     }
     if let length {
       if let totalLength, totalLength != length { completionHandler(.cancel); fail(dataTask, URLError(.resourceUnavailable)); return }
-      totalLength = length
+      totalLength = length; chain.setLength(length)
     }
     if let info = transfer.loading.contentInformationRequest {
       info.contentType = UTType(mimeType: response.mimeType ?? "audio/mpeg")?.identifier ?? UTType.mp3.identifier
@@ -126,7 +127,7 @@ final class DeliveredAudioLoader: NSObject, AVAssetResourceLoaderDelegate, URLSe
     let count = Int(min(Int64(data.count - skip), max(0,end - max(wanted,offset))))
     if count > 0 {
       let bytes = prefix.delivered(Data(data[skip..<(skip + count)]), at: offset + Int64(skip))
-      request.respond(with: bytes)
+      request.respond(with: chain.delivered(bytes, at:offset + Int64(skip)))
     }
     if request.currentOffset >= end { finish(dataTask) }
   }

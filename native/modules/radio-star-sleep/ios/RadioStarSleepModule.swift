@@ -44,6 +44,11 @@ public final class RadioStarSleepModule: Module {
       guard let item = self.deliveredItem, item.status == .readyToPlay, player.ref.currentItem === item, sourceKey == self.deliveredSourceKey, let loader = self.deliveredAudio else { return false }
       return loader.prefix.matches(bytes:bytes,sha256:sha256)
     }.runOnQueue(.main)
+    AsyncFunction("matchDeliveredAudioChain") { (player: AudioPlayer, sourceKey: String, endByte: Double, sha256: String) -> Bool in
+      guard endByte.isFinite,endByte>0,endByte<=2*1024*1024*1024,endByte.rounded()==endByte,
+            let item=self.deliveredItem,item.status == .readyToPlay,player.ref.currentItem === item,sourceKey == self.deliveredSourceKey,let loader=self.deliveredAudio else{return false}
+      return loader.chain.matches(endByte:Int64(endByte),sha256:sha256)
+    }.runOnQueue(.main)
     AsyncFunction("buildMetadata") { () -> String in
       let value = ["nativeBuild": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "UNAVAILABLE", "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "UNAVAILABLE"]
       return String(data: try JSONSerialization.data(withJSONObject: value), encoding: .utf8) ?? "{}"
