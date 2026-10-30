@@ -39,11 +39,13 @@ export function AdSkipRuntime({ onNotice }: { onNotice: Dispatch<SetStateAction<
     let stopped = false, loading = false;
     prefetched.current = null; prefetching.current = null; eligibility.current = null; setStatus(null);
     const refresh = async () => {
-      if (loading || !source?.feedUrl) return;
+      if (loading || busy.current || !source?.feedUrl) return;
       loading = true;
       const revision = refreshRevision.current;
       try {
         const next = await listenerRequest("/api/skips/status", { feedUrl: source.feedUrl, episodeId: source.episodeId, audioUrl: source.url, audioVariantFingerprint, positionMs:getPositionMs(),audioProofVersion:"delivered-chain-v1" });
+        // Complete the authorised seek and retain its Undo before rotating proofs.
+        if (busy.current) return;
         if (!stopped && revision === refreshRevision.current && audioVariantFingerprint !== next.variant?.audioVariantFingerprint && next.variant?.windowProof && next.pilotEnabled && next.preferenceEnabled) {
           // Native matching examines bytes delivered through the current item,
           // with source/privacy guards. No seek or restart occurs here.
