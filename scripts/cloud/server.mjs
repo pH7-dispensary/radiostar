@@ -4,6 +4,7 @@ import { atomicJson } from "../../backup-worker.mjs";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import { createStarCastServer } from "../../server.mjs";
 import { acquireServerLock } from "../../server-lock.mjs";
+import { initialiseAudioStaging } from '../../transcription.mjs';
 
 // Secrets never enter argv, Terraform state, source archives or log output.
 try {
@@ -43,6 +44,10 @@ process.env.STARCAST_TRUSTED_PROXY_CIDRS = ["10.46.1.0/24", ...await cloudFrontP
 process.env.NODE_ENV = "production";
 process.env.STARCAST_PRIVATE_PILOT = "enabled";
 acquireServerLock("/var/lib/starcast/backend.lock");
+// Amazon Linux /tmp is a small memory-backed filesystem. Stage canonical
+// audio on the existing data disk; its per-job byte cap still applies.
+process.env.STARCAST_AUDIO_TEMP_DIR='/var/lib/starcast/audio-staging';
+await initialiseAudioStaging(process.env.STARCAST_AUDIO_TEMP_DIR);
 const { server, store, queue } = createStarCastServer();
 const check = store.db.prepare("PRAGMA quick_check").get();
 if (Object.values(check)[0] !== "ok") throw Error("Database integrity check failed");

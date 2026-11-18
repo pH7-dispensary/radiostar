@@ -7,7 +7,7 @@ import {
   createOpenAIClient,
   PROCESSING_VERSION,
 } from "./openai-intelligence.mjs";
-import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION } from "./transcription.mjs";
+import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION, AUDIO_STAGING_VERSION } from "./transcription.mjs";
 import { hybridSemanticRetrieve,validSemanticIndex } from "./semantic-search.mjs";
 import { composeGroundedAnswer } from "./grounded-answer.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
@@ -46,7 +46,7 @@ export const canonicalEpisodeId = (feedUrl, episodeId) =>
   `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
 
 export const recoverableTechnicalJob = (job) => job?.state === "FAILED" && job.retryable !== false &&
-  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_RATE_LIMIT", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "TIMEOUT", "SOURCE_UNAVAILABLE", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
+  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "AUDIO_STAGING_CAPACITY", "PROVIDER_RATE_LIMIT", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "TIMEOUT", "SOURCE_UNAVAILABLE", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
   (job.recoveries || 0) < 2;
 
 // The persisted worker state deliberately remains backward-compatible. This
@@ -167,6 +167,7 @@ export function availabilityCode(code) {
 }
 
 function failure(error) {
+  if (error?.code === 'AUDIO_STAGING_CAPACITY') return {code:error.code,reason:'Audio preparation is waiting for temporary disk capacity. Listening remains available.',retryable:true};
   if (error?.code === 'PROCESSING_YIELD') return {code:error.code,reason:'Completed chunks are saved while another queued episode is prepared.',retryable:true};
   if (error?.code === 'PROVIDER_RATE_LIMIT') return {code:error.code,reason:'The provider rejected this request temporarily. A bounded retry is scheduled.',retryable:true};
   if (error?.code === "TESTING_EXPIRED") return { code: error.code, reason: "Internal testing has ended or been disabled. Cached intelligence remains available.", retryable: false };
@@ -808,15 +809,20 @@ export class EpisodePipeline {
       const assemblyRecovery = status.platformProcessing && status.state === "FAILED" && status.code === "ANALYSIS_FAILED" &&
         status.processingStage === "TRANSCRIBING" && !status.transcript && status.transcriptionAssemblyVersion !== TRANSCRIPTION_ASSEMBLY_VERSION &&
         this.store.all("transcription-checkpoint").some(([id, chunk]) => id.startsWith(key + ":") && chunk.state === "READY");
+      const stagingRecovery = status.platformProcessing && status.state==='FAILED' && status.code==='ANALYSIS_FAILED' &&
+        status.processingStage==='PREPARING_AUDIO' && status.audioStagingVersion!==AUDIO_STAGING_VERSION && !status.transcript &&
+        !this.ledger.usage.some(row=>row.jobId===status.jobId) &&
+        !this.store.all('transcription-checkpoint').some(([id])=>id.startsWith(key+':'));
       const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
         now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
-      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery)) {
+      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery || stagingRecovery)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
         const pendingSeconds = status.transcript?.segments?.length ? 0 : status.work?.nextChunkSeconds ?? Math.min(1200, durationMs(status.episode?.duration)/1000 || 1200);
         if (totals.day + pendingSeconds*0.0001 <= limits.dailyUsd && totals.month + pendingSeconds*0.0001 <= limits.monthlyUsd && totals.transcriptionSeconds + pendingSeconds <= limits.dailyTranscriptionSeconds) {
           const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0),
             ...(status.code === 'PROCESSING_YIELD' ? {queuedAt:new Date(now).toISOString()} : {}), capacityWait:null,
+            ...(stagingRecovery ? {audioStagingVersion:AUDIO_STAGING_VERSION,attempts:0,softwareRecovery:'AUDIO_STAGING_REPAIRED'} : {}),
             ...(assemblyRecovery ? { transcriptionAssemblyVersion: TRANSCRIPTION_ASSEMBLY_VERSION } : {}), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
           this.store.set("processing-outbox", status.jobId, { key, ...resumed });
         } else this.store.set("intelligence", key, { ...status, resumeAfter: new Date(now + 3600000).toISOString() });
@@ -1128,7 +1134,7 @@ export class EpisodePipeline {
         // Downloading/chunking may take time but is not yet a provider
         // transcription. Keep the listener state in acquisition until the
         // provider call actually begins.
-        update({ state: "DISCOVERING", processingStage: "PREPARING_AUDIO", transcriptChecks });
+        update({ state: "DISCOVERING", processingStage: "PREPARING_AUDIO", audioStagingVersion:AUDIO_STAGING_VERSION, transcriptChecks });
         let audioTask = this.audioInflight.get(variant);
         if (!audioTask) {
           audioTask = (async () => {

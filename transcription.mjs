@@ -1,4 +1,4 @@
-import { mkdtemp, rm, readFile, statfs } from "node:fs/promises";
+import { mkdtemp, rm, readFile, statfs, mkdir, readdir, lstat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
@@ -13,6 +13,20 @@ import { assessTranscript } from "./transcripts.mjs";
 
 const exec = promisify(execFile);
 export const TRANSCRIPTION_ASSEMBLY_VERSION = "chunk-boundaries-v2";
+export const AUDIO_STAGING_VERSION = 'disk-staging-v1';
+export async function initialiseAudioStaging(root) {
+  await mkdir(root,{recursive:true,mode:0o700});
+  // Only owned staging directories with an explicit dead-process marker are
+  // disposable. Never follow symlinks or scan the database/backup directory.
+  for (const entry of (await readdir(root,{withFileTypes:true})).slice(0,200)) {
+    if (!entry.isDirectory() || !/^starcast-audio-[A-Za-z0-9]+$/.test(entry.name)) continue;
+    const directory=join(root,entry.name);let info;try{info=await lstat(directory);}catch(error){if(error.code==='ENOENT')continue;throw error;}
+    if (Date.now()-info.mtimeMs<2*3600000) continue;
+    let owner;try { owner=JSON.parse(await readFile(join(directory,'owner.json'),'utf8')); } catch { continue; }
+    if (owner.kind!==AUDIO_STAGING_VERSION || !Number.isSafeInteger(owner.pid) || owner.pid<1) continue;
+    try { process.kill(owner.pid,0); } catch(error) { if(error.code==='ESRCH')await rm(directory,{recursive:true,force:true}); }
+  }
+}
 export function planAudioSegments({
   durationMs,
   maxSegmentMs = 20 * 60_000,
@@ -84,20 +98,22 @@ export function mergeTranscriptSegments(segments) {
   }
   return merged;
 }
-export async function prepareAudio(audioUrl, maxSeconds, { signal, download = downloadPublicAudio } = {}) {
+export async function prepareAudio(audioUrl, maxSeconds, { signal, download = downloadPublicAudio, stagingRoot=process.env.STARCAST_AUDIO_TEMP_DIR || tmpdir(), diskInfo=statfs } = {}) {
   if (!Number.isFinite(maxSeconds) || maxSeconds <= 0 || maxSeconds > 14400) throw Error('Invalid audio processing duration limit.');
   if (!publicUrl(audioUrl))
     throw Error("A public HTTPS audio source is required.");
-  const directory = await mkdtemp(join(tmpdir(), "starcast-audio-")),
+  if(stagingRoot!==tmpdir())await initialiseAudioStaging(stagingRoot);
+  const directory = await mkdtemp(join(stagingRoot, "starcast-audio-")),
     path = join(directory, "source.audio");
   try {
     // Full canonical transcription is an explicit, separately budgeted job.
     // Allow four hours up to 512 kb/s plus tags, with a 1 GiB disk ceiling.
     // Ad-only acquisition never enters this whole-source path.
     const maximumBytes = Math.min(1024 ** 3, Math.ceil(maxSeconds * 64000) + 8 * 1024 ** 2);
-    const disk = await statfs(directory);
+    await writeFile(join(directory,'owner.json'),JSON.stringify({kind:AUDIO_STAGING_VERSION,pid:process.pid}),{mode:0o600});
+    const disk = await diskInfo(directory);
     if (disk.bavail * disk.bsize < maximumBytes + 512 * 1024 ** 2)
-      throw Object.assign(Error("Insufficient temporary audio capacity."), { code: "SOURCE_UNAVAILABLE" });
+      throw Object.assign(Error("Insufficient temporary audio capacity."), { code: "AUDIO_STAGING_CAPACITY" });
     signal?.throwIfAborted();
     const delivery = await download(audioUrl, path, maximumBytes, { signal });
     const { stdout } = await exec(

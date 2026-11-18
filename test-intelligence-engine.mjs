@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import {LocalStore} from './persistence.mjs';
 import {BudgetLedger,PROCESSING_VERSION} from './openai-intelligence.mjs';
-import {transcribeOnDemand,planAudioSegments} from './transcription.mjs';
+import {transcribeOnDemand,planAudioSegments,prepareAudio,initialiseAudioStaging,AUDIO_STAGING_VERSION} from './transcription.mjs';
+import {mkdtemp,mkdir,writeFile,readdir,utimes,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import ffmpeg from 'ffmpeg-static';
 import {EpisodePipeline,episodeKey} from './episode-pipeline.mjs';
 import {SemanticSearch,DIMENSIONS} from './semantic-search.mjs';
 import {featureExecution} from './intelligence-delivery.mjs';
@@ -81,3 +87,32 @@ try {
  assert.equal(probed,1);assert.equal(paid,1);const result=pipeline.status(feedUrl,'unknown-duration');assert.equal(result.state,'READY');assert.equal(result.work.verifiedSourceDurationMs,60000);assert.equal(result.episode.duration,'60');
 } finally {probeStore.close();}
 console.log('RSS episode-page discovery, unsafe/unrelated links, and bounded actual-duration probing without RSS duration passed.');
+
+const staging=await mkdtemp(join(tmpdir(),'engine-staging-test-'));
+try {
+ let downloads=0;
+ await assert.rejects(prepareAudio('https://owned.example/audio.mp3',14400,{stagingRoot:staging,diskInfo:async()=>({bavail:1024**3,bsize:1}),download:async()=>{downloads++;}}),e=>e.code==='AUDIO_STAGING_CAPACITY');
+ assert.equal(downloads,0);assert.deepEqual(await readdir(staging),[],'failed acquisition removes staging');
+ const audio=await prepareAudio('https://owned.example/audio.mp3',14400,{stagingRoot:staging,download:async(_url,path)=>{
+  await promisify(execFile)(ffmpeg,['-v','error','-f','lavfi','-i','sine=frequency=440:duration=1','-f','mp3',path]);return {url:'https://owned.example/audio.mp3'};
+ }});
+ assert(audio.path.startsWith(staging));assert(audio.durationMs>=1000&&audio.durationMs<1200);
+ const chunk=await audio.chunkFactory({index:0,startMs:0,endMs:audio.durationMs});assert(chunk.size>0);
+ await audio.cleanup();assert.deepEqual(await readdir(staging),[]);
+ await assert.rejects(prepareAudio('https://owned.example/corrupt.mp3',14400,{stagingRoot:staging,download:async(_url,path)=>{await writeFile(path,'corrupt audio');}}));
+ assert.deepEqual(await readdir(staging),[],'corrupt audio is removed before any provider call');
+ for(const [name,pid]of [['starcast-audio-dead',2147483647],['starcast-audio-live',process.pid],['preserve-data',2147483647]]){
+  const dir=join(staging,name);await mkdir(dir);await writeFile(join(dir,'owner.json'),JSON.stringify({kind:AUDIO_STAGING_VERSION,pid}));await utimes(dir,new Date(0),new Date(0));
+ }
+ await initialiseAudioStaging(staging);
+ assert.deepEqual((await readdir(staging)).sort(),['preserve-data','starcast-audio-live']);
+}finally{await rm(staging,{recursive:true,force:true});}
+const stagingStore=new LocalStore(':memory:'),stagingLedger=new BudgetLedger({enabled:true},stagingStore);
+try {
+ const pipeline=new EpisodePipeline({store:stagingStore,ledger:stagingLedger,queue:{enqueue:async()=>{}},enabled:true,configured:true,resolveEpisode:async()=>({})});
+ stagingStore.set('intelligence',key,{feedUrl,episodeId,jobId:'prepaid-staging-failure',state:'FAILED',code:'ANALYSIS_FAILED',attempts:2,retryable:false,platformProcessing:true,processingStage:'PREPARING_AUDIO',completedAt:new Date().toISOString()});
+ await pipeline.recoverQueued();assert.equal(stagingStore.get('intelligence',key).state,'QUEUED');assert.equal(stagingStore.get('intelligence',key).audioStagingVersion,AUDIO_STAGING_VERSION);
+ stagingStore.set('intelligence',key,{...stagingStore.get('intelligence',key),state:'FAILED',code:'ANALYSIS_FAILED',processingStage:'PREPARING_AUDIO',retryable:false});
+ await pipeline.recoverQueued();assert.equal(stagingStore.get('intelligence',key).state,'FAILED','software migration is one-time, not infinite retry');
+}finally{stagingStore.close();}
+console.log('Disk-backed bounded audio, low capacity refusal, corrupt audio cleanup, dead-owner cleanup and one-time unpaid staging recovery passed.');
