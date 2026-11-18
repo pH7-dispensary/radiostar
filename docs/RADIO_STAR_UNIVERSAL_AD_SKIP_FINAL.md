@@ -5,12 +5,12 @@
 ## Revision and deployment
 
 - Repository: `pH7-dispensary/radiostar`; branch `work`; starting revision `300499f`.
-- Backend implementation: `c1b904f`. Native dependency alignment: `ace3428`.
-- Production archive: `55b2150b92e0f3076d88ec1b1c57c731b1e5fb4042679b87a06bf520cbd3681e`.
+- Backend implementation: `c1b904f`, with complete-break safety follow-up `bde5323`. Native dependency alignment: `ace3428`.
+- Current production archive: `d93f3d2c3c824eaffdfe9fe9a69c1306f17491aebf83886ded25409e54640c18`.
 - AWS account `208096650030`, region `eu-west-2`, instance `i-08537aa0e84163cb9`; HTTPS `https://d3ri12f40b85i3.cloudfront.net`.
-- Deployment command `35d35a1b-3525-4577-8f8a-ca8dbf3c2e42`: **Success**. No pH7 resources changed; no infrastructure added.
-- Before deployment: SQLite recovery backup `/var/lib/starcast/pre-command-centre-1795016536789.sqlite`, integrity `ok`, 23,193,632,768 bytes free. Prior release `951ebf792d024d39b81cd7be24c90caf8b58b419d0e4eb869f47d1cf0ac0d1bc` retained. Existing deployment failure rollback and two-release retention remain intact.
-- After deployment: API/worker/database healthy; 23,062,540,288 bytes free; SQS visible/in-flight/delayed and DLQ counts all zero at the recorded observation. These snapshots are time-specific, not uptime guarantees.
+- Latest deployment command `714493b6-5682-4007-b9a5-0bccb459b3a3`: **Success**, 16:19 UTC. No pH7 resources changed; no infrastructure added.
+- Before this deployment: SQLite recovery backup `/var/lib/starcast/pre-command-centre-1795018634422.sqlite`, integrity `ok`, 23,059,644,416 bytes free. Prior archive `55b2150b92e0f3076d88ec1b1c57c731b1e5fb4042679b87a06bf520cbd3681e` is retained. Existing deployment failure rollback and two-release retention remain intact.
+- After deployment at 16:22–16:23 UTC: API/worker/database healthy; 22,934,085,632 bytes free (28.63% disk used); SQS visible/in-flight/delayed and DLQ counts all zero. Two enrolled pilot devices remain active. These snapshots are time-specific, not uptime guarantees. Evidence: `evals/universal-ad-skip-phase3-no-apple-production.json`.
 
 ## Defects corrected
 
@@ -19,6 +19,7 @@
 3. **Per-window limits lacked a persisted aggregate acquisition ceiling.** The existing 8 MiB window limit now has an atomic shared ceiling of 2 GiB and 512 requests per canonical episode/source in a rolling 24-hour period. Known transfers charge received bytes; interrupted/unknown transfers retain their reserved ceiling. Exhaustion has an explicit reset time and preserves paid checkpoints. This is a network limit, separate from the AI ledger.
 4. **Expired enrolled devices could not be explicitly renewed through the protected administration workflow.** A Super Admin session plus CSRF, current expiry, confirmation and reason is now required. Revoked installations cannot be revived. The owner explicitly authorised three weeks; the two existing devices and independent Ad Skip pilot now expire **9 December 2026, 15:48:29 UTC**. Preferences were preserved. The paid-testing mode and its larger historical allowances were not activated.
 5. **The quality report could confuse candidate metrics with release evidence.** A separate release-gate evaluator now requires independently reviewed, complete held-out episodes, exact source binding and accepted intervals. It rejects development/held-out source overlap and predictions derived from their human test labels. It reports missing evidence and confidence intervals without enabling any feature.
+6. **An uncertain whole break could fall back to its shorter CTA fragment.** The complete-break guard previously depended on the longer proposal already having automatic approval evidence. A failing regression reproduced the shorter 300–305 s fragment remaining eligible inside an uncertain 300–320 s break. The guard now uses any strictly enclosing commercial-break proposal; equal spans remain duplicates. Cached historical fragment verification is preserved but excluded from active skips, listener `READY`, verified counts and progressive-window retention. Candidate version 15 refreshes these decisions without repeating paid transcription. The regression also covers a previously verified cached fragment and confirms that it cannot authorise a partial skip. This fixes a completeness defect; it does not establish general detector accuracy.
 
 The existing player, rights decisions, lease checks, emergency suspension, feedback and Undo remain authoritative. No new rights framework or parallel Ad Skip pipeline was created.
 
@@ -108,6 +109,7 @@ No Linux result is substituted for these six outcomes. Detailed current decision
 ## Validation and native release
 
 - **AUTOMATED TESTED:** full `npm test` passed, including existing recovery, budget, rights, player, progressive proof and skip/Undo suites. Subsequent acquisition retry wiring passed targeted verification/progressive/bounded/universal tests. New three-week expiry, revocation, protected session, CSRF and stale-version tests pass.
+- **BACKEND FOLLOW-UP VERIFIED:** after the owner deferred Apple uploads, the full suite passed again with the new uncertain-break/cached-fragment regression. The exact 12-source audio rerun retained all five previously verified opening boundaries and the unchanged human annotation. Authenticated live cached intelligence, chapters, topics, search, moments, rights denial, access separation and spending controls passed after deployment with zero new provider calls. See `evals/universal-ad-skip-phase3-no-apple-validation.json` and `evals/universal-ad-skip-phase3-no-apple-real-audio.json`. Existing live seek/Undo recordings predate this follow-up; no new physical-device claim is made.
 - **AUTOMATED TESTED:** native TypeScript; Expo Doctor 21/21; Swift delivered-prefix/chain tests; native sleep deterministic cases.
 - **DESKTOP NATIVE VERIFIED:** muted macOS AVPlayer sleep test paused after 2,032.48 ms for a 2,000 ms deadline, 20.64 ms recorded scheduling drift, 49 fade samples, original volume restored. This is not an iPhone background test.
 - **PRODUCTION VERIFIED:** authenticated intelligence retrieval, chapters/topics, search/moments, catalogue, anonymous/admin separation, source mismatch denial, standard budgets, two actual seeks/Undos and deployed bounded window verification.
@@ -119,7 +121,7 @@ No Linux result is substituted for these six outcomes. Detailed current decision
 - Artifact checks also confirmed the production HTTPS URL, delivered-chain protocol and compiled Swift prefix/chain components; the shared gateway, administrator and temporary tester credentials were absent from both executable and JS bundle.
 - Build used November's free quota (0/15 iOS builds used before submission); **$0 build cost**, no subscription upgrade.
 - **DEVICE VERIFICATION BLOCKED:** no physical iPhone attached; command-line Xcode device tooling is unavailable. Lock-screen/background seek, headphones, interruptions and lifecycle acceptance have not been newly verified. Existing prior user intelligence checks do not establish these Ad Skip behaviours.
-- **APPLE ACCESS BLOCKED:** App Store Connect returned HTTP 403 `FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED`. The owner has been asked to accept the pending agreement. Internal submission ID `3f37a1be-ba01-4671-a01a-ec0a2aaaf222` was `IN_QUEUE` at 16:06 UTC; it is not yet an Apple-confirmed upload. Actual status is recorded in the submission evidence. No TestFlight availability or public release is claimed without Apple evidence.
+- **APPLE UPLOADS DEFERRED BY OWNER:** on 18 November the owner instructed continued backend work without Apple uploads, with membership handled later. Queued submission `3f37a1be-ba01-4671-a01a-ec0a2aaaf222` was cancelled and confirmed `CANCELED` at 16:12:29 UTC. Signed build 18 is retained. No further Apple upload, agreement acceptance or membership change is authorised by this phase. The earlier App Store Connect HTTP 403 `FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED` remains historical evidence; it does not block backend development.
 
 ## Spending and limits
 
@@ -133,7 +135,7 @@ AWS Cost Explorer reported **$12.1615608664** for this dedicated account for Nov
 
 ## Exact Phase 4 acceptance still required
 
-1. Accept Apple's pending account agreement, confirm upload/processing and existing internal-group availability, then install build 18 on a physical iPhone. Do not create a duplicate build merely to retry submission.
+1. **Deferred by the owner:** after Apple membership/agreement is resolved and uploads are authorised again, submit retained build 18, confirm processing and existing internal-group availability, then install it on a physical iPhone. Do not create a duplicate build merely to retry submission. Backend work continues independently.
 2. On the enrolled iPhone, enable Ad Skip, play the preserved reviewed LUP 690 variant from its opening, observe the single seek to 1:30.415, playback continuation and Undo. Repeat with the automated LUP 635 variant (1:30.583). Record device/OS/build, delivered variant, actual seek/Undo timestamps and telemetry.
 3. Exercise locked screen/background playback, headphone controls, 1.5× speed, manual seek, episode switch, network loss/recovery, late interval attachment, app restoration and AI Sleep. A missed deadline must leave playback running rather than skip backwards. Capture actual outcomes, not checkbox assumptions.
 4. Build/obtain the missing exact-audio independently reviewed held-out set: at least 20 complete episodes, six publishers, 50 advert and 50 challenging editorial segments, including real mid/post-roll, consecutive, dynamic and long-form breaks. Routine private processing does not require owner review; independent **release evaluation** cannot be invented or replaced by candidate approvals.

@@ -1,0 +1,161 @@
+{
+  "at": "2026-11-18T16:16:52.027Z",
+  "sourceHashesVerified": 12,
+  "openingCandidates": 49,
+  "completeProposals": 10,
+  "humanLabels": 1,
+  "fullyReviewedEpisodes": 0,
+  "reviewAuditSha256": "d739a26bdc398d718a88630f7b27cd3d042d12f3635f3b29e98d2da9125ff7f9",
+  "verifiedOpeningsUnchanged": true,
+  "comparison": "evals/universal-ad-skip-phase3-real-audio.json",
+  "fullRunSha256": "ea056d5cf3e429129b4f15d53e90d46da7a03d80b962a20b6ee6626728fcc30c",
+  "analysisP95Ms": 19.986957999999504,
+  "processingCostUsd": 0,
+  "episodes": [
+    {
+      "id": "lup-690",
+      "audioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+      "verified": [
+        {
+          "startMs": 0,
+          "endMs": 90459
+        }
+      ]
+    },
+    {
+      "id": "lup-684",
+      "audioContentHash": "faaab582ade5d5cde3017212b7ff768bd2fb79fe156af693c74b8e047aa40137",
+      "verified": []
+    },
+    {
+      "id": "lup-675",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "verified": [
+        {
+          "startMs": 0,
+          "endMs": 90476
+        }
+      ]
+    },
+    {
+      "id": "lup-665",
+      "audioContentHash": "e9ce50054554c70547471c9f8964f251444a3ea6fe3af2d99fe8d8bded9dc953",
+      "verified": []
+    },
+    {
+      "id": "lup-650",
+      "audioContentHash": "877ed4bada979df6b057552d0d761285575c14703889167cb90147844b74eede",
+      "verified": [
+        {
+          "startMs": 0,
+          "endMs": 90459
+        }
+      ]
+    },
+    {
+      "id": "lup-635",
+      "audioContentHash": "c10cb5417527eed40d71200aaa3b31777d7dca3f96864a7a45919de426fa0b27",
+      "verified": [
+        {
+          "startMs": 0,
+          "endMs": 90583
+        }
+      ]
+    },
+    {
+      "id": "lup-620",
+      "audioContentHash": "1bf4a36754fe4a0e5b1bfaf8f540f4c978dd06198815edb89cba2a0ff3e64beb",
+      "verified": [
+        {
+          "startMs": 0,
+          "endMs": 60137
+        }
+      ]
+    },
+    {
+      "id": "lup-610",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "verified": []
+    },
+    {
+      "id": "lup-600",
+      "audioContentHash": "88c172e62dcebfb2b8acb2070674aa4566aacd1cd6085b628044950b89b586ed",
+      "verified": []
+    },
+    {
+      "id": "lup-598",
+      "audioContentHash": "46aecdecd2a27b2682d66256233d95239e857541045f492036357e8f736ea690",
+      "verified": []
+    },
+    {
+      "id": "lan-299",
+      "audioContentHash": "29307bb828f38df6446e93cfa0a908d80574a5c6c56e7df2212cd9fc9a37fbe9",
+      "verified": []
+    },
+    {
+      "id": "lan-164",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "verified": []
+    }
+  ],
+  "windowEvaluations": [
+    {
+      "id": "lan-164",
+      "audioContentHash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "startMs": 520000,
+      "endMs": 750000,
+      "candidates": [
+        {
+          "id": "6c5680930051d948c992e3da8f0203d4209639cf4e3f71f4335e2a06fd15d5f4",
+          "startMs": 716680,
+          "endMs": 723080,
+          "reviewOnly": false,
+          "verificationState": "VARIANT_MATCHED"
+        },
+        {
+          "id": "a9a4aab8fe52e8f66ab071e642b4ad120ceb3b5ddad9537af2fa8883c5d8aa0c",
+          "startMs": 541920,
+          "endMs": 546400,
+          "reviewOnly": false,
+          "verificationState": "VARIANT_MATCHED"
+        }
+      ],
+      "analysisMs": 301.4515829999982,
+      "independent": false
+    },
+    {
+      "id": "lup-610",
+      "audioContentHash": "b071963ec9a4217cd816c6e06164e528747cf28f97afd9f62c8564bae9fb6ee8",
+      "startMs": 1939000,
+      "endMs": 2080000,
+      "candidates": [
+        {
+          "id": "09b8fb9897d5b57eca4eba86c3dbb96d5bdcd148443bc048443caf28b79d4847",
+          "startMs": 2073060,
+          "endMs": 2078380,
+          "reviewOnly": false,
+          "verificationState": "CANDIDATE"
+        }
+      ],
+      "analysisMs": 0.3938750000015716,
+      "independent": false
+    },
+    {
+      "id": "lup-675",
+      "audioContentHash": "c27198be1781a1f7842277f55ac96782da5642070624f7fa606bbb8bad7f51ae",
+      "startMs": 2689000,
+      "endMs": 2840000,
+      "candidates": [
+        {
+          "id": "1cefcd1bec08ddbdbd288c71dc5ff8f2f78ab23f87413325ae6ce886231165b4",
+          "startMs": 2799920,
+          "endMs": 2802680,
+          "reviewOnly": false,
+          "verificationState": "CANDIDATE"
+        }
+      ],
+      "analysisMs": 0.3157919999976002,
+      "independent": false
+    }
+  ]
+}

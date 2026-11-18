@@ -17,13 +17,15 @@
   "signatureVerified": true,
   "signingTeam": "69F2T3M9C4",
   "submissionId": "3f37a1be-ba01-4671-a01a-ec0a2aaaf222",
-  "submissionState": "IN_QUEUE",
-  "appleProcessingState": "BLOCKED_BY_REQUIRED_AGREEMENT",
+  "submissionState": "CANCELED",
+  "appleProcessingState": "DEFERRED_BY_OWNER",
   "artifactChecks": {
     "productionHttpsEmbedded": true,
     "deliveredChainVersionEmbedded": true,
     "nativeDeliveredChainCompiled": true,
     "nativeDeliveredPrefixCompiled": true,
     "privateCredentialLeak": false
-  }
+  },
+  "furtherAppleUploadsDeferred": true,
+  "signedBuildRetained": true
 }

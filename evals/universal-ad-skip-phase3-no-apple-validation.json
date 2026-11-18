@@ -1,0 +1,87 @@
+{
+  "at": "2026-11-18T16:23:43.094Z",
+  "revision": "bde532330922626af320e9367f116acdcd5180ed",
+  "deployment": {
+    "account": "208096650030",
+    "region": "eu-west-2",
+    "commandId": "714493b6-5682-4007-b9a5-0bccb459b3a3",
+    "status": "Success",
+    "archiveSha256": "d93f3d2c3c824eaffdfe9fe9a69c1306f17491aebf83886ded25409e54640c18",
+    "healthEvidence": "evals/universal-ad-skip-phase3-no-apple-production.json"
+  },
+  "regression": {
+    "before": "FAILED: uncertain complete break fell back to earlier CTA fragment",
+    "after": "PASSED: contained fragments excluded from eligibility, active skips, READY, verified counts and progressive retention; historical verification preserved",
+    "beforeLogSha256": "c9abe56098ffa7591fe9af2fdb28fb5b04d640850a1773e9d58b7ccd2e34a695",
+    "afterLogSha256": "ab951aa2823a2e693aa88c2db9522d27169ef68ff5b1f4d58ca05acf9ffef6c2"
+  },
+  "fullSuite": {
+    "command": "npm test",
+    "exitCode": 0,
+    "logSha256": "8e65dba04f25bc28fe9114d869833f08639b7f1111d98659d215ceb6bc242906"
+  },
+  "realAudioEvidence": "evals/universal-ad-skip-phase3-no-apple-real-audio.json",
+  "liveApi": {
+    "passed": true,
+    "rightsAwareCache": true,
+    "approvedCorpusOnly": true,
+    "paidCalls": 0,
+    "intelligenceState": "PARTIAL_READY",
+    "qualityNote": "The generated summary could not be fully verified. Available text is a short source excerpt, not a complete episode summary.",
+    "chapters": 6,
+    "topics": 6,
+    "publicAccessRejected": true,
+    "adminSeparation": true,
+    "coverage": {
+      "processedEpisodes": 1,
+      "partialEpisodes": 0,
+      "matchedEpisodes": 1,
+      "scope": "My Podcasts"
+    },
+    "totals": {
+      "day": 1.2907558000000001,
+      "month": 1.2907558000000001,
+      "transcriptionSeconds": 10747
+    },
+    "timings": [
+      {
+        "path": "/api/admin/intelligence",
+        "ms": 4194
+      },
+      {
+        "path": "/api/admin/ad-skip",
+        "ms": 150
+      },
+      {
+        "path": "/api/intelligence/status",
+        "ms": 393
+      },
+      {
+        "path": "/api/intelligence/moment",
+        "ms": 99
+      },
+      {
+        "path": "/api/search/conversations",
+        "ms": 98
+      },
+      {
+        "path": "/api/intelligence/status",
+        "ms": 137
+      },
+      {
+        "path": "/api/catalogue/search",
+        "ms": 137
+      },
+      {
+        "path": "/api/admin/intelligence",
+        "ms": 3683
+      }
+    ],
+    "physicalIPhoneVerified": false
+  },
+  "additionalProviderCostUsd": 0,
+  "appleUploads": "CANCELED_AND_DEFERRED_BY_OWNER",
+  "signedBuild18Retained": true,
+  "newDeviceVerification": false,
+  "fullPhaseAcceptance": false
+}

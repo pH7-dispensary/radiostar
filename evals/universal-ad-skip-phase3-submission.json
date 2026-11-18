@@ -1,6 +1,9 @@
 {
-  "at": "2026-11-18T16:06:40.438Z",
+  "at": "2026-11-18T16:12:29.742Z",
   "id": "3f37a1be-ba01-4671-a01a-ec0a2aaaf222",
-  "status": "IN_QUEUE",
-  "error": null
+  "status": "CANCELED",
+  "error": null,
+  "ownerDirective": "Continue without Apple uploads; membership will be handled later.",
+  "signedBuildRetained": true,
+  "furtherAppleUploadsDeferred": true
 }
