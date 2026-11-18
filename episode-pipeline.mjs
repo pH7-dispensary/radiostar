@@ -1482,8 +1482,7 @@ export class EpisodePipeline {
       : [];
   }
   async searchAsync(query,options={}) {
-    const fallback=this.search(query,options);
-    if(!this.semanticSearch)return fallback;
+    if(!this.semanticSearch)return this.search(query,options);
     const eligible=new Map();let resumed=false;
     for(const [,value]of this.store.all("intelligence")){
       const episode=value.episode;if(!episode||options.feedUrls&&!options.feedUrls.includes(episode.feedUrl))continue;
@@ -1493,7 +1492,7 @@ export class EpisodePipeline {
       const current=this.store.get("semantic-index",key);
       if(validSemanticIndex(current,index||{}))eligible.set(key,current);
     }
-    if(!eligible.size)return {...(resumed?this.search(query,options):fallback),retrieval:{mode:"unicode-lexical",semanticEpisodes:0}};
+    if(!eligible.size)return {...this.search(query,options),retrieval:{mode:"unicode-lexical",semanticEpisodes:0}};
     try{const vector=await this.semanticSearch.query(query);
       // search re-evaluates rights and source identity after the provider await.
       const result=this.search(query,{...options,retrieve:(index,q,n)=>{
@@ -1504,8 +1503,8 @@ export class EpisodePipeline {
     }catch{return{...this.search(query,options),retrieval:{mode:"unicode-lexical",semanticEpisodes:0,reason:"Semantic retrieval is temporarily unavailable; source search remains available."}};}
   }
   async momentsAsync(feed,id,query){
-    const fallback=this.moments(feed,id,query),key=episodeKey(feed,id),index=this.store.get("search-index",key),semantic=this.store.get("semantic-index",key);
-    if(!this.semanticSearch||!index||!validSemanticIndex(semantic,index))return fallback;
+    const key=episodeKey(feed,id),index=this.store.get("search-index",key),semantic=this.store.get("semantic-index",key);
+    if(!this.semanticSearch||!index||!validSemanticIndex(semantic,index))return this.moments(feed,id,query);
     const permitted=()=>!this.rights||["intelligence-processing","intelligence-display","find-moment"].every(feature=>this.rights.evaluate({feature,feedUrl:feed,episodeId:id}).allowed);
     if(!permitted())return[];
     try{const vector=await this.semanticSearch.query(query);const value=this.status(feed,id),current=this.store.get("search-index",key);if(!permitted()||value?.featureStatus?.search?.state!=="READY"||!validSemanticIndex(semantic,current||{}))return[];
@@ -1515,6 +1514,7 @@ export class EpisodePipeline {
   search(query, { feedUrls = null, momentsOnly = false, retrieve = hybridRetrieve } = {}) {
     const corpus = this.store
       .all("intelligence")
+      .filter(([,v])=>!feedUrls||feedUrls.includes(v.episode?.feedUrl))
       .map(([, v]) =>
         v.episode ? this.status(v.episode.feedUrl, v.episode.id) : v,
       )
