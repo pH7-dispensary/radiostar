@@ -16,8 +16,10 @@ const idleCheck = "/usr/local/bin/node --input-type=module -e " + quote(`
   const db = new DatabaseSync('/var/lib/starcast/backend.sqlite', {readOnly:true});
   const active = new Set(['QUEUED','DISCOVERING','TRANSCRIBING','UNDERSTANDING','ORGANISING','PROCESSING','PARTIAL_READY']);
   const busy = db.prepare("SELECT payload FROM records WHERE kind='intelligence'").all().some(row => {const v=JSON.parse(row.payload); return active.has(v.state) && !v.completedAt});
+  const budget=db.prepare("SELECT payload FROM records WHERE kind='budget' AND id='ledger'").get();
+  const paidWork=budget && JSON.parse(budget.payload).reservations?.length>0;
   db.close();
-  if(busy) { console.error('Active intelligence work: maintenance refused.'); process.exit(1); }
+  if(busy||paidWork) { console.error('Active intelligence work or provider reservations: maintenance refused.'); process.exit(1); }
 `);
 let commands;
 if (action === "status") commands = ["cloud-init status", "systemctl is-active starcast", "tail -n 12 /var/log/starcast/backend.log"];
