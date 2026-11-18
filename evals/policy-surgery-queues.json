@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-18T12:24:02.719Z",
+  "main": {
+    "ApproximateNumberOfMessages": "0",
+    "ApproximateNumberOfMessagesNotVisible": "0",
+    "ApproximateNumberOfMessagesDelayed": "0",
+    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:208096650030:starcast-phase1-processing-dlq\",\"maxReceiveCount\":3}"
+  },
+  "dlq": {
+    "ApproximateNumberOfMessages": "0",
+    "ApproximateNumberOfMessagesNotVisible": "0"
+  }
+}

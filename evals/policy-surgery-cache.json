@@ -1,0 +1,258 @@
+{
+  "at": "2026-11-18T12:30:42.022Z",
+  "scope": "existing owned corpus only; not evidence of Danny Jones or Joe Rogan processing",
+  "adminSessionVerified": true,
+  "anonymousAdminRejected": true,
+  "request": {
+    "episodeId": "starcast-approved-test-episode-v1",
+    "state": "PARTIAL_READY",
+    "code": null,
+    "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1"
+  },
+  "finalState": "PARTIAL_READY",
+  "executionDecision": {
+    "version": "episode-execution-v1",
+    "operationalPolicy": {
+      "allowed": true,
+      "tier": "ZERO",
+      "source": "episode",
+      "policyVersion": 1,
+      "automaticPreparation": false
+    },
+    "processingBasis": {
+      "allowed": true,
+      "code": "ALLOWED",
+      "reason": "Rights requirements are satisfied.",
+      "basisEstablished": true,
+      "mode": "OFF",
+      "policyVersion": 2,
+      "outputProfile": "standard",
+      "recordId": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "scope": "episode",
+      "evidence": [
+        {
+          "type": "OWNED",
+          "source": "Radio Star original synthetic verification corpus",
+          "scope": "episode",
+          "value": "repository:approved-test-corpus.mjs#approvedTestTranscriptVtt"
+        }
+      ],
+      "features": {
+        "transcript-acquisition": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        },
+        "transcript-distribution": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        },
+        "automatic-skipping": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "intelligence-processing": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "intelligence-display": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "conversation-search": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "episode-brief": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "smart-chapters": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "topics": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "find-moment": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "ad-detection": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "captions": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "translation-text": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "dubbing-audio": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "voice-cloning": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        }
+      },
+      "revision": "4fbfb3e73fd25ce388de182bd2ff8c06f55edeeb2a6ac994ca4b071ce7c54eea"
+    },
+    "riskAdvisory": [],
+    "technicalReadiness": {
+      "providerAvailable": true,
+      "audioEnabled": true,
+      "budgetAvailable": true,
+      "transcriptCache": "AVAILABLE",
+      "publisherReferences": 1,
+      "durationMs": 360000,
+      "maxAudioSeconds": 14400,
+      "source": "RESOLVED",
+      "capacityAvailable": true
+    },
+    "executionState": {
+      "state": "PARTIAL_READY",
+      "stage": "INDEXING",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null,
+      "completedAt": "2026-11-18T12:25:03.657Z"
+    },
+    "canDispatch": true,
+    "firstBlocker": null,
+    "secondaryBlockers": [],
+    "nextAction": "REUSE_INTELLIGENCE"
+  },
+  "timeline": [
+    {
+      "at": "Thu, 15 Oct 2026 09:00:00 GMT",
+      "type": "PUBLISHER_METADATA"
+    },
+    {
+      "at": "2026-10-15T10:22:00.811Z",
+      "type": "LEGACY_PROCESSING_REQUEST",
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523"
+    },
+    {
+      "at": "2026-10-15T10:22:05.758Z",
+      "type": "LEGACY_PROCESSING_COMPLETION",
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523"
+    },
+    {
+      "at": "2026-11-18T12:24:41.449Z",
+      "type": "JOB_QUEUED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.509Z",
+      "type": "WORKER_STARTED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.513Z",
+      "type": "TRANSCRIPT_CACHE_CHECK",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.516Z",
+      "type": "TRANSCRIPT_ACQUISITION",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.531Z",
+      "type": "TRANSCRIPT_READY",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.550Z",
+      "type": "AI_ANALYSIS",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:25:03.644Z",
+      "type": "SEARCH_INDEX",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:25:03.657Z",
+      "type": "PROCESSING_COMPLETED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    }
+  ],
+  "newJobs": [],
+  "features": {
+    "transcript": {
+      "state": "READY"
+    },
+    "brief": {
+      "state": "PARTIAL_READY"
+    },
+    "chapters": {
+      "state": "PARTIAL_READY"
+    },
+    "topics": {
+      "state": "READY"
+    },
+    "search": {
+      "state": "READY"
+    },
+    "moments": {
+      "state": "READY"
+    },
+    "adCandidates": {
+      "state": "READY",
+      "candidateCount": 0
+    }
+  },
+  "cachedOutput": {
+    "brief": true,
+    "chapters": 6,
+    "topics": 6
+  },
+  "newUsage": [],
+  "totals": {
+    "day": 0.0043411,
+    "month": 0.0043411,
+    "transcriptionSeconds": 0
+  },
+  "controls": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": true
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "at": "2026-11-18T12:25:05.964Z",
+  "scope": "existing owned corpus only; not evidence of Danny Jones or Joe Rogan processing",
+  "adminSessionVerified": true,
+  "anonymousAdminRejected": true,
+  "request": {
+    "episodeId": "starcast-approved-test-episode-v1",
+    "state": "QUEUED",
+    "code": null,
+    "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1"
+  },
+  "finalState": "PARTIAL_READY",
+  "executionDecision": {
+    "version": "episode-execution-v1",
+    "operationalPolicy": {
+      "allowed": true,
+      "tier": "ZERO",
+      "source": "episode",
+      "policyVersion": 1,
+      "automaticPreparation": false
+    },
+    "processingBasis": {
+      "allowed": true,
+      "code": "ALLOWED",
+      "reason": "Rights requirements are satisfied.",
+      "basisEstablished": true,
+      "mode": "OFF",
+      "policyVersion": 2,
+      "outputProfile": "standard",
+      "recordId": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "scope": "episode",
+      "evidence": [
+        {
+          "type": "OWNED",
+          "source": "Radio Star original synthetic verification corpus",
+          "scope": "episode",
+          "value": "repository:approved-test-corpus.mjs#approvedTestTranscriptVtt"
+        }
+      ],
+      "features": {
+        "transcript-acquisition": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "audio-transcription": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        },
+        "transcript-distribution": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        },
+        "automatic-skipping": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "intelligence-processing": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "intelligence-display": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "conversation-search": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "episode-brief": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "smart-chapters": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "topics": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "find-moment": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "ad-detection": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "captions": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "translation-text": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "dubbing-audio": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "Rights requirements are satisfied."
+        },
+        "voice-cloning": {
+          "allowed": false,
+          "code": "FEATURE_NOT_AUTHORISED",
+          "reason": "This feature is not authorised by the rights record."
+        }
+      },
+      "revision": "4fbfb3e73fd25ce388de182bd2ff8c06f55edeeb2a6ac994ca4b071ce7c54eea"
+    },
+    "riskAdvisory": [],
+    "technicalReadiness": {
+      "providerAvailable": true,
+      "audioEnabled": true,
+      "budgetAvailable": true,
+      "transcriptCache": "NOT_FOUND",
+      "publisherReferences": 1,
+      "durationMs": 360000,
+      "maxAudioSeconds": 14400,
+      "source": "NOT_CHECKED",
+      "capacityAvailable": true
+    },
+    "executionState": {
+      "state": "PARTIAL_READY",
+      "stage": "INDEXING",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null,
+      "completedAt": "2026-11-18T12:25:03.657Z"
+    },
+    "canDispatch": true,
+    "firstBlocker": null,
+    "secondaryBlockers": [],
+    "nextAction": "REUSE_INTELLIGENCE"
+  },
+  "timeline": [
+    {
+      "at": "Thu, 15 Oct 2026 09:00:00 GMT",
+      "type": "PUBLISHER_METADATA"
+    },
+    {
+      "at": "2026-10-15T10:22:00.811Z",
+      "type": "LEGACY_PROCESSING_REQUEST",
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523"
+    },
+    {
+      "at": "2026-10-15T10:22:05.758Z",
+      "type": "LEGACY_PROCESSING_COMPLETION",
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523"
+    },
+    {
+      "at": "2026-11-18T12:24:41.449Z",
+      "type": "JOB_QUEUED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.509Z",
+      "type": "WORKER_STARTED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.513Z",
+      "type": "TRANSCRIPT_CACHE_CHECK",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.516Z",
+      "type": "TRANSCRIPT_ACQUISITION",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.531Z",
+      "type": "TRANSCRIPT_READY",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:24:41.550Z",
+      "type": "AI_ANALYSIS",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:25:03.644Z",
+      "type": "SEARCH_INDEX",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    },
+    {
+      "at": "2026-11-18T12:25:03.657Z",
+      "type": "PROCESSING_COMPLETED",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "code": null
+    }
+  ],
+  "newJobs": [
+    {
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "state": "PARTIAL_READY"
+    }
+  ],
+  "newUsage": [
+    {
+      "id": "16e893ca-f9d7-4861-8b62-80dc916de2b1:text:map-0",
+      "usd": 0.0009896,
+      "kind": "text",
+      "seconds": 0,
+      "at": "2026-11-18T12:24:41.555Z",
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "episodeKey": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "failed": false,
+      "inputTokens": 590,
+      "outputTokens": 471,
+      "uncertain": false
+    },
+    {
+      "id": "derived:ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c:claims-batched-v1:d052c96c7574714a227e6879cc0c9c558979176dabd3551754018a81027b027e",
+      "usd": 0.0018688,
+      "kind": "grounding-review",
+      "seconds": 0,
+      "at": "2026-11-18T12:24:48.870Z",
+      "episodeKey": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "failed": false,
+      "inputTokens": 2492,
+      "outputTokens": 545,
+      "uncertain": false
+    },
+    {
+      "id": "derived:ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c:claims-batched-v1:7c2b5a8458edf354ee50e87f96f8e32c34b96f0456a93c0607255fc2de9579fa",
+      "usd": 0.0010672,
+      "kind": "grounding-review",
+      "seconds": 0,
+      "at": "2026-11-18T12:24:55.978Z",
+      "episodeKey": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "failed": false,
+      "inputTokens": 892,
+      "outputTokens": 444,
+      "uncertain": false
+    },
+    {
+      "id": "derived:ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c:claims-batched-v1:166445817dabe95b49f5610699c41c0923e42cf055c832992f5097e63f8e4cfb",
+      "usd": 0.0004104,
+      "kind": "grounding-review",
+      "seconds": 0,
+      "at": "2026-11-18T12:25:00.417Z",
+      "episodeKey": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "failed": false,
+      "inputTokens": 394,
+      "outputTokens": 158,
+      "uncertain": false
+    },
+    {
+      "id": "derived:ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c:embedding-3-small-512-v2:065ecddfc04fcc46944a559dfea044487920527d5c7af8e2378bb1a3b1c32316",
+      "usd": 0.0000051,
+      "kind": "embedding",
+      "seconds": 0,
+      "at": "2026-11-18T12:25:03.679Z",
+      "episodeKey": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "failed": false,
+      "inputTokens": 255,
+      "outputTokens": 0,
+      "uncertain": false
+    }
+  ],
+  "totals": {
+    "day": 0.0043411,
+    "month": 0.0043411,
+    "transcriptionSeconds": 0
+  },
+  "controls": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": true
+  }
+}

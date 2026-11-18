@@ -1,0 +1,32 @@
+{
+  "at": "2026-11-18T12:30:34.415Z",
+  "fullSuite": {
+    "command": "npm test",
+    "exitCode": 0,
+    "includes": "test and posttest",
+    "note": "Final transcript-only cache projection additionally verified with targeted suites after live discovery"
+  },
+  "targeted": [
+    "node test-policy-surgery.mjs",
+    "node test-processing-activities.mjs",
+    "node test-intelligence-first-policy.mjs",
+    "node test-pipeline.mjs"
+  ],
+  "newMatrixCases": 16,
+  "paidProviders": "mocked for automated tests",
+  "logHashes": [
+    {
+      "file": ".starcast/policy-surgery-full-tests-final.log",
+      "sha256": "4dbad35a466de0585470fa9d9c0863e18dd522de419686264299542ba2494250"
+    },
+    {
+      "file": ".starcast/policy-contract-final.log",
+      "sha256": "73e9319fdf2eca549e5f93677a16ca8c9f3d9bfc537d5758c58141c4d88ca474"
+    }
+  ],
+  "nativeChanged": false,
+  "testFlightBuildTriggered": false,
+  "sourceCommit": "29c9107",
+  "cloudAccount": "208096650030",
+  "region": "eu-west-2"
+}
