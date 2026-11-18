@@ -315,7 +315,8 @@ export async function reviewClaims(
     const input = JSON.stringify(evidence);
     const batchSchema=structuredClone(schema);
     batchSchema.properties.claims.items.properties.id.enum=evidence.map(e=>e.id);
-    batchSchema.properties.claims.items.properties.supportingSourceIds.items.enum=[...new Set(evidence.flatMap(e=>e.sources.map(s=>s.id)))];
+    batchSchema.properties.claims.items.properties.supportingSourceIds.items.enum=[...new Set(evidence.flatMap(e=>e.sources.filter(s=>normalize(s.text).length>=12).map(s=>s.id)))];
+    if(!batchSchema.properties.claims.items.properties.supportingSourceIds.items.enum.length)continue;
     const ceiling =
       (Buffer.byteLength(input) +
         Buffer.byteLength(JSON.stringify(batchSchema)) +
@@ -323,8 +324,9 @@ export async function reviewClaims(
         0.0000004 +
       2500 * 0.0000016;
     try {
-      const response = await requests.request({
-        key: `${sourceKey || "fixture"}:claims-${REVIEW_EVIDENCE_VERSION}:${hash(evidence)}`,
+      const legacyKey=`${sourceKey || "fixture"}:claims-${REVIEW_EVIDENCE_VERSION}:${hash(evidence)}`;
+      const request=key=>requests.request({
+        key,
         sourceKey,
         kind: "grounding-review",
         ceiling,
@@ -355,7 +357,16 @@ export async function reviewClaims(
         actualCost: (r) =>
           r.usage.input_tokens * 0.0000004 + r.usage.output_tokens * 0.0000016,
       });
+      let response=await request(legacyKey);
       if (response.status === "incomplete") continue;
+      // Older completed reviews could select short fragments permitted by the
+      // schema but rejected by the exact-source validator. Reverify once with
+      // the aligned schema; never replay an unknown provider outcome or treat
+      // the old positive verdict as sufficient evidence.
+      const old=JSON.parse(response.output_text);
+      const shortSelection=(old.claims||[]).some(c=>c.entailed===true&&Array.isArray(c.supportingSourceIds)&&c.supportingSourceIds.some(id=>{const row=evidence.find(e=>e.id===c.id)?.sources.find(s=>s.id===id);return row&&normalize(row.text).length<12;}));
+      if(shortSelection)response=await request(legacyKey+':eligible-source-ids-v1');
+      if(response.status==='incomplete')continue;
       const parsed = JSON.parse(response.output_text);
       for (const entry of evidence) {
         const claim = claims.find((c) => c.id === entry.id),
