@@ -223,6 +223,15 @@ export class AdminService {
     const stored = this.store.get("admin-configuration", "global");
     return { version: 1, updatedAt: null, updatedBy: "system", values: { notificationPreferences: { budgetAlerts: true, queueAlerts: true }, security: { adminSessionHours: 8 }, processing: { automaticFollowPreparation: true } }, ...(stored || {}) };
   }
+  processingBudgetControls(base) {
+    const grant=this.configuration().values.processingBudget?.temporaryAudioAllowance;
+    const start=Date.parse(grant?.activatedAt),end=Date.parse(grant?.expiresAt),now=this.now();
+    const active=grant && start<=now && now<end && end-start<=48*3600000 &&
+      Number.isInteger(grant.dailyTranscriptionSeconds) && grant.dailyTranscriptionSeconds>0 && grant.dailyTranscriptionSeconds<=28800;
+    // Expiry is a read-time overlay, never a write that can undo a newer
+    // configuration. The underlying controls and consumption stay intact.
+    return {...base,...(active?{dailyTranscriptionSeconds:grant.dailyTranscriptionSeconds}: {})};
+  }
   setConfiguration(input, actor) { return this.store.transaction(()=>this.changeConfiguration(input,actor)); }
   changeConfiguration(input, actor) {
     if(!this.can(actor,"configuration:write"))throw Error("Configuration access denied.");
@@ -232,12 +241,21 @@ export class AdminService {
     const reason = safeText(input.reason, 1000);
     if (!reason) throw Error("A reason is required for configuration changes.");
     if (input.confirmation !== "CONFIRM") throw Error("Type CONFIRM before changing global configuration.");
-    const schema={security:['adminSessionHours'],processing:['automaticFollowPreparation'],notificationPreferences:['budgetAlerts','queueAlerts']};
+    const schema={security:['adminSessionHours'],processing:['automaticFollowPreparation'],notificationPreferences:['budgetAlerts','queueAlerts'],processingBudget:['temporaryAudioAllowance']};
     for(const [category, patch] of Object.entries(input.values)) {
       if(!schema[category] || !patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key=>!schema[category].includes(key))) throw Error('Unsupported configuration setting.');
-      if(category !== 'security' && Object.values(patch).some(value=>typeof value!=='boolean'))throw Error('Configuration switches must be boolean.');
+      if(!['security','processingBudget'].includes(category) && Object.values(patch).some(value=>typeof value!=='boolean'))throw Error('Configuration switches must be boolean.');
     }
     const values = { ...previous.values, ...Object.fromEntries(Object.entries(input.values).map(([key,value])=>[key,{...previous.values[key],...value}])) };
+    if(Object.hasOwn(input.values.processingBudget || {},'temporaryAudioAllowance')) {
+      const grant=input.values.processingBudget.temporaryAudioAllowance;
+      if(grant!==null && (!grant || typeof grant!=='object' || Array.isArray(grant) || Object.keys(grant).some(k=>!['dailyTranscriptionSeconds','durationHours'].includes(k)) ||
+        !Number.isInteger(grant.dailyTranscriptionSeconds) || grant.dailyTranscriptionSeconds<1 || grant.dailyTranscriptionSeconds>28800 ||
+        !Number.isFinite(grant.durationHours) || grant.durationHours<=0 || grant.durationHours>48))throw Error('Temporary audio allowance must be at most eight hours/day for at most 48 hours; monetary limits cannot change.');
+      const activatedAt=this.now();
+      values.processingBudget.temporaryAudioAllowance=grant===null?null:{dailyTranscriptionSeconds:grant.dailyTranscriptionSeconds,
+        activatedAt:new Date(activatedAt).toISOString(),expiresAt:new Date(activatedAt+grant.durationHours*3600000).toISOString(),authorisedBy:actor.id};
+    }
     if (values.security?.adminSessionHours !== undefined && (!Number.isInteger(values.security.adminSessionHours) || values.security.adminSessionHours < 1 || values.security.adminSessionHours > 24)) throw Error("Administrator session duration must be between 1 and 24 hours.");
     const record = { version: previous.version + 1, values, updatedAt: this.now(), updatedBy: actor.id, reason };
     this.store.transaction(() => { this.store.set("admin-configuration", "global", record);

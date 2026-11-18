@@ -208,7 +208,7 @@ export class FollowedPreparation {
     const pending = window.filter(v => !v.acquisition.intelligenceCacheHit), estimates = pending.map(v => v.estimate);
     const remaining = row => (row.acquisition?.transcriptCacheHit ? 0 : row.estimate?.audioUsd || 0) + (row.estimate?.textUsd || 0);
     const knownUsd = pending.reduce((n, row) => n + remaining(row), 0);
-    const limits = { ...this.ledger.controls, ...this.testingMode.limits(this.testingMode.platformContext()) }, totals = this.ledger.totals();
+    const limits = this.ledger.controls, totals = this.ledger.totals();
     const audio = pending.filter(v => !v.acquisition?.transcriptCacheHit && v.acquisition?.requiresAudio);
     const completedLast24Hours = window.filter(v => v.state === "READY" && Date.parse(v.completedAt) >= Date.now() - 86400000).length;
     const eligiblePending=pending.filter(v=>v.eligible);

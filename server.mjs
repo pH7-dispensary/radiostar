@@ -186,6 +186,7 @@ export function createStarCastServer({
   const rights = new RightsRegistry(store);
   const testingMode = new IntelligenceTestMode(store);
   const adminService = new AdminService(store);
+  ledger.controlsProvider=()=>adminService.processingBudgetControls(ledger.baseControls);
   // A zero-percent rollout is an actual server-side off switch. Client UI must
   // never make a disabled rollout available by itself.
   const featureEnabled = (id, listenerId = undefined) => {

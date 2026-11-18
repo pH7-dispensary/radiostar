@@ -614,7 +614,7 @@ export class EpisodePipeline {
       forcePublisherRefresh = false;
     this.ledger.refresh();
     const currentTotals = this.ledger.totals();
-    const budgetRecovery = platformProcessing && ['BUDGET_LIMIT','PROCESSING_YIELD'].includes(previous?.code) && Date.parse(previous.resumeAfter || '') <= Date.now() &&
+    const budgetRecovery = platformProcessing && (previous?.code==='BUDGET_LIMIT' && this.capacityRestored(previous) || previous?.code==='PROCESSING_YIELD' && Date.parse(previous.resumeAfter || '') <= Date.now()) &&
       currentTotals.day < this.ledger.controls.dailyUsd && currentTotals.month < this.ledger.controls.monthlyUsd &&
       (previous.transcript?.segments?.length || currentTotals.transcriptionSeconds + (previous.work?.nextChunkSeconds ?? 1200) <= this.ledger.controls.dailyTranscriptionSeconds);
     const rightsRecovery = this.rightsRecovery(feedUrl, episodeId);
@@ -786,6 +786,11 @@ export class EpisodePipeline {
     this.store.delete("processing-outbox", current.jobId);
     return publicIntelligence(cancelled);
   }
+  capacityRestored(status) {
+    if(status?.code!=='BUDGET_LIMIT')return false;
+    const seconds=status.transcript?.segments?.length?0:status.capacityWait?.requiredSeconds ?? status.work?.nextChunkSeconds ?? 1200;
+    return this.ledger.capacity({kind:seconds?'transcription':'text',seconds,usd:status.capacityWait?.requiredUsd || seconds*.0001 || .001}).available;
+  }
   async recoverQueued() {
     if (!this.queue) return;
     const now = Date.now();
@@ -806,7 +811,7 @@ export class EpisodePipeline {
           catch { console.error(JSON.stringify({event:'automatic-search-index-deferred',code:'DERIVED_PROCESSING_PENDING'})); }
         }
       }
-      const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
+      const limits = status.platformProcessing || this.testingMode?.limits(status.testingContext).dailyUsd ? this.ledger.controls : null;
       // One bounded software-repair replay of the pre-fix assembly failures.
       // Reuses paid checkpoints; never resets retry counts or unknown outcomes.
       const assemblyRecovery = status.platformProcessing && status.state === "FAILED" && status.code === "ANALYSIS_FAILED" &&
@@ -823,7 +828,7 @@ export class EpisodePipeline {
         (()=>{const checkpoints=this.store.all('analysis-checkpoint').filter(([id])=>id.startsWith(key+':'));return checkpoints.length>=status.work.totalBatches+1&&checkpoints.every(([,c])=>c.state==='READY');})();
       const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
         now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
-      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery || stagingRecovery || reviewRecovery)) {
+      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || this.capacityRestored(status) || safeRetry || assemblyRecovery || stagingRecovery || reviewRecovery)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
         const pendingSeconds = status.transcript?.segments?.length ? 0 : status.work?.nextChunkSeconds ?? Math.min(1200, durationMs(status.episode?.duration)/1000 || 1200);
@@ -938,7 +943,8 @@ export class EpisodePipeline {
     signal,
   }) {
     let value = { ...initial };
-    const ledger = initial.testingContext ? new BudgetLedger(this.ledger.baseControls, this.store, () => this.testingMode?.limits(initial.testingContext) || {}) : this.ledger;
+    // Tester membership controls access, never a second or larger spending ledger.
+    const ledger = this.ledger;
     let expired = false;
     const controller = new AbortController();
     const recordWork = (work) => {

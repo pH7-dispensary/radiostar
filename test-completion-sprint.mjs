@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import {LocalStore} from './persistence.mjs';
+import {AdminService} from './admin-service.mjs';
+import {BudgetLedger} from './openai-intelligence.mjs';
+import {EpisodePipeline} from './episode-pipeline.mjs';
+const store=new LocalStore(':memory:');let now=Date.now();
+const admin=new AdminService(store,{now:()=>now}),actor={id:'owner-fixture',role:'SUPER_ADMIN'};
+const ledger=new BudgetLedger({enabled:true},store,()=>admin.processingBudgetControls(ledger.baseControls));
+const configure=(value,version=admin.configuration().version)=>admin.setConfiguration({expectedVersion:version,confirmation:'CONFIRM',reason:'Owner-authorised bounded audio-only test',values:{processingBudget:{temporaryAudioAllowance:value}}},actor);
+try {
+ ledger.reserve({id:'previous-audio',kind:'transcription',seconds:10800,usd:1.08});ledger.reconcile('previous-audio',{usd:1.08,seconds:10800});
+ const usage=JSON.stringify(store.get('budget','ledger'));
+ assert.equal(ledger.capacity({kind:'transcription',seconds:1200,usd:.12}).available,false);
+ const grant=configure({dailyTranscriptionSeconds:28800,durationHours:48});
+ assert.equal(Date.parse(grant.values.processingBudget.temporaryAudioAllowance.expiresAt)-now,48*3600000);
+ assert.equal(ledger.controls.dailyTranscriptionSeconds,28800);assert.equal(ledger.controls.dailyUsd,5);assert.equal(ledger.controls.monthlyUsd,25);assert.equal(ledger.controls.maxEpisodeSeconds,14400);
+ assert.equal(JSON.stringify(store.get('budget','ledger')),usage);
+ const pipeline=new EpisodePipeline({store,ledger});
+ assert(pipeline.capacityRestored({code:'BUDGET_LIMIT',resumeAfter:new Date(now+86400000).toISOString(),work:{nextChunkSeconds:1200},capacityWait:{requiredSeconds:1200,requiredUsd:.12}}),'new capacity resumes before historic midnight');
+ assert(!pipeline.capacityRestored({code:'PROVIDER_OUTCOME_UNKNOWN',work:{nextChunkSeconds:1200}}));
+ const other=new BudgetLedger({enabled:true},store,()=>admin.processingBudgetControls(ledger.baseControls));
+ ledger.reserve({id:'concurrent-one',kind:'transcription',seconds:14400,usd:1.44});
+ assert.throws(()=>other.reserve({id:'too-much',kind:'transcription',seconds:4000,usd:.4}),/duration budget/);
+ ledger.cancel('concurrent-one');
+ assert.throws(()=>configure({dailyTranscriptionSeconds:28801,durationHours:48}),/eight hours/);
+ assert.throws(()=>configure({dailyTranscriptionSeconds:28800,durationHours:49}),/eight hours/);
+ assert.throws(()=>configure({dailyTranscriptionSeconds:28800,durationHours:48,dailyUsd:10}),/monetary/);
+ assert.throws(()=>configure(null,1),/changed elsewhere/);
+ assert.throws(()=>admin.setConfiguration({values:{}},{id:'reader',role:'READ_ONLY'}),/denied/);
+ now+=3600000;configure({dailyTranscriptionSeconds:18000,durationHours:48});
+ now+=47*3600000;assert.equal(ledger.controls.dailyTranscriptionSeconds,18000,'expiry of older grant cannot overwrite newer owner configuration');
+ now+=3600000;assert.equal(ledger.controls.dailyTranscriptionSeconds,10800);
+ assert.equal(ledger.totals().transcriptionSeconds,10800,'expiry never resets consumption');
+ assert.equal(ledger.capacity({kind:'transcription',seconds:1200,usd:.12}).available,false);
+ assert.equal(store.all('admin-audit').length,2);
+ console.log('Temporary audio allowance: bounds, preserved ledger, expiry, newer owner configuration, shared atomic reservations and early capacity recovery passed.');
+} finally {store.close();}
