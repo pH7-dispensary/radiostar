@@ -5,6 +5,8 @@ import { monitorEventLoopDelay } from "node:perf_hooks";
 import { createStarCastServer } from "../../server.mjs";
 import { acquireServerLock } from "../../server-lock.mjs";
 import { initialiseAudioStaging } from '../../transcription.mjs';
+import {LocalStore} from '../../persistence.mjs';
+import {ListenerDeletionJournal} from '../../listener-deletion-journal.mjs';
 
 // Secrets never enter argv, Terraform state, source archives or log output.
 try {
@@ -48,7 +50,10 @@ acquireServerLock("/var/lib/starcast/backend.lock");
 // audio on the existing data disk; its per-job byte cap still applies.
 process.env.STARCAST_AUDIO_TEMP_DIR='/var/lib/starcast/audio-staging';
 await initialiseAudioStaging(process.env.STARCAST_AUDIO_TEMP_DIR);
-const { server, store, queue } = createStarCastServer();
+const store=new LocalStore('/var/lib/starcast/backend.sqlite');
+const deletionJournal=new ListenerDeletionJournal({bucket:process.env.STARCAST_BACKUP_BUCKET});
+await deletionJournal.reconcile(store);
+const { server, queue } = createStarCastServer({store,deletionJournal});
 const check = store.db.prepare("PRAGMA quick_check").get();
 if (Object.values(check)[0] !== "ok") throw Error("Database integrity check failed");
 server.listen(4173, "0.0.0.0", () => console.log(JSON.stringify({ event: "cloud-ready", paid: process.env.STARCAST_PAID_INTELLIGENCE === "enabled" })));

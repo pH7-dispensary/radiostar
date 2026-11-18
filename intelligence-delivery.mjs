@@ -108,3 +108,24 @@ export function deliveryValidation(value, index, claimCheck=validateClaims(value
     claimValidation:claimCheck,
     note:"Claims checked against cited speech with restricted restatement rules or a bound independent review; ambiguous claims abstain. Listening review is still required for production quality."};
 }
+
+const deliveryChecksCache = new Map();
+// Only pure source/output validation is reused. Callers must still evaluate
+// current rights, feature policy, audio identity and listener access each time.
+export function validatedDelivery(value, index) {
+  const identity = createHash('sha256').update(JSON.stringify([
+    DELIVERY_VERSION, value.episodeId, value.processingVersion, value.brief,
+    value.chapters, value.claimReview, value.validationFailures, index,
+  ])).digest('hex');
+  let result = deliveryChecksCache.get(identity);
+  if (!result) {
+    const checked = validateClaims(value, index);
+    const topics = groundedTopics(value, index, checked);
+    result = {topics, validation:deliveryValidation({...value, topics}, index, checked, topics)};
+  }
+  deliveryChecksCache.delete(identity); deliveryChecksCache.set(identity, result);
+  while (deliveryChecksCache.size > 32) deliveryChecksCache.delete(deliveryChecksCache.keys().next().value);
+  // Pending-state projection mutates feature states; never share that mutation
+  // with another request or a later completed output.
+  return structuredClone(result);
+}

@@ -198,6 +198,33 @@ export function validSemanticIndex(value, index) {
       value.checksum === semanticChecksum(value),
   );
 }
+const statusCaches = new WeakMap();
+// Status polling needs validated readiness, not hundreds of thousands of
+// vectors. SQLite triggers invalidate the bounded cache on every committed
+// mutation, including out-of-process writes, without loading the vector blob.
+// No rights decision or listener response is cached here.
+export function semanticStatus(store, key, index) {
+  let cache = statusCaches.get(store);
+  if (!cache) { cache = new Map(); statusCaches.set(store, cache); }
+  const revision = store.semanticRevision?.(key);
+  let raw;
+  if(revision===undefined)raw=store.getRaw ? store.getRaw('semantic-index',key) : JSON.stringify(store.get('semantic-index',key));
+  const identity = hash(JSON.stringify([revision ?? raw,index?.fingerprint,(index?.segments || []).map(s=>s.id)]));
+  const old = cache.get(key);
+  if (old?.identity === identity) {
+    cache.delete(key); cache.set(key, old);
+    return {...old.summary};
+  }
+  raw ??= store.getRaw ? store.getRaw('semantic-index',key) : JSON.stringify(store.get('semantic-index',key));
+  if (!raw || raw === 'null') {cache.delete(key);return null;}
+  const value = JSON.parse(raw), valid = validSemanticIndex(value, index || {});
+  const {state, executionState, cursor, total, code, retryAfter} = value;
+  const summary = {state, executionState, cursor, total, code, retryAfter, valid};
+  if (state === 'READY' && !valid) Object.assign(summary, {state:'FAILED', executionState:'FAILED', code:'INDEX_VALIDATION_FAILED'});
+  cache.delete(key); cache.set(key, {identity, summary});
+  while (cache.size > 32) cache.delete(cache.keys().next().value);
+  return {...summary};
+}
 export function hybridSemanticRetrieve(
   index,
   query,

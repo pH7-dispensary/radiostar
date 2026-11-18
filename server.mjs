@@ -1,4 +1,5 @@
 import {DerivedRequests} from "./paid-derived.mjs";
+import {processingMetrics} from "./operations-monitor.mjs";
 import {SemanticSearch} from "./semantic-search.mjs";
 import {reviewClaims} from "./claim-grounding.mjs";
 import { RequestLimits, viewerIdentity } from "./request-limits.mjs";
@@ -166,6 +167,7 @@ export function createStarCastServer({
   fetchTranscript,
   fetchFeed,
   audioFactory,
+  deletionJournal,
 } = {}) {
   const cache = new Map(),
     windows = new Map();
@@ -354,10 +356,15 @@ export function createStarCastServer({
       const attempt=JSON.parse(readFileSync('/var/lib/starcast/backup-state.json','utf8'));
       if(attempt.state==='FAILED')backup={...backup,status:'DEGRADED',reason:'The latest isolated backup attempt failed. The previous verified recovery point is preserved; inspect the backup service.',lastAttemptAt:attempt.failedAt};
     } catch { /* Older releases have no attempt record. */ }
+    const signals = processingMetrics(store.db);
     const components = [
       { name: "Backend API", status: "HEALTHY", reason: "This authenticated operations request reached the active backend.", observedAt: new Date().toISOString() },
       database,
       disk, retention, backup,
+      { name: 'Preparation capacity', status: signals.CapacityWaitingJobs ? 'DEGRADED' : 'HEALTHY', reason: `${signals.CapacityWaitingJobs} saved jobs are waiting for the authorised budget or audio allowance. Checkpoints are retained; this does not authorise a budget increase.`, detail: { waitingJobs: signals.CapacityWaitingJobs } },
+      { name: 'Processing deadlines', status: signals.StalledProcessingJobs ? 'DEGRADED' : 'HEALTHY', reason: `${signals.StalledProcessingJobs} unfinished jobs have exceeded their recorded deadline or legacy two-hour progress window. Inspect recovery before retrying.`, detail: { stalledJobs: signals.StalledProcessingJobs } },
+      { name: 'Provider failures', status: signals.ProviderFailures5m >= 3 ? 'DEGRADED' : 'HEALTHY', reason: `${signals.ProviderFailures5m} provider failures were recorded in the last five minutes. Unknown paid outcomes still require reconciliation.`, detail: { failures5m: signals.ProviderFailures5m } },
+      { name: 'Incorrect-skip feedback', status: signals.IncorrectSkipReports1h >= 3 ? 'DEGRADED' : 'HEALTHY', reason: `${signals.IncorrectSkipReports1h} deduplicated conversation-skip reports in the last hour. These are listener reports, not adjudicated error-rate measurements.`, detail: { reports1h: signals.IncorrectSkipReports1h } },
       queue ? { name: "Processing queue", status: observedQueue.status, reason: observedQueue.reason, observedAt: observedQueue.observedAt, detail: observedQueue.processing } : { name: "Processing queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
       queue ? { name: "Dead-letter queue", status: observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : observedQueue.deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY", reason: observedQueue.status === "UNAVAILABLE" ? observedQueue.reason : observedQueue.deadLetter.visible > 0 ? "Messages require operator investigation." : "No messages are waiting in the dead-letter queue.", observedAt: observedQueue.observedAt, detail: observedQueue.deadLetter } : { name: "Dead-letter queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
       { name: "Processing worker", status: queue ? (observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : queue.running && !queue.transportError ? "HEALTHY" : "DEGRADED") : "UNKNOWN", reason: queue ? (queue.transportError ? "Queue transport is reconnecting; saved work is retained." : queue.running ? "The single durable queue consumer is running." : "The queue consumer is not running.") : "No queue worker is configured for this server release." },
@@ -745,10 +752,10 @@ export function createStarCastServer({
     if (["QUEUE_TIMEOUT", "PROCESSING_TIMEOUT", "INTERRUPTED"].includes(code)) return "WORKER";
     return "PROCESSING";
   };
-  const intelligenceDimensions = (feedUrl, episodeId, administrative = false, episode = undefined) => {
+  const intelligenceDimensions = (feedUrl, episodeId, administrative = false, episode = undefined, preparedJob = undefined) => {
     const assessment = rights.assessment(feedUrl, episodeId);
     const policy = intelligencePolicy.effective(feedUrl, episodeId);
-    const job = pipeline.status(feedUrl, episodeId);
+    const job = preparedJob === undefined ? pipeline.status(feedUrl, episodeId) : preparedJob;
     const recovered = pipeline.rightsRecovery(feedUrl, episodeId);
     return {
       ...(administrative ? {executionDecision:pipeline.executionDecision(feedUrl,episodeId,{episode})} : {}),
@@ -823,7 +830,7 @@ export function createStarCastServer({
       ...safe,
       legacyState: safe.state,
       ...projected,
-      ...intelligenceDimensions(feedUrl, episodeId),
+      ...intelligenceDimensions(feedUrl, episodeId, false, undefined, job),
       availabilityState: rightsCode === "LEGAL_BASIS_NOT_ESTABLISHED" ? "REVIEW_REQUIRED" : projected.state,
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episodeId),
       processingStage: projected.stage,
@@ -1757,6 +1764,11 @@ export function createStarCastServer({
           return send(res, 200, await subscriptions.refresh(listener, input.signedTransaction));
         if (url.pathname === "/api/listener/delete") {
           if (input.confirm !== true) return send(res, 400, { error: "Confirm listener profile deletion." });
+          if(deletionJournal)try {
+            await deletionJournal.record([{credentialHash:listener.credentialHash,deletedAt:Date.now()}]);
+          } catch {
+            throw new ListenerError('Profile deletion could not be confirmed. Please retry.',503);
+          }
           return send(res, 200, listeners.deleteProfile(listener));
         }
         if (url.pathname === "/api/listener/onboard")

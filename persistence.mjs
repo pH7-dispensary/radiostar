@@ -14,7 +14,20 @@ export class LocalStore {
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind,id));
       CREATE INDEX IF NOT EXISTS records_episode_feed ON records(kind,json_extract(payload,'$.feedUrl'))
-      WHERE kind IN ('intelligence-history','intelligence');`);
+      WHERE kind IN ('intelligence-history','intelligence');
+      CREATE TABLE IF NOT EXISTS semantic_revision (id TEXT PRIMARY KEY, revision TEXT NOT NULL);
+      CREATE TRIGGER IF NOT EXISTS semantic_insert AFTER INSERT ON records WHEN NEW.kind='semantic-index'
+      BEGIN INSERT INTO semantic_revision VALUES(NEW.id,lower(hex(randomblob(16)))) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision; END;
+      CREATE TRIGGER IF NOT EXISTS semantic_delete AFTER DELETE ON records WHEN OLD.kind='semantic-index'
+      BEGIN INSERT INTO semantic_revision VALUES(OLD.id,lower(hex(randomblob(16)))) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision; END;
+      CREATE TRIGGER IF NOT EXISTS semantic_update AFTER UPDATE ON records
+      WHEN OLD.kind='semantic-index' OR NEW.kind='semantic-index'
+      BEGIN
+        INSERT INTO semantic_revision SELECT OLD.id,lower(hex(randomblob(16))) WHERE OLD.kind='semantic-index'
+          ON CONFLICT(id) DO UPDATE SET revision=excluded.revision;
+        INSERT INTO semantic_revision SELECT NEW.id,lower(hex(randomblob(16))) WHERE NEW.kind='semantic-index' AND (OLD.kind!='semantic-index' OR OLD.id!=NEW.id)
+          ON CONFLICT(id) DO UPDATE SET revision=excluded.revision;
+      END;`);
   }
   episodeJobs(feedUrl, episodeId) {
     return this.db.prepare(`SELECT payload FROM records WHERE kind IN ('intelligence-history','intelligence')
@@ -23,10 +36,17 @@ export class LocalStore {
       ORDER BY CASE kind WHEN 'intelligence-history' THEN 0 ELSE 1 END,id`).all(feedUrl,episodeId,episodeId).map(row=>JSON.parse(row.payload));
   }
   get(kind, id) {
+    const payload = this.getRaw(kind, id);
+    return payload === null ? null : JSON.parse(payload);
+  }
+  getRaw(kind, id) {
     const row = this.db
       .prepare("SELECT payload FROM records WHERE kind=? AND id=?")
       .get(kind, id);
-    return row ? JSON.parse(row.payload) : null;
+    return row?.payload ?? null;
+  }
+  semanticRevision(id) {
+    return this.db.prepare('SELECT revision FROM semantic_revision WHERE id=?').get(id)?.revision || 0;
   }
   set(kind, id, value) {
     this.db

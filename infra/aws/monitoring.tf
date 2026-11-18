@@ -3,7 +3,7 @@ variable "operations_alerts_enabled" {
   default     = true
   description = "Disable only during staged telemetry commissioning; production alarms remain enabled."
 }
-# Ten fixed, low-cardinality EMF metrics reuse the existing log group/agent.
+# Fixed, low-cardinality EMF metrics reuse the existing log group/agent.
 # No paid canary, extra instance, database or new queue is required.
 resource "aws_sns_topic" "operations" { name = "starcast-operations" }
 resource "aws_sns_topic_policy" "operations" {
@@ -31,6 +31,10 @@ locals {
     "processing-failures" = { metric = "ProcessingFailures5m", threshold = 3, comparison = "GreaterThanOrEqualToThreshold", missing = "missing", severity = "HIGH" }
     "telemetry-missing"   = { metric = "TelemetryHeartbeat", threshold = 1, comparison = "LessThanThreshold", missing = "breaching", severity = "HIGH" }
     "event-loop-delay"    = { metric = "EventLoopP99Ms", threshold = 500, comparison = "GreaterThanThreshold", missing = "missing", severity = "HIGH" }
+    "capacity-wait"       = { metric = "CapacityWaitingJobs", threshold = 0, comparison = "GreaterThanThreshold", missing = "missing", severity = "NOTICE" }
+    "processing-stalled"  = { metric = "StalledProcessingJobs", threshold = 0, comparison = "GreaterThanThreshold", missing = "missing", severity = "CRITICAL" }
+    "provider-failures"   = { metric = "ProviderFailures5m", threshold = 3, comparison = "GreaterThanOrEqualToThreshold", missing = "missing", severity = "HIGH" }
+    "incorrect-skips"     = { metric = "IncorrectSkipReports1h", threshold = 3, comparison = "GreaterThanOrEqualToThreshold", missing = "missing", severity = "HIGH" }
   }
 }
 resource "aws_cloudwatch_metric_alarm" "operations" {

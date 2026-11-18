@@ -71,7 +71,7 @@ export class ListenerService {
   authenticate(credential) {
     if (typeof credential !== "string" || credential.length > 200) return null;
     const listener = this.store.get("installation", digest(credential));
-    return listener && !listener.revokedAt ? listener : null;
+    return listener && !listener.revokedAt && !this.store.get('revoked-installation',listener.credentialHash) ? listener : null;
   }
   deleteProfile(listener) {
     return this.store.transaction(() => {

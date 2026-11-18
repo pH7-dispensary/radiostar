@@ -7,6 +7,10 @@ import {createStarCastServer} from '../server.mjs';
 import {ProcessingQueue} from '../processing-queue.mjs';
 import {setTimeout as delay} from 'node:timers/promises';
 const [source,directory,output]=process.argv.slice(2);
+const requestCount=Number(process.argv.find(v=>v.startsWith('--requests='))?.split('=')[1]||100);
+const concurrencies=(process.argv.find(v=>v.startsWith('--concurrency='))?.split('=')[1]||'1,4,8,16').split(',').map(Number);
+assert(Number.isInteger(requestCount)&&requestCount>=5&&requestCount<=100);
+assert(concurrencies.length>0&&concurrencies.every(v=>[1,4,8,16].includes(v)));
 if(!source||!directory||!output||source.includes('/var/lib/starcast')||directory.includes('/var/lib/starcast'))throw Error('A disposable restore directory is required');
 const start=performance.now();await copyFile(source,`${directory}/restored.sqlite`);const store=new LocalStore(`${directory}/restored.sqlite`);
 assert.equal(Object.values(store.db.prepare('PRAGMA integrity_check').get())[0],'ok');
@@ -30,7 +34,7 @@ try {
  const sample=await(await realFetch(base+'/api/intelligence/status?'+params,{headers:{...headers,authorization:`Bearer ${devices[0].credential}`}})).json();assert(['READY','PARTIAL_READY'].includes(sample.status.state));assert(sample.status.brief);
  const scenarios=[['cached-intelligence','/api/intelligence/status?'+params],['catalogue-mocked-rss','/api/catalogue/feed?url=https%3A%2F%2Ffixture.invalid%2Frss'],['search','/api/search/conversations',{query:sample.status.brief.themes?.[0]||'evidence'}],['admin-list','/api/admin/podcasts?pageSize=20'],['processing-status','/api/admin/intelligence']];
  const percentile=(a,p)=>[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))];
- for(const concurrency of [1,4,8,16]){
+ for(const concurrency of concurrencies){
   const loop=monitorEventLoopDelay({resolution:10});loop.enable();const cpu=process.cpuUsage(),at=performance.now(),latencies=[],statuses={},byScenario={};let index=0;
   let delivered=0,acknowledged=0,renewals=0;const queueDelays=[],queuedAt=performance.now();
   const queue=new ProcessingQueue({queueUrl:'https://sqs.eu-west-2.amazonaws.com/208096650030/starcast-phase1-processing',renewalMs:50,client:{send:async command=>{
@@ -40,10 +44,10 @@ try {
    return {};
   }}});
   const queueWork=queue.run({recover:async()=>{},execute:async job=>{queueDelays.push(performance.now()-queuedAt);store.set('dr-queue-benchmark',job.jobId,{completed:true});await delay(20);if(delivered===8)queue.stop();}});
-  await Promise.all(Array.from({length:concurrency},async()=>{while(index<100){const n=index++,[name,path,body]=scenarios[n%scenarios.length],t=performance.now();let status;try{const response=await realFetch(base+path,{method:body?'POST':'GET',headers:{...headers,cookie,authorization:`Bearer ${devices[n%devices.length].credential}`},signal:AbortSignal.timeout(30000),...(body?{body:JSON.stringify(body)}:{})});await response.arrayBuffer();status=response.status;}catch(error){status=error.cause?.code||error.name||'NETWORK_ERROR';}const ms=performance.now()-t;latencies.push(ms);statuses[status]=(statuses[status]||0)+1;(byScenario[name]||=[]).push(ms);}}));
+  await Promise.all(Array.from({length:concurrency},async()=>{while(index<requestCount){const n=index++,[name,path,body]=scenarios[n%scenarios.length],t=performance.now();let status;try{const response=await realFetch(base+path,{method:body?'POST':'GET',headers:{...headers,cookie,authorization:`Bearer ${devices[n%devices.length].credential}`},signal:AbortSignal.timeout(30000),...(body?{body:JSON.stringify(body)}:{})});await response.arrayBuffer();status=response.status;}catch(error){status=error.cause?.code||error.name||'NETWORK_ERROR';}const ms=performance.now()-t;latencies.push(ms);statuses[status]=(statuses[status]||0)+1;(byScenario[name]||=[]).push(ms);}}));
   await queueWork;assert.equal(acknowledged,8);assert.equal(delivered,8);
   const durationMs=performance.now()-at,used=process.cpuUsage(cpu);loop.disable();
-  report.benchmarks.push({concurrency,queue:{mocked:true,jobs:8,acknowledged,renewals,p50DelayMs:percentile(queueDelays,.5),p95DelayMs:percentile(queueDelays,.95)},requests:latencies.length,durationMs,requestsPerSecond:latencies.length/(durationMs/1000),p50Ms:percentile(latencies,.5),p95Ms:percentile(latencies,.95),statuses,errorRate:(100-(statuses[200]||0))/100,cpuMs:(used.user+used.system)/1000,rssBytes:process.memoryUsage().rss,eventLoopP99Ms:loop.percentile(99)/1e6,scenarios:Object.fromEntries(Object.entries(byScenario).map(([name,values])=>[name,{p50Ms:percentile(values,.5),p95Ms:percentile(values,.95)}]))});
+  report.benchmarks.push({concurrency,queue:{mocked:true,jobs:8,acknowledged,renewals,p50DelayMs:percentile(queueDelays,.5),p95DelayMs:percentile(queueDelays,.95)},requests:latencies.length,durationMs,requestsPerSecond:latencies.length/(durationMs/1000),p50Ms:percentile(latencies,.5),p95Ms:percentile(latencies,.95),statuses,errorRate:(requestCount-(statuses[200]||0))/requestCount,cpuMs:(used.user+used.system)/1000,rssBytes:process.memoryUsage().rss,eventLoopP99Ms:loop.percentile(99)/1e6,scenarios:Object.fromEntries(Object.entries(byScenario).map(([name,values])=>[name,{p50Ms:percentile(values,.5),p95Ms:percentile(values,.95)}]))});
  }
  assert.equal(JSON.stringify(store.all('budget')),ledgerBefore,'restoration and benchmark must not consume or release real paid reservations');
  assert(readyBefore.every(id=>store.get('intelligence',id)?.state==='READY'));

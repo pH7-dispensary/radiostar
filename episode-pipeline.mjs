@@ -8,14 +8,14 @@ import {
   PROCESSING_VERSION,
 } from "./openai-intelligence.mjs";
 import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION, AUDIO_STAGING_VERSION } from "./transcription.mjs";
-import { hybridSemanticRetrieve,validSemanticIndex } from "./semantic-search.mjs";
+import { hybridSemanticRetrieve,validSemanticIndex,semanticStatus } from "./semantic-search.mjs";
 import { composeGroundedAnswer } from "./grounded-answer.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
-import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION, validateClaims } from "./claim-grounding.mjs";
+import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION } from "./claim-grounding.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
-import { DELIVERY_VERSION, transcriptFingerprint, validSearchIndex, buildSearchIndex, groundedTopics, deliveryValidation, featureExecution } from "./intelligence-delivery.mjs";
+import { DELIVERY_VERSION, transcriptFingerprint, validSearchIndex, buildSearchIndex, validatedDelivery, featureExecution } from "./intelligence-delivery.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -424,7 +424,7 @@ export class EpisodePipeline {
     if (this.rights && !this.rights.evaluate({ feature:"intelligence-processing", feedUrl:value.feedUrl, episodeId:value.episodeId }).allowed) return value;
     const key=episodeKey(value.feedUrl,value.episodeId), transcript=value.transcript;
     if(transcript.audioVariant&&value.episode?.audioUrl&&transcript.audioVariant!==hash(value.episode.audioUrl))return{...value,featureStatus:{search:{state:"FAILED",code:"AUDIO_VARIANT_MISMATCH"},moments:{state:"UNAVAILABLE",code:"AUDIO_VARIANT_MISMATCH"}},state:"PARTIAL_READY",qualityNote:"The audio source changed. Source timestamps require revalidation."};
-    let index=this.store.get("search-index",key), derived;
+    let index=this.store.get("search-index",key), derived, semantic;
     try {
       if(!validSearchIndex(index,transcript,value)) {
         const previous=index;
@@ -435,10 +435,8 @@ export class EpisodePipeline {
           if(this.store.get("semantic-index",key)?.fingerprint!==index.fingerprint)this.store.delete("semantic-index",key);
         });
       }
-      const checked=validateClaims(value,index);
-      const topics=groundedTopics(value,index,checked);
+      const {topics,validation}=validatedDelivery(value,index);
       derived={...value,topics};
-      const validation=deliveryValidation(derived,index,checked,topics);
       const pending=!completed(value) && activeStates.has(value.state);
       const features=validation.features;
       if(pending)for(const name of ["brief","chapters","topics"])if(features[name].state==="FAILED")features[name]={state:"ANALYSING"};
@@ -446,8 +444,9 @@ export class EpisodePipeline {
       features.adCandidates={state:ads?.state==="COMPLETE"?"READY":"PENDING",candidateCount:ads?.candidateCount ?? null};
       derived={...derived,featureStatus:features,deliveryValidation:{...validation,features:undefined},
         searchIndex:{version:index.version,transcriptVersion:index.transcriptVersion,segmentCount:index.segments.length,indexedAt:index.indexedAt}};
+      semantic=semanticStatus(this.store,key,index);
       if(completed(value)) {
-        const semanticPending = this.semanticSearch && !validSemanticIndex(this.store.get('semantic-index',key),index);
+        const semanticPending = this.semanticSearch && !semantic?.valid;
         derived.state=validation.complete && !semanticPending?"READY":"PARTIAL_READY";
         if(semanticPending)derived.qualityNote='Semantic indexing is pending. Completed features and source search remain available.';
         if(!validation.complete)derived.qualityNote=value.qualityNote || "Some outputs did not pass validation. Available features remain usable.";
@@ -457,7 +456,7 @@ export class EpisodePipeline {
         deliveryValidation:{version:DELIVERY_VERSION,complete:false,failures:[{feature:"search",code:"INDEXING_FAILED"}]},
         ...(completed(value)?{state:"PARTIAL_READY",qualityNote:"Search indexing needs recovery. Completed analysis is preserved."}:{})};
     }
-    derived.featureExecution=featureExecution(derived,this.store.get('semantic-index',key));
+    derived.featureExecution=featureExecution(derived,semantic);
     if(JSON.stringify(derived)!==JSON.stringify(value))this.store.set("intelligence",key,derived);
     return derived;
   }
