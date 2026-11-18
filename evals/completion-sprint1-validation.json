@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-18T19:26:16.355Z",
+  "revision": "113e8562a61e4840b34eec6b9376cacec5e690c0",
+  "fullSuiteCommand": "npm test",
+  "fullSuiteExit": 0,
+  "nativeTypeScript": "passed; native source unchanged since validation apart from build number 18 to 19",
+  "paidProvidersMocked": true,
+  "logs": [
+    {
+      "path": ".starcast/sprint1-complete-sentences-full-tests.log",
+      "sha256": "94d41185f93713b53c969aeec8febb958eeae696c387932a6f28bd73d290cb9e"
+    },
+    {
+      "path": ".starcast/sprint1-native-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".starcast/sprint1-idle-window-tests.log",
+      "sha256": "7abfb0d3571eab3fe93ba2eab0b07b3475c0fd20c023faec40195c5ae9537035"
+    }
+  ]
+}

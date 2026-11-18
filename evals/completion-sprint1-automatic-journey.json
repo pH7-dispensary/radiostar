@@ -1,0 +1,143 @@
+{
+  "at": "2026-11-18T18:11:35.060Z",
+  "verified": true,
+  "latestThree": [
+    {
+      "id": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "publishedAt": "Mon, 16 Nov 2026 01:00:00 +0000"
+    },
+    {
+      "id": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "publishedAt": "Mon, 09 Nov 2026 01:00:00 +0000"
+    },
+    {
+      "id": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "publishedAt": "Sun, 01 Nov 2026 23:00:00 +0000"
+    }
+  ],
+  "follow": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "following": true,
+    "version": 1795025480741,
+    "accepted": true,
+    "changed": true,
+    "processing": {
+      "state": "PREPARING",
+      "code": "DISCOVERING_FOLLOWED_EPISODES",
+      "reason": "Checking the latest episodes; individual episode status shows eligibility and preparation."
+    }
+  },
+  "repeat": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "following": true,
+    "version": 1795025480741,
+    "owner": "59c8b5c2-9778-41aa-a21e-0ecd1f1a532d",
+    "accepted": true,
+    "changed": false,
+    "processing": {
+      "state": "PREPARING",
+      "code": "DISCOVERING_FOLLOWED_EPISODES"
+    }
+  },
+  "observations": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "jobId": "e078c2aa-3ef3-4df5-8756-0cff5beefce4",
+      "state": "PARTIAL_READY",
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "jobId": "b8ddcd2e-ad04-4ae0-b60a-88ee9f008566",
+      "state": "QUEUED",
+      "features": {}
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "jobId": "d2baba8e-7906-4840-a74b-a6b25b9e2825",
+      "state": "PARTIAL_READY",
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "jobId": "8985eca8-a499-4254-a078-94ec12daf39d",
+      "state": "PARTIAL_READY",
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 1
+        }
+      }
+    }
+  ],
+  "existingJobsPreserved": true,
+  "newPublicationEvidence": "Automated RSS-change regression; no new publisher event manufactured.",
+  "multiListenerEvidence": "Automated shared-follow regression; live journey uses the existing authorised tester."
+}

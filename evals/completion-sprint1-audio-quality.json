@@ -1,0 +1,83 @@
+{
+  "at": "2026-11-18T18:35:14.584Z",
+  "sourceSha256": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+  "canonicalTranscriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+  "humanReviewed": false,
+  "humanWordErrorRate": null,
+  "providerCostUsd": 0,
+  "comparisonModel": "faster-whisper/base.en, local CPU",
+  "method": "Semi-global word edit disagreement between two ASR outputs; permits canonical boundary context. Not an accuracy or human WER measurement.",
+  "sampledAudioSeconds": 120,
+  "samples": [
+    {
+      "startMs": 20000,
+      "endMs": 50000,
+      "clipSha256": "21d6cde396db01c4959bb678efdb8db0dd2097cbd02f043407fcf6e40c63fc25",
+      "localWords": 35,
+      "canonicalWindowWords": 37,
+      "minimumWordEdits": 6,
+      "machineDisagreementRatio": 0.1714,
+      "canonicalSegmentIds": [
+        "0-5",
+        "0-6",
+        "0-7"
+      ]
+    },
+    {
+      "startMs": 7050000,
+      "endMs": 7080000,
+      "clipSha256": "61ee6d698a56fc052423741bd67e5764582777b61df0aa669157d9b280352f77",
+      "localWords": 74,
+      "canonicalWindowWords": 104,
+      "minimumWordEdits": 15,
+      "machineDisagreementRatio": 0.2027,
+      "canonicalSegmentIds": [
+        "5-181",
+        "5-182",
+        "5-183",
+        "5-184",
+        "5-185",
+        "5-186"
+      ]
+    },
+    {
+      "startMs": 10785000,
+      "endMs": 10815000,
+      "clipSha256": "cb0438c08482d09b995111855e1883ee17fdbc8afb7810754bc4b14ea351d178",
+      "localWords": 78,
+      "canonicalWindowWords": 89,
+      "minimumWordEdits": 7,
+      "machineDisagreementRatio": 0.0897,
+      "canonicalSegmentIds": [
+        "8-178",
+        "8-179",
+        "9-0",
+        "9-1",
+        "9-2",
+        "9-3",
+        "9-4",
+        "9-5",
+        "9-6",
+        "9-7",
+        "9-8"
+      ]
+    },
+    {
+      "startMs": 14070000,
+      "endMs": 14100000,
+      "clipSha256": "4bd8c1da6ca0fcfb75310f9d6a3fe4975c224be8da61f35f7b3ce6814a23d898",
+      "localWords": 89,
+      "canonicalWindowWords": 100,
+      "minimumWordEdits": 7,
+      "machineDisagreementRatio": 0.0787,
+      "canonicalSegmentIds": [
+        "11-177",
+        "11-178",
+        "11-179",
+        "11-180",
+        "11-181",
+        "11-182"
+      ]
+    }
+  ]
+}

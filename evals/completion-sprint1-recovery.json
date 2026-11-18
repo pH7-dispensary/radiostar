@@ -1,0 +1,75 @@
+{
+  "beforeAt": "2026-11-18T19:19:16.949Z",
+  "afterAt": "2026-11-18T19:25:06.134Z",
+  "release": {
+    "releaseSha": "f09199b2fbbc4561a4172c2afe2a431074bf9b74620c75d9f407990dfa55bf79",
+    "previousReleaseSha": "3e39b012a3be9849c3404e7bdd6e69e864d5b25f3390f5e9d0c2203c2e64b355",
+    "deployedAt": "2026-11-18T19:16:34.330Z",
+    "rollbackAvailable": true
+  },
+  "integrity": "ok",
+  "queues": {
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    }
+  },
+  "unchangedOriginalChunks": [
+    0,
+    1,
+    2
+  ],
+  "checks": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "jobId": "e078c2aa-3ef3-4df5-8756-0cff5beefce4",
+      "digest": "12185907bfe2b5f16bff7bdb873453d867c778f2321d97f2355e3b960e8685be",
+      "outputsUnchanged": true,
+      "checkpointsUnchanged": true,
+      "paidUsageUnchanged": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "jobId": "b8ddcd2e-ad04-4ae0-b60a-88ee9f008566",
+      "digest": "0507e6640a948c60e12227aaa776cb9bc408388bdc6e9218e8e79418f8585663",
+      "outputsUnchanged": true,
+      "checkpointsUnchanged": true,
+      "paidUsageUnchanged": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "jobId": "d2baba8e-7906-4840-a74b-a6b25b9e2825",
+      "digest": "99d4d648e954663a53032947c7f239f455e17a0908f6352ffdbb8df8ccf271a3",
+      "outputsUnchanged": true,
+      "checkpointsUnchanged": true,
+      "paidUsageUnchanged": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "jobId": "8985eca8-a499-4254-a078-94ec12daf39d",
+      "digest": "3bffc933e15610f7dc494d9a2ba816f7e5c321860effef05b4242c610357b93a",
+      "outputsUnchanged": true,
+      "checkpointsUnchanged": true,
+      "paidUsageUnchanged": true
+    }
+  ],
+  "ledger": {
+    "beforeAt": "2026-11-18T19:19:11.665Z",
+    "afterAt": "2026-11-18T19:22:00.649Z",
+    "totals": {
+      "day": 3.0863102600000016,
+      "month": 3.0863102600000016,
+      "transcriptionSeconds": 22171
+    },
+    "usageEntries": 1002,
+    "reservations": [],
+    "unchanged": true
+  },
+  "scope": "Controlled idle restart and repeated cached listener requests; no intentionally uncertain paid request."
+}

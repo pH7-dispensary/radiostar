@@ -1,0 +1,3862 @@
+{
+  "at": "2026-11-18T19:25:06.134Z",
+  "release": {
+    "releaseSha": "f09199b2fbbc4561a4172c2afe2a431074bf9b74620c75d9f407990dfa55bf79",
+    "previousReleaseSha": "3e39b012a3be9849c3404e7bdd6e69e864d5b25f3390f5e9d0c2203c2e64b355",
+    "deployedAt": "2026-11-18T19:16:34.330Z",
+    "rollbackAvailable": true
+  },
+  "freeBytes": 17592295424,
+  "integrity": "ok",
+  "queues": {
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    }
+  },
+  "reservations": 0,
+  "episodes": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "jobId": "e078c2aa-3ef3-4df5-8756-0cff5beefce4",
+      "state": "READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+      "durationMs": 2300578,
+      "work": {
+        "verifiedSourceDurationMs": 2300578,
+        "sourceContentHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 2300578,
+        "sourceDurationMs": 2300578,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 3587159,
+      "featureStatus": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "READY"
+        },
+        "chapters": {
+          "state": "READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      },
+      "featureRepair": {
+        "state": "READY",
+        "activeFeature": null,
+        "features": {},
+        "updatedAt": "2026-11-18T19:16:46.438Z"
+      },
+      "transcriptAssemblyRepair": {
+        "from": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+        "to": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+        "at": "2026-11-18T18:32:12.039Z",
+        "beforeSegments": 821,
+        "afterSegments": 821,
+        "paidTranscriptionRequests": 0
+      },
+      "assemblyVersion": "confidence-and-overlap-v4",
+      "intelligenceDigest": "12185907bfe2b5f16bff7bdb873453d867c778f2321d97f2355e3b960e8685be",
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:41:25.082Z",
+          "responseSha256": "17477c99b53003bfb6aec2de88730452a44655bfa35eb4651c5265dab060b859",
+          "segments": 316
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:42:31.926Z",
+          "responseSha256": "f2348b06539a1da44fcce94a0208b79921e59a8c7fbc46004bdb00816825016d",
+          "segments": 505
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 821,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 1,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 4600,
+          "textSha256": "5d601841648caacb2376fd5379c722dc5780e02af942cf50fb98539c0479bd84"
+        },
+        {
+          "id": "1-94",
+          "startMs": 1426580,
+          "endMs": 1429120,
+          "textSha256": "56230376cf15336e731aa4c141bf0807686d8b03bea0b553368bbe75cb668be2"
+        },
+        {
+          "id": "1-504",
+          "startMs": 2298800,
+          "endMs": 2299640,
+          "textSha256": "2a3eb0c8e297350a9cd136ccb8dcfc3887a0a48b7bffb26ad4399f9cc588159a"
+        }
+      ],
+      "brief": {
+        "overview": "Discussion on verifiable computing centers on secure compiler builds, cryptographic remote attestation, and making trusted execution environments accessible for diverse applications.",
+        "themes": [
+          "Verifiable computing",
+          "Deterministic compiler builds",
+          "Cryptographic remote attestation"
+        ],
+        "detail": "Verifiable computing relies on deterministically building compilers from a minimal seed to guarantee identical binary outputs corresponding to the source code, addressing trust concerns such as compiler backdoors. Advances include cryptographic remote attestation on modern CPUs, primarily Intel platforms, to prove exact software running states. Applications range from crypto custody to VPN no-logging proofs, emphasizing trust reduction and attack surface minimization.",
+        "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+        "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T19:08:07.609Z",
+        "usage": {
+          "inputTokens": 856,
+          "outputTokens": 170
+        },
+        "evidenceScope": "canonical-source-retrieval",
+        "sourceSegmentCount": 821,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-2",
+          "1-502",
+          "1-503",
+          "1-504"
+        ],
+        "sourceIdsSha256": "772df17b2c963e2c71bd2db07b2cd202617dffe84cf623bbad4943561a1907c4"
+      },
+      "chapters": [
+        {
+          "title": "Introduction and Background of Guests",
+          "description": "The episode begins with introductions of Lance and Anton, founders of Caution, discussing their backgrounds in security research and engineering, their mutual influence, and their motivation to improve internet security through open source tools.",
+          "startMs": 0,
+          "endMs": 92200,
+          "sourceSegmentCount": 33,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-30",
+            "0-31",
+            "0-32"
+          ],
+          "sourceIdsSha256": "44f45297fa35b940095ec44efff44851af14b9fd0f9f1e0364d5c81ef8ab52ca"
+        },
+        {
+          "title": "Trust and the Compiler Challenge",
+          "description": "Exploring the problem of trusting software binaries, Ken Thompson's trusting trust, and the importance of reproducible builds.",
+          "startMs": 118640,
+          "endMs": 288680,
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-80",
+            "0-81",
+            "0-82"
+          ],
+          "sourceIdsSha256": "27daabe1bb1884b6dd6c9bf1b802a83b39f0e7e0b27f892627135bec83a7cda6"
+        },
+        {
+          "title": "Bootstrapping Compilers from Scratch",
+          "description": "Detailed explanation of starting from minimal machine code to build full compilers deterministically to establish trusted toolchains.",
+          "startMs": 549160,
+          "endMs": 750880,
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-152",
+            "0-153",
+            "0-154",
+            "0-194",
+            "0-195",
+            "0-196"
+          ],
+          "sourceIdsSha256": "f793684701cf8e41e231baa54237487fc35612519f04848f1447d8ec9da5a0b4"
+        },
+        {
+          "title": "Limitations and Real-World Attacks",
+          "description": "Discussion on challenges Auditing large compilers and real-world supply chain attacks like Xcode Ghost.",
+          "startMs": 863160,
+          "endMs": 1036560,
+          "sourceSegmentCount": 47,
+          "sourceSegmentIdsSample": [
+            "0-227",
+            "0-228",
+            "0-229",
+            "0-271",
+            "0-272",
+            "0-273"
+          ],
+          "sourceIdsSha256": "2f6e507443a7390f7129442a1fb94c2c1f047db2f74cc7064c4d31f7ed6a3091"
+        },
+        {
+          "title": "Formal Verification and Future Prospects",
+          "description": "Potential for applying formal mathematical proofs to LLVM IR and software to deepen trust and correctness guarantees.",
+          "startMs": 1262440,
+          "endMs": 1337540,
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "1-26",
+            "1-27",
+            "1-28",
+            "1-57",
+            "1-58",
+            "1-59"
+          ],
+          "sourceIdsSha256": "278859c2916b907e98bb62c97bd4719185e5aee982b60239703a038adfb523bc"
+        },
+        {
+          "title": "Introduction to Verifiable Compute and Confidential Compute",
+          "description": "Explanation of confidential compute in modern chipsets, hardware-backed cryptography, and how verifiable compute builds on this to prove exactly what code runs on a server.",
+          "startMs": 1371840,
+          "endMs": 1482620,
+          "sourceSegmentCount": 48,
+          "sourceSegmentIdsSample": [
+            "1-72",
+            "1-73",
+            "1-74",
+            "1-117",
+            "1-118",
+            "1-119"
+          ],
+          "sourceIdsSha256": "44d3dbb12845e93f1ed440fbd750c58fe4da9407a52b06eab6250b269f3d602a"
+        },
+        {
+          "title": "Explanation of Cryptographic Remote Attestation",
+          "description": "Discussion clarifying that cryptographic remote attestation proves what code is deployed in a workload but does not prevent source code-level vulnerabilities or exploits.",
+          "startMs": 1527520,
+          "endMs": 1563080,
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "1-141",
+            "1-142",
+            "1-143",
+            "1-156",
+            "1-157",
+            "1-158"
+          ],
+          "sourceIdsSha256": "7f375ac7773d820167fd93516a6919ae5b6eb26206299fe50ba62329d28a56fd"
+        },
+        {
+          "title": "Investing in Confidential Computing and Live Memory Snapshots",
+          "description": "Discussing investments in confidential computing technology that enables live RAM snapshots for ongoing attestation, with current focus on Intel platforms and the challenge of AMD support.",
+          "startMs": 1617540,
+          "endMs": 1635400,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-184",
+            "1-185",
+            "1-186",
+            "1-187",
+            "1-188",
+            "1-189"
+          ],
+          "sourceIdsSha256": "1a3e1552440e322940d230e4e357721e6938efecbcc35ae6f5f8f3cc87c438bb"
+        },
+        {
+          "title": "From Verified Boot to Real-Time Attestation",
+          "description": "Exploring limitations of code verification only at boot and describing emerging methods for real-time, ongoing proofs of software integrity at runtime.",
+          "startMs": 1647840,
+          "endMs": 1661360,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-196",
+            "1-197",
+            "1-198",
+            "1-199",
+            "1-200",
+            "1-201"
+          ],
+          "sourceIdsSha256": "3403c235011d6bd37d4d019e4985fcfd13d6bed2bdf94998526ac2a78229fb3d"
+        },
+        {
+          "title": "Building Minimal Hardened Kernels for Security",
+          "description": "Explanation of using minimal, hardened kernels to reduce exploitable boundaries and increase confidence in running code and its privileges.",
+          "startMs": 1674060,
+          "endMs": 1698960,
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "1-206",
+            "1-207",
+            "1-208",
+            "1-215",
+            "1-216",
+            "1-217"
+          ],
+          "sourceIdsSha256": "922438383bdff8645469cd0f6e7b68afbba4fe1e223015662d2e97ad3f904793"
+        },
+        {
+          "title": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "description": "Examples of high-risk use cases like crypto custodians needing multi-party verification without exposing secrets, and VPN providers proving no-logging policies through verifiable compute.",
+          "startMs": 1724820,
+          "endMs": 1810960,
+          "sourceSegmentCount": 44,
+          "sourceSegmentIdsSample": [
+            "1-230",
+            "1-231",
+            "1-232",
+            "1-271",
+            "1-272",
+            "1-273"
+          ],
+          "sourceIdsSha256": "1199d0e0e14f013eccd3f0bc8373ed6f59c25395f0aa1996ea31c3dff74b53d9"
+        },
+        {
+          "title": "Easing Adoption through Containerization and Familiar Workflows",
+          "description": "Efforts to simplify use by running standard containerized apps like Nginx in enclaves, lowering friction and maintaining developer workflows, broadening security benefits to many.",
+          "startMs": 1820600,
+          "endMs": 1971420,
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "1-278",
+            "1-279",
+            "1-280",
+            "1-346",
+            "1-347",
+            "1-348"
+          ],
+          "sourceIdsSha256": "2a25a84f30405bb40b3afb09e9e01c9995a4f441fd16eeeb51d1fab89242c53e"
+        },
+        {
+          "title": "Open Source Tooling and Reproducible Software Stacks",
+          "description": "Describing open source projects like StageX providing supply chain security benefits and verifiable computing that users can reproduce and verify.",
+          "startMs": 2167040,
+          "endMs": 2201140,
+          "sourceSegmentCount": 15,
+          "sourceSegmentIdsSample": [
+            "1-439",
+            "1-440",
+            "1-441",
+            "1-451",
+            "1-452",
+            "1-453"
+          ],
+          "sourceIdsSha256": "57ad70cf1c4303abe77b2e3ebdfefe50f945c374ae08383c55092bc2ff9f09a6"
+        },
+        {
+          "title": "Vision for Verifiable Computing as an Internet Standard",
+          "description": "Advocating making verifiable computing standard practice to prove running software integrity, enhancing privacy and trust without user friction.",
+          "startMs": 2244800,
+          "endMs": 2280200,
+          "sourceSegmentCount": 17,
+          "sourceSegmentIdsSample": [
+            "1-473",
+            "1-474",
+            "1-475",
+            "1-487",
+            "1-488",
+            "1-489"
+          ],
+          "sourceIdsSha256": "924e45c0bf1c786bf2947fa3e37f1ad97d45ed7c2f65192b42f2a6431f531275"
+        }
+      ],
+      "topics": [
+        {
+          "id": "9d5990494c59ab32",
+          "label": "Introduction and Background of Guests",
+          "startMs": 0,
+          "endMs": 92200,
+          "chapterTitle": "Introduction and Background of Guests",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 33,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-30",
+            "0-31",
+            "0-32"
+          ],
+          "sourceIdsSha256": "44f45297fa35b940095ec44efff44851af14b9fd0f9f1e0364d5c81ef8ab52ca"
+        },
+        {
+          "id": "60ce8ac6b53be300",
+          "label": "Trust and the Compiler Challenge",
+          "startMs": 118640,
+          "endMs": 288680,
+          "chapterTitle": "Trust and the Compiler Challenge",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-80",
+            "0-81",
+            "0-82"
+          ],
+          "sourceIdsSha256": "27daabe1bb1884b6dd6c9bf1b802a83b39f0e7e0b27f892627135bec83a7cda6"
+        },
+        {
+          "id": "7839dd77e207b5a6",
+          "label": "Bootstrapping Compilers from Scratch",
+          "startMs": 549160,
+          "endMs": 750880,
+          "chapterTitle": "Bootstrapping Compilers from Scratch",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-152",
+            "0-153",
+            "0-154",
+            "0-194",
+            "0-195",
+            "0-196"
+          ],
+          "sourceIdsSha256": "f793684701cf8e41e231baa54237487fc35612519f04848f1447d8ec9da5a0b4"
+        },
+        {
+          "id": "339901b07013e272",
+          "label": "Limitations and Real-World Attacks",
+          "startMs": 863160,
+          "endMs": 1036560,
+          "chapterTitle": "Limitations and Real-World Attacks",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 47,
+          "sourceSegmentIdsSample": [
+            "0-227",
+            "0-228",
+            "0-229",
+            "0-271",
+            "0-272",
+            "0-273"
+          ],
+          "sourceIdsSha256": "2f6e507443a7390f7129442a1fb94c2c1f047db2f74cc7064c4d31f7ed6a3091"
+        },
+        {
+          "id": "3ffc4180e9a9b330",
+          "label": "Formal Verification and Future Prospects",
+          "startMs": 1262440,
+          "endMs": 1337540,
+          "chapterTitle": "Formal Verification and Future Prospects",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "1-26",
+            "1-27",
+            "1-28",
+            "1-57",
+            "1-58",
+            "1-59"
+          ],
+          "sourceIdsSha256": "278859c2916b907e98bb62c97bd4719185e5aee982b60239703a038adfb523bc"
+        },
+        {
+          "id": "fc082b50282bd0f2",
+          "label": "Introduction to Verifiable Compute and Confidential Compute",
+          "startMs": 1371840,
+          "endMs": 1482620,
+          "chapterTitle": "Introduction to Verifiable Compute and Confidential Compute",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 48,
+          "sourceSegmentIdsSample": [
+            "1-72",
+            "1-73",
+            "1-74",
+            "1-117",
+            "1-118",
+            "1-119"
+          ],
+          "sourceIdsSha256": "44d3dbb12845e93f1ed440fbd750c58fe4da9407a52b06eab6250b269f3d602a"
+        },
+        {
+          "id": "f4db2e03e35e3940",
+          "label": "Explanation of Cryptographic Remote Attestation",
+          "startMs": 1527520,
+          "endMs": 1563080,
+          "chapterTitle": "Explanation of Cryptographic Remote Attestation",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "1-141",
+            "1-142",
+            "1-143",
+            "1-156",
+            "1-157",
+            "1-158"
+          ],
+          "sourceIdsSha256": "7f375ac7773d820167fd93516a6919ae5b6eb26206299fe50ba62329d28a56fd"
+        },
+        {
+          "id": "888cb14f45419038",
+          "label": "Investing in Confidential Computing and Live Memory Snapshots",
+          "startMs": 1617540,
+          "endMs": 1635400,
+          "chapterTitle": "Investing in Confidential Computing and Live Memory Snapshots",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-184",
+            "1-185",
+            "1-186",
+            "1-187",
+            "1-188",
+            "1-189"
+          ],
+          "sourceIdsSha256": "1a3e1552440e322940d230e4e357721e6938efecbcc35ae6f5f8f3cc87c438bb"
+        },
+        {
+          "id": "fecb927a76ba3730",
+          "label": "From Verified Boot to Real-Time Attestation",
+          "startMs": 1647840,
+          "endMs": 1661360,
+          "chapterTitle": "From Verified Boot to Real-Time Attestation",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-196",
+            "1-197",
+            "1-198",
+            "1-199",
+            "1-200",
+            "1-201"
+          ],
+          "sourceIdsSha256": "3403c235011d6bd37d4d019e4985fcfd13d6bed2bdf94998526ac2a78229fb3d"
+        },
+        {
+          "id": "854b0c2a65c6be51",
+          "label": "Building Minimal Hardened Kernels for Security",
+          "startMs": 1674060,
+          "endMs": 1698960,
+          "chapterTitle": "Building Minimal Hardened Kernels for Security",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "1-206",
+            "1-207",
+            "1-208",
+            "1-215",
+            "1-216",
+            "1-217"
+          ],
+          "sourceIdsSha256": "922438383bdff8645469cd0f6e7b68afbba4fe1e223015662d2e97ad3f904793"
+        },
+        {
+          "id": "ffad761dec15aae0",
+          "label": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "startMs": 1724820,
+          "endMs": 1810960,
+          "chapterTitle": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 44,
+          "sourceSegmentIdsSample": [
+            "1-230",
+            "1-231",
+            "1-232",
+            "1-271",
+            "1-272",
+            "1-273"
+          ],
+          "sourceIdsSha256": "1199d0e0e14f013eccd3f0bc8373ed6f59c25395f0aa1996ea31c3dff74b53d9"
+        },
+        {
+          "id": "7fc3942ea2bdbe6c",
+          "label": "Easing Adoption through Containerization and Familiar Workflows",
+          "startMs": 1820600,
+          "endMs": 1971420,
+          "chapterTitle": "Easing Adoption through Containerization and Familiar Workflows",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "1-278",
+            "1-279",
+            "1-280",
+            "1-346",
+            "1-347",
+            "1-348"
+          ],
+          "sourceIdsSha256": "2a25a84f30405bb40b3afb09e9e01c9995a4f441fd16eeeb51d1fab89242c53e"
+        },
+        {
+          "id": "6d16d5c6d9d8b01e",
+          "label": "Open Source Tooling and Reproducible Software Stacks",
+          "startMs": 2167040,
+          "endMs": 2201140,
+          "chapterTitle": "Open Source Tooling and Reproducible Software Stacks",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 15,
+          "sourceSegmentIdsSample": [
+            "1-439",
+            "1-440",
+            "1-441",
+            "1-451",
+            "1-452",
+            "1-453"
+          ],
+          "sourceIdsSha256": "57ad70cf1c4303abe77b2e3ebdfefe50f945c374ae08383c55092bc2ff9f09a6"
+        },
+        {
+          "id": "61cb1f6b148ebf4f",
+          "label": "Vision for Verifiable Computing as an Internet Standard",
+          "startMs": 2244800,
+          "endMs": 2280200,
+          "chapterTitle": "Vision for Verifiable Computing as an Internet Standard",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 17,
+          "sourceSegmentIdsSample": [
+            "1-473",
+            "1-474",
+            "1-475",
+            "1-487",
+            "1-488",
+            "1-489"
+          ],
+          "sourceIdsSha256": "924e45c0bf1c786bf2947fa3e37f1ad97d45ed7c2f65192b42f2a6431f531275"
+        },
+        {
+          "id": "dffdb371d21ccbe2",
+          "label": "Verifiable computing",
+          "startMs": 6680,
+          "endMs": 11160,
+          "chapterTitle": null,
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 1,
+          "sourceSegmentIdsSample": [
+            "0-2"
+          ],
+          "sourceIdsSha256": "547a92900525b600fc6389cb235b4c30c86398a3219452c7162b78baa96881b5"
+        },
+        {
+          "id": "17fa19c1759aa7d0",
+          "label": "Deterministic compiler builds",
+          "startMs": 238760,
+          "endMs": 486560,
+          "chapterTitle": null,
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-72",
+            "0-73",
+            "0-76",
+            "0-134",
+            "0-135",
+            "0-136"
+          ],
+          "sourceIdsSha256": "10a1d252c7d15272bb18f713b61926b7979b9051dc7eb3294b3af0f92953bd8a"
+        },
+        {
+          "id": "0e20aa67e0fa1d19",
+          "label": "Cryptographic remote attestation",
+          "startMs": 1403980,
+          "endMs": 1406220,
+          "chapterTitle": null,
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 1,
+          "sourceSegmentIdsSample": [
+            "1-85"
+          ],
+          "sourceIdsSha256": "34c5589d6d26bc2c2f22abe6037f9fa5042e21584fa44656f448d5743d8adaf1"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 821,
+          "totalSegments": 821,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 3,
+          "usd": 0.2482,
+          "seconds": 2482,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 13,
+          "usd": 0.032498000000000006,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "grounding-review": {
+          "requests": 72,
+          "usd": 0.14422200000000002,
+          "seconds": 0,
+          "failed": 1,
+          "uncertain": 1
+        },
+        "embedding": {
+          "requests": 26,
+          "usd": 0.00017768,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "derived:3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50:claims-enumerated-source-selection-v3:80106b2baa8d98e6ace2f8f0a79b8a0101357d1d8602dd5939d7800e80bc0f0b",
+          "kind": "grounding-review",
+          "usd": 0.0013992,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T18:55:16.470Z"
+        },
+        {
+          "id": "derived:3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50:claims-enumerated-source-selection-v3:6b74e786ed57a046f9292fb0bc7734279edbad5325065f53ed12c3668d86bfc8:eligible-source-ids-v1",
+          "kind": "grounding-review",
+          "usd": 0.0021544,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:02:26.087Z"
+        },
+        {
+          "id": "derived:3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50:claims-enumerated-source-selection-v3:c03586e9686b9bef0cc74b9ea4921a2a32d7794849d7aacfd0f99831e9bd7979:eligible-source-ids-v1",
+          "kind": "grounding-review",
+          "usd": 0.002122,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:02:29.164Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "title": "HPR2578: LinuxLUGcast 102 the lost episode",
+      "jobId": "b8ddcd2e-ad04-4ae0-b60a-88ee9f008566",
+      "state": "READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "AUDIO_STAGING_REPAIRED",
+      "sourceHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+      "durationMs": 14112722,
+      "work": {
+        "verifiedSourceDurationMs": 14112722,
+        "sourceContentHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+        "completedChunks": 12,
+        "totalChunks": 12,
+        "completedSourceMs": 14112722,
+        "sourceDurationMs": 14112722,
+        "nextChunkSeconds": 0,
+        "completedBatches": 6,
+        "totalBatches": 6,
+        "synthesisPending": false
+      },
+      "resumeAfter": "2026-11-19T00:00:00.000Z",
+      "capacityWait": null,
+      "processingMs": 17063911,
+      "featureStatus": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "READY"
+        },
+        "chapters": {
+          "state": "READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "PENDING",
+          "candidateCount": null
+        }
+      },
+      "featureRepair": {
+        "state": "READY",
+        "activeFeature": null,
+        "features": {},
+        "updatedAt": "2026-11-18T19:17:09.359Z"
+      },
+      "transcriptAssemblyRepair": {
+        "from": "7d363336ee4c8c2bd8ed1c9561c359700b2438bd5cccec51834f5f030b1e8f2a",
+        "to": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+        "at": "2026-11-18T18:33:02.315Z",
+        "beforeSegments": 2812,
+        "afterSegments": 2865,
+        "paidTranscriptionRequests": 0
+      },
+      "assemblyVersion": "confidence-and-overlap-v4",
+      "intelligenceDigest": "0507e6640a948c60e12227aaa776cb9bc408388bdc6e9218e8e79418f8585663",
+      "expectedChunks": 12,
+      "checkpointCount": 12,
+      "completedChunks": 12,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:47:46.869Z",
+          "responseSha256": "899724e69265a247cd2bb7237436fb73031ecbc5213421c101540571b1bd78af",
+          "segments": 292
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:48:44.138Z",
+          "responseSha256": "7cce3024520050403af32214bfb308c230589749f989668bffdcf4672628dbc7",
+          "segments": 251
+        },
+        {
+          "index": 10,
+          "state": "READY",
+          "completedAt": "2026-11-18T18:13:15.772Z",
+          "responseSha256": "b0a671a946834e972e16de3ce8e3658525eef1f2f376eb81219375b8a08a60c6",
+          "segments": 188
+        },
+        {
+          "index": 11,
+          "state": "READY",
+          "completedAt": "2026-11-18T18:13:58.702Z",
+          "responseSha256": "bae7315cf4420189a54df8f6c0b5df2188a5ad38b59c0b76ccb2c9814b2f2102",
+          "segments": 184
+        },
+        {
+          "index": 2,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:49:44.787Z",
+          "responseSha256": "9a72af74664b584eecd831233ceb3fc844b7e2290ddc5a9db2bd768df7027a90",
+          "segments": 288
+        },
+        {
+          "index": 3,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:40:18.747Z",
+          "responseSha256": "f3126f578eff9d33204474d807f25a12889b5e4f5c97fdf34546410084b81632",
+          "segments": 151
+        },
+        {
+          "index": 4,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:41:11.342Z",
+          "responseSha256": "ae3cf40aeb4e2fc8d2350cf74d4cbf7baea06d8931b47fa8cf5adb9c5352f905",
+          "segments": 262
+        },
+        {
+          "index": 5,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:42:10.398Z",
+          "responseSha256": "7c0a4f5d432a083158bbc44f2ad04bf5f1f93d7a1274910326988ddbfd02078c",
+          "segments": 203
+        },
+        {
+          "index": 6,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:43:12.848Z",
+          "responseSha256": "20b961bd2d5fbf28f6683d3d094a1d703a5df9aaa20b6b7a8e8e8bbd42d3ce68",
+          "segments": 314
+        },
+        {
+          "index": 7,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:44:05.515Z",
+          "responseSha256": "dc8ba75effa72704679e8d52237b5de85529ddad61a25f6ab11a30c1b7f0be1f",
+          "segments": 170
+        },
+        {
+          "index": 8,
+          "state": "READY",
+          "completedAt": "2026-11-18T17:45:03.695Z",
+          "responseSha256": "5b7207aabbdfdb97b43d3db6771d398ab98f2e91337c54dd94445375d4b68dc0",
+          "segments": 180
+        },
+        {
+          "index": 9,
+          "state": "READY",
+          "completedAt": "2026-11-18T18:12:26.137Z",
+          "responseSha256": "0d34178882cb52bf293f7964f577841ac0c249e78af957d4ff160cbd9a00bafc",
+          "segments": 383
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 2865,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 1,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 7600,
+          "textSha256": "2194021e555bd8adf5bd25bf2e82b42a33962de4b3947cb800102148346a4633"
+        },
+        {
+          "id": "5-188",
+          "startMs": 7092940,
+          "endMs": 7101180,
+          "textSha256": "0107392ff5f2057834fe3d4a7b0cafbfde819d3c90d0f1932d2499a6aa45e8c4"
+        },
+        {
+          "id": "11-183",
+          "startMs": 14102980,
+          "endMs": 14105780,
+          "textSha256": "c9d9678fe2ca73ed7ef3a175dde27953f3aa154d19af80c7f26f895932f5c123"
+        }
+      ],
+      "brief": {
+        "overview": "Episode 102 of LinuxLUGCAST discusses Linux server use, Samba setup, package locker technology, and challenges with tech interfaces and administration.",
+        "themes": [
+          "Linux server administration",
+          "Package locker technology and interfaces",
+          "Technical challenges and software experiences"
+        ],
+        "detail": "The hosts explore using a powerful Linux server for multimedia and learning system administration, discussing Samba configuration trade-offs between security and convenience for home use. They describe modern package locker systems controlled by Raspberry Pi and iPads, noting design and durability issues. The conversation includes preferences for Linux-based minimal locker interfaces emphasizing keypad and biometric access. They reflect on the challenges configuring Asterisk PBX systems on Raspberry Pi and Linux desktop environments.",
+        "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+        "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T19:08:53.933Z",
+        "usage": {
+          "inputTokens": 2258,
+          "outputTokens": 172
+        },
+        "evidenceScope": "canonical-source-retrieval",
+        "sourceSegmentCount": 2865,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-2",
+          "11-181",
+          "11-182",
+          "11-183"
+        ],
+        "sourceIdsSha256": "ca69bc50528cc13d5901395794533d5aa9cfdbda5b95b75f8bf4609f6c19679f"
+      },
+      "chapters": [
+        {
+          "title": "Introduction to Episode 102 of LinuxLUGCAST",
+          "description": "HonkyMagoo introduces episode 102 of the LinuxLUGCAST.",
+          "startMs": 53840,
+          "endMs": 86560,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "0-8",
+            "0-9"
+          ],
+          "sourceIdsSha256": "68b9962f3ae0f79b9a23bb44144a256e022c2dbe700fc3b9cbec9f0eb4480296"
+        },
+        {
+          "title": "Conversation about liking the server",
+          "description": "A brief exchange where one person asks about liking the server and the other confirms liking it.",
+          "startMs": 321640,
+          "endMs": 330640,
+          "sourceSegmentCount": 4,
+          "sourceSegmentIdsSample": [
+            "0-53",
+            "0-54",
+            "0-55",
+            "0-56"
+          ],
+          "sourceIdsSha256": "164c60ab0c110b828a997914f018d3aa8b8048766e469c499b06e257fa38771e"
+        },
+        {
+          "title": "Microsoft's Role in Linux",
+          "description": "Hosts talk about Microsoft's platinum membership on the Linux kernel board and implications.",
+          "startMs": 403640,
+          "endMs": 455640,
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-78",
+            "0-79",
+            "0-80",
+            "0-87",
+            "0-88",
+            "0-89"
+          ],
+          "sourceIdsSha256": "b7e83fa5442f357d0afaa27a3349fb0526be9cb714988339cd70cad1b180d4e4"
+        },
+        {
+          "title": "Samba File Sharing Setup",
+          "description": "Discussion on the complexities of Samba configuration, choosing between wide-open access and permission controls.",
+          "startMs": 873640,
+          "endMs": 997640,
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-209",
+            "0-210",
+            "0-211",
+            "0-238",
+            "0-239",
+            "0-240"
+          ],
+          "sourceIdsSha256": "edb33e08958c4b64732c9ec318edafecf5a8dad963c0b29623742e1813b25f83"
+        },
+        {
+          "title": "Remote Access and Desktop Solutions",
+          "description": "Use of X2Go for remote desktop access and managing multiple desktops using Linux servers.",
+          "startMs": 1111640,
+          "endMs": 1176640,
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "0-268",
+            "0-269",
+            "0-270",
+            "0-283",
+            "0-284",
+            "0-285"
+          ],
+          "sourceIdsSha256": "ace0953dc5f4f085d20e750dd4bf627723959796bc15680cf39806a1183422c4"
+        },
+        {
+          "title": "Package Locker Systems and Technical Challenges",
+          "description": "An overview of package locker functionality, different systems like Parcel Pending and Luxor, and the technical and usability challenges encountered with hardware and software configurations.",
+          "startMs": 1269240,
+          "endMs": 1586880,
+          "sourceSegmentCount": 70,
+          "sourceSegmentIdsSample": [
+            "1-16",
+            "1-17",
+            "1-18",
+            "1-83",
+            "1-84",
+            "1-85"
+          ],
+          "sourceIdsSha256": "9e6fc7c70a43fcab774685a0d9c036057519f9f972a0476a759f940189668d4c"
+        },
+        {
+          "title": "Discussion on Control Systems and Hardware for Lockers",
+          "description": "The speaker discusses various hardware options including Arduino, Raspberry Pi, and web-based control systems for remotely managing lockers.",
+          "startMs": 1616160,
+          "endMs": 1721280,
+          "sourceSegmentCount": 23,
+          "sourceSegmentIdsSample": [
+            "1-91",
+            "1-92",
+            "1-93",
+            "1-111",
+            "1-112",
+            "1-113"
+          ],
+          "sourceIdsSha256": "349161d809499a7aad255a71a98200510d1cb210d27b03440ee5bd7fe28218e6"
+        },
+        {
+          "title": "Communication Methods for Machine Interface",
+          "description": "Discussion about different ways to enable machine interaction through phone applications, text codes, emails, and touch-tone phone interfaces, considering accessibility for users without smartphones.",
+          "startMs": 2230440,
+          "endMs": 2326800,
+          "sourceSegmentCount": 20,
+          "sourceSegmentIdsSample": [
+            "1-215",
+            "1-216",
+            "1-217",
+            "1-232",
+            "1-233",
+            "1-234"
+          ],
+          "sourceIdsSha256": "fbf92551b1d21561404a53fe9300e4c27df6d8b22b876dff0a46721054399cad"
+        },
+        {
+          "title": "Login Process Using a PIN Number",
+          "description": "Discussion about how users log in using just a PIN number sent to their email or phone to retrieve a package.",
+          "startMs": 2332400,
+          "endMs": 2367920,
+          "sourceSegmentCount": 7,
+          "sourceSegmentIdsSample": [
+            "1-237",
+            "1-238",
+            "1-239",
+            "1-241",
+            "1-242",
+            "1-243"
+          ],
+          "sourceIdsSha256": "40ed9b8e8ccdfc371ef156ec4db95a400105b339f2c7a00f285c80155281942e"
+        },
+        {
+          "title": "Discussion on Open Source PBX Setup",
+          "description": "Conversation covering experience, ease of installation, popular options such as Asterisk, relationship with Google Voice, and use of IP phones.",
+          "startMs": 2502320,
+          "endMs": 2719600,
+          "sourceSegmentCount": 50,
+          "sourceSegmentIdsSample": [
+            "2-25",
+            "2-26",
+            "2-27",
+            "2-72",
+            "2-73",
+            "2-74"
+          ],
+          "sourceIdsSha256": "66012faecb7141fa5a9ac5abfe1e9d38437cb31068f4a1b21e29b3572c2df978"
+        },
+        {
+          "title": "Setting Up Ubuntu with LXDE and Software Management Discussion",
+          "description": "Discussion about installing Ubuntu server with LXDE desktop and X2Go, alternatives like Lubuntu, and details about graphical software managers including Synaptic and Ubuntu Software Center.",
+          "startMs": 2863560,
+          "endMs": 2977880,
+          "sourceSegmentCount": 26,
+          "sourceSegmentIdsSample": [
+            "2-106",
+            "2-107",
+            "2-108",
+            "2-129",
+            "2-130",
+            "2-131"
+          ],
+          "sourceIdsSha256": "79e9a92f0b7c05213204f91d6a578a4af381e7d75dde5208bf28eb28f33fba6d"
+        },
+        {
+          "title": "Linux Audio Troubleshooting",
+          "description": "Sharing audio output and pulse audio configuration problems on different Linux devices, including Raspberry Pi and laptops.",
+          "startMs": 3487540,
+          "endMs": 3727320,
+          "sourceSegmentCount": 46,
+          "sourceSegmentIdsSample": [
+            "2-258",
+            "2-259",
+            "2-260",
+            "3-13",
+            "3-14",
+            "3-15"
+          ],
+          "sourceIdsSha256": "6f7f4a8967a657cc8a7f3f6de7e65f894e8fd6bbd4c5ddc2cbdd5d1efe13522a"
+        },
+        {
+          "title": "Television Ownership and Usage",
+          "description": "The speaker discusses owning multiple televisions and current usage of a 4K 50-inch TV.",
+          "startMs": 4992700,
+          "endMs": 5009960,
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "4-47",
+            "4-48",
+            "4-49"
+          ],
+          "sourceIdsSha256": "4f2c0cf9a36aac0416324c3890d1b141bf468176c12f43f7d48be60ad33f9a35"
+        },
+        {
+          "title": "Considering Lifestyle Changes",
+          "description": "Ideas about selling possessions, buying an RV, rental costs of campgrounds, and logistics of moving possessions between states.",
+          "startMs": 5072120,
+          "endMs": 5095840,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "4-61",
+            "4-62",
+            "4-63",
+            "4-64",
+            "4-65",
+            "4-66"
+          ],
+          "sourceIdsSha256": "e3fff63af2f86d8ef435a19cd340a0ba3931d87ea9801a1909408ed1e5c1752b"
+        },
+        {
+          "title": "Client Video Conferencing Equipment Issues",
+          "description": "A client contacted the speaker about problems with recently installed video conferencing equipment, which the speaker troubleshooted and found faulty HDMI cable installation.",
+          "startMs": 5333000,
+          "endMs": 5417760,
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "4-115",
+            "4-116",
+            "4-117",
+            "4-130",
+            "4-131",
+            "4-132"
+          ],
+          "sourceIdsSha256": "2d87a4b7fd44a75ff634781f57a3da28548fe2f1605b243ada6163706869031c"
+        },
+        {
+          "title": "Home Automation Prospects",
+          "description": "Exploration of using the large Android tablet for home automation with possible software solutions and integration with devices like Arduino.",
+          "startMs": 6018960,
+          "endMs": 6214520,
+          "sourceSegmentCount": 36,
+          "sourceSegmentIdsSample": [
+            "5-4",
+            "5-5",
+            "5-6",
+            "5-37",
+            "5-38",
+            "5-39"
+          ],
+          "sourceIdsSha256": "b17a9be92259ed50d99fbbb513d32ada8211ea23e342d07c65aec27cde5e2766"
+        },
+        {
+          "title": "Social Media Usage and Privacy",
+          "description": "Conversation about using Facebook alternatives like Metal due to privacy and battery consumption, and concerns about data collection by big tech companies.",
+          "startMs": 6374060,
+          "endMs": 6756060,
+          "sourceSegmentCount": 63,
+          "sourceSegmentIdsSample": [
+            "5-76",
+            "5-77",
+            "5-78",
+            "5-136",
+            "5-137",
+            "5-138"
+          ],
+          "sourceIdsSha256": "a39fa3d9f5c36c1c052c6f2614c3c9a5e907ea8ce884b6516f9ba354f3c4a510"
+        },
+        {
+          "title": "Domain and Hosting Issues",
+          "description": "Problems with domain registration renewals, hosting unreliability, and consideration of switching to hosting services like DigitalOcean.",
+          "startMs": 6930140,
+          "endMs": 7337240,
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "5-164",
+            "5-165",
+            "5-166",
+            "6-29",
+            "6-30",
+            "6-31"
+          ],
+          "sourceIdsSha256": "ee25c4f1709680eda71a74ed190a864589e20bab71d4adb1255b14a1dc0631a1"
+        },
+        {
+          "title": "Discussion of Cobra Kai on YouTube and Related Commentary",
+          "description": "The speakers discuss finding the show Cobra Kai on YouTube, mention it continuing the Karate Kid saga, note some character details, and briefly talk about eating fried baloney.",
+          "startMs": 7421840,
+          "endMs": 7482800,
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "6-59",
+            "6-60",
+            "6-61",
+            "6-78",
+            "6-79",
+            "6-80"
+          ],
+          "sourceIdsSha256": "64eb5751d691d5964c1bceaf3c6d80658b56d488f5c7fe01ba33642c5f66a6c4"
+        },
+        {
+          "title": "Baloney and Podcast Introduction",
+          "description": "Opening remarks about baloney compared to a giant hot dog and podcast duration.",
+          "startMs": 7487320,
+          "endMs": 7499160,
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "6-82",
+            "6-83",
+            "6-84"
+          ],
+          "sourceIdsSha256": "aab25eb1fb6d316964b69e70922721ce77570fcb5201b7039d857434dff77d67"
+        },
+        {
+          "title": "Challenges of Self-Employment",
+          "description": "Discussion about managing a business, raising a child alone, and pursuing education.",
+          "startMs": 7522480,
+          "endMs": 7534200,
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "6-97",
+            "6-98",
+            "6-99"
+          ],
+          "sourceIdsSha256": "1643d3e2d6fb92e4f40dae59d3b7799577d56776c7c0a6864331cc5ad29314e4"
+        },
+        {
+          "title": "Uncertainty About Employment",
+          "description": "The speaker expresses uncertainty and difficulty about the prospect of working for someone else, reflecting on past challenges.",
+          "startMs": 7568320,
+          "endMs": 7589640,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "6-112",
+            "6-113",
+            "6-114",
+            "6-115",
+            "6-116",
+            "6-117"
+          ],
+          "sourceIdsSha256": "49e0f7ed87d4c317eec5a1e6a0a12623c6d259da4ce5d5838bbffd232058e697"
+        },
+        {
+          "title": "Poor Technical Support Experiences",
+          "description": "Critique of internet providers' tech support, scripted replies, and technical incompetence.",
+          "startMs": 8595280,
+          "endMs": 8789080,
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "7-31",
+            "7-32",
+            "7-33",
+            "7-53",
+            "7-54",
+            "7-55"
+          ],
+          "sourceIdsSha256": "a2df068329123047acd549fded9e57f9ea9a50e94c857b832e7c49ce3baa6297"
+        },
+        {
+          "title": "Developing 'Google Foo' Skills",
+          "description": "Explaining the importance of effective online search skills for technical troubleshooting.",
+          "startMs": 9634160,
+          "endMs": 9853200,
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "8-7",
+            "8-8",
+            "8-9",
+            "8-45",
+            "8-46",
+            "8-47"
+          ],
+          "sourceIdsSha256": "6fc85fa0dce93bf4048513dc887146f8a59dc37847d0799624e7ed4714ab7f76"
+        },
+        {
+          "title": "Personal Journey Quitting Smoking",
+          "description": "Sharing experiences of quitting smoking using vaping and related challenges.",
+          "startMs": 9905480,
+          "endMs": 10115200,
+          "sourceSegmentCount": 36,
+          "sourceSegmentIdsSample": [
+            "8-58",
+            "8-59",
+            "8-60",
+            "8-91",
+            "8-92",
+            "8-93"
+          ],
+          "sourceIdsSha256": "813463d58c68d572c2bed49ea4a8853a9713fdb4a285a0a32f01966ba4efe549"
+        },
+        {
+          "title": "Experiences and Preferences Regarding Tobacco and Vaping",
+          "description": "The speaker discusses their appreciation of pipe tobacco smell, the flavor they enjoy combining tobacco and coffee, their history with various tobacco products, and their wish for a vaping product that replicates the experience without negative effects.",
+          "startMs": 10161000,
+          "endMs": 10486520,
+          "sourceSegmentCount": 53,
+          "sourceSegmentIdsSample": [
+            "8-102",
+            "8-103",
+            "8-104",
+            "8-152",
+            "8-153",
+            "8-154"
+          ],
+          "sourceIdsSha256": "767c202b4cdd024fd66c32b8926e8ce2f00eefaf233a4a96aaffddb473df6df1"
+        },
+        {
+          "title": "Discussion on Homemade Mead and Local Craft Beers",
+          "description": "Speakers discuss homemade mead brewing, their preferences for stouts and porters, and appreciation for local microbreweries and craft beers, highlighting the diversity and growth of local breweries around Massachusetts, including collaborations with creameries and farmers markets.",
+          "startMs": 10551760,
+          "endMs": 11489700,
+          "sourceSegmentCount": 246,
+          "sourceSegmentIdsSample": [
+            "8-160",
+            "8-161",
+            "8-162",
+            "9-223",
+            "9-224",
+            "9-225"
+          ],
+          "sourceIdsSha256": "aa5fe8a08436105e9b46c35d25b21a133750a15854785823386f1cfdcde5b529"
+        },
+        {
+          "title": "Transition from Windows to Linux",
+          "description": "One speaker narrates their shift from Windows to Linux, driven by licensing frustrations and attraction to free open-source software with compatible applications.",
+          "startMs": 11658200,
+          "endMs": 12240280,
+          "sourceSegmentCount": 148,
+          "sourceSegmentIdsSample": [
+            "9-275",
+            "9-276",
+            "9-277",
+            "10-37",
+            "10-38",
+            "10-39"
+          ],
+          "sourceIdsSha256": "60b3b994722d026d47ab6643c4567f211941bb02f3ba374413a50ab8811a18b4"
+        },
+        {
+          "title": "Gaming Preferences and Transition to Linux",
+          "description": "The speaker discusses challenges with PC gaming due to expensive GPUs, preference for console gaming, and eventual switch to Linux for general computing needs while maintaining console gaming for games.",
+          "startMs": 12333080,
+          "endMs": 12375040,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "10-53",
+            "10-54",
+            "10-55",
+            "10-56",
+            "10-57",
+            "10-58"
+          ],
+          "sourceIdsSha256": "4c85aa6f6032bc3e23aa4f4f13b5d1a294012fa063ea32218d66d5c41f6ce56b"
+        },
+        {
+          "title": "Discussion on video and image editing software",
+          "description": "Overview of video editing tools on different platforms, challenges with Linux video editing, and image editing software capabilities.",
+          "startMs": 12447000,
+          "endMs": 12584640,
+          "sourceSegmentCount": 20,
+          "sourceSegmentIdsSample": [
+            "10-70",
+            "10-71",
+            "10-72",
+            "10-87",
+            "10-88",
+            "10-89"
+          ],
+          "sourceIdsSha256": "bb65ec911575c3f5430393d68fe5eb2ac3cbfc5efc8af94239f927bcfb77f895"
+        },
+        {
+          "title": "Benefits of Open Source Software",
+          "description": "Discussion on free open source alternatives like GIMP and OpenOffice compared to costly paid software like Photoshop and Microsoft Office.",
+          "startMs": 12676680,
+          "endMs": 12710720,
+          "sourceSegmentCount": 5,
+          "sourceSegmentIdsSample": [
+            "10-104",
+            "10-105",
+            "10-106",
+            "10-107",
+            "10-108"
+          ],
+          "sourceIdsSha256": "2d90d55b5bb539ab632f99aa9b676167a81eec026a29dbdbfe9bd52648c94215"
+        },
+        {
+          "title": "Using always on top feature for podcast posting",
+          "description": "The speaker discusses their workflow for updating podcasts, involving using a text file left always on top to copy metadata into archive.org, and comments on the usefulness and loss of the always on top feature in Windows.",
+          "startMs": 12778280,
+          "endMs": 12947520,
+          "sourceSegmentCount": 26,
+          "sourceSegmentIdsSample": [
+            "10-120",
+            "10-121",
+            "10-122",
+            "10-143",
+            "10-144",
+            "10-145"
+          ],
+          "sourceIdsSha256": "7390e909639c23eec781077d5dc0528f07e383772cf4d81e8aa4c122d83a069f"
+        }
+      ],
+      "topics": [
+        {
+          "id": "ee0d62237b84ad9c",
+          "label": "Introduction to Episode 102 of LinuxLUGCAST",
+          "startMs": 53840,
+          "endMs": 86560,
+          "chapterTitle": "Introduction to Episode 102 of LinuxLUGCAST",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "0-8",
+            "0-9"
+          ],
+          "sourceIdsSha256": "68b9962f3ae0f79b9a23bb44144a256e022c2dbe700fc3b9cbec9f0eb4480296"
+        },
+        {
+          "id": "654355f5fa6c6c3c",
+          "label": "Conversation about liking the server",
+          "startMs": 321640,
+          "endMs": 330640,
+          "chapterTitle": "Conversation about liking the server",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 4,
+          "sourceSegmentIdsSample": [
+            "0-53",
+            "0-54",
+            "0-55",
+            "0-56"
+          ],
+          "sourceIdsSha256": "164c60ab0c110b828a997914f018d3aa8b8048766e469c499b06e257fa38771e"
+        },
+        {
+          "id": "9160d4f4bc5c8eff",
+          "label": "Microsoft's Role in Linux",
+          "startMs": 403640,
+          "endMs": 455640,
+          "chapterTitle": "Microsoft's Role in Linux",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-78",
+            "0-79",
+            "0-80",
+            "0-87",
+            "0-88",
+            "0-89"
+          ],
+          "sourceIdsSha256": "b7e83fa5442f357d0afaa27a3349fb0526be9cb714988339cd70cad1b180d4e4"
+        },
+        {
+          "id": "fca4f9a35ce8a838",
+          "label": "Samba File Sharing Setup",
+          "startMs": 873640,
+          "endMs": 997640,
+          "chapterTitle": "Samba File Sharing Setup",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-209",
+            "0-210",
+            "0-211",
+            "0-238",
+            "0-239",
+            "0-240"
+          ],
+          "sourceIdsSha256": "edb33e08958c4b64732c9ec318edafecf5a8dad963c0b29623742e1813b25f83"
+        },
+        {
+          "id": "5b6e766730f8d5dd",
+          "label": "Remote Access and Desktop Solutions",
+          "startMs": 1111640,
+          "endMs": 1176640,
+          "chapterTitle": "Remote Access and Desktop Solutions",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "0-268",
+            "0-269",
+            "0-270",
+            "0-283",
+            "0-284",
+            "0-285"
+          ],
+          "sourceIdsSha256": "ace0953dc5f4f085d20e750dd4bf627723959796bc15680cf39806a1183422c4"
+        },
+        {
+          "id": "b2a1c290b5fe8e3d",
+          "label": "Package Locker Systems and Technical Challenges",
+          "startMs": 1269240,
+          "endMs": 1586880,
+          "chapterTitle": "Package Locker Systems and Technical Challenges",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 70,
+          "sourceSegmentIdsSample": [
+            "1-16",
+            "1-17",
+            "1-18",
+            "1-83",
+            "1-84",
+            "1-85"
+          ],
+          "sourceIdsSha256": "9e6fc7c70a43fcab774685a0d9c036057519f9f972a0476a759f940189668d4c"
+        },
+        {
+          "id": "41cc9141aa139dc5",
+          "label": "Discussion on Control Systems and Hardware for Lockers",
+          "startMs": 1616160,
+          "endMs": 1721280,
+          "chapterTitle": "Discussion on Control Systems and Hardware for Lockers",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 23,
+          "sourceSegmentIdsSample": [
+            "1-91",
+            "1-92",
+            "1-93",
+            "1-111",
+            "1-112",
+            "1-113"
+          ],
+          "sourceIdsSha256": "349161d809499a7aad255a71a98200510d1cb210d27b03440ee5bd7fe28218e6"
+        },
+        {
+          "id": "3ba0f2bf50106f69",
+          "label": "Communication Methods for Machine Interface",
+          "startMs": 2230440,
+          "endMs": 2326800,
+          "chapterTitle": "Communication Methods for Machine Interface",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 20,
+          "sourceSegmentIdsSample": [
+            "1-215",
+            "1-216",
+            "1-217",
+            "1-232",
+            "1-233",
+            "1-234"
+          ],
+          "sourceIdsSha256": "fbf92551b1d21561404a53fe9300e4c27df6d8b22b876dff0a46721054399cad"
+        },
+        {
+          "id": "d90e27ade2325104",
+          "label": "Login Process Using a PIN Number",
+          "startMs": 2332400,
+          "endMs": 2367920,
+          "chapterTitle": "Login Process Using a PIN Number",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 7,
+          "sourceSegmentIdsSample": [
+            "1-237",
+            "1-238",
+            "1-239",
+            "1-241",
+            "1-242",
+            "1-243"
+          ],
+          "sourceIdsSha256": "40ed9b8e8ccdfc371ef156ec4db95a400105b339f2c7a00f285c80155281942e"
+        },
+        {
+          "id": "c88fb2d1437ff54f",
+          "label": "Discussion on Open Source PBX Setup",
+          "startMs": 2502320,
+          "endMs": 2719600,
+          "chapterTitle": "Discussion on Open Source PBX Setup",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 50,
+          "sourceSegmentIdsSample": [
+            "2-25",
+            "2-26",
+            "2-27",
+            "2-72",
+            "2-73",
+            "2-74"
+          ],
+          "sourceIdsSha256": "66012faecb7141fa5a9ac5abfe1e9d38437cb31068f4a1b21e29b3572c2df978"
+        },
+        {
+          "id": "4b5da022c2c03651",
+          "label": "Setting Up Ubuntu with LXDE and Software Management Discussion",
+          "startMs": 2863560,
+          "endMs": 2977880,
+          "chapterTitle": "Setting Up Ubuntu with LXDE and Software Management Discussion",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 26,
+          "sourceSegmentIdsSample": [
+            "2-106",
+            "2-107",
+            "2-108",
+            "2-129",
+            "2-130",
+            "2-131"
+          ],
+          "sourceIdsSha256": "79e9a92f0b7c05213204f91d6a578a4af381e7d75dde5208bf28eb28f33fba6d"
+        },
+        {
+          "id": "fbc6fb3f576e78b4",
+          "label": "Linux Audio Troubleshooting",
+          "startMs": 3487540,
+          "endMs": 3727320,
+          "chapterTitle": "Linux Audio Troubleshooting",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 46,
+          "sourceSegmentIdsSample": [
+            "2-258",
+            "2-259",
+            "2-260",
+            "3-13",
+            "3-14",
+            "3-15"
+          ],
+          "sourceIdsSha256": "6f7f4a8967a657cc8a7f3f6de7e65f894e8fd6bbd4c5ddc2cbdd5d1efe13522a"
+        },
+        {
+          "id": "abcc235ca54bfcc2",
+          "label": "Television Ownership and Usage",
+          "startMs": 4992700,
+          "endMs": 5009960,
+          "chapterTitle": "Television Ownership and Usage",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "4-47",
+            "4-48",
+            "4-49"
+          ],
+          "sourceIdsSha256": "4f2c0cf9a36aac0416324c3890d1b141bf468176c12f43f7d48be60ad33f9a35"
+        },
+        {
+          "id": "b1a5f4f7de136f61",
+          "label": "Considering Lifestyle Changes",
+          "startMs": 5072120,
+          "endMs": 5095840,
+          "chapterTitle": "Considering Lifestyle Changes",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "4-61",
+            "4-62",
+            "4-63",
+            "4-64",
+            "4-65",
+            "4-66"
+          ],
+          "sourceIdsSha256": "e3fff63af2f86d8ef435a19cd340a0ba3931d87ea9801a1909408ed1e5c1752b"
+        },
+        {
+          "id": "8d35c478a30ecc06",
+          "label": "Client Video Conferencing Equipment Issues",
+          "startMs": 5333000,
+          "endMs": 5417760,
+          "chapterTitle": "Client Video Conferencing Equipment Issues",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "4-115",
+            "4-116",
+            "4-117",
+            "4-130",
+            "4-131",
+            "4-132"
+          ],
+          "sourceIdsSha256": "2d87a4b7fd44a75ff634781f57a3da28548fe2f1605b243ada6163706869031c"
+        },
+        {
+          "id": "33a64b4807909c7c",
+          "label": "Home Automation Prospects",
+          "startMs": 6018960,
+          "endMs": 6214520,
+          "chapterTitle": "Home Automation Prospects",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 36,
+          "sourceSegmentIdsSample": [
+            "5-4",
+            "5-5",
+            "5-6",
+            "5-37",
+            "5-38",
+            "5-39"
+          ],
+          "sourceIdsSha256": "b17a9be92259ed50d99fbbb513d32ada8211ea23e342d07c65aec27cde5e2766"
+        },
+        {
+          "id": "2ec01dfb42bc03a4",
+          "label": "Social Media Usage and Privacy",
+          "startMs": 6374060,
+          "endMs": 6756060,
+          "chapterTitle": "Social Media Usage and Privacy",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 63,
+          "sourceSegmentIdsSample": [
+            "5-76",
+            "5-77",
+            "5-78",
+            "5-136",
+            "5-137",
+            "5-138"
+          ],
+          "sourceIdsSha256": "a39fa3d9f5c36c1c052c6f2614c3c9a5e907ea8ce884b6516f9ba354f3c4a510"
+        },
+        {
+          "id": "17e6391eb136395e",
+          "label": "Domain and Hosting Issues",
+          "startMs": 6930140,
+          "endMs": 7337240,
+          "chapterTitle": "Domain and Hosting Issues",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "5-164",
+            "5-165",
+            "5-166",
+            "6-29",
+            "6-30",
+            "6-31"
+          ],
+          "sourceIdsSha256": "ee25c4f1709680eda71a74ed190a864589e20bab71d4adb1255b14a1dc0631a1"
+        },
+        {
+          "id": "46ee3e8036186ce7",
+          "label": "Discussion of Cobra Kai on YouTube and Related Commentary",
+          "startMs": 7421840,
+          "endMs": 7482800,
+          "chapterTitle": "Discussion of Cobra Kai on YouTube and Related Commentary",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "6-59",
+            "6-60",
+            "6-61",
+            "6-78",
+            "6-79",
+            "6-80"
+          ],
+          "sourceIdsSha256": "64eb5751d691d5964c1bceaf3c6d80658b56d488f5c7fe01ba33642c5f66a6c4"
+        },
+        {
+          "id": "e9a3f7a1fd9cded3",
+          "label": "Baloney and Podcast Introduction",
+          "startMs": 7487320,
+          "endMs": 7499160,
+          "chapterTitle": "Baloney and Podcast Introduction",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "6-82",
+            "6-83",
+            "6-84"
+          ],
+          "sourceIdsSha256": "aab25eb1fb6d316964b69e70922721ce77570fcb5201b7039d857434dff77d67"
+        },
+        {
+          "id": "77e6606427322d92",
+          "label": "Challenges of Self-Employment",
+          "startMs": 7522480,
+          "endMs": 7534200,
+          "chapterTitle": "Challenges of Self-Employment",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "6-97",
+            "6-98",
+            "6-99"
+          ],
+          "sourceIdsSha256": "1643d3e2d6fb92e4f40dae59d3b7799577d56776c7c0a6864331cc5ad29314e4"
+        },
+        {
+          "id": "6e2f069b6e59a5a6",
+          "label": "Uncertainty About Employment",
+          "startMs": 7568320,
+          "endMs": 7589640,
+          "chapterTitle": "Uncertainty About Employment",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "6-112",
+            "6-113",
+            "6-114",
+            "6-115",
+            "6-116",
+            "6-117"
+          ],
+          "sourceIdsSha256": "49e0f7ed87d4c317eec5a1e6a0a12623c6d259da4ce5d5838bbffd232058e697"
+        },
+        {
+          "id": "eff10f22d8ac7c54",
+          "label": "Poor Technical Support Experiences",
+          "startMs": 8595280,
+          "endMs": 8789080,
+          "chapterTitle": "Poor Technical Support Experiences",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "7-31",
+            "7-32",
+            "7-33",
+            "7-53",
+            "7-54",
+            "7-55"
+          ],
+          "sourceIdsSha256": "a2df068329123047acd549fded9e57f9ea9a50e94c857b832e7c49ce3baa6297"
+        },
+        {
+          "id": "c90638c070256705",
+          "label": "Developing 'Google Foo' Skills",
+          "startMs": 9634160,
+          "endMs": 9853200,
+          "chapterTitle": "Developing 'Google Foo' Skills",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "8-7",
+            "8-8",
+            "8-9",
+            "8-45",
+            "8-46",
+            "8-47"
+          ],
+          "sourceIdsSha256": "6fc85fa0dce93bf4048513dc887146f8a59dc37847d0799624e7ed4714ab7f76"
+        },
+        {
+          "id": "422b980e104de95e",
+          "label": "Personal Journey Quitting Smoking",
+          "startMs": 9905480,
+          "endMs": 10115200,
+          "chapterTitle": "Personal Journey Quitting Smoking",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 36,
+          "sourceSegmentIdsSample": [
+            "8-58",
+            "8-59",
+            "8-60",
+            "8-91",
+            "8-92",
+            "8-93"
+          ],
+          "sourceIdsSha256": "813463d58c68d572c2bed49ea4a8853a9713fdb4a285a0a32f01966ba4efe549"
+        },
+        {
+          "id": "402464c801ac1969",
+          "label": "Experiences and Preferences Regarding Tobacco and Vaping",
+          "startMs": 10161000,
+          "endMs": 10486520,
+          "chapterTitle": "Experiences and Preferences Regarding Tobacco and Vaping",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 53,
+          "sourceSegmentIdsSample": [
+            "8-102",
+            "8-103",
+            "8-104",
+            "8-152",
+            "8-153",
+            "8-154"
+          ],
+          "sourceIdsSha256": "767c202b4cdd024fd66c32b8926e8ce2f00eefaf233a4a96aaffddb473df6df1"
+        },
+        {
+          "id": "37d5f5e784736853",
+          "label": "Discussion on Homemade Mead and Local Craft Beers",
+          "startMs": 10551760,
+          "endMs": 11489700,
+          "chapterTitle": "Discussion on Homemade Mead and Local Craft Beers",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 246,
+          "sourceSegmentIdsSample": [
+            "8-160",
+            "8-161",
+            "8-162",
+            "9-223",
+            "9-224",
+            "9-225"
+          ],
+          "sourceIdsSha256": "aa5fe8a08436105e9b46c35d25b21a133750a15854785823386f1cfdcde5b529"
+        },
+        {
+          "id": "c2d2dc41ddaf1286",
+          "label": "Transition from Windows to Linux",
+          "startMs": 11658200,
+          "endMs": 12240280,
+          "chapterTitle": "Transition from Windows to Linux",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 148,
+          "sourceSegmentIdsSample": [
+            "9-275",
+            "9-276",
+            "9-277",
+            "10-37",
+            "10-38",
+            "10-39"
+          ],
+          "sourceIdsSha256": "60b3b994722d026d47ab6643c4567f211941bb02f3ba374413a50ab8811a18b4"
+        },
+        {
+          "id": "ed205f18b8566827",
+          "label": "Gaming Preferences and Transition to Linux",
+          "startMs": 12333080,
+          "endMs": 12375040,
+          "chapterTitle": "Gaming Preferences and Transition to Linux",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "10-53",
+            "10-54",
+            "10-55",
+            "10-56",
+            "10-57",
+            "10-58"
+          ],
+          "sourceIdsSha256": "4c85aa6f6032bc3e23aa4f4f13b5d1a294012fa063ea32218d66d5c41f6ce56b"
+        },
+        {
+          "id": "b0b81e68656dd5f0",
+          "label": "Discussion on video and image editing software",
+          "startMs": 12447000,
+          "endMs": 12584640,
+          "chapterTitle": "Discussion on video and image editing software",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 20,
+          "sourceSegmentIdsSample": [
+            "10-70",
+            "10-71",
+            "10-72",
+            "10-87",
+            "10-88",
+            "10-89"
+          ],
+          "sourceIdsSha256": "bb65ec911575c3f5430393d68fe5eb2ac3cbfc5efc8af94239f927bcfb77f895"
+        },
+        {
+          "id": "42716fa9b3113875",
+          "label": "Benefits of Open Source Software",
+          "startMs": 12676680,
+          "endMs": 12710720,
+          "chapterTitle": "Benefits of Open Source Software",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 5,
+          "sourceSegmentIdsSample": [
+            "10-104",
+            "10-105",
+            "10-106",
+            "10-107",
+            "10-108"
+          ],
+          "sourceIdsSha256": "2d90d55b5bb539ab632f99aa9b676167a81eec026a29dbdbfe9bd52648c94215"
+        },
+        {
+          "id": "cbbab44151227c81",
+          "label": "Using always on top feature for podcast posting",
+          "startMs": 12778280,
+          "endMs": 12947520,
+          "chapterTitle": "Using always on top feature for podcast posting",
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 26,
+          "sourceSegmentIdsSample": [
+            "10-120",
+            "10-121",
+            "10-122",
+            "10-143",
+            "10-144",
+            "10-145"
+          ],
+          "sourceIdsSha256": "7390e909639c23eec781077d5dc0528f07e383772cf4d81e8aa4c122d83a069f"
+        },
+        {
+          "id": "beaab8a058d6697d",
+          "label": "Linux server administration",
+          "startMs": 321640,
+          "endMs": 1119640,
+          "chapterTitle": null,
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-53",
+            "0-56",
+            "0-63",
+            "0-268",
+            "0-269",
+            "0-270"
+          ],
+          "sourceIdsSha256": "544abf768d4db71154744ded110f1d4c96f9daf110c4a271791db9578e1ebe0a"
+        },
+        {
+          "id": "12796050bad45b7b",
+          "label": "Package locker technology and interfaces",
+          "startMs": 1269240,
+          "endMs": 2374840,
+          "chapterTitle": null,
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "1-16",
+            "1-17",
+            "1-18",
+            "1-147",
+            "1-150",
+            "1-244"
+          ],
+          "sourceIdsSha256": "b25674ab63eb483318eecd1fa1b521845a5bdc63c6bbed2423b6b8ee67b8d83d"
+        },
+        {
+          "id": "6250d7119b3ba3cc",
+          "label": "Technical challenges and software experiences",
+          "startMs": 2129280,
+          "endMs": 12021600,
+          "chapterTitle": null,
+          "transcriptVersion": "e1d7640bba83a53e0311368b8e9995530b71e666e34a4be9a925e289d7138139",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "1-195",
+            "1-196",
+            "1-197",
+            "7-56",
+            "7-57",
+            "10-4"
+          ],
+          "sourceIdsSha256": "80a08914cb13cab3a5c9f9fba61f75c69e504e761700fa57a2bde8794246816b"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 2865,
+          "totalSegments": 2865,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 12,
+          "usd": 1.4124000000000003,
+          "seconds": 14124,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 49,
+          "usd": 0.15342920000000002,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "grounding-review": {
+          "requests": 153,
+          "usd": 0.2617424,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "embedding": {
+          "requests": 178,
+          "usd": 0.0016228399999999995,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "derived:d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:claims-enumerated-source-selection-v3:1e464b01d980d76da062e0e9dfdae30cceb79a0c3dbeb35ede2d965af9b230dd:eligible-source-ids-v1",
+          "kind": "grounding-review",
+          "usd": 0.0009284,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:04:23.935Z"
+        },
+        {
+          "id": "derived:d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:claims-enumerated-source-selection-v3:3fe8b3f72c37f36a74b499ff4fa023d1058c12c621b99248b9508469caf70a06:eligible-source-ids-v1",
+          "kind": "grounding-review",
+          "usd": 0.0008484,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:04:51.451Z"
+        },
+        {
+          "id": "derived:d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:claims-enumerated-source-selection-v3:a83824e21f41a8ee2bef2e8e6ac5bc5b16afc7f4b72e262380561f7c72b1bfc4:eligible-source-ids-v1",
+          "kind": "grounding-review",
+          "usd": 0.000918,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:05:18.282Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "jobId": "d2baba8e-7906-4840-a74b-a6b25b9e2825",
+      "state": "READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+      "durationMs": 1773062,
+      "work": {
+        "verifiedSourceDurationMs": 1773062,
+        "sourceContentHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 1773062,
+        "sourceDurationMs": 1773062,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 2581206,
+      "featureStatus": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "READY"
+        },
+        "chapters": {
+          "state": "READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      },
+      "featureRepair": {
+        "state": "READY",
+        "activeFeature": null,
+        "features": {
+          "brief": {
+            "state": "READY",
+            "attempt": 1,
+            "completedAt": "2026-11-18T19:17:32.295Z"
+          }
+        },
+        "updatedAt": "2026-11-18T19:17:53.913Z"
+      },
+      "transcriptAssemblyRepair": {
+        "from": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+        "to": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+        "at": "2026-11-18T18:36:44.616Z",
+        "beforeSegments": 510,
+        "afterSegments": 510,
+        "paidTranscriptionRequests": 0
+      },
+      "assemblyVersion": "confidence-and-overlap-v4",
+      "intelligenceDigest": "99d4d648e954663a53032947c7f239f455e17a0908f6352ffdbb8df8ccf271a3",
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:44:33.411Z",
+          "responseSha256": "3289ebc8e8e66f1da57f779cb61c03a7ed529e6632d6b4ec2cacaad100e0d948",
+          "segments": 414
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:45:03.834Z",
+          "responseSha256": "30ab5823add4f9b1cdcd09682933f1a9ebaaaed876e2d2b2cde32eb0909fa4c4",
+          "segments": 96
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 510,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 1,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 3160,
+          "textSha256": "76b337296ef58dc9f5950110be00d7dbed0fd6906ad80bb3ae4ec05148b5fd10"
+        },
+        {
+          "id": "0-255",
+          "startMs": 774480,
+          "endMs": 776320,
+          "textSha256": "0e4970d2e20f7ba075abc41ca9459f911afebc6a24ae438789e4103faf7a67d8"
+        },
+        {
+          "id": "1-95",
+          "startMs": 1770120,
+          "endMs": 1771400,
+          "textSha256": "b5bfcb49fa4cbe3479d617bd5d4ad246ca983e043da21d017058d688131f3dd1"
+        }
+      ],
+      "brief": {
+        "overview": "Researcher Rowy Nassimi discusses security vulnerabilities in open source due to backporting gaps, challenges in vulnerability patching, and the impact of AI in discovery.",
+        "themes": [
+          "Backporting gaps in open source security",
+          "Challenges in vulnerability reporting and patching",
+          "Impact of AI on vulnerability discovery"
+        ],
+        "detail": "Rowy Nassimi identifies that many security vulnerabilities persist in open source projects because fixes applied to main branches are not backported to released versions, creating exploitable gaps. Manual maintenance and limited automation contribute to these issues. AI was used to detect numerous vulnerabilities, but patching remains difficult due to poor communication between researchers and security teams, who often lack context to implement fixes effectively.",
+        "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+        "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T19:17:31.124Z",
+        "usage": {
+          "inputTokens": 859,
+          "outputTokens": 179
+        },
+        "evidenceScope": "canonical-source-retrieval",
+        "sourceSegmentCount": 510,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-2",
+          "1-93",
+          "1-94",
+          "1-95"
+        ],
+        "sourceIdsSha256": "b7bf05db6110f18b6f1a842794fea358ce468ce0cdc8f7ad0107963161e63d74"
+      },
+      "chapters": [
+        {
+          "title": "Introduction to Backporting Gaps",
+          "description": "Explains the concept of backporting gaps and how vulnerabilities remain unpatched in open source releases despite fixes on main branches.",
+          "startMs": 46760,
+          "endMs": 86320,
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-17",
+            "0-18",
+            "0-19",
+            "0-26",
+            "0-27",
+            "0-28"
+          ],
+          "sourceIdsSha256": "c11145762284ceb71c7f7071349fbd51dc2b8fc80a0c31d44ebc27141459d617"
+        },
+        {
+          "title": "Challenges in Backporting Automation and Maintenance",
+          "description": "Discusses the variability in maintenance maturity among projects, the manual nature of backporting, the complexity and neglect of automation, and the widespread prevalence of these issues in popular projects.",
+          "startMs": 164960,
+          "endMs": 246800,
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "0-56",
+            "0-57",
+            "0-58",
+            "0-78",
+            "0-79",
+            "0-80"
+          ],
+          "sourceIdsSha256": "0ac6e8efa6d2083c6f9838c3792a609a80873a7820a5b7f7b17f7ab67ea17c38"
+        },
+        {
+          "title": "Discovering Vulnerabilities in an Open-Source Platform",
+          "description": "A security-savvy individual recounts how a friend's database monitoring platform was hacked, prompting an investigation revealing numerous unpatched vulnerabilities in that and other projects.",
+          "startMs": 367000,
+          "endMs": 531680,
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-122",
+            "0-123",
+            "0-124",
+            "0-164",
+            "0-165",
+            "0-166"
+          ],
+          "sourceIdsSha256": "1c19b29f98f4cdb8e1c1245cee20eae3b451d73d60224688fd75ff72890943e5"
+        },
+        {
+          "title": "Challenges in Coordinated Vulnerability Disclosure in Open Source Projects",
+          "description": "Discussion on difficulties faced when attempting to contact open source projects for coordinating vulnerability disclosure, highlighting the importance of GitHub security advisories for effective communication.",
+          "startMs": 727920,
+          "endMs": 802440,
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-239",
+            "0-240",
+            "0-241",
+            "0-260",
+            "0-261",
+            "0-262"
+          ],
+          "sourceIdsSha256": "6c9b240c8dd7cacae4298dbca0e9119ab40c60464daed1260cd05ab8aba701f4"
+        },
+        {
+          "title": "AI's Role in Vulnerability Discovery",
+          "description": "Details how AI can easily detect vulnerabilities and backport gaps, increasing findings at scale and by many researchers.",
+          "startMs": 989000,
+          "endMs": 1087480,
+          "sourceSegmentCount": 40,
+          "sourceSegmentIdsSample": [
+            "0-334",
+            "0-335",
+            "0-336",
+            "0-371",
+            "0-372",
+            "0-373"
+          ],
+          "sourceIdsSha256": "0ec40ce6ac9851a5ce96461e682d2eb275595f734b015a5a20a0030b78ae5bd3"
+        },
+        {
+          "title": "Future Outlook and Security Imbalance",
+          "description": "Highlights the growing imbalance where vulnerabilities are found faster than they can be patched, stressing the need for better defense tools.",
+          "startMs": 1469640,
+          "endMs": 1510440,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-40",
+            "1-41",
+            "1-42",
+            "1-43",
+            "1-44",
+            "1-45"
+          ],
+          "sourceIdsSha256": "63745cb8d1d8f9e2e24907c45c82cfa348a0512816858010a976dfa5368be38c"
+        },
+        {
+          "title": "Researcher Challenges in Vulnerability Patching",
+          "description": "Discussion on how researchers often lack full understanding of their findings, complicating patching efforts.",
+          "startMs": 1729320,
+          "endMs": 1742920,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-86",
+            "1-87"
+          ],
+          "sourceIdsSha256": "e3b3079ea7eeb9dbd60079002bf10cf48695ae28380dc8b636b925902861d9a0"
+        },
+        {
+          "title": "Expressing Mixed Reactions to a Topic",
+          "description": "The speakers briefly acknowledge a challenging topic and express enthusiasm and appreciation for the discussion.",
+          "startMs": 1742920,
+          "endMs": 1750040,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "d06a13d90a150a956451baa3f4084a8c903ef2ecb04c542c48cd2d5a4c1b82d9"
+        },
+        {
+          "title": "Reflections and Future Prospects",
+          "description": "Speakers express enthusiasm about ongoing research and future findings in vulnerability management.",
+          "startMs": 1750040,
+          "endMs": 1758840,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-90",
+            "1-91"
+          ],
+          "sourceIdsSha256": "9836c9ea7b8294ca680cafb7387bfb1625afab9871bb88b78a5e8ff4ba3577b6"
+        },
+        {
+          "title": "Closing Remarks and Gratitude",
+          "description": "Mutual thanks and plans for future discussions are shared.",
+          "startMs": 1758840,
+          "endMs": 1767800,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-92",
+            "1-93"
+          ],
+          "sourceIdsSha256": "df12c8484d04b0b3706685b3e5a867b0b31182f94666be3e6c415cabfe9f57c4"
+        }
+      ],
+      "topics": [
+        {
+          "id": "26c10b3b03ab38ab",
+          "label": "Introduction to Backporting Gaps",
+          "startMs": 46760,
+          "endMs": 86320,
+          "chapterTitle": "Introduction to Backporting Gaps",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-17",
+            "0-18",
+            "0-19",
+            "0-26",
+            "0-27",
+            "0-28"
+          ],
+          "sourceIdsSha256": "c11145762284ceb71c7f7071349fbd51dc2b8fc80a0c31d44ebc27141459d617"
+        },
+        {
+          "id": "6349ce511b72e248",
+          "label": "Challenges in Backporting Automation and Maintenance",
+          "startMs": 164960,
+          "endMs": 246800,
+          "chapterTitle": "Challenges in Backporting Automation and Maintenance",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "0-56",
+            "0-57",
+            "0-58",
+            "0-78",
+            "0-79",
+            "0-80"
+          ],
+          "sourceIdsSha256": "0ac6e8efa6d2083c6f9838c3792a609a80873a7820a5b7f7b17f7ab67ea17c38"
+        },
+        {
+          "id": "53dcd79e0f664363",
+          "label": "Discovering Vulnerabilities in an Open-Source Platform",
+          "startMs": 367000,
+          "endMs": 531680,
+          "chapterTitle": "Discovering Vulnerabilities in an Open-Source Platform",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-122",
+            "0-123",
+            "0-124",
+            "0-164",
+            "0-165",
+            "0-166"
+          ],
+          "sourceIdsSha256": "1c19b29f98f4cdb8e1c1245cee20eae3b451d73d60224688fd75ff72890943e5"
+        },
+        {
+          "id": "5b41b4cd6ac201cc",
+          "label": "Challenges in Coordinated Vulnerability Disclosure in Open Source Projects",
+          "startMs": 727920,
+          "endMs": 802440,
+          "chapterTitle": "Challenges in Coordinated Vulnerability Disclosure in Open Source Projects",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-239",
+            "0-240",
+            "0-241",
+            "0-260",
+            "0-261",
+            "0-262"
+          ],
+          "sourceIdsSha256": "6c9b240c8dd7cacae4298dbca0e9119ab40c60464daed1260cd05ab8aba701f4"
+        },
+        {
+          "id": "2dd25a85d8efd57c",
+          "label": "AI's Role in Vulnerability Discovery",
+          "startMs": 989000,
+          "endMs": 1087480,
+          "chapterTitle": "AI's Role in Vulnerability Discovery",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 40,
+          "sourceSegmentIdsSample": [
+            "0-334",
+            "0-335",
+            "0-336",
+            "0-371",
+            "0-372",
+            "0-373"
+          ],
+          "sourceIdsSha256": "0ec40ce6ac9851a5ce96461e682d2eb275595f734b015a5a20a0030b78ae5bd3"
+        },
+        {
+          "id": "93206ab1c9eb8fc1",
+          "label": "Future Outlook and Security Imbalance",
+          "startMs": 1469640,
+          "endMs": 1510440,
+          "chapterTitle": "Future Outlook and Security Imbalance",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-40",
+            "1-41",
+            "1-42",
+            "1-43",
+            "1-44",
+            "1-45"
+          ],
+          "sourceIdsSha256": "63745cb8d1d8f9e2e24907c45c82cfa348a0512816858010a976dfa5368be38c"
+        },
+        {
+          "id": "96bbcd3c38b9c6e0",
+          "label": "Researcher Challenges in Vulnerability Patching",
+          "startMs": 1729320,
+          "endMs": 1742920,
+          "chapterTitle": "Researcher Challenges in Vulnerability Patching",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-86",
+            "1-87"
+          ],
+          "sourceIdsSha256": "e3b3079ea7eeb9dbd60079002bf10cf48695ae28380dc8b636b925902861d9a0"
+        },
+        {
+          "id": "c6c98b0f1f367c54",
+          "label": "Expressing Mixed Reactions to a Topic",
+          "startMs": 1742920,
+          "endMs": 1750040,
+          "chapterTitle": "Expressing Mixed Reactions to a Topic",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "d06a13d90a150a956451baa3f4084a8c903ef2ecb04c542c48cd2d5a4c1b82d9"
+        },
+        {
+          "id": "57d01e60084dbb42",
+          "label": "Reflections and Future Prospects",
+          "startMs": 1750040,
+          "endMs": 1758840,
+          "chapterTitle": "Reflections and Future Prospects",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-90",
+            "1-91"
+          ],
+          "sourceIdsSha256": "9836c9ea7b8294ca680cafb7387bfb1625afab9871bb88b78a5e8ff4ba3577b6"
+        },
+        {
+          "id": "19cb8280bc0412c8",
+          "label": "Closing Remarks and Gratitude",
+          "startMs": 1758840,
+          "endMs": 1767800,
+          "chapterTitle": "Closing Remarks and Gratitude",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-92",
+            "1-93"
+          ],
+          "sourceIdsSha256": "df12c8484d04b0b3706685b3e5a867b0b31182f94666be3e6c415cabfe9f57c4"
+        },
+        {
+          "id": "fdbae2d504becfdc",
+          "label": "Backporting gaps in open source security",
+          "startMs": 48600,
+          "endMs": 1478360,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-18",
+            "0-20",
+            "0-21",
+            "0-55",
+            "0-56",
+            "1-40"
+          ],
+          "sourceIdsSha256": "6174f8fc00662aa68bbcdb8df76775a5deaffa58a9de816946fe15a9fd9c002e"
+        },
+        {
+          "id": "afd141260b14fc27",
+          "label": "Challenges in vulnerability reporting and patching",
+          "startMs": 55420,
+          "endMs": 671600,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-20",
+            "0-21",
+            "0-23",
+            "0-210",
+            "0-211",
+            "0-213"
+          ],
+          "sourceIdsSha256": "ad829cedd3f8c4f9f13fd3e940c07bf349964ccf009d28951b045e709ed0ecec"
+        },
+        {
+          "id": "77334cdee8292f37",
+          "label": "Impact of AI on vulnerability discovery",
+          "startMs": 306760,
+          "endMs": 1214280,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-104",
+            "0-105",
+            "0-106",
+            "0-331",
+            "1-0",
+            "1-1"
+          ],
+          "sourceIdsSha256": "10bbd9770123c430dd5c1583128e41d364eedab90529bce598f15ded42a96660"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 510,
+          "totalSegments": 510,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 3,
+          "usd": 0.19549999999999998,
+          "seconds": 1955,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 14,
+          "usd": 0.022273200000000003,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "grounding-review": {
+          "requests": 68,
+          "usd": 0.11470079999999999,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "embedding": {
+          "requests": 16,
+          "usd": 0.00011626,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "derived:dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da:claims-enumerated-source-selection-v3:251e73077658115bbfc0ee5844dd26241f14aa8d8e9a49d2ff7c6daba7e6a718",
+          "kind": "grounding-review",
+          "usd": 0.0021908,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T18:59:17.727Z"
+        },
+        {
+          "id": "derived:dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da:claims-enumerated-source-selection-v3:f198bffc7aad93e56c86c9aeea62cdf944ffdc61434e569d5e4161019eab2fb2",
+          "kind": "grounding-review",
+          "usd": 0.001428,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T18:59:19.850Z"
+        },
+        {
+          "id": "derived:dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da:claims-enumerated-source-selection-v3:4c949bb246ec621c2cc7b77bc16b6beadcd2993797e5258e6edd813940761417",
+          "kind": "grounding-review",
+          "usd": 0.0022064,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T18:59:21.568Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "jobId": "8985eca8-a499-4254-a078-94ec12daf39d",
+      "state": "READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+      "durationMs": 2168216,
+      "work": {
+        "verifiedSourceDurationMs": 2168216,
+        "sourceContentHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 2168216,
+        "sourceDurationMs": 2168216,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 2569948,
+      "featureStatus": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "READY"
+        },
+        "chapters": {
+          "state": "READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 1
+        }
+      },
+      "featureRepair": {
+        "state": "READY",
+        "activeFeature": null,
+        "features": {},
+        "updatedAt": "2026-11-18T19:18:16.981Z"
+      },
+      "transcriptAssemblyRepair": {
+        "from": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "to": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "at": "2026-11-18T18:37:39.493Z",
+        "beforeSegments": 740,
+        "afterSegments": 740,
+        "paidTranscriptionRequests": 0
+      },
+      "assemblyVersion": "confidence-and-overlap-v4",
+      "intelligenceDigest": "3bffc933e15610f7dc494d9a2ba816f7e5c321860effef05b4242c610357b93a",
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:37:55.988Z",
+          "responseSha256": "cb712ca404c8c7243347b7ce4a899bb3095f07385b5610efdcbefa4a0a83ba8a",
+          "segments": 544
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "completedAt": "2026-11-18T13:38:54.036Z",
+          "responseSha256": "2b0dbf46b7dabd617d08c41247be579398d836b40330724ca92774688c2bc5ef",
+          "segments": 196
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 740,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 0,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 3080,
+          "textSha256": "458582871e0e531b2a5ffbc2b6ca88d5851196ec25de82f5b68e2abf00d06ef5"
+        },
+        {
+          "id": "0-370",
+          "startMs": 801360,
+          "endMs": 803400,
+          "textSha256": "807cff1f3d34a0e170402d8495ad8ff691ba679c90bb8618b748f14cbafca026"
+        },
+        {
+          "id": "1-195",
+          "startMs": 2166080,
+          "endMs": 2167040,
+          "textSha256": "a613b2a7db2dc396e2b1d0b3b6463a44697d89e6dbc060c5e6916603e3b2cb0a"
+        }
+      ],
+      "brief": {
+        "overview": "Ruth Seely discusses open-source sustainability, Apache Foundation's security projects, and OSI's governance and AI definition efforts amid evolving community challenges.",
+        "themes": [
+          "Open source sustainability",
+          "Apache Software Foundation security initiatives",
+          "Open Source Initiative governance and AI definitions"
+        ],
+        "detail": "Ruth Seely, ASF president and OSI board chair, emphasizes the critical, largely volunteer-driven nature of open-source software and recent ASF security efforts like the Trusted Releases project. She compares open source to an ecosystem needing care to avoid collapse due to unrecognized unpaid labor. OSI has faced governance challenges, initiated efforts to define open-source AI to address rapid technological changes, and focuses on improving board transparency and community collaboration. Sustainability challenges go beyond funding to broader community and governance issues.",
+        "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+        "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T19:00:16.550Z",
+        "usage": {
+          "inputTokens": 890,
+          "outputTokens": 165
+        },
+        "evidenceScope": "canonical-source-retrieval",
+        "sourceSegmentCount": 740,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-2",
+          "1-193",
+          "1-194",
+          "1-195"
+        ],
+        "sourceIdsSha256": "9c6a80d8befa4408e736af927ce74a9f232b7cf05c0b4c264400b4bfb7647641"
+      },
+      "chapters": [
+        {
+          "title": "Introduction and Ruth Seely's Roles in Open Source",
+          "description": "Introduction to Ruth Seely, her role as president of the Apache Software Foundation, and her position as chair of the board of the Open Source Initiative, along with her work at Cloudera.",
+          "startMs": 0,
+          "endMs": 75320,
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-29",
+            "0-30",
+            "0-31"
+          ],
+          "sourceIdsSha256": "fba3db6f5703104207c997f7ea0199e8e3dac08b991522e49e1343c980538124"
+        },
+        {
+          "title": "Genesis and Role of the Open Source Initiative",
+          "description": "This segment covers the origins of the term 'open source' coined during a 1998 meeting in Palo Alto and the early activities of the Open Source Initiative (OSI), including its foundational website launch and its role in stewarding open source licensing for nearly 30 years.",
+          "startMs": 110580,
+          "endMs": 163240,
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-47",
+            "0-48",
+            "0-49",
+            "0-68",
+            "0-69",
+            "0-70"
+          ],
+          "sourceIdsSha256": "cfbc798efc994784314ae43efdb2a2ed3e638da3358d9367918fbd52b120590b"
+        },
+        {
+          "title": "Origins and Growth of Apache and LAMP Stack",
+          "description": "Discussion of the early years of Apache HTTP server, LAMP stack, Red Hat Linux, and the incorporation of the Apache Software Foundation.",
+          "startMs": 165880,
+          "endMs": 225840,
+          "sourceSegmentCount": 21,
+          "sourceSegmentIdsSample": [
+            "0-72",
+            "0-73",
+            "0-74",
+            "0-90",
+            "0-91",
+            "0-92"
+          ],
+          "sourceIdsSha256": "4b87c33c2a3ab76c992889e08e2f9cacad43be65f0e92a4dd380947686dc3b67"
+        },
+        {
+          "title": "Focus on Security in Open Source and Apache Trusted Releases",
+          "description": "Discussion on the increasing importance of security, regulatory impact, AI's role, and the establishment and achievements of the Apache Trusted Releases project and security team.",
+          "startMs": 419440,
+          "endMs": 526640,
+          "sourceSegmentCount": 49,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-233",
+            "0-234",
+            "0-235"
+          ],
+          "sourceIdsSha256": "6ff4eeff9fa56f521f9986fed52801143f15e0dad1474dfeabf63828b7cbbeb2"
+        },
+        {
+          "title": "Concerns on Open Source Ecosystem Sustainability",
+          "description": "The speaker discusses the overarching dependence on open source components in software, emphasizing sustainability beyond just monetary aspects, highlighting security and community dynamics essential for long-term functioning.",
+          "startMs": 709560,
+          "endMs": 831160,
+          "sourceSegmentCount": 60,
+          "sourceSegmentIdsSample": [
+            "0-323",
+            "0-324",
+            "0-325",
+            "0-380",
+            "0-381",
+            "0-382"
+          ],
+          "sourceIdsSha256": "9cd2a8388140a512df61a4f8a44fe17041e023cf41147c0394a9d50011aa4476"
+        },
+        {
+          "title": "Open Source Maintenance as a Microcosm Metaphor",
+          "description": "The metaphor of fixing loose paving stones in a city to describe the challenges faced by open source maintainers, including increasing demands and lack of institutional support.",
+          "startMs": 882800,
+          "endMs": 948920,
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "0-407",
+            "0-408",
+            "0-409",
+            "0-438",
+            "0-439",
+            "0-440"
+          ],
+          "sourceIdsSha256": "74c181cbd8c2e39e595997440aeacf82067641a53d1882914a9c8c8541a08b9b"
+        },
+        {
+          "title": "Discussion about the Open Source Initiative (OSI) and the Open Source Definition",
+          "description": "The conversation covers what the OSI is doing recently, the nature of open source as defined by the community, and the origins of the open source definition from the Debian free software guidelines.",
+          "startMs": 1037400,
+          "endMs": 1082240,
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "0-478",
+            "0-479",
+            "0-480",
+            "0-497",
+            "0-498",
+            "0-499"
+          ],
+          "sourceIdsSha256": "baa5a050f2d1405c8bd3f3c384166c2c1303e4b1955f4092fa6e08338b16758f"
+        },
+        {
+          "title": "Discussion on OSI Board Member Seating and Governance",
+          "description": "Conversation about the governance working group addressing how the OSI will continue to seat board members, reflecting on past elections, misunderstandings of the election process, and efforts towards diverse representation and community engagement.",
+          "startMs": 1143240,
+          "endMs": 1258880,
+          "sourceSegmentCount": 29,
+          "sourceSegmentIdsSample": [
+            "0-526",
+            "0-527",
+            "0-528",
+            "1-8",
+            "1-9",
+            "1-10"
+          ],
+          "sourceIdsSha256": "fd00c0e9a9ee0c2a0f62d7271003ceffd1010ef1d88521d21c08ecdc3e496ab6"
+        },
+        {
+          "title": "Defining Open-Source AI",
+          "description": "Exploration of the challenges and progress in creating a universally accepted definition of open-source AI by OSI.",
+          "startMs": 1265480,
+          "endMs": 1474600,
+          "sourceSegmentCount": 39,
+          "sourceSegmentIdsSample": [
+            "1-12",
+            "1-13",
+            "1-14",
+            "1-48",
+            "1-49",
+            "1-50"
+          ],
+          "sourceIdsSha256": "e9aa31cc35946496baf5a1373c0e55e3e45adec2d00f9d7b9f152eb3052a1f0f"
+        },
+        {
+          "title": "Right vs Relevant in Open Source Definitions",
+          "description": "Debate on the importance of being philosophically correct versus practically relevant in open source and licensing definitions.",
+          "startMs": 1503240,
+          "endMs": 1724760,
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "1-58",
+            "1-59",
+            "1-60",
+            "1-100",
+            "1-101",
+            "1-102"
+          ],
+          "sourceIdsSha256": "1a6cb173e20f578f6568bf922c08c2e4ee4380d29a1c758eeeced5da7acc19dc"
+        },
+        {
+          "title": "Microsoft and Open Source Evolution",
+          "description": "Personal anecdotes on Microsoft’s changing role and attitude toward open source over time.",
+          "startMs": 1724760,
+          "endMs": 1844720,
+          "sourceSegmentCount": 27,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-127",
+            "1-128",
+            "1-129"
+          ],
+          "sourceIdsSha256": "e24256eedd719e541e39c779ca921c984941674cb8974e85b28e131b0cf48504"
+        },
+        {
+          "title": "Open Source Sustainability and Collaboration Efforts",
+          "description": "Discussion on open source sustainability challenges, importance of community, and recent collaborative initiatives among foundations to improve governance, security, and policy.",
+          "startMs": 1881680,
+          "endMs": 2144400,
+          "sourceSegmentCount": 51,
+          "sourceSegmentIdsSample": [
+            "1-138",
+            "1-139",
+            "1-140",
+            "1-186",
+            "1-187",
+            "1-188"
+          ],
+          "sourceIdsSha256": "eac8023a322847e91a75917d081810be23d6d6ff12222c0df2367f5abbf7e53c"
+        }
+      ],
+      "topics": [
+        {
+          "id": "abaf1e272d5f8949",
+          "label": "Introduction and Ruth Seely's Roles in Open Source",
+          "startMs": 0,
+          "endMs": 75320,
+          "chapterTitle": "Introduction and Ruth Seely's Roles in Open Source",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-29",
+            "0-30",
+            "0-31"
+          ],
+          "sourceIdsSha256": "fba3db6f5703104207c997f7ea0199e8e3dac08b991522e49e1343c980538124"
+        },
+        {
+          "id": "32f39aeb9c6b5870",
+          "label": "Genesis and Role of the Open Source Initiative",
+          "startMs": 110580,
+          "endMs": 163240,
+          "chapterTitle": "Genesis and Role of the Open Source Initiative",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-47",
+            "0-48",
+            "0-49",
+            "0-68",
+            "0-69",
+            "0-70"
+          ],
+          "sourceIdsSha256": "cfbc798efc994784314ae43efdb2a2ed3e638da3358d9367918fbd52b120590b"
+        },
+        {
+          "id": "b025ec910dd55538",
+          "label": "Origins and Growth of Apache and LAMP Stack",
+          "startMs": 165880,
+          "endMs": 225840,
+          "chapterTitle": "Origins and Growth of Apache and LAMP Stack",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 21,
+          "sourceSegmentIdsSample": [
+            "0-72",
+            "0-73",
+            "0-74",
+            "0-90",
+            "0-91",
+            "0-92"
+          ],
+          "sourceIdsSha256": "4b87c33c2a3ab76c992889e08e2f9cacad43be65f0e92a4dd380947686dc3b67"
+        },
+        {
+          "id": "d95d31b57e4a7064",
+          "label": "Focus on Security in Open Source and Apache Trusted Releases",
+          "startMs": 419440,
+          "endMs": 526640,
+          "chapterTitle": "Focus on Security in Open Source and Apache Trusted Releases",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 49,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-233",
+            "0-234",
+            "0-235"
+          ],
+          "sourceIdsSha256": "6ff4eeff9fa56f521f9986fed52801143f15e0dad1474dfeabf63828b7cbbeb2"
+        },
+        {
+          "id": "9013b3c50ae6b41c",
+          "label": "Concerns on Open Source Ecosystem Sustainability",
+          "startMs": 709560,
+          "endMs": 831160,
+          "chapterTitle": "Concerns on Open Source Ecosystem Sustainability",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 60,
+          "sourceSegmentIdsSample": [
+            "0-323",
+            "0-324",
+            "0-325",
+            "0-380",
+            "0-381",
+            "0-382"
+          ],
+          "sourceIdsSha256": "9cd2a8388140a512df61a4f8a44fe17041e023cf41147c0394a9d50011aa4476"
+        },
+        {
+          "id": "da45b31fde2c8fd1",
+          "label": "Open Source Maintenance as a Microcosm Metaphor",
+          "startMs": 882800,
+          "endMs": 948920,
+          "chapterTitle": "Open Source Maintenance as a Microcosm Metaphor",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "0-407",
+            "0-408",
+            "0-409",
+            "0-438",
+            "0-439",
+            "0-440"
+          ],
+          "sourceIdsSha256": "74c181cbd8c2e39e595997440aeacf82067641a53d1882914a9c8c8541a08b9b"
+        },
+        {
+          "id": "a5bea70e24091456",
+          "label": "Discussion about the Open Source Initiative (OSI) and the Open Source Definition",
+          "startMs": 1037400,
+          "endMs": 1082240,
+          "chapterTitle": "Discussion about the Open Source Initiative (OSI) and the Open Source Definition",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "0-478",
+            "0-479",
+            "0-480",
+            "0-497",
+            "0-498",
+            "0-499"
+          ],
+          "sourceIdsSha256": "baa5a050f2d1405c8bd3f3c384166c2c1303e4b1955f4092fa6e08338b16758f"
+        },
+        {
+          "id": "a4d652a70e20161e",
+          "label": "Discussion on OSI Board Member Seating and Governance",
+          "startMs": 1143240,
+          "endMs": 1258880,
+          "chapterTitle": "Discussion on OSI Board Member Seating and Governance",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 29,
+          "sourceSegmentIdsSample": [
+            "0-526",
+            "0-527",
+            "0-528",
+            "1-8",
+            "1-9",
+            "1-10"
+          ],
+          "sourceIdsSha256": "fd00c0e9a9ee0c2a0f62d7271003ceffd1010ef1d88521d21c08ecdc3e496ab6"
+        },
+        {
+          "id": "80c94db3337c3801",
+          "label": "Defining Open-Source AI",
+          "startMs": 1265480,
+          "endMs": 1474600,
+          "chapterTitle": "Defining Open-Source AI",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 39,
+          "sourceSegmentIdsSample": [
+            "1-12",
+            "1-13",
+            "1-14",
+            "1-48",
+            "1-49",
+            "1-50"
+          ],
+          "sourceIdsSha256": "e9aa31cc35946496baf5a1373c0e55e3e45adec2d00f9d7b9f152eb3052a1f0f"
+        },
+        {
+          "id": "1a34180434058115",
+          "label": "Right vs Relevant in Open Source Definitions",
+          "startMs": 1503240,
+          "endMs": 1724760,
+          "chapterTitle": "Right vs Relevant in Open Source Definitions",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "1-58",
+            "1-59",
+            "1-60",
+            "1-100",
+            "1-101",
+            "1-102"
+          ],
+          "sourceIdsSha256": "1a6cb173e20f578f6568bf922c08c2e4ee4380d29a1c758eeeced5da7acc19dc"
+        },
+        {
+          "id": "71fe9aafe953bc80",
+          "label": "Microsoft and Open Source Evolution",
+          "startMs": 1724760,
+          "endMs": 1844720,
+          "chapterTitle": "Microsoft and Open Source Evolution",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 27,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-127",
+            "1-128",
+            "1-129"
+          ],
+          "sourceIdsSha256": "e24256eedd719e541e39c779ca921c984941674cb8974e85b28e131b0cf48504"
+        },
+        {
+          "id": "a89db6ba4f07f084",
+          "label": "Open Source Sustainability and Collaboration Efforts",
+          "startMs": 1881680,
+          "endMs": 2144400,
+          "chapterTitle": "Open Source Sustainability and Collaboration Efforts",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 51,
+          "sourceSegmentIdsSample": [
+            "1-138",
+            "1-139",
+            "1-140",
+            "1-186",
+            "1-187",
+            "1-188"
+          ],
+          "sourceIdsSha256": "eac8023a322847e91a75917d081810be23d6d6ff12222c0df2367f5abbf7e53c"
+        },
+        {
+          "id": "917cfbf35581e628",
+          "label": "Open source sustainability",
+          "startMs": 64080,
+          "endMs": 812000,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-28",
+            "0-29",
+            "0-150",
+            "0-356",
+            "0-363",
+            "0-373"
+          ],
+          "sourceIdsSha256": "cf51abf7955d6c6a16c50eec214282cb03332965e078293e53e1765ffa29341d"
+        },
+        {
+          "id": "31263392b9e30e98",
+          "label": "Apache Software Foundation security initiatives",
+          "startMs": 314400,
+          "endMs": 475040,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-140",
+            "0-141",
+            "0-142",
+            "0-208",
+            "0-209",
+            "0-210"
+          ],
+          "sourceIdsSha256": "8039ee5413457feabb6c3a2d5cbd55d4801ebe568e430ef58e2ef9a953bd5c01"
+        },
+        {
+          "id": "5fd926d8c3e340b5",
+          "label": "Open Source Initiative governance and AI definitions",
+          "startMs": 99600,
+          "endMs": 1289160,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-43",
+            "0-44",
+            "0-45",
+            "1-13",
+            "1-14",
+            "1-15"
+          ],
+          "sourceIdsSha256": "f1d37ca99c549b1df13f14308f3276643e28592eeaa97a928e2a909308675461"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 740,
+          "totalSegments": 740,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 3,
+          "usd": 0.235,
+          "seconds": 2350,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 20,
+          "usd": 0.0332756,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "grounding-review": {
+          "requests": 60,
+          "usd": 0.10026400000000002,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "embedding": {
+          "requests": 24,
+          "usd": 0.00017101999999999997,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "derived:e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb:claims-enumerated-source-selection-v3:489f6c71a6fa2acc736b5186406de2727c41fd477fbe58d110a254216316a898",
+          "kind": "grounding-review",
+          "usd": 0.00224,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:00:25.947Z"
+        },
+        {
+          "id": "derived:e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb:claims-enumerated-source-selection-v3:d706bd11fdedc536abdf7821442c9e64408c50b19c7b4338891f5754e118ff7a",
+          "kind": "grounding-review",
+          "usd": 0.0022852,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:00:27.990Z"
+        },
+        {
+          "id": "derived:e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb:claims-enumerated-source-selection-v3:b44e87f47906742299ede3eb6ac049325dcc1a28ba8ba5d68175a4ca66c2ad89",
+          "kind": "grounding-review",
+          "usd": 0.0022324,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T19:00:30.068Z"
+        }
+      ]
+    }
+  ],
+  "accounting": {
+    "activeJobs": [],
+    "at": "2026-11-18T19:22:00.649Z",
+    "controls": {
+      "enabled": true,
+      "dailyUsd": 5,
+      "monthlyUsd": 25,
+      "dailyTranscriptionSeconds": 28800,
+      "maxEpisodeSeconds": 14400,
+      "textModel": "gpt-4.1-mini",
+      "transcriptionModel": "whisper-1",
+      "audioAnalysisEnabled": true
+    },
+    "totals": {
+      "day": 3.0863102600000016,
+      "month": 3.0863102600000016,
+      "transcriptionSeconds": 22171
+    },
+    "reservations": [],
+    "usageEntries": 1002,
+    "jobs": [
+      {
+        "title": "Trusting your computing with Lance and Anton",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+        "jobId": "e078c2aa-3ef3-4df5-8756-0cff5beefce4",
+        "state": "READY",
+        "code": null,
+        "reason": null,
+        "stage": "INDEXING",
+        "work": {
+          "verifiedSourceDurationMs": 2300578,
+          "sourceContentHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+          "completedChunks": 2,
+          "totalChunks": 2,
+          "completedSourceMs": 2300578,
+          "sourceDurationMs": 2300578,
+          "nextChunkSeconds": 0,
+          "completedBatches": 2,
+          "totalBatches": 2,
+          "synthesisPending": false
+        },
+        "featureStatus": {
+          "transcript": {
+            "state": "READY"
+          },
+          "brief": {
+            "state": "READY"
+          },
+          "chapters": {
+            "state": "READY"
+          },
+          "topics": {
+            "state": "READY"
+          },
+          "search": {
+            "state": "READY"
+          },
+          "moments": {
+            "state": "READY"
+          },
+          "adCandidates": {
+            "state": "READY",
+            "candidateCount": 0
+          }
+        },
+        "featureRepair": {
+          "state": "READY",
+          "activeFeature": null,
+          "features": {},
+          "updatedAt": "2026-11-18T19:16:46.438Z"
+        },
+        "completedAt": "2026-11-18T14:32:15.293Z"
+      },
+      {
+        "title": "HPR2578: LinuxLUGcast 102 the lost episode",
+        "feedUrl": "https://hackerpublicradio.org/hpr_mp3_rss.php?hostid=269&limit=100",
+        "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+        "jobId": "b8ddcd2e-ad04-4ae0-b60a-88ee9f008566",
+        "state": "READY",
+        "code": null,
+        "reason": null,
+        "stage": "INDEXING",
+        "work": {
+          "verifiedSourceDurationMs": 14112722,
+          "sourceContentHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+          "completedChunks": 12,
+          "totalChunks": 12,
+          "completedSourceMs": 14112722,
+          "sourceDurationMs": 14112722,
+          "nextChunkSeconds": 0,
+          "completedBatches": 6,
+          "totalBatches": 6,
+          "synthesisPending": false
+        },
+        "featureStatus": {
+          "transcript": {
+            "state": "READY"
+          },
+          "brief": {
+            "state": "READY"
+          },
+          "chapters": {
+            "state": "READY"
+          },
+          "topics": {
+            "state": "READY"
+          },
+          "search": {
+            "state": "READY"
+          },
+          "moments": {
+            "state": "READY"
+          },
+          "adCandidates": {
+            "state": "PENDING",
+            "candidateCount": null
+          }
+        },
+        "featureRepair": {
+          "state": "READY",
+          "activeFeature": null,
+          "features": {},
+          "updatedAt": "2026-11-18T19:17:09.359Z"
+        },
+        "completedAt": "2026-11-18T18:16:34.133Z"
+      },
+      {
+        "title": "Finding missing security backports with Roi Nisimi",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+        "jobId": "d2baba8e-7906-4840-a74b-a6b25b9e2825",
+        "state": "READY",
+        "code": null,
+        "reason": null,
+        "stage": "INDEXING",
+        "work": {
+          "verifiedSourceDurationMs": 1773062,
+          "sourceContentHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+          "completedChunks": 2,
+          "totalChunks": 2,
+          "completedSourceMs": 1773062,
+          "sourceDurationMs": 1773062,
+          "nextChunkSeconds": 0,
+          "completedBatches": 2,
+          "totalBatches": 2,
+          "synthesisPending": false
+        },
+        "featureStatus": {
+          "transcript": {
+            "state": "READY"
+          },
+          "brief": {
+            "state": "READY"
+          },
+          "chapters": {
+            "state": "READY"
+          },
+          "topics": {
+            "state": "READY"
+          },
+          "search": {
+            "state": "READY"
+          },
+          "moments": {
+            "state": "READY"
+          },
+          "adCandidates": {
+            "state": "READY",
+            "candidateCount": 0
+          }
+        },
+        "featureRepair": {
+          "state": "READY",
+          "activeFeature": null,
+          "features": {
+            "brief": {
+              "state": "READY",
+              "attempt": 1,
+              "completedAt": "2026-11-18T19:17:32.295Z"
+            }
+          },
+          "updatedAt": "2026-11-18T19:17:53.913Z"
+        },
+        "completedAt": "2026-11-18T14:16:14.335Z"
+      },
+      {
+        "title": "The Apache Software Foundation with Ruth Suehle",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+        "jobId": "8985eca8-a499-4254-a078-94ec12daf39d",
+        "state": "READY",
+        "code": null,
+        "reason": null,
+        "stage": "INDEXING",
+        "work": {
+          "verifiedSourceDurationMs": 2168216,
+          "sourceContentHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+          "completedChunks": 2,
+          "totalChunks": 2,
+          "completedSourceMs": 2168216,
+          "sourceDurationMs": 2168216,
+          "nextChunkSeconds": 0,
+          "completedBatches": 2,
+          "totalBatches": 2,
+          "synthesisPending": false
+        },
+        "featureStatus": {
+          "transcript": {
+            "state": "READY"
+          },
+          "brief": {
+            "state": "READY"
+          },
+          "chapters": {
+            "state": "READY"
+          },
+          "topics": {
+            "state": "READY"
+          },
+          "search": {
+            "state": "READY"
+          },
+          "moments": {
+            "state": "READY"
+          },
+          "adCandidates": {
+            "state": "READY",
+            "candidateCount": 1
+          }
+        },
+        "featureRepair": {
+          "state": "READY",
+          "activeFeature": null,
+          "features": {},
+          "updatedAt": "2026-11-18T19:18:16.981Z"
+        },
+        "completedAt": "2026-11-18T14:15:17.670Z"
+      }
+    ]
+  },
+  "awsBilling": [
+    {
+      "TimePeriod": {
+        "Start": "2026-11-01",
+        "End": "2026-11-18"
+      },
+      "Total": {
+        "UnblendedCost": {
+          "Amount": "11.9533048685",
+          "Unit": "USD"
+        }
+      },
+      "Groups": [],
+      "Estimated": true
+    }
+  ]
+}

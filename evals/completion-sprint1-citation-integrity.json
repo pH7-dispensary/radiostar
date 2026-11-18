@@ -1,0 +1,408 @@
+{
+  "at": "2026-11-18T19:25:22.395Z",
+  "apiEvidenceSha256": "5fb9c070c8b131b2aea788ba7339702babc6fba23d0ae59a73c3b656c6a57606",
+  "referencesSha256": "8d3c883cc39b8b6961a59e46513cab7143569a81f8412998d0d9c2df9ea7a786",
+  "checked": 57,
+  "invalid": 0,
+  "checks": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-85",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-89",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-103",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-388",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-87",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+      "segmentId": "0-214",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-197",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-126",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-85",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-89",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-103",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-388",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-87",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-36",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-43",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "5-182",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-24",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "5-189",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-36",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-43",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "5-182",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "6-24",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "5-189",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-473",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+      "segmentId": "1-160",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-230",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-20",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-222",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+      "segmentId": "0-338",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "1-81",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+      "segmentId": "1-173",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-230",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-222",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "1-81",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-48",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segmentId": "0-21",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-57",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "segmentId": "0-444",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-178",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-33",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "segmentId": "0-457",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-112",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "segmentId": "0-394",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-324",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-178",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-112",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-324",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-518",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-311",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "0-217",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "0-215",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "0-58",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "2-163",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "segmentId": "0-210",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-325",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "1-331",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "0-40",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    }
+  ]
+}

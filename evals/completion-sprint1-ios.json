@@ -1,0 +1,14 @@
+{
+  "id": "95244e6b-3045-457c-91f3-a3f81b23de8f",
+  "status": "FINISHED",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "19",
+  "gitCommitHash": "a9d026f61d728851aa7687c242a556cc711f526b",
+  "completedAt": "2026-11-18T17:40:44.525Z",
+  "nativeDiffFromBuild": "native/app.json buildNumber 18 → 19 only; native application source unchanged.",
+  "appleStatus": "FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED",
+  "ownerDecision": "I’ll handle Apple later",
+  "submitted": false,
+  "availableInTestFlight": false,
+  "physicalIphoneVerified": false
+}
