@@ -51,7 +51,9 @@ export function parseFeed(xml, feedUrl, limit = 30, now = Date.now()) {
       if(publicUrl(url)) refs.push({url,type:/\.vtt(?:\?|$)/i.test(url)?'text/vtt':/\.srt(?:\?|$)/i.test(url)?'application/x-subrip':'text/html',language:'und'});
     }
     if(!audioUrl) diagnostics.push({episodeId:id,code:'INVALID_AUDIO_ENCLOSURE'});
+    const page=value(n,'link') || n.children.find(c=>c.name==='link' && c.attributes.rel==='alternate')?.attributes.href;
     return {id,title:clean(value(n,'title'))||'Untitled episode',publishedAt:value(n,'pubDate')||value(n,'published')||value(n,'updated'),duration:value(n,'itunes:duration'),description:clean(description),audioUrl,
+      ...(publicUrl(page)?{webUrl:page}:{}),
       withdrawn:/^(true|yes|1)$/i.test(value(n,'podcast:withdrawn')||value(n,'withdrawn')),hasPublisherTranscript:refs.length>0,
       rightsEvidence:publisherRightsEvidence({channelXml,itemXml,feedUrl}),refs};
   });

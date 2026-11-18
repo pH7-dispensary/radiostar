@@ -83,12 +83,8 @@ export class BudgetLedger {
         throw Error("Invalid budget reservation.");
       if (this.reservations.has(id) || this.usage.some((x) => x.id === id))
         throw Error("Duplicate budget reservation.");
-      const totals = this.totals();
-      if (
-        totals.day + usd > this.controls.dailyUsd ||
-        totals.month + usd > this.controls.monthlyUsd
-      )
-        throw Error("The intelligence budget has been reached.");
+      const capacity = this.capacity({ usd, seconds, kind });
+      if (!capacity.available) throw Object.assign(Error(capacity.reason === "DAILY_AUDIO" ? "The daily transcription duration budget has been reached." : "The intelligence budget has been reached."), { code: "BUDGET_LIMIT", capacity });
       if (
         !Number.isFinite(sourceSeconds) ||
         sourceSeconds < 0 ||
@@ -98,7 +94,7 @@ export class BudgetLedger {
       if (
         kind === "transcription" &&
         (sourceSeconds > this.controls.maxEpisodeSeconds ||
-          totals.transcriptionSeconds + seconds >
+          this.totals().transcriptionSeconds + seconds >
             this.controls.dailyTranscriptionSeconds)
       )
         throw Error(sourceSeconds > this.controls.maxEpisodeSeconds ? "This episode is longer than the current audio transcription duration limit." : "The daily transcription duration budget has been reached.");
@@ -106,6 +102,21 @@ export class BudgetLedger {
       this.reservations.set(id, row);
       return row;
     });
+  }
+  // Estimates are advisory; reserve() repeats this check inside the existing
+  // SQLite transaction, including concurrent reservations and chunk overlap.
+  capacity({ usd = 0, seconds = 0, kind = "text" } = {}, now = Date.now()) {
+    this.refresh();
+    const totals = this.totals(now), limits = this.controls, date = new Date(now);
+    const monthly = totals.month + usd > limits.monthlyUsd;
+    const daily = totals.day + usd > limits.dailyUsd;
+    const audio = kind === "transcription" && totals.transcriptionSeconds + seconds > limits.dailyTranscriptionSeconds;
+    const available = limits.enabled && !monthly && !daily && !audio;
+    return { available, requiredUsd: usd, requiredSeconds: seconds,
+      remainingDailyUsd: Math.max(0, limits.dailyUsd - totals.day), remainingMonthlyUsd: Math.max(0, limits.monthlyUsd - totals.month),
+      remainingAudioSeconds: Math.max(0, limits.dailyTranscriptionSeconds - totals.transcriptionSeconds),
+      reason: !limits.enabled ? "PROCESSING_DISABLED" : monthly ? "MONTHLY_BUDGET" : daily ? "DAILY_BUDGET" : audio ? "DAILY_AUDIO" : null,
+      resumeAfter: available || !limits.enabled ? null : new Date(monthly ? Date.UTC(date.getUTCFullYear(), date.getUTCMonth()+1, 1) : Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()+1)).toISOString() };
   }
   reconcile(
     id,

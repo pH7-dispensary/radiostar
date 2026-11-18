@@ -65,7 +65,19 @@ export class SemanticSearch {
   async build(index, options = {}) {
     const id = options.key;
     if (this.inflight.has(id)) return this.inflight.get(id);
-    const work = this.buildStage(index, options).finally(() =>
+    const previous = this.store.get('semantic-index',id);
+    if (previous?.fingerprint === index.fingerprint && (previous.retryable === false || Date.parse(previous.retryAfter || '') > Date.now())) return previous;
+    const work = this.buildStage(index, options).catch(error=>{
+      const current=this.store.get('semantic-index',id);
+      if(current?.fingerprint === index.fingerprint && current.state !== 'READY') {
+        const budget=error.code==='BUDGET_LIMIT'||/budget/i.test(error.message), unknown=error.code==='PROVIDER_OUTCOME_UNKNOWN';
+        const failures=(current.failures||0)+(budget?0:1), retryable=budget || !unknown && failures<3;
+        this.store.set('semantic-index',id,{...current,failures,retryable,
+          executionState:budget?'WAITING_FOR_CAPACITY':retryable?'RETRY_SCHEDULED':'FAILED',code:error.code || 'INDEXING_FAILED',
+          retryAfter:budget?error.capacity?.resumeAfter || new Date(Date.now()+3600000).toISOString():retryable?new Date(Date.now()+60000*2**failures).toISOString():null});
+      }
+      throw error;
+    }).finally(() =>
       this.inflight.delete(id),
     );
     this.inflight.set(id, work);
@@ -137,6 +149,7 @@ export class SemanticSearch {
       );
       cursor += chunk.length;
       const next = {
+        failures: previous?.failures || 0,
         version: SEMANTIC_VERSION,
         fingerprint: index.fingerprint,
         cursor,

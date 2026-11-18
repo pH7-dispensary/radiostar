@@ -839,6 +839,11 @@ export function createStarCastServer({
       rightsCode,
       reason,
       availableFeatures,
+      featureExecution:Object.fromEntries(Object.entries(job?.featureExecution || {}).map(([name,feature])=>{
+        const mapping={brief:[flags.episodeBriefs,'episode-brief'],chapters:[flags.exploreEpisode,'smart-chapters'],topics:[flags.exploreEpisode,'topics'],moments:[flags.momentSearch,'find-moment'],search:[flags.conversationSearch,'conversation-search'],semantic:[flags.conversationSearch,'conversation-search']};
+        const permitted=mapping[name]?mapping[name][0]&&featureAllowed(mapping[name][1]):processing.allowed;
+        return [name,permitted?feature:{state:'INELIGIBLE',completeness:'NONE',code:'FEATURE_NOT_AUTHORISED'}];
+      })),
       featureStatus:Object.fromEntries(Object.entries(job?.featureStatus || {}).map(([name,feature])=>{
         const permitted=name==="transcript" ? processing.allowed : name==="adCandidates" ? processing.allowed&&rights.evaluate({feature:"ad-detection",feedUrl,episodeId}).allowed : Boolean(availableFeatures[name]);
         // Readiness is independent of eligibility: pending permitted features
@@ -1311,7 +1316,7 @@ export function createStarCastServer({
       const audioVariant = createHash("sha256").update(episode.audioUrl || "").digest("hex");
       const cachedTranscript = store.get("transcript", episodeKey(input.feedUrl, episode.id) + ":" + audioVariant) || store.get("audio-transcript", audioVariant);
       const route = cachedTranscript || (job?.transcript && job?.episode?.audioUrl === episode.audioUrl) ? "CACHE_CHECK" : publisher ? "PUBLISHER_TRANSCRIPT" : processing.rights.canTranscribeAudio ? "AUDIO_FALLBACK" : "TRANSCRIPT_UNAVAILABLE";
-      const audioEligible = route !== "AUDIO_FALLBACK" || (pipeline.audioEnabled && duration > 0 && duration <= ledger.controls.maxEpisodeSeconds * 1000);
+      const audioEligible = route !== "AUDIO_FALLBACK" || (pipeline.audioEnabled && (!duration || duration <= ledger.controls.maxEpisodeSeconds * 1000));
       return {
         episodeId: episode.id, title: episode.title, previouslyEligible: prior.allowed && rights.evaluate({ ...query, feature: "intelligence-display" }).allowed,
         eligible: allowed && audioEligible && route !== "TRANSCRIPT_UNAVAILABLE",
@@ -1322,7 +1327,8 @@ export function createStarCastServer({
         reason: !processing.allowed ? processing.reason : !display.allowed ? display.reason : null,
         route, existingJobId: job?.jobId || null, cached: job?.state === "READY",
         active: Boolean(job && !job.completedAt && ["QUEUED", "PROCESSING", "PARTIAL_READY", "DISCOVERING", "UNDERSTANDING", "ORGANISING", "TRANSCRIBING"].includes(job.state)),
-        estimatedAudioUsd: route === "AUDIO_FALLBACK" && duration ? Number((duration / 1000 * 0.0001).toFixed(4)) : 0,
+        durationVerification:duration?'RSS_METADATA':'BOUNDED_AUDIO_PROBE_REQUIRED',
+        estimatedAudioUsd: route === "AUDIO_FALLBACK" ? duration ? Number((duration / 1000 * 0.0001).toFixed(4)) : null : 0,
         revision: rights.assessmentRevision(input.feedUrl, episode.id),
       };
     });
@@ -1372,7 +1378,7 @@ export function createStarCastServer({
     const jobs = [];
     for (const episodeId of preview.targetIds) {
       try {
-        jobs.push({ episodeId, ...await pipeline.request({ feedUrl: input.feedUrl, episodeId, allowAudio: approval.record.canTranscribeAudio, retry: true, trigger: "admin" }) });
+        jobs.push({ episodeId, ...await pipeline.request({ feedUrl: input.feedUrl, episodeId, allowAudio: approval.record.canTranscribeAudio, retry: true, trigger: "admin", platformProcessing:true }) });
       } catch {
         jobs.push({ episodeId, state: "FAILED", code: "PROCESSING_REQUEST_FAILED", reason: "Approval was saved, but enqueueing failed. Inspect the episode and retry eligible work." });
       }

@@ -18,6 +18,9 @@ try {
  assert.equal(store.get('semantic-index',key).cursor,0);
  const restarted=new SemanticSearch({store,requests:{canPersist:()=>true}});
  restarted.embed=async texts=>{calls++;return texts.map(()=>Array(DIMENSIONS).fill(0.25));};
+ assert.equal((await restarted.build(index,{key})).executionState,'WAITING_FOR_CAPACITY');
+ assert.equal(calls,1,'Capacity backoff survives restart without provider calls');
+ store.set('semantic-index',key,{...store.get('semantic-index',key),retryAfter:new Date(0).toISOString()});
  const ready=await restarted.build(index,{key});
  assert(validSemanticIndex(ready,index));
  await restarted.build(index,{key});assert.equal(calls,2,'Completed checkpoint reuses the index without another paid batch');

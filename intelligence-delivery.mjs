@@ -5,6 +5,23 @@ import { RETRIEVAL_VERSION } from "./retrieval.mjs";
 
 // Local derived artefacts, not another provider, queue or processing service.
 export const DELIVERY_VERSION = "grounded-delivery-v2";
+// Persisted alongside the legacy featureStatus contract for installed clients.
+// Partial usable output is explicitly distinguished from a complete feature.
+export function featureExecution(value, semantic = null) {
+  const waiting = value.code === 'BUDGET_LIMIT', yielded = value.code === 'PROCESSING_YIELD';
+  const pending = waiting ? 'WAITING_FOR_CAPACITY' : yielded ? 'QUEUED' : value.state === 'QUEUED' ? 'QUEUED' :
+    value.state === 'BLOCKED' ? 'INELIGIBLE' : value.state === 'FAILED' ? value.retryable ? 'RETRY_SCHEDULED' : 'FAILED' : value.completedAt ? 'FAILED' : value.state ? 'PROCESSING' : 'NOT_STARTED';
+  const result = {};
+  for (const name of ['transcript','brief','chapters','topics','search','moments']) {
+    const feature = value.featureStatus?.[name], ready = ['READY','PARTIAL_READY'].includes(feature?.state);
+    result[name] = {state:ready?'READY':feature?.code==='UNTIMED_TRANSCRIPT'?'INELIGIBLE':pending,
+      completeness:ready?(feature.state==='PARTIAL_READY'?'PARTIAL':'COMPLETE'):'NONE',
+      ...(ready?{}:{code:feature?.code || value.code || null,resumeAfter:value.resumeAfter || null})};
+  }
+  result.semantic = {state:semantic?.state==='READY'?'READY':semantic?.executionState || (semantic?.state==='BUILDING'?'PROCESSING':'NOT_STARTED'),
+    completedSegments:semantic?.cursor || 0,totalSegments:semantic?.total || null,code:semantic?.code || null,resumeAfter:semantic?.retryAfter || null};
+  return result;
+}
 export const transcriptFingerprint = (t) => createHash("sha256").update(JSON.stringify([
   t.episodeId, t.transcriptVersion, t.audioVariant, t.audioContentHash, t.language, t.quality, t.segments,
 ])).digest("hex");

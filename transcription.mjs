@@ -1,4 +1,4 @@
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, statfs } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
@@ -84,7 +84,7 @@ export function mergeTranscriptSegments(segments) {
   }
   return merged;
 }
-export async function prepareAudio(audioUrl, maxSeconds) {
+export async function prepareAudio(audioUrl, maxSeconds, { signal, download = downloadPublicAudio } = {}) {
   if (!Number.isFinite(maxSeconds) || maxSeconds <= 0 || maxSeconds > 14400) throw Error('Invalid audio processing duration limit.');
   if (!publicUrl(audioUrl))
     throw Error("A public HTTPS audio source is required.");
@@ -95,7 +95,11 @@ export async function prepareAudio(audioUrl, maxSeconds) {
     // Allow four hours up to 512 kb/s plus tags, with a 1 GiB disk ceiling.
     // Ad-only acquisition never enters this whole-source path.
     const maximumBytes = Math.min(1024 ** 3, Math.ceil(maxSeconds * 64000) + 8 * 1024 ** 2);
-    const delivery = await downloadPublicAudio(audioUrl, path, maximumBytes);
+    const disk = await statfs(directory);
+    if (disk.bavail * disk.bsize < maximumBytes + 512 * 1024 ** 2)
+      throw Object.assign(Error("Insufficient temporary audio capacity."), { code: "SOURCE_UNAVAILABLE" });
+    signal?.throwIfAborted();
+    const delivery = await download(audioUrl, path, maximumBytes, { signal });
     const { stdout } = await exec(
       ffprobe.path,
       [
@@ -109,7 +113,7 @@ export async function prepareAudio(audioUrl, maxSeconds) {
         "json",
         path,
       ],
-      { timeout: 30_000 },
+      { timeout: 30_000, signal },
     );
     const durationMs = Math.ceil(
       Number(JSON.parse(stdout).format?.duration) * 1000,
@@ -156,11 +160,10 @@ export async function prepareAudio(audioUrl, maxSeconds) {
             "48k",
             output,
           ],
-          { timeout: 120_000 },
+          { timeout: 120_000, signal },
         );
-        return toFile(await readFile(output), "chunk.mp3", {
-          type: "audio/mpeg",
-        });
+        try { return await toFile(await readFile(output), "chunk.mp3", { type: "audio/mpeg" }); }
+        finally { await rm(output, { force: true }); }
       },
     };
   } catch (error) {
@@ -184,6 +187,7 @@ export async function transcribeOnDemand({
   beforePaid = () => {},
   canPersist = () => true,
   onProgress = () => {},
+  shouldYield = () => false,
 }) {
   signal?.throwIfAborted();
   if (!authorised)
@@ -200,6 +204,7 @@ export async function transcribeOnDemand({
       "This episode is longer than the current audio processing limit.",
     );
     const responses = [];
+    let newChunks = 0;
     for (const part of plan) {
       signal?.throwIfAborted();
       const key = checkpointPrefix && `${checkpointPrefix}:${model}:${durationMs}:${part.index}`;
@@ -207,13 +212,15 @@ export async function transcribeOnDemand({
       if (saved?.state === "SENDING") throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked."), { code: "PROVIDER_OUTCOME_UNKNOWN" });
       let response = saved?.response;
       if (!response) {
+        const seconds = Math.ceil((part.endMs - part.startMs) / 1000);
+        const capacity = ledger.capacity({ usd: seconds * 0.0001, seconds, kind: "transcription" });
+        if (!capacity.available) throw Object.assign(Error(capacity.reason === "DAILY_AUDIO" ? "The daily transcription duration budget has been reached." : "The intelligence budget has been reached."), { code: "BUDGET_LIMIT", capacity });
         const file = await chunkFactory(part);
         signal?.throwIfAborted();
         beforePaid();
         // Re-evaluate expiring controls before every paid chunk. The source
         // cap applies to the full episode; daily usage includes chunk overlap.
         if (durationMs > ledger.controls.maxEpisodeSeconds * 1000) throw Error("This episode is longer than the current audio processing limit.");
-        const seconds = Math.ceil((part.endMs - part.startMs) / 1000);
         const id = key || `${requestId}:${part.index}`;
         ledger.reserve({ id, usd: seconds * 0.0001, kind: "transcription", seconds, jobId: requestId.split(":audio")[0], episodeKey: checkpointPrefix?.split(":")[0] });
         try {
@@ -225,7 +232,15 @@ export async function transcribeOnDemand({
             ledger.reconcile(id, { usd: seconds * 0.0001, seconds });
           };
           if (checkpointStore) checkpointStore.transaction(save); else save();
+          newChunks++;
         } catch (error) {
+          // An explicit rate-limit rejection is not an unknown paid outcome.
+          // Timeouts, transport loss and server errors remain conservative.
+          if (error.status === 429) {
+            const cancel = () => { ledger.cancel(id); if (key) checkpointStore?.delete("transcription-checkpoint", key); };
+            if (checkpointStore) checkpointStore.transaction(cancel); else cancel();
+            throw Object.assign(Error("Transcription provider rate limited the request."), { code: "PROVIDER_RATE_LIMIT", retryable: true });
+          }
           ledger.reconcile(id, { usd: seconds * 0.0001, seconds, failed: true, uncertain: true });
           throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked.", { cause: error }), { code: "PROVIDER_OUTCOME_UNKNOWN" });
         }
@@ -257,7 +272,10 @@ export async function transcribeOnDemand({
           chunkEndMs: part.endMs,
         });
       }
-      onProgress({ completedChunks: part.index + 1, totalChunks: plan.length, completedSourceMs: part.endMs, sourceDurationMs: durationMs });
+      const next = plan[part.index + 1];
+      onProgress({ completedChunks: part.index + 1, totalChunks: plan.length, completedSourceMs: part.endMs, sourceDurationMs: durationMs,
+        nextChunkSeconds: next ? Math.ceil((next.endMs - next.startMs) / 1000) : 0 });
+      if (next && newChunks >= 2 && shouldYield()) throw Object.assign(Error("Checkpoint saved; another queued episode will receive processing capacity."), { code: "PROCESSING_YIELD" });
     }
     const segments = mergeTranscriptSegments(responses),
       quality = assessTranscript({ segments, durationMs });

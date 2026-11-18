@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { measuredProcessingEstimate } from "./processing-estimate.mjs";
 import { publicUrl } from "./safe-network.mjs";
 import { setImmediate as yieldToRequests } from "node:timers/promises";
+import { planAudioSegments } from './transcription.mjs';
 
 const kind = "followed-preparation";
 const iso = () => new Date().toISOString();
@@ -210,7 +211,20 @@ export class FollowedPreparation {
     const limits = { ...this.ledger.controls, ...this.testingMode.limits(this.testingMode.platformContext()) }, totals = this.ledger.totals();
     const audio = pending.filter(v => !v.acquisition?.transcriptCacheHit && v.acquisition?.requiresAudio);
     const completedLast24Hours = window.filter(v => v.state === "READY" && Date.parse(v.completedAt) >= Date.now() - 86400000).length;
+    const eligiblePending=pending.filter(v=>v.eligible);
+    const plannedSeconds=eligiblePending.filter(v=>!v.acquisition?.transcriptCacheHit).reduce((n,v)=>{
+      const seconds=v.acquisition?.durationSeconds;
+      return n+(seconds?planAudioSegments({durationMs:seconds*1000}).reduce((sum,p)=>sum+Math.ceil((p.endMs-p.startMs)/1000),0):0);
+    },0);
+    const plannedUsd=plannedSeconds*0.0001+eligiblePending.reduce((n,v)=>n+(v.estimate?.textUsd||0),0);
+    const capacityPlanning={basis:'RSS durations plus deterministic chunk overlap; potential audio fallback for unverified publisher references; text is a planning allowance, not measured usage',
+      eligibleEpisodes:eligiblePending.length,blockedEpisodes:pending.length-eligiblePending.length,unknownDurations:eligiblePending.filter(v=>!v.acquisition?.durationSeconds&&!v.acquisition?.transcriptCacheHit).length,
+      requiredAudioSeconds:plannedSeconds,estimatedModelUsd:plannedUsd,
+      options:[24,72].map(hours=>({hours,requiredDailyAudioSeconds:Math.ceil(plannedSeconds/(hours/24)),requiredDailyModelUsd:plannedUsd/(hours/24),
+        additionalDailyAudioSeconds:Math.max(0,Math.ceil(plannedSeconds/(hours/24))-limits.dailyTranscriptionSeconds),additionalMonthlyModelUsd:Math.max(0,plannedUsd-(limits.monthlyUsd-totals.month)),applied:false})),
+      note:'Optional capacity only. Source access, eligible evidence and measured worker throughput are separate; these are not completion promises.'};
     return { configuration: this.configuration(), refreshInProgress: Boolean(this.refreshing), snapshot, counts, uniqueEpisodes: window.length, requiringPreparation: pending.length,
+      capacityPlanning,
       acquisition: { intelligenceCacheHits: window.filter(v => v.acquisition?.intelligenceCacheHit).length, transcriptCacheHits: window.filter(v => v.acquisition?.transcriptCacheHit).length,
         publisherTranscriptsFound: window.filter(v => v.acquisition?.publisherTranscriptFound).length, publisherReferencesUnverified: pending.filter(v => v.acquisition?.publisherReferences && !v.acquisition?.publisherTranscriptFound && !v.acquisition?.transcriptCacheHit).length,
         requiringAudio: audio.length, eligibleRequiringAudio: audio.filter(v => v.eligible).length, estimatedAudioHours: audio.reduce((n,v) => n + (v.acquisition?.durationSeconds || 0) / 3600, 0), unknownAudioDurations: audio.filter(v => !v.acquisition?.durationSeconds).length },

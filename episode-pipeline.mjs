@@ -1,6 +1,6 @@
 import { episodeIdentity } from "./episode-identity.mjs";
 import { createHash, randomUUID } from "node:crypto";
-import { fetchPublisherTranscript, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
+import { fetchPublisherTranscript, discoverPublisherTranscriptRefs, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
 import {
   generateLongFormIntelligence,
   BudgetLedger,
@@ -15,7 +15,7 @@ import { GROUNDING_VERSION } from "./claim-grounding.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
-import { DELIVERY_VERSION, transcriptFingerprint, validSearchIndex, buildSearchIndex, groundedTopics, deliveryValidation } from "./intelligence-delivery.mjs";
+import { DELIVERY_VERSION, transcriptFingerprint, validSearchIndex, buildSearchIndex, groundedTopics, deliveryValidation, featureExecution } from "./intelligence-delivery.mjs";
 
 export const activeStates = new Set([
   "QUEUED",
@@ -46,7 +46,7 @@ export const canonicalEpisodeId = (feedUrl, episodeId) =>
   `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
 
 export const recoverableTechnicalJob = (job) => job?.state === "FAILED" && job.retryable !== false &&
-  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "TIMEOUT", "SOURCE_UNAVAILABLE", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
+  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_RATE_LIMIT", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "TIMEOUT", "SOURCE_UNAVAILABLE", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
   (job.recoveries || 0) < 2;
 
 // The persisted worker state deliberately remains backward-compatible. This
@@ -62,6 +62,7 @@ export function listenerProcessingStatus(value) {
   if (value.state === "CANCELLED" || value.code === "CANCELLED")
     return { state: "CANCELLED", stage: null, processing: false };
   if (value.state === "BLOCKED") {
+    if (value.code === 'PROCESSING_YIELD') return {state:'QUEUED',stage:'QUEUED',processing:true};
     if (value.code === "BUDGET_LIMIT")
       return { state: "BUDGET_PAUSED", stage: null, processing: false };
     return { state: "UNAVAILABLE", stage: null, processing: false };
@@ -166,6 +167,8 @@ export function availabilityCode(code) {
 }
 
 function failure(error) {
+  if (error?.code === 'PROCESSING_YIELD') return {code:error.code,reason:'Completed chunks are saved while another queued episode is prepared.',retryable:true};
+  if (error?.code === 'PROVIDER_RATE_LIMIT') return {code:error.code,reason:'The provider rejected this request temporarily. A bounded retry is scheduled.',retryable:true};
   if (error?.code === "TESTING_EXPIRED") return { code: error.code, reason: "Internal testing has ended or been disabled. Cached intelligence remains available.", retryable: false };
   if (error?.code === "PROVIDER_OUTCOME_UNKNOWN") return { code: error.code, reason: "A provider request has an unknown outcome. An administrator must review it before another paid attempt.", retryable: false };
   const message = String(error?.message || "");
@@ -348,6 +351,7 @@ export class EpisodePipeline {
           actualRemainingMs: Math.max(0, Date.parse(next.completedAt) - Date.parse(estimate.updatedAt)),
         })),
       };
+      next.featureExecution = featureExecution(next, this.store.get('semantic-index',key));
       this.store.set("intelligence", key, next);
       // The per-job history makes restarts and later retries auditable even
       // though the current status record is intentionally one per episode.
@@ -440,7 +444,9 @@ export class EpisodePipeline {
       derived={...derived,featureStatus:features,deliveryValidation:{...validation,features:undefined},
         searchIndex:{version:index.version,transcriptVersion:index.transcriptVersion,segmentCount:index.segments.length,indexedAt:index.indexedAt}};
       if(completed(value)) {
-        derived.state=validation.complete?"READY":"PARTIAL_READY";
+        const semanticPending = this.semanticSearch && !validSemanticIndex(this.store.get('semantic-index',key),index);
+        derived.state=validation.complete && !semanticPending?"READY":"PARTIAL_READY";
+        if(semanticPending)derived.qualityNote='Semantic indexing is pending. Completed features and source search remain available.';
         if(!validation.complete)derived.qualityNote=value.qualityNote || "Some outputs did not pass validation. Available features remain usable.";
       }
     } catch(error) {
@@ -448,6 +454,7 @@ export class EpisodePipeline {
         deliveryValidation:{version:DELIVERY_VERSION,complete:false,failures:[{feature:"search",code:"INDEXING_FAILED"}]},
         ...(completed(value)?{state:"PARTIAL_READY",qualityNote:"Search indexing needs recovery. Completed analysis is preserved."}:{})};
     }
+    derived.featureExecution=featureExecution(derived,this.store.get('semantic-index',key));
     if(JSON.stringify(derived)!==JSON.stringify(value))this.store.set("intelligence",key,derived);
     return derived;
   }
@@ -605,9 +612,9 @@ export class EpisodePipeline {
       forcePublisherRefresh = false;
     this.ledger.refresh();
     const currentTotals = this.ledger.totals();
-    const budgetRecovery = platformProcessing && previous?.code === 'BUDGET_LIMIT' && Date.parse(previous.resumeAfter || '') <= Date.now() &&
+    const budgetRecovery = platformProcessing && ['BUDGET_LIMIT','PROCESSING_YIELD'].includes(previous?.code) && Date.parse(previous.resumeAfter || '') <= Date.now() &&
       currentTotals.day < this.ledger.controls.dailyUsd && currentTotals.month < this.ledger.controls.monthlyUsd &&
-      (previous.transcript?.segments?.length || currentTotals.transcriptionSeconds + 1200 <= this.ledger.controls.dailyTranscriptionSeconds);
+      (previous.transcript?.segments?.length || currentTotals.transcriptionSeconds + (previous.work?.nextChunkSeconds ?? 1200) <= this.ledger.controls.dailyTranscriptionSeconds);
     const rightsRecovery = this.rightsRecovery(feedUrl, episodeId);
     if (rightsRecovery) {
       // A rights refusal spent no provider attempt. A newly permitted attempt
@@ -779,12 +786,21 @@ export class EpisodePipeline {
   async recoverQueued() {
     if (!this.queue) return;
     const now = Date.now();
+    let resumedSemantic = false;
     for (const [key, status] of this.store.all("intelligence")) {
       // Repair missing derived indexes/topics without buying analysis again.
       if(status.transcript && status.processingVersion===PROCESSING_VERSION) {
         const delivered = this.deliver(status, key);
         try { if (delivered.code !== 'EPISODE_IDENTITY_MISMATCH') await this.onTranscriptReady?.({feedUrl:delivered.feedUrl,episodeId:delivered.episodeId,intelligence:delivered}); }
         catch { console.error(JSON.stringify({event:"transcript-candidate-inspection-failed",code:"RECOVERY_INSPECTION_FAILED"})); }
+        const index=this.store.get('search-index',key), semantic=this.store.get('semantic-index',key);
+        if (!resumedSemantic && completed(status) && status.platformProcessing && this.semanticSearch && index &&
+            !validSemanticIndex(semantic,index) && semantic?.retryable !== false && Date.parse(semantic?.retryAfter || '1970-01-01') <= now &&
+            this.executionDecision(status.feedUrl,status.episodeId).canDispatch) {
+          resumedSemantic=true;
+          try { await this.semanticSearch.build(index,{key,maxBatches:1}); }
+          catch { console.error(JSON.stringify({event:'automatic-search-index-deferred',code:'DERIVED_PROCESSING_PENDING'})); }
+        }
       }
       const limits = status.platformProcessing ? { ...this.ledger.controls, ...this.testingMode?.limits(status.testingContext) } : status.testingContext && this.testingMode?.limits(status.testingContext);
       // One bounded software-repair replay of the pre-fix assembly failures.
@@ -794,11 +810,13 @@ export class EpisodePipeline {
         this.store.all("transcription-checkpoint").some(([id, chunk]) => id.startsWith(key + ":") && chunk.state === "READY");
       const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
         now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
-      if (!this.inflight.has(key) && limits?.dailyUsd && ((status.code === "BUDGET_LIMIT" && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery)) {
+      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
-        if (totals.day < limits.dailyUsd && totals.month < limits.monthlyUsd && totals.transcriptionSeconds < limits.dailyTranscriptionSeconds) {
+        const pendingSeconds = status.transcript?.segments?.length ? 0 : status.work?.nextChunkSeconds ?? Math.min(1200, durationMs(status.episode?.duration)/1000 || 1200);
+        if (totals.day + pendingSeconds*0.0001 <= limits.dailyUsd && totals.month + pendingSeconds*0.0001 <= limits.monthlyUsd && totals.transcriptionSeconds + pendingSeconds <= limits.dailyTranscriptionSeconds) {
           const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0),
+            ...(status.code === 'PROCESSING_YIELD' ? {queuedAt:new Date(now).toISOString()} : {}), capacityWait:null,
             ...(assemblyRecovery ? { transcriptionAssemblyVersion: TRANSCRIPTION_ASSEMBLY_VERSION } : {}), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
           this.store.set("processing-outbox", status.jobId, { key, ...resumed });
         } else this.store.set("intelligence", key, { ...status, resumeAfter: new Date(now + 3600000).toISOString() });
@@ -1018,7 +1036,14 @@ export class EpisodePipeline {
         // publisher transcript again. An acquisition reservation also does not
         // prohibit independently authorised audio transcription.
         const canAcquire = !rights || this.rights.evaluate({ feature: 'transcript-acquisition', feedUrl, episodeId }).allowed;
-        for (const ref of canAcquire ? episode.refs || [] : []) {
+        const references=[...(episode.refs || [])];
+        if(canAcquire && !references.length && episode.webUrl) {
+          try { references.push(...await discoverPublisherTranscriptRefs(episode.webUrl)); }
+          catch { /* Bounded page discovery may fail; authorised audio fallback remains available. */ }
+          transcriptChecks.publisherPageChecked=true;
+          transcriptChecks.discoveredReferenceCount=references.length;
+        }
+        for (const ref of canAcquire ? references : []) {
           controller.signal.throwIfAborted();
           try {
             const candidate = await this.fetchTranscript(ref, {
@@ -1075,18 +1100,6 @@ export class EpisodePipeline {
           });
           return;
         }
-        if (!duration) {
-          update({
-            state: "BLOCKED",
-            attempts: Math.max(0, value.attempts - 1),
-            code: "DURATION_UNKNOWN",
-            reason:
-              "The publisher has not supplied a duration. This episode cannot be analysed safely yet.",
-            transcriptChecks,
-            retryable: false,
-          });
-          return;
-        }
         if (duration > ledger.controls.maxEpisodeSeconds * 1000) {
           update({
             state: "BLOCKED",
@@ -1102,7 +1115,7 @@ export class EpisodePipeline {
         // chunks survive a daily pause; each new chunk is atomically reserved.
         ledger.refresh();
         const totals = ledger.totals();
-        const nextChunkSeconds = Math.min(1200, Math.ceil(duration / 1000));
+        const nextChunkSeconds = value.work?.nextChunkSeconds ?? Math.min(1200, Math.ceil((duration || 1200000) / 1000));
         if (
           totals.day + nextChunkSeconds * 0.0001 >
             ledger.controls.dailyUsd ||
@@ -1111,7 +1124,7 @@ export class EpisodePipeline {
           totals.transcriptionSeconds + nextChunkSeconds >
             ledger.controls.dailyTranscriptionSeconds
         )
-          throw Error("The intelligence budget has been reached.");
+          throw Object.assign(Error("The intelligence budget has been reached."), {code:'BUDGET_LIMIT',capacity:ledger.capacity({usd:nextChunkSeconds*0.0001,seconds:nextChunkSeconds,kind:'transcription'})});
         // Downloading/chunking may take time but is not yet a provider
         // transcription. Keep the listener state in acquisition until the
         // provider call actually begins.
@@ -1122,9 +1135,12 @@ export class EpisodePipeline {
             const audio = await this.audioFactory(
               episode.audioUrl,
               ledger.controls.maxEpisodeSeconds,
+              {signal:controller.signal},
             );
             try {
               controller.signal.throwIfAborted();
+              if (!duration) episode.duration=String(audio.durationMs/1000);
+              recordWork({verifiedSourceDurationMs:audio.durationMs,sourceContentHash:audio.contentHash});
               update({ state: "TRANSCRIBING", processingStage: "TRANSCRIBING" });
               const acquired = await transcribeOnDemand({
                 episodeId,
@@ -1144,6 +1160,7 @@ export class EpisodePipeline {
                   if (initial.testingContext && !initial.platformProcessing && !this.testingMode?.limits(initial.testingContext).dailyUsd) throw Object.assign(Error("Testing authorisation expired or was suspended."), { code: "TESTING_EXPIRED" });
                 },
                 onProgress: recordWork,
+                shouldYield: () => Boolean(this.queue && this.store.all('intelligence').some(([other,job])=>other!==key && job.state==='QUEUED' && !job.completedAt)),
               });
               if (!rightsAllowed()) throw Error("Rights permission no longer allows audio transcript retention.");
               acquired.audioContentHash = audio.contentHash || null;
@@ -1273,6 +1290,7 @@ export class EpisodePipeline {
     } catch (error) {
       const detail = failure(error);
       const blocked = [
+        "PROCESSING_YIELD",
         "DURATION_LIMIT",
         "BUDGET_LIMIT",
         "PROVIDER_UNAVAILABLE",
@@ -1282,8 +1300,9 @@ export class EpisodePipeline {
       update({
         state: blocked ? "BLOCKED" : "FAILED",
         ...detail,
-        ...(detail.code === "BUDGET_LIMIT" ? { resumeAfter: new Date(Date.now() + 3600000).toISOString() } : {}),
-        ...(["DURATION_LIMIT", "BUDGET_LIMIT", "TESTING_EXPIRED"].includes(detail.code)
+        ...(detail.code === "BUDGET_LIMIT" ? { capacityWait:error.capacity || null,resumeAfter:error.capacity?.resumeAfter || new Date(Date.now() + 3600000).toISOString() } : {}),
+        ...(detail.code === 'PROCESSING_YIELD' ? {resumeAfter:new Date(Date.now()+60000).toISOString()} : {}),
+        ...(["DURATION_LIMIT", "BUDGET_LIMIT", "PROCESSING_YIELD", "TESTING_EXPIRED"].includes(detail.code)
           ? { attempts: Math.max(0, value.attempts - 1) }
           : {}),
         retryable: detail.retryable && value.attempts < 2,

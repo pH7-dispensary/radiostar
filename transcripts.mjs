@@ -268,6 +268,24 @@ export function assessTranscript({
             : "Publisher transcript is suitable for timestamped intelligence.",
   };
 }
+export async function discoverPublisherTranscriptRefs(webUrl, { fetchText = fetchPublicText } = {}) {
+  if (!publicUrl(webUrl)) return [];
+  const page = await fetchText(webUrl, 512_000), refs = [];
+  // Only explicit downloadable transcripts/subtitles linked by the episode
+  // page. The page's prose is never passed off as transcript evidence.
+  for (const match of page.text.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    if (!/transcript|subtitles|captions/i.test(htmlText(match[2]))) continue;
+    let url;try { url=new URL(match[1].replace(/&amp;/g,'&'),page.url || webUrl).href; } catch { continue; }
+    if (!publicUrl(url)) continue;
+    const path=decodeURIComponent(url).split('#')[0];
+    const ext=path.match(/\.(vtt|srt|json|txt)(?:$|[?&])/i)?.[1]?.toLowerCase();
+    if (!ext || refs.some(r=>r.url===url)) continue;
+    refs.push({url,type:{vtt:'text/vtt',srt:'application/x-subrip',json:'application/json',txt:'text/plain'}[ext],language:'und',discoveredFrom:webUrl});
+    if(refs.length===4)break;
+  }
+  return refs.sort((a,b)=>(a.type==='text/plain')-(b.type==='text/plain'));
+}
+
 export async function fetchPublisherTranscript(
   ref,
   { fetchImpl = null, durationMs = null } = {},

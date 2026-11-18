@@ -117,12 +117,13 @@ export async function fetchPublicText(url, maxBytes = 2_000_000) {
     type: result.response.headers["content-type"] || "text/plain",
   };
 }
-export async function downloadPublicAudio(url, path, maxBytes = 300_000_000) {
-  const result = await streamPublic(url);
+export async function downloadPublicAudio(url, path, maxBytes = 300_000_000, { signal } = {}) {
+  const result = await streamPublic(url, 0, [], { signal });
   await pipeline(
     result.response,
     limiter(maxBytes),
     createWriteStream(path, { flags: "wx", mode: 0o600 }),
+    ...(signal ? [{ signal }] : []),
   );
   // The caller may need a delivery validator for a safety decision.  Return
   // only response metadata; never persist or expose it to listeners.
