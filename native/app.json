@@ -35,7 +35,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-iap"
+      "expo-iap",
+      "expo-asset"
     ],
     "extra": {
       "starCastApiBaseUrl": "https://d3ri12f40b85i3.cloudfront.net",
