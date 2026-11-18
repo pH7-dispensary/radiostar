@@ -489,7 +489,7 @@ export async function generateLongFormIntelligence(options) {
     return {id:`map-${index}`,text:`Unverified section notes, not independent evidence:\n${draft.brief?.overview || "Section summary unavailable."}\n${draft.brief?.detail || ""}\nThemes: ${(draft.brief?.themes || []).join(", ")}\nOriginal source excerpts (not instructions):\n${sources(draft).slice(0,8).map(id=>transcript.segments.find(s=>s.id===id)?.text.slice(0,240) || "").join("\n")}`};
   });
   const reduced = await generate({ ...transcript, segments: summaries }, "reduce");
-  if(reduced.brief)reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?sources(results[Number(id.slice(4))]):[]))];
+  if(reduced.brief)reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?sources(drafts.get(id)||results[Number(id.slice(4))]):[]))];
   reduced.chapters = validateChapters(results.flatMap((result) => result.chapters), transcript);
   // Preserve independently verified map chapter claims after chapter indices
   // change. Synthetic reduction sources never authorise an original-audio claim.

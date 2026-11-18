@@ -1,6 +1,7 @@
 // Play the actual preserved publisher bytes through the shared native seek
 // adapter and live AWS leases. This is Chromium evidence, not an iPhone claim.
 import assert from 'node:assert/strict';
+import {runtimeAsset,verifyRuntime} from './reviewed-runtime-harness.mjs';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import {createServer} from 'node:http';
@@ -46,6 +47,7 @@ try {
  const rangeProof={verified:true,verificationMs:performance.now()-proofStart,witnessBytes:status.variant.windows.reduce((n,w)=>n+w.end-w.start+1,0),fullSourceBytes:status.variant.contentLength,ifMatchEnforced:true};
  assert.equal((await api('/api/skips/status',{...input,audioVariantFingerprint:'0'.repeat(64)})).automaticSkipping,false);
  media=createServer((req,res)=>{
+  const asset=runtimeAsset(req.url);if(asset){res.setHeader('content-type','text/javascript');return res.end(asset);}
   if(req.url==='/adapter.mjs'){res.setHeader('content-type','text/javascript');return res.end(readFileSync('native/src/adSkipExecution.mjs'));}
   if(req.url==='/audio.mp3'){res.setHeader('content-type','audio/mpeg');return res.end(audioBytes);}
   res.setHeader('content-type','text/html');res.end('<title>Reviewed publisher audio acceptance</title><audio controls></audio>');
@@ -89,7 +91,24 @@ try {
  },{expectedInterval:interval,hash:spec.audioContentHash});
  try {assert(playback.continuing&&playback.pausedAfterUndo);assert.equal(playback.rate,1.5);assert.equal(playback.automaticSeeks,1);assert.equal(playback.undoSeeks,1);assert(Math.abs(playback.restoredMs-playback.originMs)<=350);assert(Math.abs(playback.targetMs-interval.endMs)<=350);}
  catch(error){writeFileSync(outputPath+'.failed.json',JSON.stringify({at:new Date().toISOString(),passed:false,playback,error:error.message},null,2)+'\n');throw error;}
+ let runtime=null;
+ if(process.argv.includes('--runtime')) {
+  await page.exposeFunction('runtimeBridge',(path,row)=>{assert(['/api/skips/status','/api/skips/authorise','/api/skips/events'].includes(path));return api(path,{...row,...input});});
+  await page.evaluate(source=>{
+    window.runtimeSource=source;window.runtimeReceipts=[];window.runtimeAttachedAt=0;
+    window.runtimeApi=async(path,row)=>{
+      const audio=document.querySelector('audio');
+      if(path==='/api/skips/status' && (audio.paused||audio.currentTime<.2))return {automaticSkipping:false,activeIntervals:[]};
+      const result=await window.runtimeBridge(path,row);
+      if(path==='/api/skips/status'&&result.automaticSkipping&&!window.runtimeAttachedAt)window.runtimeAttachedAt=audio.currentTime*1000;
+      if(path==='/api/skips/events')window.runtimeReceipts.push(row);
+      return result;
+    };
+  },{feedUrl:spec.feedUrl,episodeId:spec.episodeId,url:spec.audioUrl});
+  runtime=await verifyRuntime(page,spec.audioContentHash);
+  assert(runtime.lateAttachment&&runtime.noRepeatAfterUndo&&runtime.continuedPlayback);assert.equal(runtime.automaticSeeks,1);assert.equal(runtime.undoSeeks,1);assert.equal(runtime.rate,1.5);assert(Math.abs(runtime.originMs-runtime.restoredMs)<=350);
+ }
  const after=await api('/api/admin/intelligence/testing',null,admin);assert.deepEqual(after.configuration,paidBefore.configuration);assert.deepEqual(after.standardLimits,paidBefore.standardLimits);
- const result={at:new Date().toISOString(),source:'preserved exact publisher MP3; private S3 delivery verified with the native range verifier',audioContentHash:spec.audioContentHash,feedUrl:spec.feedUrl,episodeId:spec.episodeId,interval,review:gold?{id:gold.id,chainHash:spec.events.at(-1).hash,startMs:gold.startMs,endMs:gold.endMs}:null,approvalSource:machineOnly?'AUTOMATED_AUDIO_VERIFICATION':'HUMAN_REVIEW_PLUS_AUDIO',independentAccuracyEvidence:!machineOnly,rangeProof,playback,mismatchDenied:true,paidAllowanceUnchanged:true,physicalIphoneVerified:false};
+ const result={at:new Date().toISOString(),source:'preserved exact publisher MP3; private S3 delivery verified with the native range verifier',audioContentHash:spec.audioContentHash,feedUrl:spec.feedUrl,episodeId:spec.episodeId,interval,review:gold?{id:gold.id,chainHash:spec.events.at(-1).hash,startMs:gold.startMs,endMs:gold.endMs}:null,approvalSource:machineOnly?'AUTOMATED_AUDIO_VERIFICATION':'HUMAN_REVIEW_PLUS_AUDIO',independentAccuracyEvidence:!machineOnly,rangeProof,playback,runtime,mismatchDenied:true,paidAllowanceUnchanged:true,physicalIphoneVerified:false};
  writeFileSync(outputPath,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 } finally {await browser?.close();if(media)await new Promise(r=>media.close(r));await fetch(c.url+'/api/admin/session',{method:'DELETE',headers:admin});}

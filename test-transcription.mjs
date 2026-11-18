@@ -42,5 +42,19 @@ try {
    store.set('transcription-checkpoint','negative:hash:whisper-1:1200000:0',{state:'READY',response:{segments}});
    await assert.rejects(transcribeOnDemand({...options,durationMs:1200000,checkpointPrefix:'negative:hash'}),/timing failed/);
  }
+
+ const confidenceKey='confidence:hash:whisper-1:60000:0';
+ store.set('transcription-checkpoint',confidenceKey,{state:'READY',response:{segments:[
+  {start:0,end:20,text:speech,no_speech_prob:.9629696607589722,avg_logprob:-.40612083673477173},
+  {start:20,end:40,text:'Low confidence silence hallucination.',no_speech_prob:.99,avg_logprob:-2},
+  {start:40,end:60,text:'Unscored no-speech observation.',no_speech_prob:.99}
+ ]}});
+ const confident=await transcribeOnDemand({...options,durationMs:60000,checkpointPrefix:'confidence:hash',cachedOnly:true});
+ assert.equal(confident.segments.length,1);assert.equal(confident.segments[0].text,speech.trim());assert.equal(calls,before);
+ await assert.rejects(transcribeOnDemand({...options,durationMs:60000,checkpointPrefix:'absent:hash',cachedOnly:true}),e=>e.code==='CHECKPOINT_MISSING');
+ const boundary=[{id:'a',text:"Original speech, but if you're",startMs:1193000,endMs:1200000,chunkIndex:0,chunkStartMs:0,chunkEndMs:1200000},
+ {id:'b',text:"But if you're already discussing evidence, keep the new words.",startMs:1199000,endMs:1207000,chunkIndex:1,chunkStartMs:1199000,chunkEndMs:2399000}];
+ const reconciled=mergeTranscriptSegments(boundary);assert.equal(reconciled[1].id,'b');assert.equal(reconciled[1].startMs,1199000);assert.equal(reconciled[1].text,'already discussing evidence, keep the new words.');assert.equal(reconciled[1].originalText,boundary[1].text);assert.equal(reconciled[1].overlapPrefixTrimmedWords,3);
+ const editorial=mergeTranscriptSegments(boundary.map(r=>({...r,chunkIndex:0})));assert.equal(editorial[1].text,boundary[1].text,'ordinary repeated editorial phrases stay intact');
 }finally{store.close();}
 let plan=planAudioSegments({durationMs:3_000_000,maxSegmentMs:1_200_000,overlapMs:1_000});assert.equal(plan.length,3);assert.equal(plan[1].startMs,1_199_000);assert.deepEqual(mergeTranscriptSegments([{startMs:0,endMs:1000,text:'Hello'},{startMs:900,endMs:2000,text:'world'}]).map(x=>x.text),['Hello','world']);assert.throws(()=>planAudioSegments({durationMs:0}),/duration/);console.log('long-form transcription planning checks passed');

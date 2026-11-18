@@ -20,8 +20,9 @@ const idleCheck = "/usr/local/bin/node --input-type=module -e " + quote(`
   const busy = db.prepare("SELECT payload FROM records WHERE kind='intelligence'").all().some(row => {const v=JSON.parse(row.payload); return (active.has(v.state)||(v.state==='QUEUED'&&!workerOffline)) && !v.completedAt});
   const budget=db.prepare("SELECT payload FROM records WHERE kind='budget' AND id='ledger'").get();
   const paidWork=budget && JSON.parse(budget.payload).reservations?.length>0;
+  const repairing=db.prepare("SELECT payload FROM records WHERE kind='intelligence-repair'").all().some(row=>JSON.parse(row.payload).state==='PROCESSING');
   db.close();
-  if(busy||paidWork) { console.error('Active intelligence work or provider reservations: maintenance refused.'); process.exit(1); }
+  if(busy||paidWork||repairing) { console.error('Active intelligence work or provider reservations: maintenance refused.'); process.exit(1); }
 `);
 let commands;
 if (action === "status") commands = ["cloud-init status", "systemctl is-active starcast", "tail -n 12 /var/log/starcast/backend.log"];

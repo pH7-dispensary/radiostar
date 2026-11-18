@@ -1,7 +1,10 @@
+import {transcribeOnDemand,planAudioSegments,TRANSCRIPTION_ASSEMBLY_VERSION} from './transcription.mjs';
+import {groundResult} from './grounded-result.mjs';
 import {generateLongFormIntelligence,generateEpisodeIntelligence,PROCESSING_VERSION} from './openai-intelligence.mjs';
 import {transcriptFingerprint} from './intelligence-delivery.mjs';
 import {validateClaims,claimsForResult,claimBinding,GROUNDING_VERSION} from './claim-grounding.mjs';
-export const REPAIR_VERSION='missing-features-no-inline-citations-v1';
+export const REPAIR_VERSION='missing-features-original-map-citations-v2';
+const GENERATION_VERSION='missing-features-no-inline-citations-v1';
 const complete=j=>Boolean(['READY','PARTIAL_READY'].includes(j?.state)&&j.completedAt&&j.transcript?.segments?.length);
 const missing=j=>[
   ...(!j.brief || ['extractive','verified_partial'].includes(j.brief.mode)?['brief']:[]),
@@ -13,11 +16,14 @@ export function queueFeatureRepair(pipeline,key,reason='Automatic repair of inco
   if(!pipeline.executionDecision(j.feedUrl,j.episodeId).canDispatch)throw Error('Current processing permission does not allow feature repair.');
   const signature=transcriptFingerprint(j.transcript),old=pipeline.store.get('intelligence-repair',key);
   if(old?.signature===signature&&old.version===REPAIR_VERSION)return old;
+  if(old)pipeline.store.set('intelligence-repair-history',key+':'+old.version+':'+old.signature,old);
   const value={version:REPAIR_VERSION,signature,jobId:j.jobId,state:missing(j).length?'QUEUED':'READY',features:{},requestedAt:new Date().toISOString(),reason};
-  pipeline.store.set('intelligence-repair',key,value);return value;
+  pipeline.store.transaction(()=>{pipeline.store.set('intelligence-repair',key,value);pipeline.store.set('intelligence',key,{...j,featureRepair:{state:value.state,activeFeature:null,features:{},updatedAt:value.requestedAt}});});return value;
 }
 export async function repairOneFeature(pipeline,key) {
+  await repairTranscriptAssembly(pipeline,key);
   let state=pipeline.store.get('intelligence-repair',key),job=pipeline.store.get('intelligence',key);
+  if(state?.version!==REPAIR_VERSION && complete(job))state=queueFeatureRepair(pipeline,key);
   if(!state || !['QUEUED','PROCESSING','WAITING_FOR_CAPACITY'].includes(state.state))return state;
   const canPersist=()=>{
     const current=pipeline.store.get('intelligence',key);
@@ -33,8 +39,8 @@ export async function repairOneFeature(pipeline,key) {
   try {
     const source=feature==='brief'?job.transcript:{...job.transcript,segments:job.transcript.segments.filter(s=>job.chapters[Number(feature.split('.')[1])].sourceSegmentIds.includes(s.id))};
     const options={transcript:source,propagateReviewErrors:true,outputProfile:pipeline.executionDecision(job.feedUrl,job.episodeId).processingBasis.outputProfile,ledger:pipeline.ledger,client:pipeline.client,requestedFeatures:feature==='brief'?['brief']:['chapters'],
-      requestId:`${job.jobId}:text:${REPAIR_VERSION}:${feature}:${attempt}`,checkpointStore:pipeline.store,
-      checkpointPrefix:`${key}:${REPAIR_VERSION}:${feature}:${attempt}`,checkpointKey:`${key}:${REPAIR_VERSION}:${feature}:${attempt}`,
+      requestId:`${job.jobId}:text:${GENERATION_VERSION}:${feature}:${attempt}`,checkpointStore:pipeline.store,
+      checkpointPrefix:`${key}:${GENERATION_VERSION}:${feature}:${attempt}`,checkpointKey:`${key}:${GENERATION_VERSION}:${feature}:${attempt}`,
       canPersist,beforePaid:()=>{if(!canPersist())throw Object.assign(Error('Processing permission or source changed'),{code:'RIGHTS_REVOKED'});},
       claimReviewer:pipeline.claimReviewer?(v,t)=>pipeline.claimReviewer(v,t,key):null,
       signal:AbortSignal.timeout(180000)};
@@ -69,4 +75,38 @@ export async function repairOneFeature(pipeline,key) {
     save({state:waiting?'WAITING_FOR_CAPACITY':'QUEUED',activeFeature:null,features:{...state.features,[feature]:{state:waiting?'WAITING_FOR_CAPACITY':'FAILED',attempt,code:error.code||'FEATURE_REPAIR_FAILED',reason:error.message,resumeAfter:error.capacity?.resumeAfter||null,nextAction:waiting?'Saved generation checkpoints resume when capacity returns.':'Inspect the saved request outcome before another paid attempt.'}}});
   }
   return state;
+}
+
+// Source-parser repair is local only and confined to already requested feature
+// repairs. It neither redownloads audio nor starts catalogue-wide paid work.
+export async function repairTranscriptAssembly(pipeline,key) {
+  const job=pipeline.store.get('intelligence',key),old=job?.transcript;
+  if(!complete(job) || !pipeline.store.get('intelligence-repair',key) || pipeline.inflight.has(key) ||
+     old?.sourceType!=='on_demand_audio' || old.assemblyVersion===TRANSCRIPTION_ASSEMBLY_VERSION)return false;
+  const hash=old.audioContentHash,durationMs=old.durationMs;
+  if(!hash || hash!==job.work?.sourceContentHash || !pipeline.executionDecision(job.feedUrl,job.episodeId).canDispatch)return false;
+  const prefix=key+':'+hash,model=old.model||'whisper-1';
+  if(!planAudioSegments({durationMs}).every(p=>pipeline.store.get('transcription-checkpoint',`${prefix}:${model}:${durationMs}:${p.index}`)?.state==='READY'))return false;
+  const fingerprint=transcriptFingerprint(old);
+  const valid=()=>{const current=pipeline.store.get('intelligence',key);return complete(current)&&current.jobId===job.jobId&&transcriptFingerprint(current.transcript)===fingerprint&&pipeline.executionDecision(job.feedUrl,job.episodeId).canDispatch;};
+  const restored=await transcribeOnDemand({episodeId:job.episodeId,audioUrl:job.episode.audioUrl,durationMs,model,
+    ledger:pipeline.ledger,requestId:job.jobId+':audio',authorised:true,cachedOnly:true,checkpointStore:pipeline.store,checkpointPrefix:prefix,canPersist:valid});
+  if(!valid())return false;
+  const transcript={...old,segments:restored.segments,quality:restored.quality,transcriptVersion:restored.transcriptVersion,
+    id:restored.id,assemblyVersion:restored.assemblyVersion,assemblyRepairedAt:new Date().toISOString()};
+  const repaired=groundResult({...job,transcript,brief:job.brief?{...job.brief,transcriptVersion:transcript.transcriptVersion}:undefined},transcript);
+  pipeline.store.transaction(()=>{
+    if(!valid())throw Error('Source changed before local transcript repair');
+    pipeline.store.set('intelligence-repair-history',key+':assembly:'+old.transcriptVersion,{job});
+    pipeline.store.set('transcript',key+':assembly:'+old.transcriptVersion,old);
+    pipeline.store.set('transcript',key+':'+old.audioVariant,transcript);
+    pipeline.store.set('audio-transcript',old.audioVariant,transcript);
+    pipeline.store.set('intelligence',key,{...repaired,transcriptionAssemblyVersion:TRANSCRIPTION_ASSEMBLY_VERSION,
+      provenance:{...job.provenance,transcriptVersion:transcript.transcriptVersion},
+      transcriptAssemblyRepair:{from:old.transcriptVersion,to:transcript.transcriptVersion,at:transcript.assemblyRepairedAt,
+        beforeSegments:old.segments.length,afterSegments:transcript.segments.length,paidTranscriptionRequests:0}});
+    pipeline.deliver(pipeline.store.get('intelligence',key),key);
+    queueFeatureRepair(pipeline,key,'Continue missing-feature repair after saved-response assembly correction');
+  });
+  return true;
 }

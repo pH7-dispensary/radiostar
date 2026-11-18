@@ -12,7 +12,7 @@ import { downloadPublicAudio, publicUrl } from "./safe-network.mjs";
 import { assessTranscript } from "./transcripts.mjs";
 
 const exec = promisify(execFile);
-export const TRANSCRIPTION_ASSEMBLY_VERSION = "chunk-boundaries-v3";
+export const TRANSCRIPTION_ASSEMBLY_VERSION = "confidence-and-overlap-v4";
 export const AUDIO_STAGING_VERSION = 'disk-staging-v1';
 export async function initialiseAudioStaging(root) {
   await mkdir(root,{recursive:true,mode:0o700});
@@ -56,8 +56,8 @@ export function planAudioSegments({
 export function mergeTranscriptSegments(segments) {
   const merged = [];
   for (const segment of [...segments].sort((a, b) => a.startMs - b.startMs)) {
-    const text = String(segment.text || "").trim(),
-      prior = merged.at(-1);
+    let text = String(segment.text || "").trim();
+    const prior = merged.at(-1);
     if (
       !text ||
       !Number.isFinite(segment.startMs) ||
@@ -94,7 +94,19 @@ export function mergeTranscriptSegments(segments) {
       prior.timestampPrecision = "overlapping_chunk_union";
       continue;
     }
-    merged.push({ ...segment, text });
+    // Only trim an exact repeated phrase across the deliberately overlapping
+    // chunk boundary. Keep both canonical IDs, original time spans and the
+    // unmodified observation; do not invent word-level seek timestamps.
+    let overlapPrefixTrimmedWords=0;
+    if(prior && segment.chunkIndex===prior.chunkIndex+1 && segment.startMs<prior.endMs &&
+       segment.startMs<=segment.chunkStartMs+2000 && segment.chunkStartMs<prior.chunkEndMs) {
+      const tokens=t=>t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,'').trim().split(/\s+/);
+      const left=tokens(prior.text),right=tokens(text);
+      for(let n=Math.min(8,left.length,right.length-1);n>=3;n--)if(new Set(right.slice(0,n)).size>=2 && left.slice(-n).join(' ')===right.slice(0,n).join(' ')) {
+        overlapPrefixTrimmedWords=n;text=text.split(/\s+/).slice(n).join(' ');break;
+      }
+    }
+    merged.push({ ...segment, text,...(overlapPrefixTrimmedWords?{overlapPrefixTrimmedWords,originalText:segment.text,timestampPrecision:'provider_segment_with_overlap_prefix_removed'}:{}) });
   }
   return merged;
 }
@@ -204,6 +216,7 @@ export async function transcribeOnDemand({
   canPersist = () => true,
   onProgress = () => {},
   shouldYield = () => false,
+  cachedOnly = false,
 }) {
   signal?.throwIfAborted();
   if (!authorised)
@@ -228,6 +241,7 @@ export async function transcribeOnDemand({
       if (saved?.state === "SENDING") throw Object.assign(Error("The transcription provider outcome is unknown; automatic replay is blocked."), { code: "PROVIDER_OUTCOME_UNKNOWN" });
       let response = saved?.response;
       if (!response) {
+        if(cachedOnly)throw Object.assign(Error("A required saved transcription response is unavailable."),{code:"CHECKPOINT_MISSING"});
         const seconds = Math.ceil((part.endMs - part.startMs) / 1000);
         const capacity = ledger.capacity({ usd: seconds * 0.0001, seconds, kind: "transcription" });
         if (!capacity.available) throw Object.assign(Error(capacity.reason === "DAILY_AUDIO" ? "The daily transcription duration budget has been reached." : "The intelligence budget has been reached."), { code: "BUDGET_LIMIT", capacity });
@@ -265,7 +279,10 @@ export async function transcribeOnDemand({
       if (!response.segments?.length)
         throw Error("Transcription returned no usable timestamped speech.");
       for (const [i, s] of response.segments.entries()) {
-        if (s.no_speech_prob > 0.8 || s.avg_logprob < -1) continue;
+        // A no-speech posterior alone is not a veto on confident speech.
+        // Whisper's own decoder retains speech when average log probability
+        // is strong. Preserve the existing low-confidence exclusion.
+        if (s.avg_logprob < -1 || (s.no_speech_prob > 0.8 && !(s.avg_logprob > -1))) continue;
         const startMs = part.startMs + Math.round(s.start * 1000),
           observedEndMs = part.startMs + Math.round(s.end * 1000);
         // The final Whisper segment can extend slightly past a bounded input
@@ -321,6 +338,7 @@ export async function transcribeOnDemand({
       segments,
       quality,
       acquiredAt: new Date().toISOString(),
+      assemblyVersion: TRANSCRIPTION_ASSEMBLY_VERSION,
       processingVersion: "2.0.0",
     };
 }

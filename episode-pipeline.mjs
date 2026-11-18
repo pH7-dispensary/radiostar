@@ -1,4 +1,4 @@
-import {queueFeatureRepair,repairOneFeature} from './intelligence-repair.mjs';
+import {queueFeatureRepair,repairOneFeature,REPAIR_VERSION} from './intelligence-repair.mjs';
 import { episodeIdentity } from "./episode-identity.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { fetchPublisherTranscript, discoverPublisherTranscriptRefs, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
@@ -886,7 +886,7 @@ export class EpisodePipeline {
     // poll only after dispatchable transcription work has drained. Checkpoint
     // and provider-outcome guards are the same as normal generation.
     if(!this.inflight.size && !this.store.all('intelligence').some(([,j])=>j.state==='QUEUED'&&!completed(j))) {
-      const repair=this.store.all('intelligence-repair').find(([,r])=>['QUEUED','PROCESSING','WAITING_FOR_CAPACITY'].includes(r.state));
+      const repair=this.store.all('intelligence-repair').find(([,r])=>r.version!==REPAIR_VERSION || ['QUEUED','PROCESSING','WAITING_FOR_CAPACITY'].includes(r.state));
       if(repair)await repairOneFeature(this,repair[0]);
     }
   }
@@ -1398,6 +1398,7 @@ export class EpisodePipeline {
     const key = episodeKey(feed, id);
     const intelligence = this.store.get("intelligence", key);
     this.store.delete("intelligence-repair", key);
+    for(const [id] of this.store.all("intelligence-repair-history"))if(id.startsWith(key+":"))this.store.delete("intelligence-repair-history",id);
     const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
     for (const bucket of ["transcription-checkpoint", "analysis-checkpoint"])
       for (const [checkpoint] of this.store.all(bucket)) if (checkpoint.startsWith(key + ":")) { this.store.delete(bucket, checkpoint); removed.providerResults++; }

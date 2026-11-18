@@ -82,3 +82,40 @@ try {
  await pipeline.recoverQueued();assert.equal(messages.length,1);assert.equal(messages[0].jobId,base.jobId);assert.equal(recoveryStore.get('intelligence',key).state,'QUEUED');assert(recoveryStore.get('transcription-checkpoint',key+':saved'));
 }finally{recoveryStore.close();}
 console.log('Terminal drift recovery schedules the same job and preserves saved responses.');
+
+// Multi-section synthesis must map references through the ORIGINAL section
+// draft, even when its displayed brief was narrowed to an excerpt.
+{
+ const {generateLongFormIntelligence}=await import('./openai-intelligence.mjs');
+ const s=new LocalStore(':memory:'),ledger=new BudgetLedger({enabled:true},s);let n=0;
+ const first='This opening explains original source evidence. It describes careful attribution. It introduces the conversation.';
+ const fact='Researchers use durable checkpoints to preserve completed work during interruptions.';
+ const segments=Array.from({length:501},(_,i)=>({id:'source-'+i,text:i===0?first:i===1?fact:'Further discussion of original source evidence and attribution.',startMs:i*1000,endMs:(i+1)*1000}));
+ try {
+ const result=await generateLongFormIntelligence({transcript:{episodeId:'citations',transcriptVersion:'v1',segments,quality:{readiness:'FULL'}},ledger,requestId:'citation-repair:text',requestedFeatures:['brief'],checkpointStore:s,checkpointPrefix:'citation-repair',
+ client:{responses:{create:async()=>{n++;return{usage:{input_tokens:100,output_tokens:100},output_text:JSON.stringify(n<3?{overview:'The researchers spent 991 dollars.',detail:'The researchers spent 991 dollars.',themes:[],sourceSegmentIndexes:n===1?[1,2]:[1],chapters:[]}:{overview:fact,detail:fact,themes:['Durable checkpoints'],sourceSegmentIndexes:[1],chapters:[]})};}}}});
+ assert.equal(result.brief.overview,fact);assert(!result.brief.mode);assert(result.brief.sourceSegmentIds.includes('source-1'));assert.equal(n,3);
+ }finally{s.close();}
+}
+console.log('Reduction preserves original source references after an intermediate fallback; strict final grounding remains enabled.');
+{
+ const {repairTranscriptAssembly}=await import('./intelligence-repair.mjs');
+ const {createHash}=await import('node:crypto');
+ const s=new LocalStore(':memory:'),ledger=new BudgetLedger({enabled:true},s),audioUrl='https://owned.example/assembly.mp3',variant=createHash('sha256').update(audioUrl).digest('hex'),hash='b'.repeat(64);
+ const id='assembly',k=episodeKey(feedUrl,id),rows=[{id:'0-0',startMs:0,endMs:30000,text},{id:'0-2',startMs:60000,endMs:120000,text:segments[1].text}];
+ const t={episodeId:id,transcriptVersion:'previous',sourceType:'on_demand_audio',model:'whisper-1',durationMs:120000,audioVariant:variant,audioContentHash:hash,segments:rows,quality:assessTranscript({segments:rows})};
+ const j={...base,episodeId:id,episode:{id,feedUrl,audioUrl},transcript:t,work:{sourceContentHash:hash},brief:{...base.brief,episodeId:id,transcriptVersion:t.transcriptVersion,sourceSegmentIds:['0-0']},chapters:[{...base.chapters[1],startMs:60000,endMs:120000,sourceSegmentIds:['0-2']}]};
+ const pipeline=new EpisodePipeline({store:s,ledger,enabled:true,configured:true,client:{audio:{transcriptions:{create:()=>assert.fail('Local assembly cannot purchase audio')}}}});
+ try {
+  s.set('intelligence',k,j);queueFeatureRepair(pipeline,k);const beforeAssembly=s.get('intelligence',k);
+  const response={segments:[{start:0,end:30,text},{start:30,end:60,text:'A confidently decoded passage about source evidence.',no_speech_prob:.96,avg_logprob:-.4},{start:60,end:120,text:segments[1].text}]};
+  s.set('transcription-checkpoint',`${k}:${hash}:whisper-1:120000:0`,{state:'READY',response});
+  assert(await repairTranscriptAssembly(pipeline,k));const repaired=s.get('intelligence',k);
+  assert.equal(repaired.jobId,j.jobId);assert.equal(repaired.transcript.segments.length,3);assert.deepEqual(repaired.chapters,j.chapters);assert.equal(ledger.usage.length,0);assert.equal(repaired.transcriptAssemblyRepair.paidTranscriptionRequests,0);
+  assert.deepEqual(s.get('transcript',k+':assembly:previous'),t);assert.deepEqual(s.get('intelligence-repair-history',k+':assembly:previous').job,beforeAssembly);
+  assert.deepEqual(s.get('transcription-checkpoint',`${k}:${hash}:whisper-1:120000:0`).response,response);
+  assert.equal(await repairTranscriptAssembly(pipeline,k),false);
+  pipeline.purgeEpisode(feedUrl,id);assert.equal(s.get('intelligence-repair-history',k+':assembly:previous'),null);assert.equal(s.get('transcript',k+':assembly:previous'),null);
+ }finally{s.close();}
+}
+console.log('Saved-response assembly restores confident speech locally, retains unaffected chapters/history and spends nothing.');
