@@ -27,8 +27,9 @@ assert.equal(login.status,201);
 const cookies=login.headers.getSetCookie().map(value=>value.split(';')[0]);
 const csrf=cookies.find(value=>value.startsWith('starcast_admin_csrf=')).split('=').slice(1).join('=');
 const sessionHeaders={...headers,cookie:cookies.join('; '),'x-star-cast-csrf':decodeURIComponent(csrf)};
+delete sessionHeaders['x-star-cast-admin-token'];
 try{
-  const session=await request('/api/admin/session',{session:true});assert.equal(session.actor.role,'SUPER_ADMIN');
+  const session=await request('/api/admin/session',{session:true});assert.equal(session.actor.role,'SUPER_ADMIN');assert.equal(session.actor.source,'session');
   const result=await request('/api/admin/podcasts/prepare',{session:true,body:{feedUrl,confirmation:'CONFIRM',reason:'Phase 1 policy-surgery acceptance: dispatch only the existing owned corpus; reuse authorised transcript and provider caches.'}});
   assert.equal(result.outcomes.length,1);
   const outcome=result.outcomes[0];assert.equal(outcome.episodeId,episodeId);
@@ -46,7 +47,10 @@ try{
     request:outcome,finalState:detail.episode.state,executionDecision:detail.episode.executionDecision,
     timeline:detail.timeline.map(({at,type,jobId,code})=>({at,type,jobId,code})),
     newJobs:after.jobs.filter(job=>!before.jobs.some(prior=>prior.jobId===job.jobId)).map(({jobId,state})=>({jobId,state})),
+    features:detail.episode.job?.featureStatus || null,
+    cachedOutput:{brief:Boolean(detail.episode.job?.brief?.overview),chapters:detail.episode.job?.chapters?.length || 0,topics:detail.episode.job?.topics?.length || 0},
     newUsage:after.usage.slice(before.usage.length),totals:after.totals,controls:after.controls};
-  writeFileSync('evals/policy-surgery-handoff.json',JSON.stringify(report,null,2)+'\n');
+  if(process.argv.includes('--cache-only')){assert.equal(report.newJobs.length,0);assert.equal(report.newUsage.length,0);}
+  writeFileSync(process.argv.includes('--cache-only')?'evals/policy-surgery-cache.json':'evals/policy-surgery-handoff.json',JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({state:report.finalState,request:outcome,newJobs:report.newJobs,newUsageEntries:report.newUsage.length}));
 }finally{await request('/api/admin/session',{method:'DELETE',session:true});}

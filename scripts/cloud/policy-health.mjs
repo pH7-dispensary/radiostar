@@ -21,7 +21,8 @@ const value={at:new Date().toISOString(),integrity:Object.values(db.prepare('PRA
  installations:installations.length,unrevokedInstallations:installations.filter(row=>!row.revokedAt).length,
  activePilotDevices:devices.filter(row=>!row.revokedAt&&Date.parse(row.expiresAt)>Date.now()).length,
  expiredUnrevokedPilotDevices:devices.filter(row=>!row.revokedAt&&Date.parse(row.expiresAt)<=Date.now()).length,
- decisionRequests:records('rights-decision-request').map(({id,feedUrl,status,activities,episodeIds})=>({id,feedUrl,status,activities,episodeCount:episodeIds.length}))};
+ decisionRequests:records('rights-decision-request').map(({id,feedUrl,status,activities,episodeIds})=>({id,feedUrl,status,activities,episodeCount:episodeIds.length})),
+ ownedCacheHistory:[...records('intelligence-history'),...records('intelligence')].filter(row=>row.episodeId==='starcast-approved-test-episode-v1').map(row=>({jobId:row.jobId,state:row.state,completedAt:row.completedAt,transcriptVersion:row.transcript?.transcriptVersion,audioVariant:row.transcript?.audioVariant,parserVersion:row.transcript?.parserVersion,sourceSignature:row.sourceSignature,sourceCheckedAt:row.sourceCheckedAt})).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt))).slice(0,5)};
 db.close();console.log(JSON.stringify(value));`;
 if(process.argv[2]==='poll'){
   const result=aws(['ssm','get-command-invocation','--command-id',process.argv[3],'--instance-id',instance]);

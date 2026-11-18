@@ -79,6 +79,9 @@ try {
   await request('audio-no-acquire');await execute();assert.equal(pipeline.status(feed,'audio-no-acquire').state,'READY');assert.equal(audioCalls,beforeAudio+1);
   assert.equal(publisherCalls,0);assert(adInspections>0);
   rows.push('Missing transcript invokes authorised audio fallback without unrelated fetch grant');
+  const textOnly=episode('publisher-only');delete textOnly.audioUrl;textOnly.refs=[{url:transcript.sourceUri,type:'text/vtt'}];
+  await request('publisher-only');await execute();assert.equal(pipeline.status(feed,'publisher-only').state,'READY');
+  assert.equal(pipeline.executionDecision(feed,'publisher-only').technicalReadiness.transcriptCache,'AVAILABLE','text-only canonical cache uses the same identity as the worker');
   // A revoked or expired prior decision is evidence history, not a lifetime lock.
   cached('expired');store.set('intelligence',episodeKey(feed,'expired'),{feedUrl:feed,episodeId:'expired',jobId:'historical-expired',state:'BLOCKED',code:'APPROVAL_EXPIRED',attempts:2,retryable:false});
   await request('expired');await execute();assert.equal(pipeline.status(feed,'expired').state,'READY');assert.equal(store.get('intelligence-history','historical-expired').code,'APPROVAL_EXPIRED');

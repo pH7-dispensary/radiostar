@@ -492,7 +492,7 @@ export class EpisodePipeline {
     const assessment = this.rights?.assessment(feedUrl, episodeId);
     const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, 'intelligence') || {allowed:true,tier:'ZERO',source:'global',policyVersion:0};
     const policy = this.intelligencePolicy?.effective(feedUrl, episodeId);
-    const variant = episode?.audioUrl ? hash(episode.audioUrl) : null;
+    const variant = episode ? hash(episode.audioUrl || '') : null;
     const transcriptCached = Boolean(variant && (this.store.get('transcript', episodeKey(feedUrl,episodeId)+':'+variant)?.segments?.length || this.store.get('audio-transcript',variant)?.segments?.length));
     this.ledger.refresh();
     const totals = this.ledger.totals(), controls = this.ledger.controls;
@@ -513,7 +513,7 @@ export class EpisodePipeline {
       technicalReadiness:{providerAvailable:this.enabled && this.configured,audioEnabled:this.audioEnabled,budgetAvailable,
         transcriptCache:transcriptCached?'AVAILABLE':episode?'NOT_FOUND':'NOT_CHECKED',publisherReferences:episode?.refs?.length ?? null,
         durationMs:episode?durationMs(episode.duration):null,maxAudioSeconds:controls.maxEpisodeSeconds,
-        source:episode?.audioUrl?'RESOLVED':'NOT_CHECKED',capacityAvailable:this.inflight.size<2},
+        source:episode?'RESOLVED':'NOT_CHECKED',capacityAvailable:this.inflight.size<2},
       executionState:{state:job?.state || 'NOT_REQUESTED',stage:job?.processingStage || null,jobId:job?.jobId || null,code:job?.code || null,completedAt:job?.completedAt || null},
       canDispatch:operational.allowed && processing?.allowed !== false && this.enabled && this.configured,
       firstBlocker:blockers[0] || null,secondaryBlockers:blockers.slice(1),
