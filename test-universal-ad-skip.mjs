@@ -4,6 +4,7 @@ import {prepareAdSkipOpening} from './ad-skip-source.mjs';
 import {adAcquirer,AD_JOB_MAX_BYTES} from './ad-acquisition.mjs';
 import {AD_WINDOW_MAX_BYTES} from './bounded-audio.mjs';
 import {SkipService} from './skip-service.mjs';
+import {episodeKey} from './episode-pipeline.mjs';
 
 const store=new LocalStore(':memory:');
 const cursor={overlapSha256:'a'.repeat(64)},hash='b'.repeat(64);
@@ -55,5 +56,28 @@ try{
   service.scheduleVerification('https://owned.example/rss','canonical',service.source('https://owned.example/rss','canonical'),[{qualifiesForAudioVerification:true,verificationState:'CANDIDATE'}]);
   await service.sourceTail;
   assert.equal(preparations,1);assert.equal(wholeDownloads,0,'new verification must not download the full canonical audio');
-  console.log('Progressive speech IDs, timestamp-preserving cache reuse and paid deduplication passed.');
+  const midFeed='https://owned.example/midroll',midEpisode='uncertain-whole-break',midHash='e'.repeat(64),midUrl='https://owned.example/midroll.mp3';
+  const midTranscript={audioContentHash:midHash,audioVariant:midHash,transcriptVersion:'midroll-fixture',durationMs:900000,segments:[
+    {id:'sponsor',startMs:300000,endMs:305000,text:'This episode is sponsored by Example. Use code RADIO for a free trial.'},
+    {id:'description',startMs:305000,endMs:315000,text:'Their service helps teams organise their work.'},
+    {id:'close',startMs:315000,endMs:320000,text:'Thank you for supporting this show.'},
+    {id:'return',startMs:321000,endMs:325000,text:'Back to the discussion about software.'},
+  ]};
+  const mid=new SkipService(store,{status:()=>({episode:{audioUrl:midUrl},transcript:midTranscript})},{automaticEnabled:()=>true});
+  mid.inspect(midFeed,midEpisode);
+  const midKey=episodeKey(midFeed,midEpisode),rows=store.all('skip-interval').map(([,v])=>v).filter(v=>v.episodeKey===midKey);
+  const whole=rows.find(v=>v.breakCandidate&&v.reviewOnly),fragment=rows.find(v=>v.startMs===300000&&v.endMs===305000);
+  assert(whole&&!whole.automaticBreakEvidence,'the complete proposal has an uncertain commercial closing');
+  assert(fragment.partialCommercialBreak&&!fragment.qualifiesForAudioVerification,'an uncertain complete break must not fall back to skipping its earlier CTA fragment');
+  // Previously cached fragment verification must be fenced without deleting
+  // the historical acoustic evidence or fabricating a complete approval.
+  store.set('skip-interval',fragment.id,{...fragment,partialCommercialBreak:false,qualifiesForAudioVerification:true,verificationState:'VERIFIED',boundaryVerified:true,audioVariantFingerprint:midHash,evidence:[...fragment.evidence,{source:'fingerprint',confidence:1}]});
+  store.set('skip-audio-verification',midKey,{state:'READY',variant:{audioVariantFingerprint:midHash,durationMs:900000}});
+  store.delete('skip-analysis',midKey);
+  const status=mid.playback(midFeed,midEpisode,{listener:{id:'tester'},audioUrl:midUrl,audioVariantFingerprint:midHash,preferences:{adSkipEnabled:true,advert:true}});
+  assert.equal(status.automaticSkipping,false);assert.equal(status.activeIntervals.length,0);
+  assert.notEqual(status.state,'READY','historical fragment verification cannot imply a complete break is ready');
+  assert.equal(status.verifiedCount,0);
+  assert.equal(store.get('skip-interval',fragment.id).verificationState,'VERIFIED','historical evidence is preserved, but cannot authorise a partial break');
+  console.log('Progressive speech IDs, timestamp-preserving cache reuse, paid deduplication and incomplete-break fencing passed.');
 }finally{store.close();}

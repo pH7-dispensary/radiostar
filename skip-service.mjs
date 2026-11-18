@@ -14,7 +14,7 @@ import { verifyReviewChain, currentReviews } from './ad-skip-corpus.mjs';
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const nowIso = () => new Date().toISOString();
 const categories = new Set(["advert", "intro", "title_sequence", "preview", "outro"]);
-const candidateVersion = "transcript-candidates-v14";
+const candidateVersion = "transcript-candidates-v15";
 const sponsorLanguage = /\b(sponsored by|sponsor of|our sponsors?|brought to you by|made possible by|thanks to .{1,50} for sponsoring)\b/i;
 const commercialOffer = /\b(promo code|discount code|use (?:the )?code|free trial|percent off|visit .{1,80}(?: to |sign up|signup)|go to .{1,60} for|sign up at|get started at|head (?:over )?to .{1,70} (?:for|to))\b|\d+% off/i;
 const sponsorshipDenial = /\b(?:not sponsored|(?:no|without) (?:a )?sponsors?|isn't (?:a )?sponsor|not (?:an? )?(?:ad|advertisement))\b/i;
@@ -93,6 +93,8 @@ function candidateForSegment({ segment, transcript, feed, key, previous, all }) 
   };
 }
 
+const verifiedCompleteInterval = item => item.verificationState === Verification.VERIFIED && item.boundaryVerified && !item.disputed && Boolean(item.audioVariantFingerprint) && !item.partialOpeningBreak && !item.partialCommercialBreak;
+
 function listenerState({ value, intervals, verification }) {
   if (!value) return ["NOT_ANALYSED", "Ad detection has not been prepared for this episode."];
   if (!value.transcript?.segments?.length) {
@@ -103,7 +105,7 @@ function listenerState({ value, intervals, verification }) {
   }
   if (!intervals.length) return ["NO_ADVERTS_DETECTED", "No advert candidates were found in the analysed transcript."];
   if (intervals.every(item => [Verification.REJECTED, Verification.DISPUTED].includes(item.verificationState))) return ["NO_VERIFIED_INTERVALS", "Detected signals were rejected or disputed; no safe skip is available."];
-  if (intervals.some((item) => item.verificationState === Verification.VERIFIED)) return ["READY", "Verified, audio-matched intervals are ready for this exact source variant."];
+  if (intervals.some(verifiedCompleteInterval)) return ["READY", "Verified, audio-matched intervals are ready for this exact source variant."];
   if (["QUEUED", "PROCESSING"].includes(verification?.state)) return ["VERIFYING", "Checking candidate boundaries against the authorised audio source."];
   if (verification?.state === "DYNAMIC_VARIANT") return ["UNAVAILABLE", "This publisher delivery can change between listens, so Ad Skip stays off."];
   if (verification?.state === "FAILED") return ["FAILED", "Audio boundary verification did not complete. Automatic skipping remains off."];
@@ -238,7 +240,10 @@ export class SkipService {
       const existing = candidate && this.store.get("skip-interval", candidate.id);
       if (!candidate) continue;
       const opening = segments.find(row=>row.openingBreak && row.startMs<=candidate.startMs && row.endMs>=candidate.endMs);
-      const complete = segments.find(row=>row.breakCandidate && row.automaticBreakEvidence && row.startMs<=candidate.startMs && row.endMs>=candidate.endMs && row.id!==segment.id);
+      // A broader commercial span is evidence that a contained CTA is only
+      // part of the break, even when the full closing remains unverified.
+      // Equal spans are duplicates, not fragments; execution deduplicates them.
+      const complete = segments.find(row=>row.breakCandidate && row.startMs<=candidate.startMs && row.endMs>=candidate.endMs && (row.startMs<candidate.startMs || row.endMs>candidate.endMs));
       // Never publish the earlier CTA fragment as if it were the complete pre-roll.
       if (opening) candidate.qualifiesForAudioVerification = false;
       candidate.partialOpeningBreak=Boolean(opening && !candidate.openingBreak);
@@ -312,8 +317,8 @@ export class SkipService {
       candidateCount: intervals.length,
       analysisCacheHit: Boolean(input && !needsAnalysis),
       verificationState: verification?.state || null,
-      intervals: intervals.map(({ id, type, startMs, endMs, verificationState, excerpt }) => ({ id, type, startMs, endMs, verificationState, excerpt })),
-      verifiedCount: intervals.filter((item) => item.verificationState === Verification.VERIFIED && item.boundaryVerified && !item.disputed && Boolean(item.audioVariantFingerprint)).length,
+      intervals: intervals.map(({ id, type, startMs, endMs, verificationState, excerpt, partialOpeningBreak, partialCommercialBreak }) => ({ id, type, startMs, endMs, verificationState, excerpt, partialOpeningBreak, partialCommercialBreak })),
+      verifiedCount: intervals.filter(verifiedCompleteInterval).length,
     };
   }
   scheduleVerification(feed, episode, value, intervals, preparedAudio = null) {
@@ -431,7 +436,7 @@ export class SkipService {
       // Keep an existing complete break until it has passed; overlapping windows
       // must not replace its lease with a partial later view.
       const existing=selected.inspect(feed,episode).intervals || [];
-      if(positionMs>=next.transcript.coverageStartMs && !existing.some(row=>row.verificationState==='VERIFIED' && row.startMs<=positionMs && row.endMs>positionMs))selected=child;
+      if(positionMs>=next.transcript.coverageStartMs && !existing.some(row=>row.verificationState==='VERIFIED' && !row.partialOpeningBreak && !row.partialCommercialBreak && row.startMs<=positionMs && row.endMs>positionMs))selected=child;
       prior=next;
     }
     return selected;
