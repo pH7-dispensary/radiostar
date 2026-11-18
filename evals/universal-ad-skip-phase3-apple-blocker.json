@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-18T15:52:24.616Z",
+  "httpStatus": 403,
+  "code": "FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED",
+  "operation": "Read App Store Connect builds for app 6822706958, build 18",
+  "requiredAction": "Account Holder reviews and accepts the pending Apple agreement",
+  "agreementAcceptedByAgent": false,
+  "appleProcessingVerified": false
+}
