@@ -138,3 +138,24 @@ console.log('Saved-response assembly restores confident speech locally, retains 
  }finally{s.close();}
 }
 console.log('Changed source uses a distinct reservation; unchanged sources reuse saved paid responses.');
+
+{
+ const {briefReviewEvidence}=await import('./intelligence-repair.mjs');
+ const {reviewClaims,validateClaims}=await import('./claim-grounding.mjs');
+ const t={segments:[{id:'intro',text:'Welcome to a conversation about technology.'},{id:'evidence',text:'Durable checkpoints preserve completed transcription work after a worker restart.'}]};
+ const value={brief:{overview:'Saved checkpoints allow interrupted transcription to resume.',detail:'Saved checkpoints allow interrupted transcription to resume.',themes:[],sourceSegmentIds:['intro']},chapters:[]};
+ let reviews=0;
+ const requests={request:async({invoke})=>invoke({responses:{create:async r=>{reviews++;const evidence=JSON.parse(r.input[1].content);assert(evidence.every(c=>c.sources.some(s=>s.id==='evidence')));return{output_text:JSON.stringify({claims:evidence.map(c=>({id:c.id,entailed:true,supportingSourceIds:['evidence']}))})};}}})};
+ const reviewed=await reviewClaims(briefReviewEvidence(value,t),t,requests);assert(reviews);assert(validateClaims(reviewed,t).complete);assert.deepEqual(value.brief.sourceSegmentIds,['intro']);
+ const refused=await reviewClaims(briefReviewEvidence(value,t),t,{request:async({invoke})=>invoke({responses:{create:async r=>({output_text:JSON.stringify({claims:JSON.parse(r.input[1].content).map(c=>({id:c.id,entailed:false,supportingSourceIds:[]}))})})}})});assert(!validateClaims(refused,t).complete);
+}
+console.log('Brief repair retrieves real canonical speech and still requires independent entailment; refusals remain partial.');
+{
+ const s=new LocalStore(':memory:');const p=new EpisodePipeline({store:s,ledger:new BudgetLedger({enabled:true},s),enabled:true,configured:true,client:{responses:{create:()=>assert.fail('Unknown legacy chapter must not replay')}}});
+ try {
+  const j={...base,brief:{...base.brief,mode:undefined},chapters:[base.chapters[0]]};s.set('intelligence',key,j);queueFeatureRepair(p,key);
+  s.set('analysis-checkpoint',`${key}:missing-features-no-inline-citations-v1:chapter.0:1`,{state:'SENDING',requestId:'legacy-unknown'});
+  const r=await repairOneFeature(p,key);assert.equal(r.features['chapter.0'].code,'PROVIDER_OUTCOME_UNKNOWN');assert.equal(p.ledger.usage.length,0);
+ }finally{s.close();}
+}
+console.log('Unresolved legacy chapter requests remain blocked across source-key migration.');

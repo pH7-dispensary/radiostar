@@ -38,8 +38,9 @@ result.quality=jobs.filter(j=>targets.has(j.episodeId)).map(j=>{
  const repeatedUtterances=segments.filter((s,i)=>i&&s.startMs===segments[i-1].endMs&&normalized(s)===normalized(segments[i-1])).length;
  const compactSource=({sourceSegmentIds=[],...row})=>({...row,sourceSegmentCount:sourceSegmentIds.length,sourceSegmentIdsSample:[...new Set([...sourceSegmentIds.slice(0,3),...sourceSegmentIds.slice(-3)])],sourceIdsSha256:createHash('sha256').update(JSON.stringify(sourceSegmentIds)).digest('hex')});
  return{episodeId:j.episodeId,title:j.episode?.title,jobId:j.jobId,state:j.state,code:j.code,attempts:j.attempts,recoveries:j.recoveries,softwareRecovery:j.softwareRecovery,sourceHash:hash,durationMs,work:j.work,resumeAfter:j.resumeAfter,capacityWait:j.capacityWait,processingMs:j.processingMs,featureStatus:j.featureStatus,featureRepair:j.featureRepair,transcriptAssemblyRepair:j.transcriptAssemblyRepair,assemblyVersion:j.transcript?.assemblyVersion,
+ intelligenceDigest:createHash('sha256').update(JSON.stringify([j.transcript,j.brief,j.chapters,j.topics])).digest('hex'),
  expectedChunks:plan.length,checkpointCount:chunks.length,completedChunks:chunks.filter(c=>c.state==='READY').length,
- chunks:chunks.map(c=>({index:Number(c.key.split(':').at(-1)),state:c.state,responseSha256:createHash('sha256').update(JSON.stringify(c.response||null)).digest('hex'),segments:c.response?.segments?.length||0})),
+ chunks:chunks.map(c=>({index:Number(c.key.split(':').at(-1)),state:c.state,completedAt:c.completedAt,responseSha256:createHash('sha256').update(JSON.stringify(c.response||null)).digest('hex'),segments:c.response?.segments?.length||0})),
  missingChunkIndexes:plan.filter(p=>!chunks.some(c=>Number(c.key.split(':').at(-1))===p.index&&c.state==='READY')).map(p=>p.index),
  transcriptSegments:segments.length,timingErrors:invalid,adjacentOverlapDuplicates:duplicates,adjacentRepeatedUtterances:repeatedUtterances,
  samples:[...new Set([0,Math.floor(segments.length/2),segments.length-1])].filter(i=>segments[i]).map(i=>({id:segments[i].id,startMs:segments[i].startMs,endMs:segments[i].endMs,textSha256:createHash('sha256').update(segments[i].text).digest('hex')})),
