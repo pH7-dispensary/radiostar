@@ -29,7 +29,7 @@ import { SkipService } from "./skip-service.mjs";
 import { verifyAdSkipAudio } from "./ad-skip-verification.mjs";
 import { prepareAdSkipOpening, signedAdSkipVariant } from './ad-skip-source.mjs';
 import { RightsRegistry } from "./rights-registry.mjs";
-import { assessPublisherRights, publisherRightsEvidence, assessProcessingActivities } from "./rights-assessment.mjs";
+import { assessPublisherRights, publisherRightsEvidence, assessProcessingActivities, recordProcessingDecisionRequest } from "./rights-assessment.mjs";
 import { readyDiscovery } from "./ready-discovery.mjs";
 import { IntelligencePolicyRegistry, intelligenceLevel } from "./intelligence-policy.mjs";
 import { processingQueueFromEnv } from "./processing-queue.mjs";
@@ -428,6 +428,7 @@ export function createStarCastServer({
       ...assessment,
     });
     const activities = activityAssessmentFor(feedUrl, episodeId, assessment.assessmentEvidence);
+    recordProcessingDecisionRequest({rights,feedUrl,episodeId,assessment:activities});
     const activityKey = episodeKey(feedUrl,episodeId);
     if (store.get('rights-activity-assessment',activityKey)?.fingerprint !== activities.fingerprint) store.transaction(() => {
       const previous=store.get('rights-activity-assessment',activityKey);
@@ -744,12 +745,13 @@ export function createStarCastServer({
     if (["QUEUE_TIMEOUT", "PROCESSING_TIMEOUT", "INTERRUPTED"].includes(code)) return "WORKER";
     return "PROCESSING";
   };
-  const intelligenceDimensions = (feedUrl, episodeId, administrative = false) => {
+  const intelligenceDimensions = (feedUrl, episodeId, administrative = false, episode = undefined) => {
     const assessment = rights.assessment(feedUrl, episodeId);
     const policy = intelligencePolicy.effective(feedUrl, episodeId);
     const job = pipeline.status(feedUrl, episodeId);
     const recovered = pipeline.rightsRecovery(feedUrl, episodeId);
     return {
+      ...(administrative ? {executionDecision:pipeline.executionDecision(feedUrl,episodeId,{episode})} : {}),
       operationalPolicy: intelligenceLevel(policy.tier).label,
       operationalPolicySource: policy.source,
       automaticPreparationEnabled: policy.tier !== "HIGH" && policy.applyToFuture !== false && followedPreparation.configuration().enabled && featureEnabled("automaticProcessing") && adminService.configuration().values.processing?.automaticFollowPreparation !== false,
@@ -964,7 +966,7 @@ export function createStarCastServer({
       : "Preparation reuses the canonical cache first; automatic audio fallback requires an eligible source, active operational policy and available spending capacity.";
     return {
       ...episode,
-      ...intelligenceDimensions(feedUrl, episode.id, true),
+      ...intelligenceDimensions(feedUrl, episode.id, true, episode),
       canonicalEpisodeId: canonicalEpisodeId(feedUrl, episode.id),
       state, code, reason, action, job: publicJob, policy: { ...policy, level: intelligenceLevel(policy.tier) }, rights: permissions,
       recovery,
@@ -1084,6 +1086,7 @@ export function createStarCastServer({
       episode: { ...episode, processingStatus: status },
       activityAssessment: {...activityAssessmentFor(feedUrl,episodeId),
         recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null},
+      decisionRequests:store.all('rights-decision-request').map(([,record])=>record).filter(record=>record.feedUrl===feedUrl),
       processingHistory: history,
       timeline: timeline.filter((item) => item.at).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
       estimatedMedianProcessingMs: processingEstimate(),
@@ -1266,6 +1269,7 @@ export function createStarCastServer({
     ...rights.assessment(feedUrl, episodeId),
     feedUrl, episodeId: episodeId || null, canonicalEpisodeId: episodeId ? canonicalEpisodeId(feedUrl, episodeId) : null,
     record: rights.resolve(feedUrl, episodeId),
+    decisionRequests:store.all('rights-decision-request').map(([,record])=>record).filter(record=>record.feedUrl===feedUrl),
     activityAssessment: episodeId ? {...activityAssessmentFor(feedUrl,episodeId),
       recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null} : null,
     revision: rights.assessmentRevision(feedUrl, episodeId),

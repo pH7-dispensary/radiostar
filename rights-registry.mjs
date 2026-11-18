@@ -440,8 +440,12 @@ export class RightsRegistry {
       (episode.assessmentSource?.startsWith("publisher-rss-") ||
        (episode.assessmentSource === "super-admin-technical-review" && !episode.reservedFeatures?.length &&
         episode.assessmentEvidence?.some(item => item.type === "EVIDENCE_REVIEW_NO_BASIS")));
-    const documentedChannel = podcast?.legalBasis && podcast?.assessmentEvidence?.length &&
-      podcast?.canProcessForAi && podcast?.assessmentStatus === RightsAssessmentStatus.APPROVED;
+    // Inheritance is activity-specific. An ad-only or transcription-only grant
+    // must not depend on an unrelated general-analysis permission. Human
+    // episode holds still win; only factual automatic missing-basis findings
+    // can inherit a subsequently documented channel basis.
+    const documentedChannel = documentedProcessingBasis(podcast) &&
+      podcast?.assessmentStatus === RightsAssessmentStatus.APPROVED;
     const selected = mandatory(episode) ? episode : mandatory(podcast) ? podcast
       : covered && (podcast?.approvalAssessment || documentedChannel) && automaticMissing ? podcast : episode || (covered ? podcast : null);
     return (
@@ -676,7 +680,14 @@ export class RightsRegistry {
         /^(?:©\s*)?(?:all )?rights reserved[.\s]*$/i.test(e.value)) &&
       input.assessmentSource === "publisher-rss-v4" && input.rightsReserved === false &&
       input.assessmentEvidence?.some(e => e.type === "COPYRIGHT_NOTICE");
-    const mandatory = prior.id && mandatoryRestriction(prior) && !noticeCorrection;
+    // Fresh evidence may resolve a reservation made by this same automatic RSS
+    // assessor. Never overwrite a human hold, dispute, takedown or channel
+    // restriction on the strength of different episode metadata.
+    const publisherRefresh = stored && !stored.approvalAssessment && !stored.suspendedAt && !stored.deletedAt &&
+      stored.classification !== RightsClassification.DISPUTED &&
+      stored.assessmentSource?.startsWith('publisher-rss-') && input.assessmentSource?.startsWith('publisher-rss-') &&
+      stored.evidenceFingerprint && input.evidenceFingerprint && stored.evidenceFingerprint !== input.evidenceFingerprint;
+    const mandatory = prior.id && mandatoryRestriction(prior) && !noticeCorrection && !publisherRefresh;
     if (mandatory) return { record: prior, reused: true, mandatory: true };
     // A historical technical finding of missing evidence is not an enduring
     // denial of a subsequently documented publisher grant. Keep the old row
@@ -697,6 +708,7 @@ export class RightsRegistry {
     if (prior.id && prior.evidenceFingerprint && prior.evidenceFingerprint === input.evidenceFingerprint && prior.assessmentVersion === input.assessmentVersion)
       return { record: prior, reused: true, mandatory: false };
     if (noticeCorrection) this.audit("automatic-notice-classification-corrected", prior.id, actor, { previous: prior, assessmentVersion: input.assessmentVersion });
+    if (publisherRefresh) this.audit('publisher-evidence-refreshed', prior.id, actor, {previous: prior, evidenceFingerprint: input.evidenceFingerprint});
     const record = this.set({ ...input, episodeId: input.episodeId }, { actor });
     this.audit("rights-assessed-automatically", record.id, actor, {
       classification: record.classification,

@@ -124,12 +124,17 @@ export class FollowedPreparation {
     if (this.refreshing || !this.configuration().enabled || !this.enabled() || !this.store.get(kind, "snapshot")) return;
     const feeds = new Set(this.follows().map(v => v.feedUrl)), listeners = new Set(this.listeners().map(v => v.id));
     let slots = Math.max(0, 2 - this.store.all("intelligence").filter(([, j]) => activeStates.has(j.state) && !j.completedAt).length);
-    for (const row of this.rows().map(row => ({ ...row, priority: priorityFor(row, listeners) })).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
+    for (let row of this.rows().map(row => ({ ...row, priority: priorityFor(row, listeners) })).sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt))) {
       await yieldToRequests();
       if (row.paused) continue;
       const recentEncounter = listeners.has(row.encounterOwner) && Date.now() - Date.parse(row.encounteredAt || "") < 86400000;
       if (!(row.inWindow && feeds.has(row.feedUrl)) && !recentEncounter) continue;
       const cached = this.pipeline.status(row.feedUrl, row.episodeId);
+      // A backoff belongs to the decision that caused it, not the podcast.
+      // Changed evidence, resolved reservations and expiry are evaluated now;
+      // they must not wait out an old missing-basis refusal for another hour.
+      if (row.eligible === false && this.rights.evaluate({feature:'intelligence-processing',feedUrl:row.feedUrl,episodeId:row.episodeId}).allowed)
+        row = this.put({...row,eligible:true,state:'NOT_REQUESTED',code:null,reason:null,retryAfter:null});
       if(Date.parse(row.retryAfter || '')>Date.now()) {
         // Reuse the last assessed metadata for independent Ad Skip while the
         // canonical job backs off; do not turn every poll into another RSS call.
@@ -155,7 +160,8 @@ export class FollowedPreparation {
         // rights-review backoff or occupied full-analysis slot cannot block it.
         this.inspect(row.feedUrl, row.episodeId, episode, {priority:row.priority});
         if (Date.parse(row.retryAfter || '') > Date.now() || !slots) continue;
-        const processing = this.rights.evaluate({ feature: "intelligence-processing", feedUrl: row.feedUrl, episodeId: row.episodeId });
+        const contract = this.pipeline.executionDecision?.(row.feedUrl,row.episodeId,{episode});
+        const processing = contract?.processingBasis || this.rights.evaluate({ feature: "intelligence-processing", feedUrl: row.feedUrl, episodeId: row.episodeId });
         const decision = processing;
         if (!processing.allowed) {
           this.testingMode.attention({ ...row, title: episode.title, podcast: episode.showName, decision: { ...decision, rights: this.rights.resolve(row.feedUrl, row.episodeId) } });
@@ -182,17 +188,19 @@ export class FollowedPreparation {
       const job = this.pipeline.status(row.feedUrl, row.episodeId);
       const recovered = this.pipeline.rightsRecovery?.(row.feedUrl, row.episodeId);
       const projected = job ? listenerProcessingStatus(job) : null;
-      const state = row.paused || row.state === "PAUSED" && !this.allowed(row.feedUrl,row.episodeId) ? "PAUSED" : row.state === "WAITING" && row.code === "SOURCE_UNAVAILABLE" ? "WAITING" : row.eligible === false ? "REVIEW_REQUIRED" : recovered || row.sourceNeedsRefresh && completed(job) ? "DISCOVERED" : projected?.state === "NOT_REQUESTED" || !job ? row.code === "BUDGET_LIMIT" ? "BUDGET_PAUSED" : row.state === "FAILED" ? "FAILED" : "DISCOVERED" : projected.state;
+      const processing = this.rights.evaluate({feature:'intelligence-processing',feedUrl:row.feedUrl,episodeId:row.episodeId});
+      const eligible = processing.allowed;
+      const state = row.paused || row.state === "PAUSED" && !this.allowed(row.feedUrl,row.episodeId) ? "PAUSED" : row.state === "WAITING" && row.code === "SOURCE_UNAVAILABLE" ? "WAITING" : !eligible ? "REVIEW_REQUIRED" : recovered || row.sourceNeedsRefresh && completed(job) ? "DISCOVERED" : projected?.state === "NOT_REQUESTED" || !job ? row.code === "BUDGET_LIMIT" ? "BUDGET_PAUSED" : row.state === "FAILED" ? "FAILED" : "DISCOVERED" : projected.state;
       const ready = state === "READY";
       const cachedResult = ready || state === "PARTIAL_READY" && completed(job);
       const matchingVariant = !row.acquisition?.audioVariant || createHash("sha256").update(job?.episode?.audioUrl || "").digest("hex") === row.acquisition.audioVariant;
       const acquisition = { ...row.acquisition, intelligenceCacheHit: cachedResult && !row.sourceNeedsRefresh,
         publisherTranscriptFound: matchingVariant && job?.transcriptChecks?.publisherTranscriptFound === true || row.acquisition?.publisherTranscriptFound === true,
         transcriptCacheHit: matchingVariant && !!job?.transcript?.segments?.length || row.acquisition?.transcriptCacheHit === true };
-      return { ...row, acquisition, priority: priorityFor(row, listeners), ...this.status?.(row.feedUrl, row.episodeId), state, stage: projected?.stage || null,
+      return { ...row, eligible, acquisition, priority: priorityFor(row, listeners), ...this.status?.(row.feedUrl, row.episodeId), state, stage: projected?.stage || null,
         work: job?.work || null, queuePosition: null, estimatedCompletion: measuredProcessingEstimate(job, history),
         elapsedMs: job?.startedAt ? Math.max(0, Date.parse(job.completedAt || iso()) - Date.parse(job.startedAt)) : null,
-        code: row.eligible === false ? row.decision?.code || row.code : recovered || ready ? null : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
+        code: !eligible ? processing.code : recovered || ready || row.eligible === false ? null : job?.code || row.code, jobId: job?.jobId || null, completedAt: job?.completedAt || null, processingMs: job?.processingMs || null };
     });
     const window = rows.filter(v => v.inWindow), counts = {};
     for (const row of window) counts[row.state] = (counts[row.state] || 0) + 1;

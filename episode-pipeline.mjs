@@ -46,7 +46,7 @@ export const canonicalEpisodeId = (feedUrl, episodeId) =>
   `${hash(String(feedUrl)).slice(0, 16)}:${hash(String(episodeId)).slice(0, 16)}`;
 
 export const recoverableTechnicalJob = (job) => job?.state === "FAILED" && job.retryable !== false &&
-  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
+  ["QUEUE_TIMEOUT", "INTERRUPTED", "ANALYSIS_FAILED", "PROVIDER_TIMEOUT", "PROCESSING_TIMEOUT", "TIMEOUT", "SOURCE_UNAVAILABLE", "SOURCE_VALIDATION_FAILED", "PROVIDER_UNAVAILABLE"].includes(job.code) &&
   (job.recoveries || 0) < 2;
 
 // The persisted worker state deliberately remains backward-compatible. This
@@ -481,6 +481,45 @@ export class EpisodePipeline {
         : null,
     };
   }
+  // The dispatch contract is a projection of the existing rights evaluator,
+  // operational registry, ledger and job store. No new approval state lives
+  // here. Budget availability is advisory at dispatch; atomic reservations
+  // remain the authority immediately before each paid provider call.
+  executionDecision(feedUrl, episodeId, { episode, audit = false } = {}) {
+    const job = this.store.get('intelligence', episodeKey(feedUrl, episodeId));
+    episode ||= job?.episode;
+    const processing = this.rights?.evaluate({feature:'intelligence-processing',feedUrl,episodeId,audit});
+    const assessment = this.rights?.assessment(feedUrl, episodeId);
+    const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, 'intelligence') || {allowed:true,tier:'ZERO',source:'global',policyVersion:0};
+    const policy = this.intelligencePolicy?.effective(feedUrl, episodeId);
+    const variant = episode?.audioUrl ? hash(episode.audioUrl) : null;
+    const transcriptCached = Boolean(variant && (this.store.get('transcript', episodeKey(feedUrl,episodeId)+':'+variant)?.segments?.length || this.store.get('audio-transcript',variant)?.segments?.length));
+    this.ledger.refresh();
+    const totals = this.ledger.totals(), controls = this.ledger.controls;
+    const budgetAvailable = controls.enabled && totals.day < controls.dailyUsd && totals.month < controls.monthlyUsd;
+    const blockers = [];
+    const add = (dimension,code,reason,recoverable) => blockers.push({dimension,code,reason,recoverable});
+    if (!operational.allowed) add('operationalPolicy','INTELLIGENCE_POLICY_HIGH','New processing is paused by an administrator.',false);
+    if (processing && !processing.allowed) add('processingBasis',processing.code,processing.reason,false);
+    if (!this.enabled || !this.configured) add('technicalReadiness','SERVER_UNAVAILABLE','The processing provider is temporarily unavailable.',true);
+    if (!budgetAvailable) add('technicalReadiness','BUDGET_LIMIT','Accepted work waits for the authorised spending allowance.',true);
+    return {
+      version:'episode-execution-v1',
+      operationalPolicy:{...operational,automaticPreparation:operational.allowed && policy?.applyToFuture !== false},
+      processingBasis:{allowed:processing?.allowed !== false,code:processing?.code || 'NOT_CONFIGURED',reason:processing?.reason || null,basisEstablished:processing?.basisEstablished ?? null,
+        mode:processing?.mode || null,policyVersion:processing?.policyVersion || null,outputProfile:processing?.outputProfile || 'standard',
+        recordId:processing?.rights?.id || null,scope:processing?.rights?.episodeId ? 'episode' : 'channel',evidence:assessment?.evidence || [],features:assessment?.features || {},revision:assessment?.assessmentRevision || null},
+      riskAdvisory:assessment?.advisories || [],
+      technicalReadiness:{providerAvailable:this.enabled && this.configured,audioEnabled:this.audioEnabled,budgetAvailable,
+        transcriptCache:transcriptCached?'AVAILABLE':episode?'NOT_FOUND':'NOT_CHECKED',publisherReferences:episode?.refs?.length ?? null,
+        durationMs:episode?durationMs(episode.duration):null,maxAudioSeconds:controls.maxEpisodeSeconds,
+        source:episode?.audioUrl?'RESOLVED':'NOT_CHECKED',capacityAvailable:this.inflight.size<2},
+      executionState:{state:job?.state || 'NOT_REQUESTED',stage:job?.processingStage || null,jobId:job?.jobId || null,code:job?.code || null,completedAt:job?.completedAt || null},
+      canDispatch:operational.allowed && processing?.allowed !== false && this.enabled && this.configured,
+      firstBlocker:blockers[0] || null,secondaryBlockers:blockers.slice(1),
+      nextAction:!operational.allowed?'SUPER_ADMIN_RESUME':processing?.allowed===false?'RESOLVE_PROCESSING_BASIS':!this.enabled||!this.configured?'RESTORE_PROVIDER':!budgetAvailable?'WAIT_FOR_BUDGET':completed(job)?'REUSE_INTELLIGENCE':'PREPARE',
+    };
+  }
   transcriptRecovery(feedUrl, episodeId, episode) {
     const previous = this.status(feedUrl, episodeId);
     if (previous?.code !== "DURATION_LIMIT" || !["FAILED", "BLOCKED"].includes(previous.state)) return null;
@@ -524,9 +563,10 @@ export class EpisodePipeline {
   }
   rightsRecovery(feedUrl, episodeId) {
     const previous = this.store.get("intelligence", episodeKey(feedUrl, episodeId));
-    const refusalCodes = new Set(["LEGAL_BASIS_NOT_ESTABLISHED", "RIGHTS_RESTRICTED", "FEATURE_NOT_AUTHORISED", "ASSESSMENT_REQUIRED", "EXPLICIT_AUTHORISATION_REQUIRED", "SCOPED_PUBLISHER_RESTRICTION", "PUBLISHER_RESTRICTION", "RIGHTS_RESERVED", "TAKEDOWN_OR_SUSPENSION"]);
+    const refusalCodes = new Set(["LEGAL_BASIS_NOT_ESTABLISHED", "RIGHTS_RESTRICTED", "FEATURE_NOT_AUTHORISED", "ASSESSMENT_REQUIRED", "EXPLICIT_AUTHORISATION_REQUIRED", "SCOPED_PUBLISHER_RESTRICTION", "PUBLISHER_RESTRICTION", "RIGHTS_RESERVED", "TAKEDOWN_OR_SUSPENSION", "APPROVAL_EXPIRED", "APPROVAL_REVOKED", "TERRITORY_REVIEW_REQUIRED", "POLICY_FEATURE_DISABLED", "INTELLIGENCE_POLICY_HIGH"]);
     return previous && ["FAILED", "BLOCKED", "UNAVAILABLE"].includes(previous.state) && refusalCodes.has(previous.code) &&
-      this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId }).allowed ? previous : null;
+      this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId }).allowed &&
+      this.intelligencePolicy?.allows(feedUrl, episodeId, 'intelligence').allowed !== false ? previous : null;
   }
   async request(input) {
     input = { ...input, feedUrl: await this.canonicalFeed(input.feedUrl) };
@@ -550,8 +590,9 @@ export class EpisodePipeline {
     const key = episodeKey(feedUrl, episodeId);
     // Re-evaluate publisher evidence before consulting historical failures.
     // The registry deduplicates identical evidence and preserves human holds.
-    await this.assessEpisodeRights?.(feedUrl, episodeId);
-    const processingDecision = this.rights?.evaluate({ feature: "intelligence-processing", feedUrl, episodeId, audit: true });
+    const assessed = await this.assessEpisodeRights?.(feedUrl, episodeId);
+    const decision = this.executionDecision(feedUrl,episodeId,{episode:assessed?.episode,audit:true});
+    const processingDecision = decision.processingBasis;
     if (processingDecision && !processingDecision.allowed)
       return { state: "BLOCKED", code: processingDecision.code, reason: processingDecision.reason, retryable: false };
     if (!this.testingMode?.limits(testingContext).dailyUsd) testingContext = null;
@@ -632,14 +673,14 @@ export class EpisodePipeline {
       (!retry || previous.attempts >= 2 || !previous.retryable) && !recovery?.eligible
     )
       return publicIntelligence(previous);
-    if (!this.enabled || !this.configured)
+    if (!decision.technicalReadiness.providerAvailable)
       return {
         state: "BLOCKED",
         code: "SERVER_UNAVAILABLE",
         reason: "Episode analysis is temporarily unavailable.",
-        retryable: false,
+        retryable: true,
       };
-    const operational = this.intelligencePolicy?.allows(feedUrl, episodeId, "intelligence");
+    const operational = decision.operationalPolicy;
     if (operational && !operational.allowed)
       return {
         state: "BLOCKED",
@@ -946,7 +987,7 @@ export class EpisodePipeline {
       // transcript: those paths do not download or transcribe the episode.
       let transcript = forcePublisherRefresh
         ? null
-        : this.store.get("transcript", key + ":" + variant);
+        : this.store.get("transcript", key + ":" + variant) || this.store.get('audio-transcript', variant);
       let transcriptChecks = {
         cacheChecked: true,
         cacheHit: Boolean(transcript),
@@ -973,9 +1014,11 @@ export class EpisodePipeline {
           processingStage: "ACQUIRING_TRANSCRIPT",
           transcriptChecks,
         });
-        if (rights && !this.rights.evaluate({ feature: "transcript-acquisition", feedUrl, episodeId }).allowed)
-          throw Error("Rights permission does not allow transcript acquisition for this episode.");
-        for (const ref of episode.refs || []) {
+        // Reusing an already acquired matching transcript does not acquire a
+        // publisher transcript again. An acquisition reservation also does not
+        // prohibit independently authorised audio transcription.
+        const canAcquire = !rights || this.rights.evaluate({ feature: 'transcript-acquisition', feedUrl, episodeId }).allowed;
+        for (const ref of canAcquire ? episode.refs || [] : []) {
           controller.signal.throwIfAborted();
           try {
             const candidate = await this.fetchTranscript(ref, {

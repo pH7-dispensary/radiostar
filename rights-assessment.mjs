@@ -43,6 +43,8 @@ export function assessProcessingActivities({ rights, feedUrl, episodeId, deploym
     return [activity, { allowed: !refusal, code: refusal?.code || 'ALLOWED_BY_EXISTING_RECORD',
       reason: refusal?.reason || 'The current scoped rights record permits this activity; no duplicate approval is needed.',
       basisEstablished: checks.every(check => check.basisEstablished), requiredPermissions: features,
+      records: checks.map(check => ({feature:check.feature,id:check.rights.id,scope:check.rights.episodeId?'episode':'channel',
+        legalBasis:check.rights.legalBasis,expiresAt:check.rights.approvalAssessment?.expiresAt || null,reviewer:check.rights.updatedBy || null})),
       policyVersion: checks[0].policyVersion, mode: checks[0].mode,
       ...(activity.startsWith('bounded-') ? {maximumSeconds:180,maximumAcquiredBytes:8*1024*1024,distribution:false} : {}) }];
   }));
@@ -69,6 +71,35 @@ export function assessProcessingActivities({ rights, feedUrl, episodeId, deploym
     ], decisions, permissionsChanged: false,
   };
   return {...context,fingerprint:hash(context)};
+}
+
+// One durable decision request per podcast / execution jurisdiction. Episode
+// observations remain in the existing registry, while the unresolved legal or
+// commercial question is not repeatedly raised as six independent approvals.
+export function recordProcessingDecisionRequest({ rights, feedUrl, episodeId, assessment }) {
+  const id = hash([feedUrl, assessment.executionJurisdiction, 'processing-basis']);
+  const previous = rights.store.get('rights-decision-request', id);
+  const pending = Object.entries(assessment.decisions).filter(([,decision]) => decision.code === 'LEGAL_BASIS_NOT_ESTABLISHED');
+  if (!pending.length && !previous) return null;
+  const episodeIds = unique([...(previous?.episodeIds || []),episodeId]).slice(-100);
+  const activities = Object.entries(assessment.decisions).filter(([,decision]) => episodeIds.some(episode =>
+    decision.requiredPermissions.some(feature => rights.evaluate({feature,feedUrl,episodeId:episode}).code === 'LEGAL_BASIS_NOT_ESTABLISHED'))).map(([activity])=>activity);
+  const current = {
+    id, feedUrl, executionJurisdiction:assessment.executionJurisdiction, scope:'channel/activity', episodeIds,
+    status:activities.length?'OPEN':'RESOLVED', activities,
+    responsibleRole:'SUPER_ADMIN', evidenceSupplier:'Publisher rights holder or qualified jurisdiction-specific legal reviewer',
+    question:'Establish the basis covering Radio Star’s internal copying/transcription, retained AI analysis and bounded listener outputs in the actual processing jurisdiction. Identify the applicable licence or exception, operator and purpose, provider copying, scope, reservations and expiry. Assess captions, translation, dubbing and voice replication separately.',
+    evidence:assessment.evidence, considerations:assessment.statutoryConsiderations,
+    operationalPolicyChanged:false, permissionsChanged:false,
+  };
+  const fingerprint = hash(current);
+  if (previous?.fingerprint === fingerprint) return previous;
+  const record = {...current,fingerprint,createdAt:previous?.createdAt || new Date(rights.now()).toISOString(),updatedAt:new Date(rights.now()).toISOString(),version:(previous?.version || 0)+1};
+  rights.store.transaction(() => {
+    rights.store.set('rights-decision-request', id, record);
+    rights.audit('processing-basis-decision-request',id,'system:publisher-rss',{previous,current:record});
+  });
+  return record;
 }
 
 const elementValues = (xml, name) => [...String(xml || "").matchAll(new RegExp(
