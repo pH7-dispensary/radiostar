@@ -77,15 +77,23 @@ exec 9>/run/starcast-deploy.lock
 flock -n 9 || { echo 'Another deployment is active'; exit 1; }
 ${idleCheck}
 node --input-type=module -e ${quote(maintenanceSource + "\nmaintainReleases({apply:true}); assertDeploymentCapacity();")}
-test ! -e ${staged}
-mkdir ${staged}
 aws s3 cp ${uri} /opt/starcast/update.tar.gz --region eu-west-2 --only-show-errors
 echo '${sha}  /opt/starcast/update.tar.gz' | sha256sum -c -
-tar -xzf /opt/starcast/update.tar.gz -C ${staged}
+if test -d ${staged}; then
+  # A rejected maintenance window can leave a fully staged release. Verify
+  # every archived source file before reuse; never overwrite an unknown tree.
+  tar --compare --gzip --file /opt/starcast/update.tar.gz --directory ${staged}
+else
+  mkdir ${staged}
+  tar -xzf /opt/starcast/update.tar.gz -C ${staged}
+fi
 cd ${staged}
-XDG_CACHE_HOME=${staged}/.npm-cache/xdg npm ci --omit=dev --no-audit --no-fund --cache ${staged}/.npm-cache
-rm -rf -- ${staged}/.npm-cache
-node -e "const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});"
+if ! test -f .verified-release || ! test "$(cat .verified-release)" = '${sha}'; then
+  XDG_CACHE_HOME=${staged}/.npm-cache/xdg npm ci --omit=dev --no-audit --no-fund --cache ${staged}/.npm-cache
+  rm -rf -- ${staged}/.npm-cache
+  node -e "const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});"
+  echo '${sha}' > .verified-release
+fi
 dnf install -y logrotate
 cp scripts/cloud/logrotate.conf /etc/logrotate.d/starcast
 chmod 644 /etc/logrotate.d/starcast
