@@ -1,0 +1,166 @@
+{
+  "at": "2026-11-18T15:48:44.266Z",
+  "integrity": "ok",
+  "freeBytes": 23062540288,
+  "release": {
+    "releaseSha": "55b2150b92e0f3076d88ec1b1c57c731b1e5fb4042679b87a06bf520cbd3681e",
+    "previousReleaseSha": "951ebf792d024d39b81cd7be24c90caf8b58b419d0e4eb869f47d1cf0ac0d1bc",
+    "deployedAt": "2026-11-18T15:47:54.036Z",
+    "rollbackAvailable": true
+  },
+  "monitor": {
+    "_aws": {
+      "Timestamp": 1795016924345,
+      "CloudWatchMetrics": [
+        {
+          "Namespace": "RadioStar/Operations",
+          "Dimensions": [
+            [
+              "Environment"
+            ]
+          ],
+          "Metrics": [
+            {
+              "Name": "ApiReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "WorkerReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DatabaseIntegrity",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DiskUsedPercent",
+              "Unit": "Percent",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "FreeInodes",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "BackupAgeSeconds",
+              "Unit": "Seconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "EventLoopP99Ms",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProcessingFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "TelemetryHeartbeat",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ApiLatencyMs",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            }
+          ]
+        }
+      ]
+    },
+    "Environment": "production",
+    "ApiReady": 1,
+    "WorkerReady": 1,
+    "DatabaseIntegrity": 1,
+    "DiskUsedPercent": 28.226842572951284,
+    "FreeInodes": 15628855,
+    "BackupAgeSeconds": 36.058,
+    "EventLoopP99Ms": 20.365311,
+    "ProcessingFailures5m": 0,
+    "TelemetryHeartbeat": 1,
+    "ApiLatencyMs": 91.364696
+  },
+  "followedDemand": {},
+  "installations": 10,
+  "unrevokedInstallations": 10,
+  "activePilotDevices": 2,
+  "expiredUnrevokedPilotDevices": 0,
+  "decisionRequests": [
+    {
+      "id": "00c52d71f9a25438598c81cbaed95ba61bc492131eb4d997fbbc67d76babaf9a",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 3
+    },
+    {
+      "id": "ff2d7212747b3911cd64777b63669c472e138e0b18e9178d9d472a5bd116fbf6",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 3
+    }
+  ],
+  "ownedCacheHistory": [
+    {
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T12:25:03.657Z",
+      "transcriptVersion": "d4c710f493a9c624eb6d35f1725ada1231c0fcda5ad8cce12654ba84c66e0697",
+      "audioVariant": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "parserVersion": "3",
+      "sourceSignature": "c6d91dc5dc84cc64a95c79fd6d93a7fba5418a680f41ace616c769d67dc2afc7",
+      "sourceCheckedAt": "2026-11-18T12:25:03.657Z"
+    },
+    {
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-15T10:22:05.758Z"
+    }
+  ],
+  "queues": {
+    "at": "2026-11-18T15:49:14.715Z",
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0",
+      "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:208096650030:starcast-phase1-processing-dlq\",\"maxReceiveCount\":3}"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0"
+    }
+  }
+}

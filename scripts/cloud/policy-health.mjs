@@ -36,7 +36,7 @@ if(process.argv[2]==='poll'){
     if(!arn.startsWith('arn:aws:sqs:eu-west-2:208096650030:'))throw Error('Unexpected dead-letter queue');
     const dlq=aws(['sqs','get-queue-attributes','--queue-url','https://sqs.eu-west-2.amazonaws.com/208096650030/'+arn.split(':').at(-1),'--attribute-names','ApproximateNumberOfMessages','ApproximateNumberOfMessagesNotVisible']).Attributes;
     health.queues={at:new Date().toISOString(),main,dlq};
-    writeFileSync('evals/policy-surgery-health.json',JSON.stringify(health,null,2)+'\n');console.log(health);
+    writeFileSync(process.env.STARCAST_HEALTH_EVIDENCE_PATH || 'evals/policy-surgery-health.json',JSON.stringify(health,null,2)+'\n');console.log(health);
   }
 }else{
   const result=aws(['ssm','send-command','--instance-ids',instance,'--document-name','AWS-RunShellScript','--parameters',JSON.stringify({commands:['set -eu','cd /opt/starcast/app','/usr/local/bin/node --input-type=module -e '+quote(source)],executionTimeout:['60']})]);

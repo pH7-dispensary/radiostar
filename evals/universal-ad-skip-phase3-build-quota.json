@@ -1,0 +1,55 @@
+{
+  "at": "2026-11-18T15:43:07.410Z",
+  "id": "9314487b-5922-4236-8073-df8f12c86b0f",
+  "subscription": {
+    "id": "si_defaultplan",
+    "name": "Free",
+    "__typename": "SubscriptionDetails"
+  },
+  "billingPeriod": {
+    "id": "2026-11-01T00:00:00.000Z",
+    "start": "2026-11-01T00:00:00.000Z",
+    "end": "2026-12-01T00:00:00.000Z",
+    "__typename": "BillingPeriod"
+  },
+  "usageMetrics": {
+    "EAS_BUILD": {
+      "id": "556a737c-c63e-555c-863c-5c7a652be5f3",
+      "planMetrics": [
+        {
+          "id": "a1e7064c-b0f7-5cbe-8a87-37311fc992f3",
+          "serviceMetric": "BUILDS",
+          "metricType": "BUILD",
+          "value": 0,
+          "limit": 30,
+          "platformBreakdown": {
+            "ios": {
+              "value": 0,
+              "limit": 15,
+              "__typename": "EstimatedUsagePlatformDetail"
+            },
+            "android": {
+              "value": 0,
+              "limit": 15,
+              "__typename": "EstimatedUsagePlatformDetail"
+            },
+            "__typename": "EstimatedUsagePlatformBreakdown"
+          },
+          "__typename": "EstimatedUsage"
+        },
+        {
+          "id": "13755541-5bad-598b-8d11-336fc2f4134e",
+          "serviceMetric": "LOCAL_BUILDS",
+          "metricType": "BUILD",
+          "value": 0,
+          "limit": 10,
+          "platformBreakdown": null,
+          "__typename": "EstimatedUsage"
+        }
+      ],
+      "__typename": "UsageMetricTotal"
+    },
+    "__typename": "AccountUsageMetrics"
+  },
+  "__typename": "Account"
+}

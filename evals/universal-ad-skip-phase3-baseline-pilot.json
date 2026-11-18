@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-18T15:27:23.816Z",
+  "configuration": {
+    "enabled": true,
+    "active": false,
+    "expiresAt": "2026-10-31T17:59:01.994Z",
+    "version": 3,
+    "selectedTesterCount": 2
+  },
+  "listeners": [
+    {
+      "enrolled": false,
+      "selected": true,
+      "preferenceEnabled": true,
+      "advertEnabled": true,
+      "deviceExpiresAt": "2026-11-16T10:28:27.811Z"
+    },
+    {
+      "enrolled": false,
+      "selected": true,
+      "preferenceEnabled": true,
+      "advertEnabled": true,
+      "deviceExpiresAt": "2026-11-14T10:43:22.325Z"
+    }
+  ],
+  "featureOperational": true,
+  "publicAutomaticSkipping": false,
+  "paidAllowanceUnchanged": true,
+  "standardLimits": {
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400
+  }
+}

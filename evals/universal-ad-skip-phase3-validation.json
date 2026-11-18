@@ -1,0 +1,64 @@
+{
+  "at": "2026-11-18T16:00:55.430Z",
+  "fullSuiteExit": 0,
+  "checks": [
+    {
+      "name": "phase3-full-tests.log",
+      "sha256": "0c6551d8697c65334ddde68f61f4d9532786704e0db6134b47a1a194edcfa54b"
+    },
+    {
+      "name": "phase3-universal-tests.log",
+      "sha256": "d9f3d40a0a76a5fa358c9da68ecb8bffe0df770d9c7c9650947ce9c28190049a"
+    },
+    {
+      "name": "phase3-verification-tests.log",
+      "sha256": "f58167a480279e4c6a711fd925b6863ebb0c75bb71c52f89c128727e83791e43"
+    },
+    {
+      "name": "phase3-progressive.log",
+      "sha256": "80394e48b20d0d8acb4faabf9d6810290f094ac7f4e5ce319dcd789811ba4660"
+    },
+    {
+      "name": "phase3-bounded.log",
+      "sha256": "274ed8d4a3ff4a660e79baf9da23af6bd99b2f6527b4dc97cecfc121d16c55bc"
+    },
+    {
+      "name": "phase3-enrolment.log",
+      "sha256": "52e61ef8cd985550db2cbc145dc995b65db0d8533f7b24c5b56f34e6dba171c4"
+    },
+    {
+      "name": "phase3-activation.log",
+      "sha256": "5f6ae95070243790a1925475849a6e09ce139aec1824fb81987407b256c5c740"
+    },
+    {
+      "name": "phase3-native-types.log",
+      "sha256": "8fa1cf5506304e8abac55868e7f1a136c9b1dde57a3981a382da4c21ea129a6f"
+    },
+    {
+      "name": "phase3-expo-doctor.log",
+      "sha256": "b619666ca007a1704d14d6848f0d0ac005b94a30bb51c389a366599a24daac3c"
+    },
+    {
+      "name": "phase3-swift.log",
+      "sha256": "d39cc48b98246a214b2ebd0ad9eae7a4f0e39b9ee1e669aa7c80a3918dfe6b24"
+    },
+    {
+      "name": "phase3-sleep.log",
+      "sha256": "274674861f0cddc28776d5f7e978f7c83d41fa2db9ed2bf825af8ad04d151c8f"
+    }
+  ],
+  "backendCommit": "c1b904f",
+  "nativeSourceCommit": "ace3428",
+  "paidTestProviders": "mocked",
+  "sourcePrefixByteLimit": 8388608,
+  "acquisitionJobByteLimit": 2147483648,
+  "acquisitionJobRequestLimit": 512,
+  "deviceVerification": "BLOCKED_NO_PHYSICAL_DEVICE",
+  "nativeReleaseChecksPassed": true,
+  "unchangedUserFilesPreserved": [
+    "docs/AI_ACTIVATION_FINAL_ACCEPTANCE.md",
+    "untracked root app.json",
+    "existing untracked audit/recovery notes",
+    "native/google-cloud-sdk and archive"
+  ]
+}

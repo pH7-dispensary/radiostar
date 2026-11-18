@@ -1,0 +1,267 @@
+{
+  "at": "2026-11-18T15:57:50.071Z",
+  "jobs": [
+    {
+      "episodeKey": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40",
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "state": "READY",
+      "hash": "fbed9437baa947152cc2ba2d8e77e78d6e74c2be7ede10fa9aeff3c8a8169eae",
+      "segments": 47,
+      "coverageStartMs": 0,
+      "coverageEndMs": 180000,
+      "windowProof": {
+        "version": "delivered-prefix-v1",
+        "byteLength": 2904815,
+        "sha256": "fbed9437baa947152cc2ba2d8e77e78d6e74c2be7ede10fa9aeff3c8a8169eae",
+        "coverageStartMs": 0,
+        "coverageEndMs": 180000
+      },
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50",
+      "title": "Trusting your computing with Lance and Anton",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "state": "READY",
+      "hash": "9cedd2b1d1b4cf7f71c2545cbd504347a5936dc76833ab45d805cbb0c6e70672",
+      "segments": 60,
+      "coverageStartMs": 0,
+      "coverageEndMs": 180000,
+      "windowProof": {
+        "version": "delivered-prefix-v1",
+        "byteLength": 2904815,
+        "sha256": "9cedd2b1d1b4cf7f71c2545cbd504347a5936dc76833ab45d805cbb0c6e70672",
+        "coverageStartMs": 0,
+        "coverageEndMs": 180000
+      },
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "712749fb16b1fc6c424f1958a155a3c6095f7621230ffcd75d30d730a2474487",
+      "title": "Sovereignty, policy, and OpenUK with Amanda Brock",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "state": "READY",
+      "hash": "8761edd5d3239568a3343433a4a4c9ed475cc2e537716e61d0e3772972fc85cc",
+      "segments": 58,
+      "coverageStartMs": 0,
+      "coverageEndMs": 180000,
+      "windowProof": {
+        "version": "delivered-prefix-v1",
+        "byteLength": 2904815,
+        "sha256": "8761edd5d3239568a3343433a4a4c9ed475cc2e537716e61d0e3772972fc85cc",
+        "coverageStartMs": 0,
+        "coverageEndMs": 180000
+      },
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "855b9b0ef6b057c18e3179b20158c9efaadda14c2879d06c097b964349e825dc",
+      "title": "Open source verification with Sal Kimmich",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+      "state": "READY",
+      "hash": "2933f8be1169aab3723975dba544c30c84e0b590ffbc9be0d2c1ce3d453f079d",
+      "segments": 74,
+      "coverageStartMs": 0,
+      "coverageEndMs": 180000,
+      "windowProof": {
+        "version": "delivered-prefix-v1",
+        "byteLength": 2904815,
+        "sha256": "2933f8be1169aab3723975dba544c30c84e0b590ffbc9be0d2c1ce3d453f079d",
+        "coverageStartMs": 0,
+        "coverageEndMs": 180000
+      },
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "a4cee6281dea5ab48cffe98742f471c94194a26abb1b7813d8ceb9498c657afd",
+      "title": "The curl summer of Bliss with Daniel and Stefan",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "state": "READY",
+      "hash": "9fc28d29b697cc4ef5241a895221c6e4afa9e5f56da3981941662c5a1d7d42e4",
+      "segments": 76,
+      "coverageStartMs": 0,
+      "coverageEndMs": 180000,
+      "windowProof": {
+        "version": "delivered-prefix-v1",
+        "byteLength": 2904815,
+        "sha256": "9fc28d29b697cc4ef5241a895221c6e4afa9e5f56da3981941662c5a1d7d42e4",
+        "coverageStartMs": 0,
+        "coverageEndMs": 180000
+      },
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "c96b8196fdae1fd20c64e47c238d6b765d5daea1f72ced1b523bc957d9adc0d8",
+      "title": "Finding difficult vulnerabilities with Jaya Baloo from AISLE",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+      "state": "FAILED",
+      "code": "BUDGET_LIMIT",
+      "reason": "The intelligence budget has been reached.",
+      "retryAfter": "2026-11-18T16:50:18.135Z",
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "state": "FAILED",
+      "code": "BUDGET_LIMIT",
+      "reason": "The intelligence budget has been reached.",
+      "retryAfter": "2026-11-18T16:50:19.375Z",
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "state": "FAILED",
+      "code": "BUDGET_LIMIT",
+      "reason": "The intelligence budget has been reached.",
+      "retryAfter": "2026-11-18T16:50:20.577Z",
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "e92e25c81a10042b8e4b8126835928dc75a9125a35e82066f12e7e57c99fe733",
+      "title": "CRA vulnerability reporting with Daniel Thompson",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+      "state": "FAILED",
+      "code": "BUDGET_LIMIT",
+      "reason": "The intelligence budget has been reached.",
+      "retryAfter": "2026-11-18T16:50:21.908Z",
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    },
+    {
+      "episodeKey": "ffa1e2522a87b22e10ffaa5e37537ee6af9ada5c2826c746255999547f23889a",
+      "title": "Dependency attacks in 2026 with James Matchett",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "state": "FAILED",
+      "code": "BUDGET_LIMIT",
+      "reason": "The intelligence budget has been reached.",
+      "retryAfter": "2026-11-18T16:50:23.223Z",
+      "rightsAllowed": true,
+      "verifiedIntervals": 0
+    }
+  ],
+  "acquisition": [
+    {
+      "key": "133d03db034077af87f36b28ce705e4da706bcc33d2fcd51f1e743cdf172ecfe",
+      "episodeKey": "ffa1e2522a87b22e10ffaa5e37537ee6af9ada5c2826c746255999547f23889a",
+      "startedAt": 1795017021915,
+      "resetsAt": 1795103421915,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "20ac3bcae0dc20a5d56b6741d093161fb7325a199511f5d8149cb1c218c9f165",
+      "episodeKey": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40",
+      "startedAt": 1795016930862,
+      "resetsAt": 1795103330862,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "290fae59684b1ac03d168e66a0bb3ce6e03cffc19bf1ce1b25e3ef3fdd037c72",
+      "episodeKey": "e92e25c81a10042b8e4b8126835928dc75a9125a35e82066f12e7e57c99fe733",
+      "startedAt": 1795017020584,
+      "resetsAt": 1795103420584,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "2adfef7916b8a43d2e6b0631af738588fcc4fa023883e622fdff3cb21cf20b09",
+      "episodeKey": "e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb",
+      "startedAt": 1795017019382,
+      "resetsAt": 1795103419382,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "30b036c1f2848c49fb7768fb8c76a5cde8bb0b1c5747b7bbb00d0e2331ac3042",
+      "episodeKey": "c96b8196fdae1fd20c64e47c238d6b765d5daea1f72ced1b523bc957d9adc0d8",
+      "startedAt": 1795017016511,
+      "resetsAt": 1795103416511,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "36b505c3d4136eddfdc8c0ed5b5fc42eaea8fb32bd3f692763b067c9c607e4e1",
+      "episodeKey": "a4cee6281dea5ab48cffe98742f471c94194a26abb1b7813d8ceb9498c657afd",
+      "startedAt": 1795016998322,
+      "resetsAt": 1795103398322,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "4adf0b39705f3fe424b9655b894bd9d46d9bd18cff9660e52be8a2fc13a42cf2",
+      "episodeKey": "dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da",
+      "startedAt": 1795017018142,
+      "resetsAt": 1795103418142,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "55877868f2199a0ff4240818d528f06393f36092dfee96183be3633e4afcd163",
+      "episodeKey": "3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50",
+      "startedAt": 1795016948915,
+      "resetsAt": 1795103348915,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "5fcbf0e5f3ca98c318a5adc08c6075cb922830c4c61d11ea4aff44b9a67c5bfa",
+      "episodeKey": "712749fb16b1fc6c424f1958a155a3c6095f7621230ffcd75d30d730a2474487",
+      "startedAt": 1795016971943,
+      "resetsAt": 1795103371943,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    },
+    {
+      "key": "ccc933af882311f39ff63d1edd89ede2f16402c250c291cdbf475cca314c3331",
+      "episodeKey": "855b9b0ef6b057c18e3179b20158c9efaadda14c2879d06c097b964349e825dc",
+      "startedAt": 1795016985197,
+      "resetsAt": 1795103385197,
+      "bytesReservedOrSpent": 8388608,
+      "receivedBytes": 8388608,
+      "requests": 1,
+      "failedRequests": 0
+    }
+  ]
+}

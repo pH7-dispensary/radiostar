@@ -11,7 +11,9 @@ const raw=readFileSync(input),data=JSON.parse(raw),results=[];
 assert.equal(data.length,200);
 const intersect=(a,b)=>Math.max(0,Math.min(a.endMs,b.endMs)-Math.max(a.startMs,b.startMs));
 for(const [index,row] of data.entries()){
-  const words=row.groundtruth.word_timestamp,segments=[];
+  // The release marks advert words with #. Strip this label metadata from
+  // every word before grouping; otherwise neither recall nor blinding is valid.
+  const words=row.groundtruth.word_timestamp.map(w=>({...w,word:w.word.replace(/^#+/, '')})),segments=[];
   // Deterministic speech grouping uses only words, punctuation and pauses.
   let group=[];
   const flush=()=>{if(!group.length)return;segments.push({id:String(segments.length),startMs:Math.round(group[0].start*1000),endMs:Math.round(group.at(-1).end*1000),text:group.map(w=>w.word).join(' ')});group=[];};
@@ -34,7 +36,7 @@ for(const [index,row] of data.entries()){
 const sum=key=>results.reduce((n,r)=>n+r[key],0);
 const result={at:new Date().toISOString(),source:'https://huggingface.co/datasets/oreva/blab_long_audio',sourceSha256:createHash('sha256').update(raw).digest('hex'),
   attribution:'Ahia et al., BLAB: Brutally Long Audio Bench (2025), CC BY 4.0; evaluation only, no training.',
-  scope:'Frozen external transcript-only diagnostic. No labels supplied to detector; no tuning from these results.',
+  scope:'Frozen external transcript-only diagnostic. Leading # annotation markers stripped from every word before grouping. No labels or marker boundaries supplied to detector; no detector tuning from these results.',
   limitations:['No original audio hashes or redistributed audio in source dataset','Advertisement text reviewed by dataset authors; timestamps aligned by WhisperX','No independently annotated challenging-negative subset','No acoustic verification or played-audio identity; not a native playback result'],
   episodes:results.length,transcriptHours:sum('transcriptDurationMs')/3600000,labels:sum('labels'),candidates:sum('candidates'),
   labelsWithAnyCandidate:sum('labelsWithAnyCandidate'),labelsWithCompleteCandidate:sum('labelsWithCompleteCandidate'),candidatesOutsideAllLabels:sum('candidatesOutsideAllLabels'),

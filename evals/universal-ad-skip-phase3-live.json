@@ -1,0 +1,527 @@
+{
+  "at": "2026-11-18T15:53:25.023Z",
+  "episodes": [
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "title": "#442 - 27 Year CIA Agent: \"Everything You Know About Russia Is WRONG\" | Ray McGovern",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "executionState": {
+          "state": "CANCELLED",
+          "stage": "QUEUED",
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "code": "CANCELLED_BY_ADMINISTRATOR",
+          "completedAt": "2026-10-20T21:01:22.073Z"
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "title": "#2572 - Colum Tyrrell",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "1959e989a1d1731b1d523c6bab54cf89b6ed49a6967308bf64fc93c0d208c8cf",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "revision": "8cddec558b55ba4446fb92e33e7dd2464881cd5a76ffeade25b0be62a4c4b0b0"
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "title": "#2571 - Jimmy Carr",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "revision": "479e7873fd854225189426fbb8128db216ebec14240168c0f9ab6189fcdf59ff"
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "title": "#2570 - Mystery Boys",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "executionDecision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "revision": "964f6e1dea015f0b4ba433ddf677118b30c999112988acef2d15e80fc52ae803"
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "adSkip": {
+        "candidateCount": 0,
+        "verifiedCount": 0,
+        "state": "UNAVAILABLE",
+        "controlledRolloutEnabled": true,
+        "productionAutomaticSkipping": false
+      }
+    }
+  ],
+  "pilot": {
+    "active": true,
+    "expiresAt": "2026-12-09T15:48:29.480Z",
+    "testers": 2,
+    "publicAutomaticSkipping": false
+  },
+  "controls": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": true
+  },
+  "totals": {
+    "day": 1.2907558000000001,
+    "month": 1.2907558000000001,
+    "transcriptionSeconds": 10747
+  },
+  "reservations": [],
+  "usage": [
+    {
+      "id": "derived:query:embedding-3-small-512-v2:9856823d3b5e7ce9a305da7edabc950e735a582fbd4f1d3f55225cfe21187245",
+      "usd": 4e-8,
+      "kind": "embedding",
+      "seconds": 0,
+      "at": "2026-11-18T15:48:31.496Z",
+      "failed": false,
+      "inputTokens": 2,
+      "outputTokens": 0,
+      "uncertain": false
+    },
+    {
+      "id": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40:ad-opening:fbed9437baa947152cc2ba2d8e77e78d6e74c2be7ede10fa9aeff3c8a8169eae:whisper-1:180000:0",
+      "usd": 0.018,
+      "kind": "transcription",
+      "seconds": 180,
+      "at": "2026-11-18T15:48:54.542Z",
+      "jobId": "ad-opening:fbed9437baa947152cc2ba2d8e77e78d6e74c2be7ede10fa9aeff3c8a8169eae",
+      "episodeKey": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40",
+      "failed": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "uncertain": false
+    },
+    {
+      "id": "3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50:ad-opening:9cedd2b1d1b4cf7f71c2545cbd504347a5936dc76833ab45d805cbb0c6e70672:whisper-1:180000:0",
+      "usd": 0.018,
+      "kind": "transcription",
+      "seconds": 180,
+      "at": "2026-11-18T15:49:22.326Z",
+      "jobId": "ad-opening:9cedd2b1d1b4cf7f71c2545cbd504347a5936dc76833ab45d805cbb0c6e70672",
+      "episodeKey": "3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50",
+      "failed": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "uncertain": false
+    },
+    {
+      "id": "712749fb16b1fc6c424f1958a155a3c6095f7621230ffcd75d30d730a2474487:ad-opening:8761edd5d3239568a3343433a4a4c9ed475cc2e537716e61d0e3772972fc85cc:whisper-1:180000:0",
+      "usd": 0.018,
+      "kind": "transcription",
+      "seconds": 180,
+      "at": "2026-11-18T15:49:34.496Z",
+      "jobId": "ad-opening:8761edd5d3239568a3343433a4a4c9ed475cc2e537716e61d0e3772972fc85cc",
+      "episodeKey": "712749fb16b1fc6c424f1958a155a3c6095f7621230ffcd75d30d730a2474487",
+      "failed": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "uncertain": false
+    },
+    {
+      "id": "855b9b0ef6b057c18e3179b20158c9efaadda14c2879d06c097b964349e825dc:ad-opening:2933f8be1169aab3723975dba544c30c84e0b590ffbc9be0d2c1ce3d453f079d:whisper-1:180000:0",
+      "usd": 0.018,
+      "kind": "transcription",
+      "seconds": 180,
+      "at": "2026-11-18T15:49:47.782Z",
+      "jobId": "ad-opening:2933f8be1169aab3723975dba544c30c84e0b590ffbc9be0d2c1ce3d453f079d",
+      "episodeKey": "855b9b0ef6b057c18e3179b20158c9efaadda14c2879d06c097b964349e825dc",
+      "failed": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "uncertain": false
+    },
+    {
+      "id": "a4cee6281dea5ab48cffe98742f471c94194a26abb1b7813d8ceb9498c657afd:ad-opening:9fc28d29b697cc4ef5241a895221c6e4afa9e5f56da3981941662c5a1d7d42e4:whisper-1:180000:0",
+      "usd": 0.018,
+      "kind": "transcription",
+      "seconds": 180,
+      "at": "2026-11-18T15:50:05.413Z",
+      "jobId": "ad-opening:9fc28d29b697cc4ef5241a895221c6e4afa9e5f56da3981941662c5a1d7d42e4",
+      "episodeKey": "a4cee6281dea5ab48cffe98742f471c94194a26abb1b7813d8ceb9498c657afd",
+      "failed": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "uncertain": false
+    }
+  ],
+  "skipCounts": {
+    "candidates": 12,
+    "variantMatched": 4,
+    "verified": 4,
+    "disputed": 0,
+    "rejected": 0,
+    "processing": 0,
+    "failed": 0,
+    "automaticSkips": 23,
+    "undoEvents": 23,
+    "falsePositiveReports": 0,
+    "missedAdvertReports": 1
+  },
+  "release": {
+    "evaluationSkips": 1,
+    "evaluationUndos": 1,
+    "realEpisodeSkips": 22,
+    "eventProvenance": "Client-confirmed seek telemetry; not independent accuracy ground truth.",
+    "productionAutomaticSkipping": false,
+    "criteria": {
+      "labelledEpisodes": 30,
+      "verifiedIntervals": 1000,
+      "precision": 0.995,
+      "conversationSkips": 0,
+      "mismatchedVariantSkips": 0,
+      "p95DecisionMs": 500,
+      "undoRestorationRate": 1
+    },
+    "measured": null,
+    "status": "NOT_EVALUATED"
+  },
+  "usageEntriesTotal": 461
+}

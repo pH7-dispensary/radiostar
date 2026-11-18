@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-18T15:55:36.935Z",
+  "parentAudioContentHash": "693acd1c1ae733801013ca37bc937501e1e0e73d630daaf5620b36b7f1c4117c",
+  "windows": [
+    {
+      "proof": {
+        "version": "delivered-chain-v1",
+        "byteStart": 983040,
+        "byteLength": 3014656,
+        "byteEnd": 3997696,
+        "sha256": "8c8e5f99f49bc21a75b9a26a978f3fcc7ae925510f7efabe3f7c509eebac37ea",
+        "chainHash": "d99552da5c319422800ea38628fdf9d4ba8748d71239a712a6e184fcd7147855",
+        "blockBytes": 65536,
+        "coverageStartMs": 60000,
+        "coverageEndMs": 240000
+      },
+      "acquisition": {
+        "rangeHonoured": true,
+        "bytes": 8388608,
+        "maxBytes": 8388608,
+        "streamingFallback": false
+      }
+    },
+    {
+      "proof": {
+        "version": "delivered-chain-v1",
+        "byteStart": 1900544,
+        "byteLength": 3080192,
+        "byteEnd": 4980736,
+        "sha256": "8e27f56c7e6c9db759c3ad5981a3ea645660d2254c6e0f0e10b0201de32d170d",
+        "chainHash": "20b3d19d225fd007dd6c983c6a0d8b7575a1033fa7daf6aa56a6ac278785fd6c",
+        "blockBytes": 65536,
+        "coverageStartMs": 120000,
+        "coverageEndMs": 300000
+      },
+      "acquisition": {
+        "rangeHonoured": true,
+        "bytes": 8388608,
+        "maxBytes": 8388608,
+        "streamingFallback": false
+      }
+    },
+    {
+      "proof": {
+        "version": "delivered-chain-v1",
+        "byteStart": 2883584,
+        "byteLength": 3080192,
+        "byteEnd": 5963776,
+        "sha256": "ee93f0414c57bdee3e7f1ce3b60834cdada27b9579be16854ec23b9f96bd689b",
+        "chainHash": "f783af2520f5b47312544dfa66ff598172eaa524d3d47d567c23a43b7c350c9c",
+        "blockBytes": 65536,
+        "coverageStartMs": 180000,
+        "coverageEndMs": 360000
+      },
+      "acquisition": {
+        "rangeHonoured": true,
+        "bytes": 8388608,
+        "maxBytes": 8388608,
+        "streamingFallback": false
+      }
+    }
+  ]
+}

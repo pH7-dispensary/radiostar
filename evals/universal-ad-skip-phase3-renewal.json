@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-18T15:48:31.074Z",
+  "renewedTesterCount": 2,
+  "expiresAt": "2026-12-09T15:48:29.480Z",
+  "active": true,
+  "previousVersion": 3,
+  "version": 4,
+  "preferencesUnchanged": true,
+  "spendingLimitsUnchanged": true,
+  "standardLimits": {
+    "enabled": true,
+    "dailyUsd": 5,
+    "monthlyUsd": 25,
+    "dailyTranscriptionSeconds": 10800,
+    "maxEpisodeSeconds": 14400,
+    "textModel": "gpt-4.1-mini",
+    "transcriptionModel": "whisper-1",
+    "audioAnalysisEnabled": false
+  },
+  "publicAutomaticSkipping": false
+}

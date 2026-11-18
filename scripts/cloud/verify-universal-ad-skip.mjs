@@ -10,6 +10,7 @@ const login=await fetch(c.url+'/api/admin/session',{method:'POST',headers:gatewa
 const cookies=login.headers.getSetCookie().map(v=>v.split(';')[0]);
 const admin={...gateway,cookie:cookies.join('; '),'x-star-cast-csrf':decodeURIComponent(cookies.find(v=>v.startsWith('starcast_admin_csrf=')).split('=').slice(1).join('='))};
 async function api(path,body,headers=admin){const r=await fetch(c.url+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});const v=await r.json();assert(r.ok,path+': '+r.status+' '+(v.error||''));return v;}
+const compactDecision=d=>d?{version:d.version,operationalPolicy:d.operationalPolicy,processingBasis:{...d.processingBasis,features:undefined},executionState:d.executionState,canDispatch:d.canDispatch,firstBlocker:d.firstBlocker,nextAction:d.nextAction}:null;
 const save=(p,v)=>writeFileSync(p,JSON.stringify(v,null,2)+'\n',{mode:0o600});
 const privateFile='.starcast/universal-ad-skip-tester.json';
 try{
@@ -45,9 +46,9 @@ try{
   save('evals/universal-ad-skip-phase3-qa-cleanup.json',{at:t.revokedAt,temporaryTesterRevoked:true,originalMembershipRestored:true,originalExpiryPreserved:true});console.log({temporaryTesterRevoked:true});
  }else if(mode==='status'){
   const episodes=[];
-  for(const target of JSON.parse(readFileSync('evals/policy-surgery-after.json')).episodes){const identity={feedUrl:target.feedUrl,episodeId:target.episodeId};const detail=await api('/api/admin/episodes/detail?'+new URLSearchParams(identity));const v=detail.episode;episodes.push({...identity,title:v.title,state:v.state,code:v.code,executionDecision:v.executionDecision,adSkip:v.adSkip||null});}
+  for(const target of JSON.parse(readFileSync('evals/policy-surgery-after.json')).episodes){const identity={feedUrl:target.feedUrl,episodeId:target.episodeId};const detail=await api('/api/admin/episodes/detail?'+new URLSearchParams(identity));const v=detail.episode;episodes.push({...identity,title:v.title,state:v.state,code:v.code,executionDecision:compactDecision(v.executionDecision),adSkip:v.adSkip||null});}
   const intelligence=await api('/api/admin/intelligence'),skips=await api('/api/admin/ad-skip');
-  save('evals/universal-ad-skip-phase3-live.json',{at:new Date().toISOString(),episodes,pilot:{active:pilot.configuration.active,expiresAt:pilot.configuration.expiresAt,testers:pilot.configuration.listenerIds.length,publicAutomaticSkipping:pilot.publicAutomaticSkipping},controls:intelligence.controls,totals:intelligence.totals,reservations:intelligence.reservations,usage:intelligence.usage,skipCounts:skips.counts,release:skips.release});
+  save('evals/universal-ad-skip-phase3-live.json',{at:new Date().toISOString(),episodes,pilot:{active:pilot.configuration.active,expiresAt:pilot.configuration.expiresAt,testers:pilot.configuration.listenerIds.length,publicAutomaticSkipping:pilot.publicAutomaticSkipping},controls:intelligence.controls,totals:intelligence.totals,reservations:intelligence.reservations,usageEntriesTotal:intelligence.usage.length,usage:intelligence.usage.filter(row=>Date.parse(row.at)>=Date.parse('2026-11-18T15:00:00Z')),skipCounts:skips.counts,release:skips.release});
   console.log({episodes:episodes.map(e=>({title:e.title,state:e.state,code:e.code})),pilotActive:pilot.configuration.active,totals:intelligence.totals});
  }else throw Error('Use renew 21, qa-start, qa-stop or status');
 }finally{await fetch(c.url+'/api/admin/session',{method:'DELETE',headers:admin});}

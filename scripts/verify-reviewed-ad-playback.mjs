@@ -16,7 +16,7 @@ assert.equal(createHash('sha256').update(audioBytes).digest('hex'),spec.audioCon
 verifyReviewChain(spec.events || []);
 const labels=currentReviews(spec.events || [],{id:spec.corpusEpisodeId,audioContentHash:spec.audioContentHash}).labels;
 const machineOnly=spec.requireHumanReview===false;
-const c=JSON.parse(readFileSync('.starcast/cloud-connection.json')),a=JSON.parse(readFileSync('.starcast/cloud-admin.json')),device=JSON.parse(readFileSync('.starcast/translation-verification.json'));
+const c=JSON.parse(readFileSync('.starcast/cloud-connection.json')),a=JSON.parse(readFileSync('.starcast/cloud-admin.json')),device=JSON.parse(readFileSync(process.env.STARCAST_AD_QA_CREDENTIAL_FILE || '.starcast/translation-verification.json'));
 assert.equal(c.url,'https://d3ri12f40b85i3.cloudfront.net');
 const gateway={'content-type':'application/json','x-star-cast-dev-token':c.token};
 const login=await fetch(c.url+'/api/admin/session',{method:'POST',headers:gateway,body:JSON.stringify({adminToken:a.token,emergency:true})});assert.equal(login.status,201);
@@ -51,7 +51,7 @@ try {
   res.setHeader('content-type','text/html');res.end('<title>Reviewed publisher audio acceptance</title><audio controls></audio>');
  });await new Promise(r=>media.listen(0,'127.0.0.1',r));
  const {chromium}=await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE||'playwright');
- browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+ browser=await chromium.launch({headless:true,channel:process.env.RADIOSTAR_BROWSER_CHANNEL||undefined,args:['--autoplay-policy=no-user-gesture-required']});
  const page=await browser.newPage();
  await page.exposeFunction('authorise',row=>api('/api/skips/authorise',{...input,...row}));
  await page.exposeFunction('receipt',row=>api('/api/skips/events',{...input,eventId:randomUUID(),...row}));
