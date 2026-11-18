@@ -3,7 +3,7 @@ import {groundResult} from './grounded-result.mjs';
 import {generateLongFormIntelligence,generateEpisodeIntelligence,PROCESSING_VERSION} from './openai-intelligence.mjs';
 import {transcriptFingerprint} from './intelligence-delivery.mjs';
 import {validateClaims,claimsForResult,claimBinding,GROUNDING_VERSION} from './claim-grounding.mjs';
-export const REPAIR_VERSION='missing-features-source-evidence-v4';
+export const REPAIR_VERSION='missing-features-focused-brief-v5';
 const GENERATION_VERSION='missing-features-no-inline-citations-v1';
 const complete=j=>Boolean(['READY','PARTIAL_READY'].includes(j?.state)&&j.completedAt&&j.transcript?.segments?.length);
 const missing=j=>[
@@ -45,12 +45,13 @@ export async function repairOneFeature(pipeline,key) {
   const previous=state.features[feature] || {},attempt=previous.attempt || 1;
   save({state:'PROCESSING',activeFeature:feature,features:{...state.features,[feature]:{state:'PROCESSING',attempt}}});
   try {
+    const generationVersion=feature==='brief'?'missing-features-focused-brief-v2':GENERATION_VERSION;
     const legacy=feature!=='brief'&&pipeline.store.get('analysis-checkpoint',`${key}:${GENERATION_VERSION}:${feature}:${attempt}`);
     if(legacy?.state==='SENDING')throw Object.assign(Error('The previous chapter provider outcome is unresolved; replay is blocked.'),{code:'PROVIDER_OUTCOME_UNKNOWN'});
     const source=feature==='brief'?job.transcript:{...job.transcript,segments:job.transcript.segments.filter(s=>job.chapters[Number(feature.split('.')[1])].sourceSegmentIds.includes(s.id))};
     const options={transcript:source,propagateReviewErrors:true,outputProfile:pipeline.executionDecision(job.feedUrl,job.episodeId).processingBasis.outputProfile,ledger:pipeline.ledger,client:pipeline.client,requestedFeatures:feature==='brief'?['brief']:['chapters'],
-      requestId:`${job.jobId}:text:${GENERATION_VERSION}:${feature}:${attempt}:${transcriptFingerprint(source)}`,checkpointStore:pipeline.store,
-      checkpointPrefix:`${key}:${GENERATION_VERSION}:${feature}:${attempt}`,checkpointKey:`${key}:${GENERATION_VERSION}:${feature}:${attempt}:${transcriptFingerprint(source)}`,
+      requestId:`${job.jobId}:text:${generationVersion}:${feature}:${attempt}:${transcriptFingerprint(source)}`,checkpointStore:pipeline.store,
+      checkpointPrefix:`${key}:${generationVersion}:${feature}:${attempt}`,checkpointKey:`${key}:${generationVersion}:${feature}:${attempt}:${transcriptFingerprint(source)}`,
       canPersist,beforePaid:()=>{if(!canPersist())throw Object.assign(Error('Processing permission or source changed'),{code:'RIGHTS_REVOKED'});},
       claimReviewer:pipeline.claimReviewer?(v,t)=>pipeline.claimReviewer(feature==='brief'?briefReviewEvidence(v,t):v,t,key):null,
       signal:AbortSignal.timeout(180000)};

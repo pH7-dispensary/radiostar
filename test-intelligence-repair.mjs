@@ -159,3 +159,11 @@ console.log('Brief repair retrieves real canonical speech and still requires ind
  }finally{s.close();}
 }
 console.log('Unresolved legacy chapter requests remain blocked across source-key migration.');
+// Section notes are internal unverified inputs. A brief-only reduction gets
+// one final original-speech review, without buying redundant map reviews.
+{
+ const {generateLongFormIntelligence}=await import('./openai-intelligence.mjs');const s=new LocalStore(':memory:');let requests=0,reviews=0;
+ const rows=Array.from({length:501},(_,i)=>({id:'x'+i,text,startMs:i*1000,endMs:(i+1)*1000}));
+ try{await generateLongFormIntelligence({transcript:{...transcript,segments:rows},ledger:new BudgetLedger({enabled:true},s),requestId:'focused:text',requestedFeatures:['brief'],checkpointStore:s,checkpointPrefix:'focused',claimReviewer:async(v,t)=>{reviews++;assert.equal(t.segments.length,501);assert(v.brief.sourceSegmentIds.every(id=>rows.some(s=>s.id===id)));return v;},client:{responses:{create:async r=>{requests++;assert.equal(r.text.format.schema.properties.overview.maxLength,220);assert.equal(r.text.format.schema.properties.detail.maxLength,640);assert.equal(r.text.format.schema.properties.themes.maxItems,3);return{usage:{input_tokens:10,output_tokens:10},output_text:JSON.stringify({overview:text,detail:text,themes:['Evidence'],sourceSegmentIndexes:[1],chapters:[]})};}}}});assert.equal(requests,3);assert.equal(reviews,1);}finally{s.close();}
+}
+console.log('Focused briefs enforce output bounds and verify original speech once after internal map reduction.');
