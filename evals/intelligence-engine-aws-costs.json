@@ -1,0 +1,115 @@
+{
+  "at": "2026-11-18",
+  "account": "208096650030",
+  "scope": "Dedicated account; all services; excludes credits/refunds; current day can be delayed",
+  "services": {
+    "AWS Glue": 0,
+    "AWS Key Management Service": 0.5708333379,
+    "AWS Lambda": 0,
+    "AWS Secrets Manager": 0.7115367216,
+    "Amazon CloudFront": 0,
+    "EC2 - Other": 2.4750756651,
+    "Amazon Elastic Compute Cloud - Compute": 4.1966956664,
+    "Amazon Simple Queue Service": 0,
+    "Amazon Simple Storage Service": 1.6680121677,
+    "Amazon Virtual Private Cloud": 2.06,
+    "AmazonCloudWatch": 0.3298610235,
+    "CloudWatch Events": 0,
+    "CodeBuild": 0,
+    "Amazon Simple Notification Service": 0
+  },
+  "totalUsd": 12.0120145822,
+  "days": [
+    {
+      "date": "2026-11-01",
+      "usd": 0.6379127671,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-02",
+      "usd": 0.6468480071,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-03",
+      "usd": 0.6550989944,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-04",
+      "usd": 0.6624186203,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-05",
+      "usd": 0.6681113228,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-06",
+      "usd": 0.6710902324,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-07",
+      "usd": 0.6757285516,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-08",
+      "usd": 0.6812455688,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-09",
+      "usd": 0.6854112788,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-10",
+      "usd": 0.6901372877,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-11",
+      "usd": 0.6942812591,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-12",
+      "usd": 0.6986759516,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-13",
+      "usd": 0.7679274069,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-14",
+      "usd": 0.7723697259,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-15",
+      "usd": 0.7775835622,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-16",
+      "usd": 0.7823253177,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-17",
+      "usd": 0.7861390141,
+      "estimated": true
+    },
+    {
+      "date": "2026-11-18",
+      "usd": 0.0587097137,
+      "estimated": true
+    }
+  ],
+  "newInfrastructureCreated": false
+}

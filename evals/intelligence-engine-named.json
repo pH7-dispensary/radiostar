@@ -1,0 +1,1331 @@
+{
+  "at": "2026-11-18T13:38:05.206Z",
+  "newAssessmentRequested": false,
+  "episodes": [
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+      "title": "#443 - Ex-Banker Exposes Who Trump, Elon & Netanyahu Actually Work For | Simon Dixon",
+      "duration": "11798",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            }
+          },
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "riskAdvisory": [
+          {
+            "id": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+            "episodeId": "95765502-d155-11f1-b17a-bb47d8c507da",
+            "source": "super-admin-technical-review",
+            "evidence": [
+              {
+                "type": "EVIDENCE_REVIEW_NO_BASIS",
+                "source": "Radio Star technical evidence review",
+                "scope": "podcast",
+                "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1792697912434,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 11798000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "history": [],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+      "title": "#442 - 27 Year CIA Agent: \"Everything You Know About Russia Is WRONG\" | Ray McGovern",
+      "duration": "10838",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            }
+          },
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "riskAdvisory": [
+          {
+            "id": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+            "episodeId": "db8f0462-ce08-11f1-8abf-af529c8252cb",
+            "source": "super-admin-technical-review",
+            "evidence": [
+              {
+                "type": "EVIDENCE_REVIEW_NO_BASIS",
+                "source": "Radio Star technical evidence review",
+                "scope": "podcast",
+                "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1792697912434,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 10838000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "history": [],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    },
+    {
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+      "title": "#441 - DARPA Insider: Steve Jobs CIA Deal, Stargate Argentina & Facebook Weapon | Sharon Weinberger",
+      "duration": "10048",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38",
+          "scope": "channel",
+          "evidence": [
+            {
+              "type": "EVIDENCE_REVIEW_NO_BASIS",
+              "source": "Radio Star technical evidence review",
+              "scope": "podcast",
+              "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "Legacy approval has no documented publisher permission or other applicable processing basis."
+            }
+          },
+          "revision": "3f430675de825ce59d8479521995ea14d339995041c077576eb132bc82ef00c9"
+        },
+        "riskAdvisory": [
+          {
+            "id": "5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+            "episodeId": "9ed45572-cbd8-11f1-af09-e3a39c6e3b27",
+            "source": "super-admin-technical-review",
+            "evidence": [
+              {
+                "type": "EVIDENCE_REVIEW_NO_BASIS",
+                "source": "Radio Star technical evidence review",
+                "scope": "podcast",
+                "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1792697912434,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 10048000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "CANCELLED",
+          "stage": "QUEUED",
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "code": "CANCELLED_BY_ADMINISTRATOR",
+          "completedAt": "2026-10-20T21:01:22.073Z"
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "Legacy approval has no documented publisher permission or other applicable processing basis.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "EVIDENCE_REVIEW_NO_BASIS",
+          "source": "Radio Star technical evidence review",
+          "scope": "podcast",
+          "value": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976#legacy-rights-record-5722726d8eaf857cdba3376a132b4262c7d930d718495a97fb76563635bb9c38"
+        }
+      ],
+      "history": [
+        {
+          "jobId": "9e78257e-e66d-422d-b55f-8770f047fbc9",
+          "state": "BLOCKED",
+          "code": "DURATION_LIMIT"
+        },
+        {
+          "jobId": "db3977cf-57ad-48f0-a46e-57b069897824",
+          "state": "CANCELLED",
+          "code": "CANCELLED_BY_ADMINISTRATOR"
+        }
+      ],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+      "title": "#2572 - Colum Tyrrell",
+      "duration": "11084",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "1959e989a1d1731b1d523c6bab54cf89b6ed49a6967308bf64fc93c0d208c8cf",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            }
+          },
+          "revision": "8cddec558b55ba4446fb92e33e7dd2464881cd5a76ffeade25b0be62a4c4b0b0"
+        },
+        "riskAdvisory": [
+          {
+            "id": "1959e989a1d1731b1d523c6bab54cf89b6ed49a6967308bf64fc93c0d208c8cf:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+            "episodeId": "a7f8279c-d37a-11f1-a462-fb1f7204087b",
+            "source": "publisher-rss-v4",
+            "evidence": [
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "© All rights reserved"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              },
+              {
+                "type": "TDM_REVIEW",
+                "source": "server-policy",
+                "scope": "processing",
+                "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1793293477485,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 11084000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "history": [],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+      "title": "#2571 - Jimmy Carr",
+      "duration": "10595",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            }
+          },
+          "revision": "479e7873fd854225189426fbb8128db216ebec14240168c0f9ab6189fcdf59ff"
+        },
+        "riskAdvisory": [
+          {
+            "id": "7404bd3c6b440f2ebc1dd48c07362091c0e37443c3983420f84621a2842a30f5:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+            "episodeId": "2261e0d2-d2fd-11f1-88f9-877628146802",
+            "source": "publisher-rss-v4",
+            "evidence": [
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "© All rights reserved"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              },
+              {
+                "type": "TDM_REVIEW",
+                "source": "server-policy",
+                "scope": "processing",
+                "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1793216606404,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 10595000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "history": [],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    },
+    {
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+      "title": "#2570 - Mystery Boys",
+      "duration": "10181",
+      "state": "UNAVAILABLE",
+      "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+      "decision": {
+        "version": "episode-execution-v1",
+        "operationalPolicy": {
+          "allowed": true,
+          "tier": "ZERO",
+          "source": "global",
+          "policyVersion": 1,
+          "automaticPreparation": true
+        },
+        "processingBasis": {
+          "allowed": false,
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "basisEstablished": false,
+          "mode": "OFF",
+          "policyVersion": 2,
+          "outputProfile": "standard",
+          "recordId": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514",
+          "scope": "episode",
+          "evidence": [
+            {
+              "type": "COPYRIGHT_NOTICE",
+              "source": "publisher-rss",
+              "scope": "podcast",
+              "value": "© All rights reserved"
+            },
+            {
+              "type": "LAWFUL_ACCESS_OBSERVED",
+              "source": "publisher-rss",
+              "scope": "feed",
+              "value": "The publisher HTTPS feed was retrieved by the server."
+            },
+            {
+              "type": "TDM_REVIEW",
+              "source": "server-policy",
+              "scope": "processing",
+              "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+            }
+          ],
+          "features": {
+            "transcript-acquisition": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "audio-transcription": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "transcript-distribution": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "automatic-skipping": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-processing": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "intelligence-display": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "conversation-search": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "episode-brief": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "smart-chapters": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "topics": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "find-moment": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "ad-detection": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "captions": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "translation-text": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "dubbing-audio": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            },
+            "voice-cloning": {
+              "allowed": false,
+              "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+              "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence."
+            }
+          },
+          "revision": "964f6e1dea015f0b4ba433ddf677118b30c999112988acef2d15e80fc52ae803"
+        },
+        "riskAdvisory": [
+          {
+            "id": "ff7e500ed2b1375f3deb2ca24cfaac0624f151260eb810cecb1395da9d08a514:EVIDENCE_INCOMPLETE",
+            "code": "EVIDENCE_INCOMPLETE",
+            "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+            "episodeId": "ec46995e-ce9a-11f1-9c7e-fbbdba278d52",
+            "source": "publisher-rss-v4",
+            "evidence": [
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "© All rights reserved"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              },
+              {
+                "type": "TDM_REVIEW",
+                "source": "server-policy",
+                "scope": "processing",
+                "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+              }
+            ],
+            "features": [
+              "transcript-acquisition",
+              "audio-transcription",
+              "transcript-distribution",
+              "automatic-skipping",
+              "intelligence-processing",
+              "intelligence-display",
+              "conversation-search",
+              "episode-brief",
+              "smart-chapters",
+              "topics",
+              "find-moment",
+              "ad-detection",
+              "captions",
+              "translation-text",
+              "dubbing-audio",
+              "voice-cloning"
+            ],
+            "severity": "REVIEW",
+            "reason": "Available evidence does not establish a processing basis; this is not a discovered prohibition.",
+            "recommendedAction": "Record additional publisher permission or an independently approved applicable basis. Changed RSS evidence is assessed automatically.",
+            "timestamp": 1793026037552,
+            "blocking": false
+          }
+        ],
+        "technicalReadiness": {
+          "providerAvailable": true,
+          "audioEnabled": true,
+          "budgetAvailable": true,
+          "transcriptCache": "NOT_FOUND",
+          "publisherReferences": 0,
+          "durationMs": 10181000,
+          "maxAudioSeconds": 14400,
+          "source": "RESOLVED",
+          "capacityAvailable": true
+        },
+        "executionState": {
+          "state": "NOT_REQUESTED",
+          "stage": null,
+          "jobId": null,
+          "code": null,
+          "completedAt": null
+        },
+        "canDispatch": false,
+        "firstBlocker": {
+          "dimension": "processingBasis",
+          "code": "LEGAL_BASIS_NOT_ESTABLISHED",
+          "reason": "No publisher permission or deployment-approved legal basis for this listener-facing processing was established from the available evidence.",
+          "recoverable": false
+        },
+        "secondaryBlockers": [],
+        "nextAction": "RESOLVE_PROCESSING_BASIS"
+      },
+      "evidence": [
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "© All rights reserved"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "TDM_REVIEW",
+          "source": "server-policy",
+          "scope": "processing",
+          "value": "TDM was considered but not automatically asserted without a deployment-approved, jurisdiction-specific basis and output assessment."
+        }
+      ],
+      "history": [],
+      "transcript": {
+        "publisherReference": false,
+        "availability": "NOT_DISCOVERED"
+      },
+      "features": null
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "at": "2026-11-18T13:39:35.038Z",
+  "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+  "status": "ANALYSING",
+  "availableFeatures": {
+    "brief": false,
+    "chapters": true,
+    "topics": true,
+    "moments": true,
+    "search": true
+  },
+  "featureExecution": {
+    "transcript": {
+      "state": "READY",
+      "completeness": "COMPLETE"
+    },
+    "brief": {
+      "state": "PROCESSING",
+      "completeness": "NONE",
+      "code": null,
+      "resumeAfter": null
+    },
+    "chapters": {
+      "state": "READY",
+      "completeness": "PARTIAL"
+    },
+    "topics": {
+      "state": "READY",
+      "completeness": "COMPLETE"
+    },
+    "search": {
+      "state": "READY",
+      "completeness": "COMPLETE"
+    },
+    "moments": {
+      "state": "READY",
+      "completeness": "COMPLETE"
+    },
+    "semantic": {
+      "state": "NOT_STARTED",
+      "completedSegments": 0,
+      "totalSegments": null,
+      "code": null,
+      "resumeAfter": null
+    }
+  },
+  "moments": [
+    {
+      "startMs": 3080,
+      "endMs": 5380
+    },
+    {
+      "startMs": 13940,
+      "endMs": 16080
+    },
+    {
+      "startMs": 38800,
+      "endMs": 41240
+    },
+    {
+      "startMs": 56580,
+      "endMs": 58160
+    },
+    {
+      "startMs": 163240,
+      "endMs": 165880
+    }
+  ],
+  "searchCoverage": {
+    "processedEpisodes": 11,
+    "partialEpisodes": 0,
+    "matchedEpisodes": 3,
+    "scope": "My Podcasts"
+  }
+}

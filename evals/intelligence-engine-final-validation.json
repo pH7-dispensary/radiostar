@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-18T14:54:36.199Z",
+  "runtimeRevision": "7bbe6b2",
+  "deploymentCommand": "6dadd049-c354-4802-9dda-f06f40907a74",
+  "deploymentStatus": "Success",
+  "preflightCommand": "316720c0-fd40-412c-a418-4b05ba152c6c",
+  "backup": "/var/lib/starcast/pre-command-centre-1795013333262.sqlite",
+  "backupIntegrity": "ok",
+  "https": {
+    "status": 200,
+    "elapsedMs": 346,
+    "backend": "ready",
+    "persistence": "sqlite",
+    "providerVerified": true
+  },
+  "fullSuite": {
+    "command": "npm test",
+    "exitCode": 0,
+    "logSha256": "f50f5511ede45a515058ed29613b946a38e938725b4de0252f34be5e9a3346f1"
+  }
+}

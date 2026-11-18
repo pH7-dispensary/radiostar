@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-18T13:40:32.778Z",
+  "mode": "read-only production database backup; actual persisted provider responses; no fresh transcription",
+  "interruptedAtChunk": 1,
+  "freshProcessResumed": true,
+  "providerCalls": 0,
+  "result": {
+    "segments": 446,
+    "checkpoints": 2,
+    "durationMs": 1951086,
+    "audioHash": "99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f",
+    "exactTranscriptMatch": true
+  }
+}

@@ -1,0 +1,3820 @@
+{
+  "at": "2026-11-18T14:33:13.290Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "release": {
+    "releaseSha": "e9f6e3cf3ff99e0d74ca0d6eeb87ff20411d09206084d5fc9ec3bbd989e8482b",
+    "previousReleaseSha": "cbc8b2c7ffe88afa506de78bb785b7187026bf60349774ee245f60d60efe81ae",
+    "deployedAt": "2026-11-18T14:30:09.129Z",
+    "rollbackAvailable": true
+  },
+  "integrity": "ok",
+  "freeBytes": 23578005504,
+  "monitor": {
+    "_aws": {
+      "Timestamp": 1795012393377,
+      "CloudWatchMetrics": [
+        {
+          "Namespace": "RadioStar/Operations",
+          "Dimensions": [
+            [
+              "Environment"
+            ]
+          ],
+          "Metrics": [
+            {
+              "Name": "ApiReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "WorkerReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DatabaseIntegrity",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DiskUsedPercent",
+              "Unit": "Percent",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "FreeInodes",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "BackupAgeSeconds",
+              "Unit": "Seconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "EventLoopP99Ms",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProcessingFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "TelemetryHeartbeat",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ApiLatencyMs",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            }
+          ]
+        }
+      ]
+    },
+    "Environment": "production",
+    "ApiReady": 1,
+    "WorkerReady": 1,
+    "DatabaseIntegrity": 1,
+    "DiskUsedPercent": 26.622658227509255,
+    "FreeInodes": 15628988,
+    "BackupAgeSeconds": 162.267,
+    "EventLoopP99Ms": 20.234239,
+    "ProcessingFailures5m": 0,
+    "TelemetryHeartbeat": 1,
+    "ApiLatencyMs": 50.15532999999999
+  },
+  "followed": {
+    "key": "snapshot",
+    "at": "2026-11-18T14:01:45.433Z",
+    "signature": "[[\"d12f343d-66b9-45e4-8a14-21ff687d8ba3\",\"https://opensourcesecuritypodcast.libsyn.com/rss\"]]",
+    "activeUsers": 1,
+    "follows": 1,
+    "feeds": 1,
+    "errors": []
+  },
+  "demand": {
+    "REVIEW_REQUIRED": 64,
+    "QUEUED": 7,
+    "NONE": 5,
+    "FAILED": 3,
+    "WAITING": 2
+  },
+  "jobCounts": {
+    "PARTIAL_READY": 17,
+    "FAILED": 2,
+    "READY": 5,
+    "BLOCKED": 3,
+    "CANCELLED": 1
+  },
+  "checkpointCounts": {
+    "READY": 29
+  },
+  "semanticCounts": {
+    "READY": 16,
+    "BUILDING": 3
+  },
+  "costs": {
+    "text": {
+      "usd": 0.17635620000000005,
+      "seconds": 0,
+      "requests": 47,
+      "failed": 0
+    },
+    "transcription": {
+      "usd": 3.0741000000000005,
+      "seconds": 30741,
+      "requests": 31,
+      "failed": 0
+    },
+    "embedding": {
+      "usd": 0.00147428,
+      "seconds": 0,
+      "requests": 213,
+      "failed": 3
+    },
+    "grounding-review": {
+      "usd": 0.2650104,
+      "seconds": 0,
+      "requests": 162,
+      "failed": 1
+    },
+    "rounding-adjustment": {
+      "usd": 0.00000756,
+      "seconds": 0,
+      "requests": 1,
+      "failed": 0
+    }
+  },
+  "reservations": 0,
+  "licensed": [
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "canTranscribeAudio": false,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://linuxactionnews.com/rss",
+      "episodeId": "615c6587-31a8-41a4-9a7c-e3b88b1df894",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher declares its shows CC BY-SA 4.0: https://www.jupiterbroadcasting.com/ ; terms https://creativecommons.org/licenses/by-sa/4.0/legalcode.en . Scoped internal reproduction, transcription and ad-boundary analysis of Linux Action News 164 (Chris Fisher, Wes Payne; 22 November 2020), plus verified playback seeks in unchanged publisher audio. Attribution retained here and in evaluation report. No public transcript, captions, dubbing, voice rights or altered-audio distribution; any later shared adaptation requires attribution and ShareAlike compliance.",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENCE",
+          "source": "Jupiter Broadcasting — publisher show licence, CC BY-SA 4.0",
+          "scope": "episode",
+          "value": "https://www.jupiterbroadcasting.com/show/linux-action-news/164/"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "canTranscribeAudio": false,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher RSS expressly licenses this podcast work under CC BY 4.0. Section 2(a)(1) permits reproduction and adapted material. This assessment covers internal transcription and short attributed intelligence for this episode only; preserve publisher/title/source attribution and identify generated analysis. It grants no captions, dubbing, translation or voice replication. Explicit reservations, third-party claims and takedowns remain controlling.",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        },
+        {
+          "type": "PUBLISHER_LICENCE",
+          "source": "Open Source Security / Josh Bressers — publisher RSS copyright notice",
+          "scope": "episode",
+          "value": "https://opensourcesecuritypodcast.libsyn.com/rss#copyright; https://creativecommons.org/licenses/by/4.0/legalcode.en#s2"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/ad-skip-owned-feed.xml",
+      "episodeId": "radiostar-ad-skip-owned-v1",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC0 licence in episode-level RSS metadata: https://creativecommons.org/publicdomain/zero/1.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss",
+          "scope": "episode",
+          "value": "CC0",
+          "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+        },
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "CC0",
+          "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://hackerpublicradio.org/hpr_mp3_rss.php?hostid=269&limit=100",
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher episode page and RSS explicitly license this contribution under CC BY-SA 4.0. Internal transcription and attributed short derived intelligence are within the publisher grant, with source attribution, licence notice and ShareAlike conditions retained. No caption distribution, dubbing or voice replication permission is activated.",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENCE",
+          "source": "Hacker Public Radio / Honkeymagoo",
+          "scope": "episode",
+          "value": "https://hackerpublicradio.org/eps/hpr2578/index.html ; https://hackerpublicradio.org/about.html ; https://hackerpublicradio.org/hpr_mp3_rss.php?hostid=269&limit=100#copyright ; https://creativecommons.org/licenses/by-sa/4.0/"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "episodeId": "001d7139-1aed-4d0f-9f38-91cbc11cda8b",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-issued CC BY-SA 4.0; private source-aligned advert evaluation. Original attribution and licence retained.",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENCE",
+          "source": "Jupiter Broadcasting",
+          "scope": "episode",
+          "value": "https://www.jupiterbroadcasting.com/contact/"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://linuxunplugged.com/rss",
+      "episodeId": "08a0780e-c979-41e1-bdd1-016fca89a405",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-issued CC BY-SA 4.0; private source-aligned advert evaluation. Original attribution and licence retained.",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENCE",
+          "source": "Jupiter Broadcasting",
+          "scope": "episode",
+          "value": "https://www.jupiterbroadcasting.com/contact/"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://feeds.captivate.fm/research-culture/",
+      "episodeId": "b82291a4-5712-4a68-a623-2a3a7a9953b9",
+      "canTranscribeAudio": false,
+      "canProcessForAi": true,
+      "legalBasis": "The publisher RSS states that Research Culture Uncovered © 2023 by Research Culturosity, University of Leeds is licensed under CC BY-SA 4.0, requiring credit and ShareAlike; this episode has no contrary licence in its shownotes."
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+      "episodeId": "starcast-approved-test-episode-v1",
+      "canTranscribeAudio": false,
+      "canProcessForAi": true,
+      "legalBasis": "Existing Radio Star-owned synthetic test text; retain only previously granted core capabilities.",
+      "assessmentEvidence": [
+        {
+          "type": "OWNED",
+          "source": "Radio Star original synthetic verification corpus",
+          "scope": "episode",
+          "value": "repository:approved-test-corpus.mjs#approvedTestTranscriptVtt"
+        }
+      ]
+    },
+    {
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "canTranscribeAudio": true,
+      "canProcessForAi": true,
+      "legalBasis": "Publisher-provided CC-BY licence in podcast-level RSS metadata: http://creativecommons.org/licenses/by/4.0/",
+      "assessmentEvidence": [
+        {
+          "type": "PUBLISHER_LICENSE",
+          "source": "publisher-rss-copyright",
+          "scope": "podcast",
+          "value": "CC-BY",
+          "url": "http://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "type": "COPYRIGHT_NOTICE",
+          "source": "publisher-rss",
+          "scope": "podcast",
+          "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+        },
+        {
+          "type": "LAWFUL_ACCESS_OBSERVED",
+          "source": "publisher-rss",
+          "scope": "feed",
+          "value": "The publisher HTTPS feed was retrieved by the server."
+        }
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "key": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "duration": "32:32",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-28T12:36:31.673Z",
+      "processingMs": 129198,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-07-lightwell-mo-duffy.mp3?dest-id=542864",
+      "hash": "99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f",
+      "segments": 446,
+      "chapters": 5,
+      "topics": 5,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "15e68932edab0cc95baafe2449ff164bfea99c02241d2a48aa89b6c71e30ca6e",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "b866917c-0245-4bcf-a06a-83f55ea44ca6",
+      "title": "Safety vs Security with Thomas Depierre",
+      "duration": "21:23",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-20T16:20:05.266Z",
+      "processingMs": 15655,
+      "source": "publisher_rss",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2025-01-12_Open_Source_Security_Thomas_Depierre.mp3?dest-id=542864",
+      "segments": 241,
+      "chapters": 7,
+      "topics": 8,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "175e66fa87ad46153b3b8090d1d197dac79abe48e898e85a3cc85abb4bbafc64",
+      "feedUrl": "https://linuxactionnews.com/rss",
+      "episodeId": "615c6587-31a8-41a4-9a7c-e3b88b1df894",
+      "title": "Linux Action News 164",
+      "duration": "30:06",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-23T13:21:04.142Z",
+      "processingMs": 110823,
+      "source": "on_demand_audio",
+      "audioUrl": "https://aphid.fireside.fm/d/1437767933/dec90738-e640-45e5-b375-4573052f4bf4/615c6587-31a8-41a4-9a7c-e3b88b1df894.mp3",
+      "hash": "d6faaeb5e1366f04a72507f140eb417e008389ad589e48001ca852454769bcd4",
+      "segments": 425,
+      "chapters": 8,
+      "topics": 8,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 5
+        }
+      }
+    },
+    {
+      "key": "1cf79928164d453cc83b1fe7cae051caeb34a83f6398c4bb5d9e073b84938f1c",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "d04532a8-4020-449e-acd6-98fa8a1b6159",
+      "title": "The Future of Open Source Security",
+      "duration": "04:28",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-20T20:56:43.204Z",
+      "processingMs": 7634,
+      "source": "publisher_rss",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2025-01-the_future_of_open_source_security.mp3?dest-id=542864",
+      "segments": 74,
+      "chapters": 8,
+      "topics": 13,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "35a17738ef46f6a14864c31d341b0e908447155c5b95915d3b897ec14a9fd5df",
+      "title": "AI Chip Race Heats Up From Microsoft to Musk",
+      "duration": "2637",
+      "state": "FAILED",
+      "source": "publisher_rss",
+      "audioUrl": "https://podtrac.com/pts/redirect.mp3/traffic.omny.fm/d/clips/e73c998e-6e60-432f-8610-ae210140c5b1/41764a4f-fc64-4e11-89ba-ae7c0030ab5e/8421ffa3-0093-47ea-a045-b4e1010d6a10/audio.mp3?utm_source=Podcast&amp;in_playlist=9caafc41-289c-4115-995d-ae7c0030ab75",
+      "segments": 830
+    },
+    {
+      "key": "37ec1165e30656ffe53f6812a818ee72b90d17ff6ca36152d810fe6fc2c28e19",
+      "title": "#487 Minimum requirements",
+      "duration": "1656",
+      "state": "READY",
+      "completedAt": "2026-10-15T08:33:22.724Z",
+      "processingMs": 7770,
+      "source": "publisher_rss",
+      "audioUrl": "https://pythonbytes.fm/episodes/download/487/minimum-requirements.mp3",
+      "segments": 376,
+      "chapters": 7
+    },
+    {
+      "key": "3df32cfe5c3451eeeaa65338bb7e6908eb0a618932b37da0afd3ad1be318ea50",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "duration": "38:21",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T14:32:15.293Z",
+      "processingMs": 3587159,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-trust-lance-anton.mp3?dest-id=542864",
+      "hash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+      "segments": 821,
+      "chapters": 14,
+      "topics": 14,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "61ecc837a935952059d12163e07764596907526bfd478d23c4b46e47a612b547",
+      "title": "How did we get a Nobel Prize in economics?",
+      "duration": "568",
+      "state": "FAILED",
+      "completedAt": "2026-10-13T12:07:45.340Z",
+      "processingMs": 6120,
+      "source": "on_demand_audio",
+      "audioUrl": "https://prfx.byspotify.com/e/play.podtrac.com/npr-510325/npr.simplecastaudio.com/0a4e8d3b-fe23-4948-9e39-20fcf16f9331/episodes/37710a4f-4d7f-4833-9770-261f7fb17ad5/audio/128/default.mp3?awCollectionId=0a4e8d3b-fe23-4948-9e39-20fcf16f9331&amp;awEpisodeId=37710a4f-4d7f-4833-9770-261f7fb17ad5&amp;feed=IFy3imsg&amp;t=podcast&amp;e=nx-s1-5999497&amp;p=510325&amp;d=568&amp;size=9099058",
+      "segments": 157,
+      "chapters": 3
+    },
+    {
+      "key": "692bd21312aebe8f421a305a253b5cc94a1dc7d6ded972a8a1fe9d5565dc1323",
+      "title": "#495 Banned",
+      "duration": "1666",
+      "state": "READY",
+      "completedAt": "2026-10-13T11:24:20.620Z",
+      "processingMs": 12537,
+      "source": "publisher_rss",
+      "audioUrl": "https://pythonbytes.fm/episodes/download/495/banned.mp3",
+      "segments": 539,
+      "chapters": 6
+    },
+    {
+      "key": "712749fb16b1fc6c424f1958a155a3c6095f7621230ffcd75d30d730a2474487",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "title": "Sovereignty, policy, and OpenUK with Amanda Brock",
+      "duration": "34:44",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-23T12:08:13.550Z",
+      "processingMs": 786348,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-OpenUK-amanda-brock.mp3?dest-id=542864",
+      "hash": "b9de1127bf041d61571eb01e2acee82c08b32c681a4fb1961bd0235f468b2c7b",
+      "segments": 726,
+      "chapters": 14,
+      "topics": 14,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "71e2b9f6dcfcb6ef9cb5138cc84bdfe7e9c26abfeecd6c56bd9899c51a2fbaac",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+      "title": "Forking Open Source Projects with Sheogorath",
+      "duration": "22:14",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-20T21:56:47.800Z",
+      "processingMs": 72369,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2025-02-fork_open_source_sheogorath.mp3?dest-id=542864",
+      "segments": 320,
+      "chapters": 7,
+      "topics": 7,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "855b9b0ef6b057c18e3179b20158c9efaadda14c2879d06c097b964349e825dc",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "5e9a9317-8373-41d0-9465-641a66b2f90d",
+      "title": "Open source verification with Sal Kimmich",
+      "duration": "31:54",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-26T20:59:13.976Z",
+      "processingMs": 162908,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-06-verification-sal-kimmich.mp3?dest-id=542864",
+      "hash": "8df934a5f1ab1af504092c4cb61a3e0702c7e36aa127268c1e3531e3afad9210",
+      "segments": 603,
+      "chapters": 11,
+      "topics": 13,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "a4cee6281dea5ab48cffe98742f471c94194a26abb1b7813d8ceb9498c657afd",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "title": "The curl summer of Bliss with Daniel and Stefan",
+      "duration": "33:26",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-23T12:23:44.483Z",
+      "processingMs": 1716917,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-curl-bliss-Stefan-Daniel.mp3?dest-id=542864",
+      "hash": "c9038075dac9b57f3729783c2738155a9bc88471bc884e635c3730f6c49c6c49",
+      "segments": 830,
+      "chapters": 15,
+      "topics": 15,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "b1c723298f6b0516f8eaaf91fa5a83f53a71183fbe8bc862802f0b06ed4fc54e",
+      "title": "#494 Python Wrapture",
+      "duration": "1717",
+      "state": "READY",
+      "completedAt": "2026-10-13T11:59:27.454Z",
+      "processingMs": 7759,
+      "source": "publisher_rss",
+      "audioUrl": "https://pythonbytes.fm/episodes/download/494/python-wrapture.mp3",
+      "segments": 382,
+      "chapters": 6
+    },
+    {
+      "key": "c01dec6296ca9c4b1ed4038816eaba1a97cc1a54a7575007198ddf1ac2afc26b",
+      "title": "#497 Faster than light profiling",
+      "duration": "1608",
+      "state": "READY",
+      "completedAt": "2026-10-13T10:54:22.972Z",
+      "processingMs": 14212,
+      "source": "publisher_rss",
+      "audioUrl": "https://pythonbytes.fm/episodes/download/497/faster-than-light-profiling.mp3",
+      "segments": 496,
+      "chapters": 2
+    },
+    {
+      "key": "c96b8196fdae1fd20c64e47c238d6b765d5daea1f72ced1b523bc957d9adc0d8",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+      "title": "Finding difficult vulnerabilities with Jaya Baloo from AISLE",
+      "duration": "29:13",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-23T12:47:34.450Z",
+      "processingMs": 103035,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-jaya-aisle.mp3?dest-id=542864",
+      "hash": "67a43483dd3ba048fded317700aa0d79caad015ab5a3e5957ae913809843c08d",
+      "segments": 445,
+      "chapters": 8,
+      "topics": 8,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "cd8c0e85b8cf63fc2142b4c88ae5c732fdf7cd0ef870c9fa821285dd10851680",
+      "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/ad-skip-owned-feed.xml",
+      "episodeId": "radiostar-ad-skip-owned-v1",
+      "title": "Owned fixture: sponsorship break and product discussion",
+      "duration": "00:50",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-22T19:38:09.260Z",
+      "processingMs": 3889,
+      "source": "publisher_rss",
+      "audioUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/ad-skip-owned-v1.mp3",
+      "hash": "bda9d3b7c25e88ee8b4c010cf81826a779e888d2c67ddc7fc81c8ed77eff9d44",
+      "segments": 3,
+      "chapters": 3,
+      "topics": 3,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 1
+        }
+      }
+    },
+    {
+      "key": "d46faae861994efc84a60b26aa3fc22a7ea645060a5f1b459b54066d9744aeb7",
+      "title": "Anthropic’s Quest to Give A.I. Morals",
+      "duration": "00:44:20",
+      "state": "READY",
+      "completedAt": "2026-10-13T16:49:09.927Z",
+      "processingMs": 190213,
+      "source": "on_demand_audio",
+      "audioUrl": "https://dts.podtrac.com/redirect.mp3/pdst.fm/e/pfx.vpixl.com/6qj4J/pscrb.fm/rss/p/nyt.simplecastaudio.com/3e43d072-f8a5-430f-bc8e-4c70aafdf3c7/episodes/05ad1bfb-bd47-4120-a5fa-98c2f4787a3d/audio/128/default.mp3?aid=rss_feed&amp;awCollectionId=3e43d072-f8a5-430f-bc8e-4c70aafdf3c7&amp;awEpisodeId=05ad1bfb-bd47-4120-a5fa-98c2f4787a3d&amp;feed=6HKOhNgS",
+      "segments": 571,
+      "chapters": 4
+    },
+    {
+      "key": "dd3352cfdaab92262ccef3a1704e1d6cb04273c6f6ab1f534c9544759d2699da",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "duration": "29:34",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T14:16:14.335Z",
+      "processingMs": 2581206,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-backport-gaps-roi.mp3?dest-id=542864",
+      "hash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+      "segments": 510,
+      "chapters": 10,
+      "topics": 13,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "e82995052de3b1770f78df54fc5f9df4f5d4c63e87f48de1fd135146ceeabebb",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "duration": "36:09",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T14:15:17.670Z",
+      "processingMs": 2569948,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-ruth-asf.mp3?dest-id=542864",
+      "hash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+      "segments": 740,
+      "chapters": 12,
+      "topics": 17,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 1
+        }
+      }
+    },
+    {
+      "key": "e8c78e7832376cbfb68a99cbb91c1b67c8e40ef824751cc054b108786db2bc9b",
+      "feedUrl": "https://feeds.captivate.fm/research-culture/",
+      "episodeId": "b82291a4-5712-4a68-a623-2a3a7a9953b9",
+      "title": "(Episode 172) Authorship Uncovered: Who Gets the Credit?",
+      "duration": "19:56",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-20T11:56:41.926Z",
+      "processingMs": 4428,
+      "source": "publisher_rss",
+      "audioUrl": "https://episodes.captivate.fm/episode/b82291a4-5712-4a68-a623-2a3a7a9953b9.mp3",
+      "segments": 53,
+      "chapters": 5,
+      "topics": 5,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "e92e25c81a10042b8e4b8126835928dc75a9125a35e82066f12e7e57c99fe733",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "3fcb8ef9-5e79-4671-93b2-f1f7fded941d",
+      "title": "CRA vulnerability reporting with Daniel Thompson",
+      "duration": "40:40",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-28T15:23:35.498Z",
+      "processingMs": 167063,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-daniel-cra.mp3?dest-id=542864",
+      "hash": "ba96f18992ad87eb33e8110af74ee9d04362ca29894fa88b373d4b74fda713b0",
+      "segments": 611,
+      "chapters": 15,
+      "topics": 15,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "ec1f3dc0f60c5edfa77cfe139b9a65fe4a43bb4d7c7baaab26999208d4aec83c",
+      "feedUrl": "https://d3ri12f40b85i3.cloudfront.net/fixtures/approved-test-feed.xml",
+      "episodeId": "starcast-approved-test-episode-v1",
+      "title": "How evidence should shape an intelligent listener",
+      "duration": "00:06:00",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T12:25:03.657Z",
+      "processingMs": 22211,
+      "source": "publisher_rss",
+      "audioUrl": null,
+      "segments": 6,
+      "chapters": 6,
+      "topics": 6,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    },
+    {
+      "key": "ffa1e2522a87b22e10ffaa5e37537ee6af9ada5c2826c746255999547f23889a",
+      "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+      "episodeId": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "title": "Dependency attacks in 2026 with James Matchett",
+      "duration": "32:03",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-23T09:28:22.212Z",
+      "processingMs": 139584,
+      "source": "on_demand_audio",
+      "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-10-james-cloudsmith.mp3?dest-id=542864",
+      "hash": "f79a06859e6e73f4306d25ef5a9c8e6d11f32c8cb24ace22248dd5b5f29f5b1c",
+      "segments": 718,
+      "chapters": 10,
+      "topics": 10,
+      "features": {
+        "transcript": {
+          "state": "READY"
+        },
+        "brief": {
+          "state": "PARTIAL_READY"
+        },
+        "chapters": {
+          "state": "PARTIAL_READY"
+        },
+        "topics": {
+          "state": "READY"
+        },
+        "search": {
+          "state": "READY"
+        },
+        "moments": {
+          "state": "READY"
+        },
+        "adCandidates": {
+          "state": "READY",
+          "candidateCount": 0
+        }
+      }
+    }
+  ],
+  "quality": [
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "jobId": "545cc906-0247-4460-b117-d12ac5e6707c",
+      "state": "PARTIAL_READY",
+      "attempts": 1,
+      "sourceHash": "99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f",
+      "durationMs": 1951086,
+      "work": {
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 1951086,
+        "sourceDurationMs": 1951086,
+        "completedBatches": 1,
+        "totalBatches": 1,
+        "synthesisPending": false
+      },
+      "processingMs": 129198,
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "responseSha256": "2a335136745ab8f272dd07fe838428a40651d2fa28c2e224ad962c93240a7ef2",
+          "segments": 316
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "responseSha256": "ca977bc49017009de2a89bf31a7e0abae37e85f3b38955ef0952b594000c0fff",
+          "segments": 140
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 446,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 0,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 5680,
+          "textSha256": "1687003fb70ea9529e75bbc6957e9162e0c3f72e5083d91334d9b7fba92a94b2"
+        },
+        {
+          "id": "0-233",
+          "startMs": 870480,
+          "endMs": 874840,
+          "textSha256": "f520104b0fc65186a3474d451b9e6a04210ed327bc14d570d72c7cb2f321a7a7"
+        },
+        {
+          "id": "1-139",
+          "startMs": 1945560,
+          "endMs": 1949960,
+          "textSha256": "67ebb0da4bcebcd9521d7d625e50be4af512543a385094b1cee0db14f7a182ce"
+        }
+      ],
+      "brief": {
+        "overview": "“So Mo is here because Red Hat announced something called Project Lightwell, I don't know how”",
+        "themes": [],
+        "detail": "“So Mo is here because Red Hat announced something called Project Lightwell, I don't know how”\n“So that's exactly where we're going with Project Lightwell.”\n“So let's just talk about what the Red Hat development model kind of looks like in the”",
+        "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+        "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-10-28T12:36:16.101Z",
+        "usage": {
+          "inputTokens": 12222,
+          "outputTokens": 548
+        },
+        "mode": "extractive",
+        "sourceSegmentCount": 3,
+        "sourceSegmentIdsSample": [
+          "0-7",
+          "0-34",
+          "0-53"
+        ],
+        "sourceIdsSha256": "31906230faef0e2a85e2408d40257396b389e630ac15e353a2bb4d2fc682fef9"
+      },
+      "chapters": [
+        {
+          "title": "“Today, Open Source Security welcomes Mo Duffy, Distinguished Engineer at Red Hat and…”",
+          "description": "“Today, Open Source Security welcomes Mo Duffy, Distinguished Engineer at Red Hat and a person”",
+          "startMs": 0,
+          "endMs": 69180,
+          "mode": "extractive",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-23",
+            "0-24",
+            "0-25"
+          ],
+          "sourceIdsSha256": "a01cb27f8548bf58a037952c0c50222b63914a944590174bf18ff583b4738a61"
+        },
+        {
+          "title": "“And I'm going to pull us back a bit because you said a whole bunch of things that you”",
+          "description": "“And I'm going to pull us back a bit because you said a whole bunch of things that you”",
+          "startMs": 161420,
+          "endMs": 459200,
+          "mode": "extractive",
+          "sourceSegmentCount": 77,
+          "sourceSegmentIdsSample": [
+            "0-50",
+            "0-51",
+            "0-52",
+            "0-124",
+            "0-125",
+            "0-126"
+          ],
+          "sourceIdsSha256": "456d6be38585124ac49697616dc4dff9786b5ba7d0d575bce87f9d8a1f8f1fe0"
+        },
+        {
+          "title": "“the announcement of Mythos, and when we started seeing sort of that model grade…”",
+          "description": "“the announcement of Mythos, and when we started seeing sort of that model grade findings for”",
+          "startMs": 688560,
+          "endMs": 854240,
+          "mode": "extractive",
+          "sourceSegmentCount": 42,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-226",
+            "0-227",
+            "0-228"
+          ],
+          "sourceIdsSha256": "ab218f5be32c63fd797851ec3c07615170f481a8d787875ae02d1ed2f1cbfa78"
+        },
+        {
+          "title": "“Now, for Lightwell, what we're looking to do is there are some projects that are, you”",
+          "description": "“Now, for Lightwell, what we're looking to do is there are some projects that are, you”",
+          "startMs": 1059960,
+          "endMs": 1686520,
+          "mode": "extractive",
+          "sourceSegmentCount": 121,
+          "sourceSegmentIdsSample": [
+            "0-285",
+            "0-286",
+            "0-287",
+            "1-87",
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "8076a318aebf608038911651fe1413a9bb8a7d6aad452dfd2d4446625e658c8b"
+        },
+        {
+          "title": "“anything you want us to know, anything you think we might have left out, just kind of…”",
+          "description": "“anything you want us to know, anything you think we might have left out, just kind of what's going”",
+          "startMs": 1751800,
+          "endMs": 1949960,
+          "mode": "extractive",
+          "sourceSegmentCount": 37,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-137",
+            "1-138",
+            "1-139"
+          ],
+          "sourceIdsSha256": "a98c26f6ffce203d01881000e36ea11245a7a380e7c7e0f3a2625640a5cc8375"
+        }
+      ],
+      "topics": [
+        {
+          "id": "96f1eded4af44444",
+          "label": "“Today, Open Source Security welcomes Mo Duffy, Distinguished Engineer at Red Hat and…”",
+          "startMs": 0,
+          "endMs": 69180,
+          "chapterTitle": "“Today, Open Source Security welcomes Mo Duffy, Distinguished Engineer at Red Hat and…”",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 16,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-23",
+            "0-24",
+            "0-25"
+          ],
+          "sourceIdsSha256": "a01cb27f8548bf58a037952c0c50222b63914a944590174bf18ff583b4738a61"
+        },
+        {
+          "id": "7226df2e7798ca9f",
+          "label": "“And I'm going to pull us back a bit because you said a whole bunch of things that you”",
+          "startMs": 161420,
+          "endMs": 459200,
+          "chapterTitle": "“And I'm going to pull us back a bit because you said a whole bunch of things that you”",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 77,
+          "sourceSegmentIdsSample": [
+            "0-50",
+            "0-51",
+            "0-52",
+            "0-124",
+            "0-125",
+            "0-126"
+          ],
+          "sourceIdsSha256": "456d6be38585124ac49697616dc4dff9786b5ba7d0d575bce87f9d8a1f8f1fe0"
+        },
+        {
+          "id": "14e55f49358df9cf",
+          "label": "“the announcement of Mythos, and when we started seeing sort of that model grade…”",
+          "startMs": 688560,
+          "endMs": 854240,
+          "chapterTitle": "“the announcement of Mythos, and when we started seeing sort of that model grade…”",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 42,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-226",
+            "0-227",
+            "0-228"
+          ],
+          "sourceIdsSha256": "ab218f5be32c63fd797851ec3c07615170f481a8d787875ae02d1ed2f1cbfa78"
+        },
+        {
+          "id": "95ae6cd773e29349",
+          "label": "“Now, for Lightwell, what we're looking to do is there are some projects that are, you”",
+          "startMs": 1059960,
+          "endMs": 1686520,
+          "chapterTitle": "“Now, for Lightwell, what we're looking to do is there are some projects that are, you”",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 121,
+          "sourceSegmentIdsSample": [
+            "0-285",
+            "0-286",
+            "0-287",
+            "1-87",
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "8076a318aebf608038911651fe1413a9bb8a7d6aad452dfd2d4446625e658c8b"
+        },
+        {
+          "id": "254d41792afab264",
+          "label": "“anything you want us to know, anything you think we might have left out, just kind of…”",
+          "startMs": 1751800,
+          "endMs": 1949960,
+          "chapterTitle": "“anything you want us to know, anything you think we might have left out, just kind of…”",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 37,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-137",
+            "1-138",
+            "1-139"
+          ],
+          "sourceIdsSha256": "a98c26f6ffce203d01881000e36ea11245a7a380e7c7e0f3a2625640a5cc8375"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 446,
+          "totalSegments": 446,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 2,
+          "usd": 0.1953,
+          "seconds": 1953,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 1,
+          "usd": 0.0057656,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40:99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f:whisper-1:1951086:0",
+          "kind": "transcription",
+          "usd": 0.12,
+          "seconds": 1200,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-10-28T12:34:31.771Z"
+        },
+        {
+          "id": "14c3560b5fd2959aba3fb214ff8b485a30a8124bdea00fef432a167d9900ac40:99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f:whisper-1:1951086:1",
+          "kind": "transcription",
+          "usd": 0.0753,
+          "seconds": 753,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-10-28T12:35:35.690Z"
+        },
+        {
+          "id": "545cc906-0247-4460-b117-d12ac5e6707c:text:map-0",
+          "kind": "text",
+          "usd": 0.0057656,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-10-28T12:36:10.676Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "jobId": "e078c2aa-3ef3-4df5-8756-0cff5beefce4",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+      "durationMs": 2300578,
+      "work": {
+        "verifiedSourceDurationMs": 2300578,
+        "sourceContentHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 2300578,
+        "sourceDurationMs": 2300578,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 3587159,
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "responseSha256": "17477c99b53003bfb6aec2de88730452a44655bfa35eb4651c5265dab060b859",
+          "segments": 316
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "responseSha256": "f2348b06539a1da44fcce94a0208b79921e59a8c7fbc46004bdb00816825016d",
+          "segments": 505
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 821,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 1,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 4600,
+          "textSha256": "5d601841648caacb2376fd5379c722dc5780e02af942cf50fb98539c0479bd84"
+        },
+        {
+          "id": "1-94",
+          "startMs": 1426580,
+          "endMs": 1429120,
+          "textSha256": "56230376cf15336e731aa4c141bf0807686d8b03bea0b553368bbe75cb668be2"
+        },
+        {
+          "id": "1-504",
+          "startMs": 2298800,
+          "endMs": 2299640,
+          "textSha256": "2a3eb0c8e297350a9cd136ccb8dcfc3887a0a48b7bffb26ad4399f9cc588159a"
+        }
+      ],
+      "brief": {
+        "overview": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”",
+        "themes": [],
+        "detail": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”\n“the secure hosting platform.”\n“Lance and Anton are here to talk about verifiable computing today, which I'm really excited”",
+        "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+        "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T14:32:08.542Z",
+        "usage": {
+          "inputTokens": 1300,
+          "outputTokens": 875
+        },
+        "mode": "extractive",
+        "sourceSegmentCount": 3,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-2"
+        ],
+        "sourceIdsSha256": "692a80ddbcd564614d96aa7bbde7f4663635842da38608fa6d7e4a9c9c4a314e"
+      },
+      "chapters": [
+        {
+          "title": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”",
+          "description": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”",
+          "startMs": 0,
+          "endMs": 92200,
+          "mode": "extractive",
+          "sourceSegmentCount": 33,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-30",
+            "0-31",
+            "0-32"
+          ],
+          "sourceIdsSha256": "44f45297fa35b940095ec44efff44851af14b9fd0f9f1e0364d5c81ef8ab52ca"
+        },
+        {
+          "title": "Trust and the Compiler Challenge",
+          "description": "Exploring the problem of trusting software binaries, Ken Thompson's trusting trust, and the importance of reproducible builds.",
+          "startMs": 118640,
+          "endMs": 288680,
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-80",
+            "0-81",
+            "0-82"
+          ],
+          "sourceIdsSha256": "27daabe1bb1884b6dd6c9bf1b802a83b39f0e7e0b27f892627135bec83a7cda6"
+        },
+        {
+          "title": "Bootstrapping Compilers from Scratch",
+          "description": "Detailed explanation of starting from minimal machine code to build full compilers deterministically to establish trusted toolchains.",
+          "startMs": 549160,
+          "endMs": 750880,
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-152",
+            "0-153",
+            "0-154",
+            "0-194",
+            "0-195",
+            "0-196"
+          ],
+          "sourceIdsSha256": "f793684701cf8e41e231baa54237487fc35612519f04848f1447d8ec9da5a0b4"
+        },
+        {
+          "title": "Limitations and Real-World Attacks",
+          "description": "Discussion on challenges Auditing large compilers and real-world supply chain attacks like Xcode Ghost.",
+          "startMs": 863160,
+          "endMs": 1036560,
+          "sourceSegmentCount": 47,
+          "sourceSegmentIdsSample": [
+            "0-227",
+            "0-228",
+            "0-229",
+            "0-271",
+            "0-272",
+            "0-273"
+          ],
+          "sourceIdsSha256": "2f6e507443a7390f7129442a1fb94c2c1f047db2f74cc7064c4d31f7ed6a3091"
+        },
+        {
+          "title": "Formal Verification and Future Prospects",
+          "description": "Potential for applying formal mathematical proofs to LLVM IR and software to deepen trust and correctness guarantees.",
+          "startMs": 1262440,
+          "endMs": 1337540,
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "1-26",
+            "1-27",
+            "1-28",
+            "1-57",
+            "1-58",
+            "1-59"
+          ],
+          "sourceIdsSha256": "278859c2916b907e98bb62c97bd4719185e5aee982b60239703a038adfb523bc"
+        },
+        {
+          "title": "“And what verifiable compute is, is actually,”",
+          "description": "“And what verifiable compute is, is actually,”",
+          "startMs": 1371840,
+          "endMs": 1482620,
+          "mode": "extractive",
+          "sourceSegmentCount": 48,
+          "sourceSegmentIdsSample": [
+            "1-72",
+            "1-73",
+            "1-74",
+            "1-117",
+            "1-118",
+            "1-119"
+          ],
+          "sourceIdsSha256": "44d3dbb12845e93f1ed440fbd750c58fe4da9407a52b06eab6250b269f3d602a"
+        },
+        {
+          "title": "“Yeah, so it's about...”",
+          "description": "“Yeah, so it's about...”",
+          "startMs": 1527520,
+          "endMs": 1563080,
+          "mode": "extractive",
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "1-141",
+            "1-142",
+            "1-143",
+            "1-156",
+            "1-157",
+            "1-158"
+          ],
+          "sourceIdsSha256": "7f375ac7773d820167fd93516a6919ae5b6eb26206299fe50ba62329d28a56fd"
+        },
+        {
+          "title": "Investing in Confidential Computing and Live Memory Snapshots",
+          "description": "Discussing investments in confidential computing technology that enables live RAM snapshots for ongoing attestation, with current focus on Intel platforms and the challenge of AMD support.",
+          "startMs": 1617540,
+          "endMs": 1635400,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-184",
+            "1-185",
+            "1-186",
+            "1-187",
+            "1-188",
+            "1-189"
+          ],
+          "sourceIdsSha256": "1a3e1552440e322940d230e4e357721e6938efecbcc35ae6f5f8f3cc87c438bb"
+        },
+        {
+          "title": "From Verified Boot to Real-Time Attestation",
+          "description": "Exploring limitations of code verification only at boot and describing emerging methods for real-time, ongoing proofs of software integrity at runtime.",
+          "startMs": 1647840,
+          "endMs": 1661360,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-196",
+            "1-197",
+            "1-198",
+            "1-199",
+            "1-200",
+            "1-201"
+          ],
+          "sourceIdsSha256": "3403c235011d6bd37d4d019e4985fcfd13d6bed2bdf94998526ac2a78229fb3d"
+        },
+        {
+          "title": "Building Minimal Hardened Kernels for Security",
+          "description": "Explanation of using minimal, hardened kernels to reduce exploitable boundaries and increase confidence in running code and its privileges.",
+          "startMs": 1674060,
+          "endMs": 1698960,
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "1-206",
+            "1-207",
+            "1-208",
+            "1-215",
+            "1-216",
+            "1-217"
+          ],
+          "sourceIdsSha256": "922438383bdff8645469cd0f6e7b68afbba4fe1e223015662d2e97ad3f904793"
+        },
+        {
+          "title": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "description": "Examples of high-risk use cases like crypto custodians needing multi-party verification without exposing secrets, and VPN providers proving no-logging policies through verifiable compute.",
+          "startMs": 1724820,
+          "endMs": 1810960,
+          "sourceSegmentCount": 44,
+          "sourceSegmentIdsSample": [
+            "1-230",
+            "1-231",
+            "1-232",
+            "1-271",
+            "1-272",
+            "1-273"
+          ],
+          "sourceIdsSha256": "1199d0e0e14f013eccd3f0bc8373ed6f59c25395f0aa1996ea31c3dff74b53d9"
+        },
+        {
+          "title": "Easing Adoption through Containerization and Familiar Workflows",
+          "description": "Efforts to simplify use by running standard containerized apps like Nginx in enclaves, lowering friction and maintaining developer workflows, broadening security benefits to many.",
+          "startMs": 1820600,
+          "endMs": 1971420,
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "1-278",
+            "1-279",
+            "1-280",
+            "1-346",
+            "1-347",
+            "1-348"
+          ],
+          "sourceIdsSha256": "2a25a84f30405bb40b3afb09e9e01c9995a4f441fd16eeeb51d1fab89242c53e"
+        },
+        {
+          "title": "Open Source Tooling and Reproducible Software Stacks",
+          "description": "Describing open source projects like StageX providing supply chain security benefits and verifiable computing that users can reproduce and verify.",
+          "startMs": 2167040,
+          "endMs": 2201140,
+          "sourceSegmentCount": 15,
+          "sourceSegmentIdsSample": [
+            "1-439",
+            "1-440",
+            "1-441",
+            "1-451",
+            "1-452",
+            "1-453"
+          ],
+          "sourceIdsSha256": "57ad70cf1c4303abe77b2e3ebdfefe50f945c374ae08383c55092bc2ff9f09a6"
+        },
+        {
+          "title": "Vision for Verifiable Computing as an Internet Standard",
+          "description": "Advocating making verifiable computing standard practice to prove running software integrity, enhancing privacy and trust without user friction.",
+          "startMs": 2244800,
+          "endMs": 2280200,
+          "sourceSegmentCount": 17,
+          "sourceSegmentIdsSample": [
+            "1-473",
+            "1-474",
+            "1-475",
+            "1-487",
+            "1-488",
+            "1-489"
+          ],
+          "sourceIdsSha256": "924e45c0bf1c786bf2947fa3e37f1ad97d45ed7c2f65192b42f2a6431f531275"
+        }
+      ],
+      "topics": [
+        {
+          "id": "dfad5881bf9f8b36",
+          "label": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”",
+          "startMs": 0,
+          "endMs": 92200,
+          "chapterTitle": "“Today, Open Source Security is talking to Lance and Anton, the founders of Caution,”",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 33,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-30",
+            "0-31",
+            "0-32"
+          ],
+          "sourceIdsSha256": "44f45297fa35b940095ec44efff44851af14b9fd0f9f1e0364d5c81ef8ab52ca"
+        },
+        {
+          "id": "60ce8ac6b53be300",
+          "label": "Trust and the Compiler Challenge",
+          "startMs": 118640,
+          "endMs": 288680,
+          "chapterTitle": "Trust and the Compiler Challenge",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 41,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-80",
+            "0-81",
+            "0-82"
+          ],
+          "sourceIdsSha256": "27daabe1bb1884b6dd6c9bf1b802a83b39f0e7e0b27f892627135bec83a7cda6"
+        },
+        {
+          "id": "7839dd77e207b5a6",
+          "label": "Bootstrapping Compilers from Scratch",
+          "startMs": 549160,
+          "endMs": 750880,
+          "chapterTitle": "Bootstrapping Compilers from Scratch",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-152",
+            "0-153",
+            "0-154",
+            "0-194",
+            "0-195",
+            "0-196"
+          ],
+          "sourceIdsSha256": "f793684701cf8e41e231baa54237487fc35612519f04848f1447d8ec9da5a0b4"
+        },
+        {
+          "id": "339901b07013e272",
+          "label": "Limitations and Real-World Attacks",
+          "startMs": 863160,
+          "endMs": 1036560,
+          "chapterTitle": "Limitations and Real-World Attacks",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 47,
+          "sourceSegmentIdsSample": [
+            "0-227",
+            "0-228",
+            "0-229",
+            "0-271",
+            "0-272",
+            "0-273"
+          ],
+          "sourceIdsSha256": "2f6e507443a7390f7129442a1fb94c2c1f047db2f74cc7064c4d31f7ed6a3091"
+        },
+        {
+          "id": "3ffc4180e9a9b330",
+          "label": "Formal Verification and Future Prospects",
+          "startMs": 1262440,
+          "endMs": 1337540,
+          "chapterTitle": "Formal Verification and Future Prospects",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 34,
+          "sourceSegmentIdsSample": [
+            "1-26",
+            "1-27",
+            "1-28",
+            "1-57",
+            "1-58",
+            "1-59"
+          ],
+          "sourceIdsSha256": "278859c2916b907e98bb62c97bd4719185e5aee982b60239703a038adfb523bc"
+        },
+        {
+          "id": "dbdec14318d1285b",
+          "label": "“And what verifiable compute is, is actually,”",
+          "startMs": 1371840,
+          "endMs": 1482620,
+          "chapterTitle": "“And what verifiable compute is, is actually,”",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 48,
+          "sourceSegmentIdsSample": [
+            "1-72",
+            "1-73",
+            "1-74",
+            "1-117",
+            "1-118",
+            "1-119"
+          ],
+          "sourceIdsSha256": "44d3dbb12845e93f1ed440fbd750c58fe4da9407a52b06eab6250b269f3d602a"
+        },
+        {
+          "id": "534cb0f1488adccb",
+          "label": "“Yeah, so it's about...”",
+          "startMs": 1527520,
+          "endMs": 1563080,
+          "chapterTitle": "“Yeah, so it's about...”",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 18,
+          "sourceSegmentIdsSample": [
+            "1-141",
+            "1-142",
+            "1-143",
+            "1-156",
+            "1-157",
+            "1-158"
+          ],
+          "sourceIdsSha256": "7f375ac7773d820167fd93516a6919ae5b6eb26206299fe50ba62329d28a56fd"
+        },
+        {
+          "id": "888cb14f45419038",
+          "label": "Investing in Confidential Computing and Live Memory Snapshots",
+          "startMs": 1617540,
+          "endMs": 1635400,
+          "chapterTitle": "Investing in Confidential Computing and Live Memory Snapshots",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-184",
+            "1-185",
+            "1-186",
+            "1-187",
+            "1-188",
+            "1-189"
+          ],
+          "sourceIdsSha256": "1a3e1552440e322940d230e4e357721e6938efecbcc35ae6f5f8f3cc87c438bb"
+        },
+        {
+          "id": "fecb927a76ba3730",
+          "label": "From Verified Boot to Real-Time Attestation",
+          "startMs": 1647840,
+          "endMs": 1661360,
+          "chapterTitle": "From Verified Boot to Real-Time Attestation",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-196",
+            "1-197",
+            "1-198",
+            "1-199",
+            "1-200",
+            "1-201"
+          ],
+          "sourceIdsSha256": "3403c235011d6bd37d4d019e4985fcfd13d6bed2bdf94998526ac2a78229fb3d"
+        },
+        {
+          "id": "854b0c2a65c6be51",
+          "label": "Building Minimal Hardened Kernels for Security",
+          "startMs": 1674060,
+          "endMs": 1698960,
+          "chapterTitle": "Building Minimal Hardened Kernels for Security",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "1-206",
+            "1-207",
+            "1-208",
+            "1-215",
+            "1-216",
+            "1-217"
+          ],
+          "sourceIdsSha256": "922438383bdff8645469cd0f6e7b68afbba4fe1e223015662d2e97ad3f904793"
+        },
+        {
+          "id": "ffad761dec15aae0",
+          "label": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "startMs": 1724820,
+          "endMs": 1810960,
+          "chapterTitle": "Use Cases: Crypto Custodians and Privacy-Conscious Services",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 44,
+          "sourceSegmentIdsSample": [
+            "1-230",
+            "1-231",
+            "1-232",
+            "1-271",
+            "1-272",
+            "1-273"
+          ],
+          "sourceIdsSha256": "1199d0e0e14f013eccd3f0bc8373ed6f59c25395f0aa1996ea31c3dff74b53d9"
+        },
+        {
+          "id": "7fc3942ea2bdbe6c",
+          "label": "Easing Adoption through Containerization and Familiar Workflows",
+          "startMs": 1820600,
+          "endMs": 1971420,
+          "chapterTitle": "Easing Adoption through Containerization and Familiar Workflows",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 71,
+          "sourceSegmentIdsSample": [
+            "1-278",
+            "1-279",
+            "1-280",
+            "1-346",
+            "1-347",
+            "1-348"
+          ],
+          "sourceIdsSha256": "2a25a84f30405bb40b3afb09e9e01c9995a4f441fd16eeeb51d1fab89242c53e"
+        },
+        {
+          "id": "6d16d5c6d9d8b01e",
+          "label": "Open Source Tooling and Reproducible Software Stacks",
+          "startMs": 2167040,
+          "endMs": 2201140,
+          "chapterTitle": "Open Source Tooling and Reproducible Software Stacks",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 15,
+          "sourceSegmentIdsSample": [
+            "1-439",
+            "1-440",
+            "1-441",
+            "1-451",
+            "1-452",
+            "1-453"
+          ],
+          "sourceIdsSha256": "57ad70cf1c4303abe77b2e3ebdfefe50f945c374ae08383c55092bc2ff9f09a6"
+        },
+        {
+          "id": "61cb1f6b148ebf4f",
+          "label": "Vision for Verifiable Computing as an Internet Standard",
+          "startMs": 2244800,
+          "endMs": 2280200,
+          "chapterTitle": "Vision for Verifiable Computing as an Internet Standard",
+          "transcriptVersion": "52613659e00c814b00fd0f9c55671faa430488f285bf988195f1e0c3be8546e5",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 17,
+          "sourceSegmentIdsSample": [
+            "1-473",
+            "1-474",
+            "1-475",
+            "1-487",
+            "1-488",
+            "1-489"
+          ],
+          "sourceIdsSha256": "924e45c0bf1c786bf2947fa3e37f1ad97d45ed7c2f65192b42f2a6431f531275"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 821,
+          "totalSegments": 821,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 2,
+          "usd": 0.23020000000000002,
+          "seconds": 2302,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 4,
+          "usd": 0.0124908,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "e078c2aa-3ef3-4df5-8756-0cff5beefce4:text:map-1",
+          "kind": "text",
+          "usd": 0.0039248,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:42:58.277Z"
+        },
+        {
+          "id": "e078c2aa-3ef3-4df5-8756-0cff5beefce4:text:reduce",
+          "kind": "text",
+          "usd": 0.0006452,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:43:22.745Z"
+        },
+        {
+          "id": "e078c2aa-3ef3-4df5-8756-0cff5beefce4:text:reduce-original-evidence-v2",
+          "kind": "text",
+          "usd": 0.00192,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:54:02.692Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "title": "HPR2578: LinuxLUGcast 102 the lost episode",
+      "jobId": "b8ddcd2e-ad04-4ae0-b60a-88ee9f008566",
+      "state": "BLOCKED",
+      "code": "BUDGET_LIMIT",
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "AUDIO_STAGING_REPAIRED",
+      "sourceHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+      "durationMs": 14112722,
+      "work": {
+        "verifiedSourceDurationMs": 14112722,
+        "sourceContentHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+        "completedChunks": 3,
+        "totalChunks": 12,
+        "completedSourceMs": 3598000,
+        "sourceDurationMs": 14112722,
+        "nextChunkSeconds": 1200
+      },
+      "resumeAfter": "2026-11-19T00:00:00.000Z",
+      "capacityWait": {
+        "available": false,
+        "requiredUsd": 0.12000000000000001,
+        "requiredSeconds": 1200,
+        "remainingDailyUsd": 3.92635306,
+        "remainingMonthlyUsd": 23.92635306,
+        "remainingAudioSeconds": 953,
+        "reason": "DAILY_AUDIO",
+        "resumeAfter": "2026-11-19T00:00:00.000Z"
+      },
+      "expectedChunks": 12,
+      "checkpointCount": 3,
+      "completedChunks": 3,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "responseSha256": "899724e69265a247cd2bb7237436fb73031ecbc5213421c101540571b1bd78af",
+          "segments": 292
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "responseSha256": "7cce3024520050403af32214bfb308c230589749f989668bffdcf4672628dbc7",
+          "segments": 251
+        },
+        {
+          "index": 2,
+          "state": "READY",
+          "responseSha256": "9a72af74664b584eecd831233ceb3fc844b7e2290ddc5a9db2bd768df7027a90",
+          "segments": 288
+        }
+      ],
+      "missingChunkIndexes": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "transcriptSegments": 0,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 0,
+      "samples": [],
+      "brief": null,
+      "featureExecution": {
+        "transcript": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "brief": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "chapters": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "topics": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "search": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "moments": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "semantic": {
+          "state": "NOT_STARTED",
+          "completedSegments": 0,
+          "totalSegments": null,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "searchChecksumValid": false,
+      "semanticChecksumValid": false,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 3,
+          "usd": 0.36,
+          "seconds": 3600,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d:whisper-1:14112722:0",
+          "kind": "transcription",
+          "usd": 0.12,
+          "seconds": 1200,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:46:58.869Z"
+        },
+        {
+          "id": "d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d:whisper-1:14112722:1",
+          "kind": "transcription",
+          "usd": 0.12,
+          "seconds": 1200,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:47:53.209Z"
+        },
+        {
+          "id": "d7419951e8de2d83916f73ac52479082dcd2702e95dca6d282dad91cc58ebea5:4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d:whisper-1:14112722:2",
+          "kind": "transcription",
+          "usd": 0.12,
+          "seconds": 1200,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:48:54.685Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "jobId": "d2baba8e-7906-4840-a74b-a6b25b9e2825",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+      "durationMs": 1773062,
+      "work": {
+        "verifiedSourceDurationMs": 1773062,
+        "sourceContentHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 1773062,
+        "sourceDurationMs": 1773062,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 2581206,
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "responseSha256": "3289ebc8e8e66f1da57f779cb61c03a7ed529e6632d6b4ec2cacaad100e0d948",
+          "segments": 414
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "responseSha256": "30ab5823add4f9b1cdcd09682933f1a9ebaaaed876e2d2b2cde32eb0909fa4c4",
+          "segments": 96
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 510,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 1,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 3160,
+          "textSha256": "76b337296ef58dc9f5950110be00d7dbed0fd6906ad80bb3ae4ec05148b5fd10"
+        },
+        {
+          "id": "0-255",
+          "startMs": 774480,
+          "endMs": 776320,
+          "textSha256": "0e4970d2e20f7ba075abc41ca9459f911afebc6a24ae438789e4103faf7a67d8"
+        },
+        {
+          "id": "1-95",
+          "startMs": 1770120,
+          "endMs": 1771400,
+          "textSha256": "b5bfcb49fa4cbe3479d617bd5d4ad246ca983e043da21d017058d688131f3dd1"
+        }
+      ],
+      "brief": {
+        "overview": "This underscores urgent enhancements in open-source security practices and automation to counterbalance AI-driven attacker capabilities.",
+        "themes": [
+          "Backporting gaps in open source",
+          "AI-assisted vulnerability research",
+          "Imbalance between vulnerability discovery and patching"
+        ],
+        "detail": "This underscores urgent enhancements in open-source security practices and automation to counterbalance AI-driven attacker capabilities.",
+        "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+        "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T14:15:58.024Z",
+        "usage": {
+          "inputTokens": 1109,
+          "outputTokens": 492
+        },
+        "mode": "verified_partial",
+        "sourceSegmentCount": 161,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-18",
+          "0-56",
+          "1-91",
+          "1-92",
+          "1-93"
+        ],
+        "sourceIdsSha256": "68ee54e00b07187ad90bb2e29b5271519523d9baffa885a9fa4808dedeeed21d"
+      },
+      "chapters": [
+        {
+          "title": "Introduction to Backporting Gaps",
+          "description": "Explains the concept of backporting gaps and how vulnerabilities remain unpatched in open source releases despite fixes on main branches.",
+          "startMs": 46760,
+          "endMs": 86320,
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-17",
+            "0-18",
+            "0-19",
+            "0-26",
+            "0-27",
+            "0-28"
+          ],
+          "sourceIdsSha256": "c11145762284ceb71c7f7071349fbd51dc2b8fc80a0c31d44ebc27141459d617"
+        },
+        {
+          "title": "“So, the reason they missed it is their maintenance maturity,”",
+          "description": "“So, the reason they missed it is their maintenance maturity,”",
+          "startMs": 164960,
+          "endMs": 246800,
+          "mode": "extractive",
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "0-56",
+            "0-57",
+            "0-58",
+            "0-78",
+            "0-79",
+            "0-80"
+          ],
+          "sourceIdsSha256": "0ac6e8efa6d2083c6f9838c3792a609a80873a7820a5b7f7b17f7ab67ea17c38"
+        },
+        {
+          "title": "“It's quite funny, so I'm the security-savvy friend”",
+          "description": "“It's quite funny, so I'm the security-savvy friend”",
+          "startMs": 367000,
+          "endMs": 531680,
+          "mode": "extractive",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-122",
+            "0-123",
+            "0-124",
+            "0-164",
+            "0-165",
+            "0-166"
+          ],
+          "sourceIdsSha256": "1c19b29f98f4cdb8e1c1245cee20eae3b451d73d60224688fd75ff72890943e5"
+        },
+        {
+          "title": "“which is the difficulty in contacting the projects.”",
+          "description": "“which is the difficulty in contacting the projects.”",
+          "startMs": 727920,
+          "endMs": 802440,
+          "mode": "extractive",
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-239",
+            "0-240",
+            "0-241",
+            "0-260",
+            "0-261",
+            "0-262"
+          ],
+          "sourceIdsSha256": "6c9b240c8dd7cacae4298dbca0e9119ab40c60464daed1260cd05ab8aba701f4"
+        },
+        {
+          "title": "AI's Role in Vulnerability Discovery",
+          "description": "Details how AI can easily detect vulnerabilities and backport gaps, increasing findings at scale and by many researchers.",
+          "startMs": 989000,
+          "endMs": 1087480,
+          "sourceSegmentCount": 40,
+          "sourceSegmentIdsSample": [
+            "0-334",
+            "0-335",
+            "0-336",
+            "0-371",
+            "0-372",
+            "0-373"
+          ],
+          "sourceIdsSha256": "0ec40ce6ac9851a5ce96461e682d2eb275595f734b015a5a20a0030b78ae5bd3"
+        },
+        {
+          "title": "Future Outlook and Security Imbalance",
+          "description": "Highlights the growing imbalance where vulnerabilities are found faster than they can be patched, stressing the need for better defense tools.",
+          "startMs": 1469640,
+          "endMs": 1510440,
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-40",
+            "1-41",
+            "1-42",
+            "1-43",
+            "1-44",
+            "1-45"
+          ],
+          "sourceIdsSha256": "63745cb8d1d8f9e2e24907c45c82cfa348a0512816858010a976dfa5368be38c"
+        },
+        {
+          "title": "Researcher Challenges in Vulnerability Patching",
+          "description": "Discussion on how researchers often lack full understanding of their findings, complicating patching efforts.",
+          "startMs": 1729320,
+          "endMs": 1742920,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-86",
+            "1-87"
+          ],
+          "sourceIdsSha256": "e3b3079ea7eeb9dbd60079002bf10cf48695ae28380dc8b636b925902861d9a0"
+        },
+        {
+          "title": "“need to just deal with it.”",
+          "description": "“need to just deal with it.”",
+          "startMs": 1742920,
+          "endMs": 1750040,
+          "mode": "extractive",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "d06a13d90a150a956451baa3f4084a8c903ef2ecb04c542c48cd2d5a4c1b82d9"
+        },
+        {
+          "title": "Reflections and Future Prospects",
+          "description": "Speakers express enthusiasm about ongoing research and future findings in vulnerability management.",
+          "startMs": 1750040,
+          "endMs": 1758840,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-90",
+            "1-91"
+          ],
+          "sourceIdsSha256": "9836c9ea7b8294ca680cafb7387bfb1625afab9871bb88b78a5e8ff4ba3577b6"
+        },
+        {
+          "title": "Closing Remarks and Gratitude",
+          "description": "Mutual thanks and plans for future discussions are shared.",
+          "startMs": 1758840,
+          "endMs": 1767800,
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-92",
+            "1-93"
+          ],
+          "sourceIdsSha256": "df12c8484d04b0b3706685b3e5a867b0b31182f94666be3e6c415cabfe9f57c4"
+        }
+      ],
+      "topics": [
+        {
+          "id": "26c10b3b03ab38ab",
+          "label": "Introduction to Backporting Gaps",
+          "startMs": 46760,
+          "endMs": 86320,
+          "chapterTitle": "Introduction to Backporting Gaps",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 12,
+          "sourceSegmentIdsSample": [
+            "0-17",
+            "0-18",
+            "0-19",
+            "0-26",
+            "0-27",
+            "0-28"
+          ],
+          "sourceIdsSha256": "c11145762284ceb71c7f7071349fbd51dc2b8fc80a0c31d44ebc27141459d617"
+        },
+        {
+          "id": "b5191b19b1d1214b",
+          "label": "“So, the reason they missed it is their maintenance maturity,”",
+          "startMs": 164960,
+          "endMs": 246800,
+          "chapterTitle": "“So, the reason they missed it is their maintenance maturity,”",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 25,
+          "sourceSegmentIdsSample": [
+            "0-56",
+            "0-57",
+            "0-58",
+            "0-78",
+            "0-79",
+            "0-80"
+          ],
+          "sourceIdsSha256": "0ac6e8efa6d2083c6f9838c3792a609a80873a7820a5b7f7b17f7ab67ea17c38"
+        },
+        {
+          "id": "ac227db7430949e4",
+          "label": "“It's quite funny, so I'm the security-savvy friend”",
+          "startMs": 367000,
+          "endMs": 531680,
+          "chapterTitle": "“It's quite funny, so I'm the security-savvy friend”",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "0-122",
+            "0-123",
+            "0-124",
+            "0-164",
+            "0-165",
+            "0-166"
+          ],
+          "sourceIdsSha256": "1c19b29f98f4cdb8e1c1245cee20eae3b451d73d60224688fd75ff72890943e5"
+        },
+        {
+          "id": "37ee8d1bbc716e69",
+          "label": "“which is the difficulty in contacting the projects.”",
+          "startMs": 727920,
+          "endMs": 802440,
+          "chapterTitle": "“which is the difficulty in contacting the projects.”",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 24,
+          "sourceSegmentIdsSample": [
+            "0-239",
+            "0-240",
+            "0-241",
+            "0-260",
+            "0-261",
+            "0-262"
+          ],
+          "sourceIdsSha256": "6c9b240c8dd7cacae4298dbca0e9119ab40c60464daed1260cd05ab8aba701f4"
+        },
+        {
+          "id": "2dd25a85d8efd57c",
+          "label": "AI's Role in Vulnerability Discovery",
+          "startMs": 989000,
+          "endMs": 1087480,
+          "chapterTitle": "AI's Role in Vulnerability Discovery",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 40,
+          "sourceSegmentIdsSample": [
+            "0-334",
+            "0-335",
+            "0-336",
+            "0-371",
+            "0-372",
+            "0-373"
+          ],
+          "sourceIdsSha256": "0ec40ce6ac9851a5ce96461e682d2eb275595f734b015a5a20a0030b78ae5bd3"
+        },
+        {
+          "id": "93206ab1c9eb8fc1",
+          "label": "Future Outlook and Security Imbalance",
+          "startMs": 1469640,
+          "endMs": 1510440,
+          "chapterTitle": "Future Outlook and Security Imbalance",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 6,
+          "sourceSegmentIdsSample": [
+            "1-40",
+            "1-41",
+            "1-42",
+            "1-43",
+            "1-44",
+            "1-45"
+          ],
+          "sourceIdsSha256": "63745cb8d1d8f9e2e24907c45c82cfa348a0512816858010a976dfa5368be38c"
+        },
+        {
+          "id": "96bbcd3c38b9c6e0",
+          "label": "Researcher Challenges in Vulnerability Patching",
+          "startMs": 1729320,
+          "endMs": 1742920,
+          "chapterTitle": "Researcher Challenges in Vulnerability Patching",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-86",
+            "1-87"
+          ],
+          "sourceIdsSha256": "e3b3079ea7eeb9dbd60079002bf10cf48695ae28380dc8b636b925902861d9a0"
+        },
+        {
+          "id": "bc241e7d9953ae46",
+          "label": "“need to just deal with it.”",
+          "startMs": 1742920,
+          "endMs": 1750040,
+          "chapterTitle": "“need to just deal with it.”",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-88",
+            "1-89"
+          ],
+          "sourceIdsSha256": "d06a13d90a150a956451baa3f4084a8c903ef2ecb04c542c48cd2d5a4c1b82d9"
+        },
+        {
+          "id": "57d01e60084dbb42",
+          "label": "Reflections and Future Prospects",
+          "startMs": 1750040,
+          "endMs": 1758840,
+          "chapterTitle": "Reflections and Future Prospects",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-90",
+            "1-91"
+          ],
+          "sourceIdsSha256": "9836c9ea7b8294ca680cafb7387bfb1625afab9871bb88b78a5e8ff4ba3577b6"
+        },
+        {
+          "id": "19cb8280bc0412c8",
+          "label": "Closing Remarks and Gratitude",
+          "startMs": 1758840,
+          "endMs": 1767800,
+          "chapterTitle": "Closing Remarks and Gratitude",
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 2,
+          "sourceSegmentIdsSample": [
+            "1-92",
+            "1-93"
+          ],
+          "sourceIdsSha256": "df12c8484d04b0b3706685b3e5a867b0b31182f94666be3e6c415cabfe9f57c4"
+        },
+        {
+          "id": "f36f661b8e556d07",
+          "label": "Backporting gaps in open source",
+          "startMs": 48600,
+          "endMs": 58920,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-18",
+            "0-19",
+            "0-20"
+          ],
+          "sourceIdsSha256": "1e528e419a7704b31f2e4b0585696a41519206f8e3538e25e3f4a8525f84a906"
+        },
+        {
+          "id": "3ffc5cdaaa36812d",
+          "label": "AI-assisted vulnerability research",
+          "startMs": 459000,
+          "endMs": 1032600,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-149",
+            "0-350",
+            "0-351"
+          ],
+          "sourceIdsSha256": "2a3c0ed391a0733d62c429370dad2a67f6c52694f7603f43dcc7a4874300055f"
+        },
+        {
+          "id": "fff261344f0d52fe",
+          "label": "Imbalance between vulnerability discovery and patching",
+          "startMs": 52400,
+          "endMs": 61960,
+          "chapterTitle": null,
+          "transcriptVersion": "fc59956c0b0ae7d1cea6ef165d24a7a7d38a75eaa6d9167d2b4f8e22260e6f76",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-19",
+            "0-20",
+            "0-21"
+          ],
+          "sourceIdsSha256": "b0e8fc82e53027687fab686caba3e0deb72f9d330c5e1a440db31c799c5395e5"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 510,
+          "totalSegments": 510,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 2,
+          "usd": 0.1775,
+          "seconds": 1775,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 4,
+          "usd": 0.0082728,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "d2baba8e-7906-4840-a74b-a6b25b9e2825:text:map-1",
+          "kind": "text",
+          "usd": 0.0007792,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:45:23.998Z"
+        },
+        {
+          "id": "d2baba8e-7906-4840-a74b-a6b25b9e2825:text:reduce",
+          "kind": "text",
+          "usd": 0.0007532,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:45:40.958Z"
+        },
+        {
+          "id": "d2baba8e-7906-4840-a74b-a6b25b9e2825:text:reduce-original-evidence-v2",
+          "kind": "text",
+          "usd": 0.0012308,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:55:34.001Z"
+        }
+      ]
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "jobId": "8985eca8-a499-4254-a078-94ec12daf39d",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "attempts": 0,
+      "recoveries": 2,
+      "softwareRecovery": "GROUNDING_EVIDENCE_REPAIRED",
+      "sourceHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+      "durationMs": 2168216,
+      "work": {
+        "verifiedSourceDurationMs": 2168216,
+        "sourceContentHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+        "completedChunks": 2,
+        "totalChunks": 2,
+        "completedSourceMs": 2168216,
+        "sourceDurationMs": 2168216,
+        "nextChunkSeconds": 0,
+        "completedBatches": 2,
+        "totalBatches": 2,
+        "synthesisPending": false
+      },
+      "capacityWait": null,
+      "processingMs": 2569948,
+      "expectedChunks": 2,
+      "checkpointCount": 2,
+      "completedChunks": 2,
+      "chunks": [
+        {
+          "index": 0,
+          "state": "READY",
+          "responseSha256": "cb712ca404c8c7243347b7ce4a899bb3095f07385b5610efdcbefa4a0a83ba8a",
+          "segments": 544
+        },
+        {
+          "index": 1,
+          "state": "READY",
+          "responseSha256": "2b0dbf46b7dabd617d08c41247be579398d836b40330724ca92774688c2bc5ef",
+          "segments": 196
+        }
+      ],
+      "missingChunkIndexes": [],
+      "transcriptSegments": 740,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "adjacentRepeatedUtterances": 0,
+      "samples": [
+        {
+          "id": "0-0",
+          "startMs": 0,
+          "endMs": 3080,
+          "textSha256": "458582871e0e531b2a5ffbc2b6ca88d5851196ec25de82f5b68e2abf00d06ef5"
+        },
+        {
+          "id": "0-370",
+          "startMs": 801360,
+          "endMs": 803400,
+          "textSha256": "807cff1f3d34a0e170402d8495ad8ff691ba679c90bb8618b748f14cbafca026"
+        },
+        {
+          "id": "1-195",
+          "startMs": 2166080,
+          "endMs": 2167040,
+          "textSha256": "a613b2a7db2dc396e2b1d0b3b6463a44697d89e6dbc060c5e6916603e3b2cb0a"
+        }
+      ],
+      "brief": {
+        "overview": "Seely shares insights on community governance, cross-foundation collaborations, and generational shifts towards pragmatism over philosophy in open source engagement—themes central to maintaining ecosystem health alongside security and funding.",
+        "themes": [
+          "Open Source Governance and Leadership",
+          "Open Source Software Ecosystem",
+          "Security in Open Source",
+          "Sustainability and Funding Challenges",
+          "Community Maintenance and Volunteer Contributions"
+        ],
+        "detail": "Seely shares insights on community governance, cross-foundation collaborations, and generational shifts towards pragmatism over philosophy in open source engagement—themes central to maintaining ecosystem health alongside security and funding.",
+        "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+        "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "modelProvider": "openai",
+        "modelVersion": "gpt-4.1-mini",
+        "processingVersion": "2.0.0",
+        "generatedAt": "2026-11-18T14:14:27.398Z",
+        "usage": {
+          "inputTokens": 1106,
+          "outputTokens": 457
+        },
+        "mode": "verified_partial",
+        "sourceSegmentCount": 461,
+        "sourceSegmentIdsSample": [
+          "0-0",
+          "0-1",
+          "0-17",
+          "1-186",
+          "1-187",
+          "1-188"
+        ],
+        "sourceIdsSha256": "a14d7c52c239d750aa0dd2943ba459d987edfaf27e7acb0f5a81cd3afb209128"
+      },
+      "chapters": [
+        {
+          "title": "“Today, Open Source Security is talking to Ruth Seely,”",
+          "description": "“Today, Open Source Security is talking to Ruth Seely,”",
+          "startMs": 0,
+          "endMs": 75320,
+          "mode": "extractive",
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-29",
+            "0-30",
+            "0-31"
+          ],
+          "sourceIdsSha256": "fba3db6f5703104207c997f7ea0199e8e3dac08b991522e49e1343c980538124"
+        },
+        {
+          "title": "“I feel like I should go in more of a chronological order.”",
+          "description": "“I feel like I should go in more of a chronological order.”",
+          "startMs": 97480,
+          "endMs": 165880,
+          "mode": "extractive",
+          "sourceSegmentCount": 30,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-69",
+            "0-70",
+            "0-71"
+          ],
+          "sourceIdsSha256": "044fad283930bea91a820103c67ff784f6d2c89f3c048b0e7a869d65cdc4b626"
+        },
+        {
+          "title": "“had been around in some form for quite a few years”",
+          "description": "“had been around in some form for quite a few years”",
+          "startMs": 165880,
+          "endMs": 225840,
+          "mode": "extractive",
+          "sourceSegmentCount": 21,
+          "sourceSegmentIdsSample": [
+            "0-72",
+            "0-73",
+            "0-74",
+            "0-90",
+            "0-91",
+            "0-92"
+          ],
+          "sourceIdsSha256": "4b87c33c2a3ab76c992889e08e2f9cacad43be65f0e92a4dd380947686dc3b67"
+        },
+        {
+          "title": "“security is top of mind for everybody.”",
+          "description": "“security is top of mind for everybody.”",
+          "startMs": 419440,
+          "endMs": 526640,
+          "mode": "extractive",
+          "sourceSegmentCount": 49,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-233",
+            "0-234",
+            "0-235"
+          ],
+          "sourceIdsSha256": "6ff4eeff9fa56f521f9986fed52801143f15e0dad1474dfeabf63828b7cbbeb2"
+        },
+        {
+          "title": "“from an ASF perspective is what I'm concerned about”",
+          "description": "“from an ASF perspective is what I'm concerned about”",
+          "startMs": 709560,
+          "endMs": 831160,
+          "mode": "extractive",
+          "sourceSegmentCount": 60,
+          "sourceSegmentIdsSample": [
+            "0-323",
+            "0-324",
+            "0-325",
+            "0-380",
+            "0-381",
+            "0-382"
+          ],
+          "sourceIdsSha256": "9cd2a8388140a512df61a4f8a44fe17041e023cf41147c0394a9d50011aa4476"
+        },
+        {
+          "title": "“I actually, I came up with a more microcosm level metaphor.”",
+          "description": "“I actually, I came up with a more microcosm level metaphor.”",
+          "startMs": 882800,
+          "endMs": 998320,
+          "mode": "extractive",
+          "sourceSegmentCount": 54,
+          "sourceSegmentIdsSample": [
+            "0-407",
+            "0-408",
+            "0-409",
+            "0-458",
+            "0-459",
+            "0-460"
+          ],
+          "sourceIdsSha256": "f1817ffc97b83a8a8dd03b2d56e2bab94dc8cb78ee886bc49334314854ce825c"
+        },
+        {
+          "title": "“But okay, I want to talk about the OSI a little bit”",
+          "description": "“But okay, I want to talk about the OSI a little bit”",
+          "startMs": 1037400,
+          "endMs": 1082240,
+          "mode": "extractive",
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "0-478",
+            "0-479",
+            "0-480",
+            "0-497",
+            "0-498",
+            "0-499"
+          ],
+          "sourceIdsSha256": "baa5a050f2d1405c8bd3f3c384166c2c1303e4b1955f4092fa6e08338b16758f"
+        },
+        {
+          "title": "“is lead a governance working group”",
+          "description": "“is lead a governance working group”",
+          "startMs": 1143240,
+          "endMs": 1258880,
+          "mode": "extractive",
+          "sourceSegmentCount": 29,
+          "sourceSegmentIdsSample": [
+            "0-526",
+            "0-527",
+            "0-528",
+            "1-8",
+            "1-9",
+            "1-10"
+          ],
+          "sourceIdsSha256": "fd00c0e9a9ee0c2a0f62d7271003ceffd1010ef1d88521d21c08ecdc3e496ab6"
+        },
+        {
+          "title": "Defining Open-Source AI",
+          "description": "Exploration of the challenges and progress in creating a universally accepted definition of open-source AI by OSI.",
+          "startMs": 1265480,
+          "endMs": 1474600,
+          "sourceSegmentCount": 39,
+          "sourceSegmentIdsSample": [
+            "1-12",
+            "1-13",
+            "1-14",
+            "1-48",
+            "1-49",
+            "1-50"
+          ],
+          "sourceIdsSha256": "e9aa31cc35946496baf5a1373c0e55e3e45adec2d00f9d7b9f152eb3052a1f0f"
+        },
+        {
+          "title": "Right vs Relevant in Open Source Definitions",
+          "description": "Debate on the importance of being philosophically correct versus practically relevant in open source and licensing definitions.",
+          "startMs": 1503240,
+          "endMs": 1724760,
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "1-58",
+            "1-59",
+            "1-60",
+            "1-100",
+            "1-101",
+            "1-102"
+          ],
+          "sourceIdsSha256": "1a6cb173e20f578f6568bf922c08c2e4ee4380d29a1c758eeeced5da7acc19dc"
+        },
+        {
+          "title": "Microsoft and Open Source Evolution",
+          "description": "Personal anecdotes on Microsoft’s changing role and attitude toward open source over time.",
+          "startMs": 1724760,
+          "endMs": 1844720,
+          "sourceSegmentCount": 27,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-127",
+            "1-128",
+            "1-129"
+          ],
+          "sourceIdsSha256": "e24256eedd719e541e39c779ca921c984941674cb8974e85b28e131b0cf48504"
+        },
+        {
+          "title": "“So what's most important to me right now is that stuff we were talking about, about the”",
+          "description": "“So what's most important to me right now is that stuff we were talking about, about the”",
+          "startMs": 1881680,
+          "endMs": 2144400,
+          "mode": "extractive",
+          "sourceSegmentCount": 51,
+          "sourceSegmentIdsSample": [
+            "1-138",
+            "1-139",
+            "1-140",
+            "1-186",
+            "1-187",
+            "1-188"
+          ],
+          "sourceIdsSha256": "eac8023a322847e91a75917d081810be23d6d6ff12222c0df2367f5abbf7e53c"
+        }
+      ],
+      "topics": [
+        {
+          "id": "8c0e14a32f358ff6",
+          "label": "“Today, Open Source Security is talking to Ruth Seely,”",
+          "startMs": 0,
+          "endMs": 75320,
+          "chapterTitle": "“Today, Open Source Security is talking to Ruth Seely,”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 32,
+          "sourceSegmentIdsSample": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-29",
+            "0-30",
+            "0-31"
+          ],
+          "sourceIdsSha256": "fba3db6f5703104207c997f7ea0199e8e3dac08b991522e49e1343c980538124"
+        },
+        {
+          "id": "084f69a963d9127c",
+          "label": "“I feel like I should go in more of a chronological order.”",
+          "startMs": 97480,
+          "endMs": 165880,
+          "chapterTitle": "“I feel like I should go in more of a chronological order.”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 30,
+          "sourceSegmentIdsSample": [
+            "0-42",
+            "0-43",
+            "0-44",
+            "0-69",
+            "0-70",
+            "0-71"
+          ],
+          "sourceIdsSha256": "044fad283930bea91a820103c67ff784f6d2c89f3c048b0e7a869d65cdc4b626"
+        },
+        {
+          "id": "31cd8e61f8897d2b",
+          "label": "“had been around in some form for quite a few years”",
+          "startMs": 165880,
+          "endMs": 225840,
+          "chapterTitle": "“had been around in some form for quite a few years”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 21,
+          "sourceSegmentIdsSample": [
+            "0-72",
+            "0-73",
+            "0-74",
+            "0-90",
+            "0-91",
+            "0-92"
+          ],
+          "sourceIdsSha256": "4b87c33c2a3ab76c992889e08e2f9cacad43be65f0e92a4dd380947686dc3b67"
+        },
+        {
+          "id": "832b8f8c572dad40",
+          "label": "“security is top of mind for everybody.”",
+          "startMs": 419440,
+          "endMs": 526640,
+          "chapterTitle": "“security is top of mind for everybody.”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 49,
+          "sourceSegmentIdsSample": [
+            "0-187",
+            "0-188",
+            "0-189",
+            "0-233",
+            "0-234",
+            "0-235"
+          ],
+          "sourceIdsSha256": "6ff4eeff9fa56f521f9986fed52801143f15e0dad1474dfeabf63828b7cbbeb2"
+        },
+        {
+          "id": "04b9684af49d7534",
+          "label": "“from an ASF perspective is what I'm concerned about”",
+          "startMs": 709560,
+          "endMs": 831160,
+          "chapterTitle": "“from an ASF perspective is what I'm concerned about”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 60,
+          "sourceSegmentIdsSample": [
+            "0-323",
+            "0-324",
+            "0-325",
+            "0-380",
+            "0-381",
+            "0-382"
+          ],
+          "sourceIdsSha256": "9cd2a8388140a512df61a4f8a44fe17041e023cf41147c0394a9d50011aa4476"
+        },
+        {
+          "id": "4a2ce26661e0d71d",
+          "label": "“I actually, I came up with a more microcosm level metaphor.”",
+          "startMs": 882800,
+          "endMs": 998320,
+          "chapterTitle": "“I actually, I came up with a more microcosm level metaphor.”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 54,
+          "sourceSegmentIdsSample": [
+            "0-407",
+            "0-408",
+            "0-409",
+            "0-458",
+            "0-459",
+            "0-460"
+          ],
+          "sourceIdsSha256": "f1817ffc97b83a8a8dd03b2d56e2bab94dc8cb78ee886bc49334314854ce825c"
+        },
+        {
+          "id": "ddd53f2f62764928",
+          "label": "“But okay, I want to talk about the OSI a little bit”",
+          "startMs": 1037400,
+          "endMs": 1082240,
+          "chapterTitle": "“But okay, I want to talk about the OSI a little bit”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 22,
+          "sourceSegmentIdsSample": [
+            "0-478",
+            "0-479",
+            "0-480",
+            "0-497",
+            "0-498",
+            "0-499"
+          ],
+          "sourceIdsSha256": "baa5a050f2d1405c8bd3f3c384166c2c1303e4b1955f4092fa6e08338b16758f"
+        },
+        {
+          "id": "16da59b366d8df6c",
+          "label": "“is lead a governance working group”",
+          "startMs": 1143240,
+          "endMs": 1258880,
+          "chapterTitle": "“is lead a governance working group”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 29,
+          "sourceSegmentIdsSample": [
+            "0-526",
+            "0-527",
+            "0-528",
+            "1-8",
+            "1-9",
+            "1-10"
+          ],
+          "sourceIdsSha256": "fd00c0e9a9ee0c2a0f62d7271003ceffd1010ef1d88521d21c08ecdc3e496ab6"
+        },
+        {
+          "id": "80c94db3337c3801",
+          "label": "Defining Open-Source AI",
+          "startMs": 1265480,
+          "endMs": 1474600,
+          "chapterTitle": "Defining Open-Source AI",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 39,
+          "sourceSegmentIdsSample": [
+            "1-12",
+            "1-13",
+            "1-14",
+            "1-48",
+            "1-49",
+            "1-50"
+          ],
+          "sourceIdsSha256": "e9aa31cc35946496baf5a1373c0e55e3e45adec2d00f9d7b9f152eb3052a1f0f"
+        },
+        {
+          "id": "1a34180434058115",
+          "label": "Right vs Relevant in Open Source Definitions",
+          "startMs": 1503240,
+          "endMs": 1724760,
+          "chapterTitle": "Right vs Relevant in Open Source Definitions",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 45,
+          "sourceSegmentIdsSample": [
+            "1-58",
+            "1-59",
+            "1-60",
+            "1-100",
+            "1-101",
+            "1-102"
+          ],
+          "sourceIdsSha256": "1a6cb173e20f578f6568bf922c08c2e4ee4380d29a1c758eeeced5da7acc19dc"
+        },
+        {
+          "id": "71fe9aafe953bc80",
+          "label": "Microsoft and Open Source Evolution",
+          "startMs": 1724760,
+          "endMs": 1844720,
+          "chapterTitle": "Microsoft and Open Source Evolution",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 27,
+          "sourceSegmentIdsSample": [
+            "1-103",
+            "1-104",
+            "1-105",
+            "1-127",
+            "1-128",
+            "1-129"
+          ],
+          "sourceIdsSha256": "e24256eedd719e541e39c779ca921c984941674cb8974e85b28e131b0cf48504"
+        },
+        {
+          "id": "4cda8a70d9871e5b",
+          "label": "“So what's most important to me right now is that stuff we were talking about, about the”",
+          "startMs": 1881680,
+          "endMs": 2144400,
+          "chapterTitle": "“So what's most important to me right now is that stuff we were talking about, about the”",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "chapter_citations",
+          "sourceSegmentCount": 51,
+          "sourceSegmentIdsSample": [
+            "1-138",
+            "1-139",
+            "1-140",
+            "1-186",
+            "1-187",
+            "1-188"
+          ],
+          "sourceIdsSha256": "eac8023a322847e91a75917d081810be23d6d6ff12222c0df2367f5abbf7e53c"
+        },
+        {
+          "id": "6a0f1d7a568bee17",
+          "label": "Open Source Governance and Leadership",
+          "startMs": 3080,
+          "endMs": 69360,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-1",
+            "0-28",
+            "0-29"
+          ],
+          "sourceIdsSha256": "1c9196554317924750e4454e9695ea893d7f4e24063fb94033be7660b7eff54d"
+        },
+        {
+          "id": "8e169d19118957e4",
+          "label": "Open Source Software Ecosystem",
+          "startMs": 99600,
+          "endMs": 123760,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-43",
+            "0-48",
+            "0-51"
+          ],
+          "sourceIdsSha256": "cb48a4d5fc3f160e06d5e639b7ca3b869c7e58e1152ff02bf8f32dab4c011b8b"
+        },
+        {
+          "id": "015d08e24c2495f2",
+          "label": "Security in Open Source",
+          "startMs": 0,
+          "endMs": 3080,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 1,
+          "sourceSegmentIdsSample": [
+            "0-0"
+          ],
+          "sourceIdsSha256": "7ed6654c5d8b4f42b48eb2a0dada8e315b2cd0662ecb6e4920c060f0456cfab9"
+        },
+        {
+          "id": "1ae323761825b8a4",
+          "label": "Sustainability and Funding Challenges",
+          "startMs": 709560,
+          "endMs": 1885360,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-323",
+            "0-325",
+            "1-138"
+          ],
+          "sourceIdsSha256": "5d88bf087d59a9edd77757467c53e66a4023729cc215a68189f7354d563ad552"
+        },
+        {
+          "id": "74b8bfb52e1baf76",
+          "label": "Community Maintenance and Volunteer Contributions",
+          "startMs": 64080,
+          "endMs": 1911840,
+          "chapterTitle": null,
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "evidenceType": "lexical_source_match",
+          "sourceSegmentCount": 3,
+          "sourceSegmentIdsSample": [
+            "0-28",
+            "0-29",
+            "1-144"
+          ],
+          "sourceIdsSha256": "f4d92134c9bc8d2e8b49826c5a9bff60cd1ba475550a140be37d32800320bf68"
+        }
+      ],
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 740,
+          "totalSegments": 740,
+          "code": null,
+          "resumeAfter": null
+        }
+      },
+      "semantic": "READY",
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "brokenChapterSources": 0,
+      "independentHumanAudioAnnotation": false,
+      "wordErrorRate": null,
+      "usage": {
+        "transcription": {
+          "requests": 2,
+          "usd": 0.217,
+          "seconds": 2170,
+          "failed": 0,
+          "uncertain": 0
+        },
+        "text": {
+          "requests": 4,
+          "usd": 0.010412400000000002,
+          "seconds": 0,
+          "failed": 0,
+          "uncertain": 0
+        }
+      },
+      "latestLedgerEntries": [
+        {
+          "id": "8985eca8-a499-4254-a078-94ec12daf39d:text:map-1",
+          "kind": "text",
+          "usd": 0.0037884,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:39:22.301Z"
+        },
+        {
+          "id": "8985eca8-a499-4254-a078-94ec12daf39d:text:reduce",
+          "kind": "text",
+          "usd": 0.0006168,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:39:46.754Z"
+        },
+        {
+          "id": "8985eca8-a499-4254-a078-94ec12daf39d:text:reduce-original-evidence-v2",
+          "kind": "text",
+          "usd": 0.0011736,
+          "seconds": 0,
+          "failed": false,
+          "uncertain": false,
+          "at": "2026-11-18T13:55:00.802Z"
+        }
+      ]
+    }
+  ],
+  "queues": {
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    }
+  }
+}

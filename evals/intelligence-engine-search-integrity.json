@@ -1,0 +1,247 @@
+{
+  "at": "2026-11-18T14:57:21.805Z",
+  "apiEvidenceSha256": "537c328352d81e6ee61edbfeb600193a0104438a01dba180e9ae5f1351529fa2",
+  "referencesSha256": "90b1608a86134967883889e8c8b47902dc395c8d906c640a3950116f94b2809c",
+  "checked": 34,
+  "invalid": 0,
+  "checks": [
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-24",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-97",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-71",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "segmentId": "0-450",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-88",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-174",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e542ae40-bc4d-4be7-8600-03709dbba409",
+      "segmentId": "0-259",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-19",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-24",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-97",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-71",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-88",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-174",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-184",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-34",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "segmentId": "0-230",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-231",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-1",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-104",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "segmentId": "0-49",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "7fc65ac1-12d2-45fa-9bad-ba7cba82dc20",
+      "segmentId": "0-82",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-184",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-34",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-231",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-1",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "1-104",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "segmentId": "1-87",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-33",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+      "segmentId": "0-87",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+      "segmentId": "0-0",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-143",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "segmentId": "0-57",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segmentId": "0-142",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    },
+    {
+      "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+      "segmentId": "0-0",
+      "timestampMatches": true,
+      "quoteMatches": true,
+      "versionMatches": true
+    }
+  ]
+}

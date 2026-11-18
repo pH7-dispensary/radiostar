@@ -1,0 +1,607 @@
+{
+  "at": "2026-11-18T14:51:55.659Z",
+  "query": "open source software security",
+  "scope": "ALL_PROCESSED",
+  "result": {
+    "query": "open source software security",
+    "coverage": {
+      "processedEpisodes": 16,
+      "partialEpisodes": 0,
+      "matchedEpisodes": 5,
+      "scope": "All Processed Podcasts"
+    },
+    "synthesis": "The relevant passages say:\n\n[1] “with a proprietary system that was not open source software,”\n\n[2] “for open source software.”\n\n[3] “get access to the source code, but actually people who use the software, who open the”",
+    "synthesisType": "grounded_extracts",
+    "answerState": "SUPPORTED_EXCERPTS",
+    "claims": [
+      {
+        "text": "with a proprietary system that was not open source software,",
+        "citation": 1,
+        "sourceSegmentIds": [
+          "1-87"
+        ],
+        "episodeId": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "startMs": 1380940,
+        "endMs": 1384100,
+        "speaker": null,
+        "excerpt": true,
+        "truncated": false
+      },
+      {
+        "text": "for open source software.",
+        "citation": 2,
+        "sourceSegmentIds": [
+          "0-33"
+        ],
+        "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "startMs": 94500,
+        "endMs": 96100,
+        "speaker": null,
+        "excerpt": true,
+        "truncated": false
+      },
+      {
+        "text": "get access to the source code, but actually people who use the software, who open the",
+        "citation": 3,
+        "sourceSegmentIds": [
+          "0-87"
+        ],
+        "episodeId": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+        "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+        "startMs": 388880,
+        "endMs": 395840,
+        "speaker": null,
+        "excerpt": true,
+        "truncated": false
+      }
+    ],
+    "limitations": [],
+    "matches": [
+      {
+        "rank": 1,
+        "label": "MOST LIKELY",
+        "segmentId": "1-87",
+        "startMs": 1380940,
+        "endMs": 1384100,
+        "context": "with a proprietary system that was not open source software,",
+        "score": 0.7778346365560305,
+        "confidence": 0.84,
+        "sourceTranscriptVersion": "2ff49edb3efaa198ea718496b8e0cb13fd7e3e79f7144f4c7b9b03d222c07d38",
+        "retrievalVersion": "unicode-hybrid-v2",
+        "episode": {
+          "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+          "title": "The curl summer of Bliss with Daniel and Stefan",
+          "publishedAt": "Mon, 21 Sep 2026 00:00:00 +0000",
+          "duration": "33:26",
+          "description": "Josh chats with Daniel and Stefan from curl about their summer of bliss. Curl stopped taking vulnerability reports for a month and nothing much happened really. Daniel and Stefan have a really pragmatic view of all the new LLM powered vulnerability detection tools. The cost of finding a vulnerability has dropped dramatically, but the cost of fixing those bugs hasn't changed. Taking some time off is important for anyone in the middle of these reports. Daniel and Stefan have some great experience and ideas on how to make this all happen. It's great advice for anyone working on software, not just open source. The show notes and blog post for this episode can be found at  https://opensourcesecurity.io/2026/2026-09-curl-bliss-stefan-daniel",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-curl-bliss-Stefan-Daniel.mp3?dest-id=542864",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "9ec79a59df3eb26e600cb3217f786023446cd2bad70c20063e98e6f7b64fadbe"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-curl-bliss-Stefan-Daniel.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-23T12:23:31.640Z",
+          "transcriptVersion": "2ff49edb3efaa198ea718496b8e0cb13fd7e3e79f7144f4c7b9b03d222c07d38",
+          "audioVariant": "6bf0ed5421e12efe9cc4f3ede1f6fe324171e338dee7c8cc696036d819b3b860",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 1,
+        "label": "MOST LIKELY",
+        "segmentId": "0-33",
+        "startMs": 94500,
+        "endMs": 96100,
+        "context": "for open source software.",
+        "score": 0.7579152902349274,
+        "confidence": 0.7579152902349274,
+        "sourceTranscriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+        "retrievalVersion": "embedding-3-small-512-v2",
+        "episode": {
+          "id": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+          "title": "Red Hat's Project Lightwell with Mo Duffy",
+          "publishedAt": "Mon, 13 Jul 2026 00:00:00 +0000",
+          "duration": "32:32",
+          "description": "Josh welcomes Mo Duffy from Red Hat to chat about project Lightwell. The idea is to leverage the resources and understanding Red Hat has built up over the years to help deal with the deluge of vulnerability reports that are overwhelming open source projects. Mo does a really good job of explaining why this is fundamentally a people problem, not a technology problem. But it's a people problem we can probably use technology to help. It will be interesting to see where Lightwell goes in the next few years. The show notes and blog post for this episode can be found at https://opensourcesecurity.io/2026/2026-07-lightwell-mo-duffy",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-07-lightwell-mo-duffy.mp3?dest-id=542864",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "0a9f7ef6089c3e3f709636f0a3226e85d59773b4023d3310f7828c2748250c01"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-07-lightwell-mo-duffy.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-28T12:36:10.597Z",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "audioVariant": "3c9aeb952c6c44e189bb1ba595dfc3b1d59591f5fc73c179cac12e5fefb7c006",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 1,
+        "label": "MOST LIKELY",
+        "segmentId": "0-87",
+        "startMs": 388880,
+        "endMs": 395840,
+        "context": "get access to the source code, but actually people who use the software, who open the",
+        "score": 0.757522406478172,
+        "confidence": 0.83,
+        "sourceTranscriptVersion": "28fa8268d963cf15b48b8abf5da4590bfc44e66d9e0c5544e47aff4077d36be4",
+        "retrievalVersion": "unicode-hybrid-v2",
+        "episode": {
+          "id": "cd76cc10-ce37-4d65-9274-fd3052b1bcbd",
+          "title": "Forking Open Source Projects with Sheogorath",
+          "publishedAt": "Mon, 24 Feb 2025 00:00:00 +0000",
+          "duration": "22:14",
+          "description": "In this episode Open Source Security chats with Sheogorath about HedgeDoc project's journey from HackMD to CodiMD and finally to HedgeDoc. We learn what forking a project looks like, including license changes (MIT to AGPL), security vulnerability management across different codebases, naming challenges, and infrastructure migrations. The conversation goes through to journey from HackMD to CodiMD and all the lessons learned along the way. And there are many lessons. The blog post for this episode can be found at   https://opensourcesecurity.io/2025/2025-02-fork_open_source_sheogorath/",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2025-02-fork_open_source_sheogorath.mp3?dest-id=542864",
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "9ec79a59df3eb26e600cb3217f786023446cd2bad70c20063e98e6f7b64fadbe"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2025-02-fork_open_source_sheogorath.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-20T21:56:42.621Z",
+          "transcriptVersion": "28fa8268d963cf15b48b8abf5da4590bfc44e66d9e0c5544e47aff4077d36be4",
+          "audioVariant": "bfb9b68467faacb6173bbf05ada2860b58503e1b28d23c0e72cee3f98f370c66",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 1,
+        "label": "MOST LIKELY",
+        "segmentId": "0-0",
+        "startMs": 0,
+        "endMs": 2860,
+        "context": "Today, Open Source Security is talking to James Matchett.",
+        "score": 0.7493344187020202,
+        "confidence": 0.82,
+        "sourceTranscriptVersion": "d196f65e24cc1880f14e41ec1b148ea70497e6e48b0a829461a126c4a90dac50",
+        "retrievalVersion": "unicode-hybrid-v2",
+        "episode": {
+          "id": "e6859d5a-90a9-41f4-a35a-844d80dd1aee",
+          "title": "Dependency attacks in 2026 with James Matchett",
+          "publishedAt": "Mon, 05 Oct 2026 00:00:00 +0000",
+          "duration": "32:03",
+          "description": "Josh chats with James Matchett from Cloudsmith about a new report they put out. It has some scary looking statistics in it about how organizations are using dependencies. There are some surprising numbers in there, but the story is really one of defense in depth. There's no single thing we can do here, it's all about knowing what you have every step of the way. It's easy to say, but certainly a challenge to do right. James is a ton of fun to chat with and filled with energy and knowledge. The show notes and blog post for this episode can be found at https://opensourcesecurity.io/2026/2026-10-james-cloudsmith",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-10-james-cloudsmith.mp3?dest-id=542864",
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "9ec79a59df3eb26e600cb3217f786023446cd2bad70c20063e98e6f7b64fadbe"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-10-james-cloudsmith.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-23T09:28:08.429Z",
+          "transcriptVersion": "d196f65e24cc1880f14e41ec1b148ea70497e6e48b0a829461a126c4a90dac50",
+          "audioVariant": "db5d7b08f179aa65bc992ddd07c33dd53b0042de4a3450e4706bea223b8aa8f3",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 1,
+        "label": "MOST LIKELY",
+        "segmentId": "0-143",
+        "startMs": 320600,
+        "endMs": 323160,
+        "context": "like obviously open source security related things.",
+        "score": 0.7368321828249275,
+        "confidence": 0.7368321828249275,
+        "sourceTranscriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "retrievalVersion": "embedding-3-small-512-v2",
+        "episode": {
+          "id": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+          "title": "The Apache Software Foundation with Ruth Suehle",
+          "publishedAt": "Mon, 16 Nov 2026 01:00:00 +0000",
+          "duration": "36:09",
+          "description": "Josh chats with Ruth Suehle, the president of the Apache Software Foundation and a board member at the OSI. This is a great discussion around what open source, what the ASF and OSI are doing these days. We cover some of the challenges modern open source faces and why this all still matters. Ruth rightly points out all software is open source now, and there's plenty of work to do to keep open source healthy and working. The show notes and blog post for this episode can be found at https://opensourcesecurity.io/2026/2026-11-ruth-asf",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-ruth-asf.mp3?dest-id=542864",
+          "webUrl": "https://opensourcesecuritypodcast.libsyn.com/the-apache-software-foundation-with-ruth-suehle",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "0a9f7ef6089c3e3f709636f0a3226e85d59773b4023d3310f7828c2748250c01"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-ruth-asf.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-11-18T13:38:54.048Z",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "audioVariant": "e6bf164ac7a893e6b9306bfb1cc9c9de662c90a6556d58bf560f7fb591e1bc18",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 2,
+        "label": "RELATED MOMENT",
+        "segmentId": "0-57",
+        "startMs": 184020,
+        "endMs": 185300,
+        "context": "of open source.",
+        "score": 0.7273976691640097,
+        "confidence": 0.7273976691640097,
+        "sourceTranscriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+        "retrievalVersion": "embedding-3-small-512-v2",
+        "episode": {
+          "id": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+          "title": "Red Hat's Project Lightwell with Mo Duffy",
+          "publishedAt": "Mon, 13 Jul 2026 00:00:00 +0000",
+          "duration": "32:32",
+          "description": "Josh welcomes Mo Duffy from Red Hat to chat about project Lightwell. The idea is to leverage the resources and understanding Red Hat has built up over the years to help deal with the deluge of vulnerability reports that are overwhelming open source projects. Mo does a really good job of explaining why this is fundamentally a people problem, not a technology problem. But it's a people problem we can probably use technology to help. It will be interesting to see where Lightwell goes in the next few years. The show notes and blog post for this episode can be found at https://opensourcesecurity.io/2026/2026-07-lightwell-mo-duffy",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-07-lightwell-mo-duffy.mp3?dest-id=542864",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "0a9f7ef6089c3e3f709636f0a3226e85d59773b4023d3310f7828c2748250c01"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-07-lightwell-mo-duffy.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-28T12:36:10.597Z",
+          "transcriptVersion": "07bf3610eaed0965b622483c8f43a3bf0c61acbe8ff0882f759e0849fdc7466f",
+          "audioVariant": "3c9aeb952c6c44e189bb1ba595dfc3b1d59591f5fc73c179cac12e5fefb7c006",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 2,
+        "label": "RELATED MOMENT",
+        "segmentId": "0-142",
+        "startMs": 319240,
+        "endMs": 320600,
+        "context": "the open source security podcast,",
+        "score": 0.7171811583589864,
+        "confidence": 0.7171811583589864,
+        "sourceTranscriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+        "retrievalVersion": "embedding-3-small-512-v2",
+        "episode": {
+          "id": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+          "title": "The Apache Software Foundation with Ruth Suehle",
+          "publishedAt": "Mon, 16 Nov 2026 01:00:00 +0000",
+          "duration": "36:09",
+          "description": "Josh chats with Ruth Suehle, the president of the Apache Software Foundation and a board member at the OSI. This is a great discussion around what open source, what the ASF and OSI are doing these days. We cover some of the challenges modern open source faces and why this all still matters. Ruth rightly points out all software is open source now, and there's plenty of work to do to keep open source healthy and working. The show notes and blog post for this episode can be found at https://opensourcesecurity.io/2026/2026-11-ruth-asf",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-ruth-asf.mp3?dest-id=542864",
+          "webUrl": "https://opensourcesecuritypodcast.libsyn.com/the-apache-software-foundation-with-ruth-suehle",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "COPYRIGHT_NOTICE",
+                "source": "publisher-rss",
+                "scope": "podcast",
+                "value": "This work is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "0a9f7ef6089c3e3f709636f0a3226e85d59773b4023d3310f7828c2748250c01"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-11-ruth-asf.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-11-18T13:38:54.048Z",
+          "transcriptVersion": "6b7552cbd53b9659be2ab102f6dde936012da10d912002be14cd9bb817dbbc0e",
+          "audioVariant": "e6bf164ac7a893e6b9306bfb1cc9c9de662c90a6556d58bf560f7fb591e1bc18",
+          "parserVersion": null
+        }
+      },
+      {
+        "rank": 2,
+        "label": "ANOTHER POSSIBILITY",
+        "segmentId": "0-0",
+        "startMs": 0,
+        "endMs": 1760,
+        "context": "Today, Open Source Security is talking",
+        "score": 0.7109233928799754,
+        "confidence": 0.81,
+        "sourceTranscriptVersion": "2ff49edb3efaa198ea718496b8e0cb13fd7e3e79f7144f4c7b9b03d222c07d38",
+        "retrievalVersion": "unicode-hybrid-v2",
+        "episode": {
+          "id": "6204235e-cc8f-44d1-9ccc-a8ce487b1f57",
+          "title": "The curl summer of Bliss with Daniel and Stefan",
+          "publishedAt": "Mon, 21 Sep 2026 00:00:00 +0000",
+          "duration": "33:26",
+          "description": "Josh chats with Daniel and Stefan from curl about their summer of bliss. Curl stopped taking vulnerability reports for a month and nothing much happened really. Daniel and Stefan have a really pragmatic view of all the new LLM powered vulnerability detection tools. The cost of finding a vulnerability has dropped dramatically, but the cost of fixing those bugs hasn't changed. Taking some time off is important for anyone in the middle of these reports. Daniel and Stefan have some great experience and ideas on how to make this all happen. It's great advice for anyone working on software, not just open source. The show notes and blog post for this episode can be found at  https://opensourcesecurity.io/2026/2026-09-curl-bliss-stefan-daniel",
+          "audioUrl": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-curl-bliss-Stefan-Daniel.mp3?dest-id=542864",
+          "withdrawn": false,
+          "hasPublisherTranscript": false,
+          "rightsEvidence": {
+            "licences": [
+              {
+                "url": "http://creativecommons.org/licenses/by/4.0/",
+                "kind": "CC-BY",
+                "scope": "podcast"
+              }
+            ],
+            "reservations": [],
+            "evidence": [
+              {
+                "type": "PUBLISHER_LICENSE",
+                "source": "publisher-rss-copyright",
+                "scope": "podcast",
+                "value": "CC-BY",
+                "url": "http://creativecommons.org/licenses/by/4.0/"
+              },
+              {
+                "type": "LAWFUL_ACCESS_OBSERVED",
+                "source": "publisher-rss",
+                "scope": "feed",
+                "value": "The publisher HTTPS feed was retrieved by the server."
+              }
+            ],
+            "fingerprint": "9ec79a59df3eb26e600cb3217f786023446cd2bad70c20063e98e6f7b64fadbe"
+          },
+          "showName": "Open Source Security",
+          "publisher": "Josh Bressers",
+          "artworkUrl": "https://static.libsyn.com/p/assets/3/f/1/a/3f1a5cea3e17863e16c3140a3186d450/OSS-square-podcast-libsyn.png",
+          "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss"
+        },
+        "provenance": {
+          "sourceType": "on_demand_audio",
+          "sourceUri": "https://traffic.libsyn.com/secure/opensourcesecuritypodcast/2026-09-curl-bliss-Stefan-Daniel.mp3?dest-id=542864",
+          "originalFormat": "verbose_json",
+          "language": "und",
+          "acquiredAt": "2026-10-23T12:23:31.640Z",
+          "transcriptVersion": "2ff49edb3efaa198ea718496b8e0cb13fd7e3e79f7144f4c7b9b03d222c07d38",
+          "audioVariant": "6bf0ed5421e12efe9cc4f3ede1f6fe324171e338dee7c8cc696036d819b3b860",
+          "parserVersion": null
+        }
+      }
+    ],
+    "followUps": [
+      "What was said about “Today, Open Source Security welcomes Mo Duffy, Distinguished Engineer at Red Hat and…”?",
+      "What was said about “And I'm going to pull us back a bit because you said a whole bunch of things that you”?",
+      "What was said about “the announcement of Mythos, and when we started seeing sort of that model grade…”?"
+    ],
+    "retrieval": {
+      "mode": "semantic-with-lexical-fallback",
+      "semanticEpisodes": 10
+    }
+  },
+  "requestTimings": [
+    {
+      "path": "/api/admin/intelligence",
+      "method": "GET",
+      "status": 200,
+      "elapsedMs": 3713
+    },
+    {
+      "path": "/api/search/conversations",
+      "method": "POST",
+      "status": 200,
+      "elapsedMs": 12915
+    }
+  ]
+}

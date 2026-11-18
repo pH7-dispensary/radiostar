@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-18T14:44:29.574Z",
+  "mode": "read-only same-process real-data CPU sample; not a latency percentile",
+  "results": [
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "segments": 510,
+      "topics": 13,
+      "beforeMs": 794.5527989999999,
+      "afterMs": 132.08667400000002,
+      "identicalValidation": true
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "segments": 740,
+      "topics": 17,
+      "beforeMs": 3736.1061390000004,
+      "afterMs": 486.90123799999947,
+      "identicalValidation": true
+    }
+  ]
+}

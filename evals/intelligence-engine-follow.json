@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-18T13:32:25.050Z",
+  "testOnly": true,
+  "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+  "expectedLatest": [
+    "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+    "8162a061-1fdc-4376-9525-9b8bb5006306",
+    "898601cb-9cb8-4a35-b9dd-ae52b91193ec"
+  ],
+  "followed": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "following": true,
+    "version": 1,
+    "accepted": true,
+    "changed": true,
+    "processing": {
+      "state": "PREPARING",
+      "code": "DISCOVERING_FOLLOWED_EPISODES",
+      "reason": "Checking the latest episodes; individual episode status shows eligibility and preparation."
+    }
+  },
+  "duplicate": {
+    "feedUrl": "https://opensourcesecuritypodcast.libsyn.com/rss",
+    "following": true,
+    "version": 1,
+    "owner": "d12f343d-66b9-45e4-8a14-21ff687d8ba3",
+    "accepted": true,
+    "changed": false,
+    "processing": {
+      "state": "UNAVAILABLE",
+      "code": "PREPARATION_NOT_YET_DISCOVERED"
+    }
+  },
+  "registrationSucceeded": true
+}

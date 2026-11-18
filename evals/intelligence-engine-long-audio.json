@@ -1,0 +1,119 @@
+{
+  "at": "2026-11-18T13:24:23.541Z",
+  "feedUrl": "https://hackerpublicradio.org/hpr_mp3_rss.php?hostid=269&limit=100",
+  "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+  "publisherPage": "https://hackerpublicradio.org/eps/hpr2578/index.html",
+  "licence": "CC BY-SA 4.0 per publisher RSS and episode page",
+  "durationMs": 14106687,
+  "sourceHash": "48b7f66b193f5e6062c72a96d3502d6af082b7ab6ec0342f24a70e32b8221df7",
+  "delivery": {
+    "url": "https://dn710300.ca.archive.org/0/items/hpr2578/hpr2578.mp3",
+    "headers": {
+      "etag": "\"5b24f15d-6ba06f2\"",
+      "contentLength": "112854770",
+      "contentType": "audio/mpeg",
+      "vary": null
+    }
+  },
+  "chunks": [
+    {
+      "index": 0,
+      "startMs": 0,
+      "endMs": 1200000,
+      "overlapMs": 0,
+      "bytes": 7201087,
+      "sha256": "5d9f4892827950ebb0718a07a45405e8b3703a60c0e4124159b321227fd660cc"
+    },
+    {
+      "index": 1,
+      "startMs": 1199000,
+      "endMs": 2399000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "66a9e69e9266f27cfb5de2c52b3d814c34d0bfb70c51efce14d78eb1f67629dd"
+    },
+    {
+      "index": 2,
+      "startMs": 2398000,
+      "endMs": 3598000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "ee39d678cd84587d67241ed747b31e9f8643689c8d95c5d6f4a965bd60dc700e"
+    },
+    {
+      "index": 3,
+      "startMs": 3597000,
+      "endMs": 4797000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "ff5b3dc92dfdf1244ef2af42c20b2bc6f53ead20635c5b6feffa9184c437c0c2"
+    },
+    {
+      "index": 4,
+      "startMs": 4796000,
+      "endMs": 5996000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "a6cc5bd6b795956f0f77e7ded5c4506d00096a940ad42b19703251a0c5eb2297"
+    },
+    {
+      "index": 5,
+      "startMs": 5995000,
+      "endMs": 7195000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "a63d87b21d215a2eb756528f0ea564dbc84c5dfdecb9f142327c973d2bd563ee"
+    },
+    {
+      "index": 6,
+      "startMs": 7194000,
+      "endMs": 8394000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "a8b46de5a8db366ddaa3d1ac2e117b6d2189589eee1294aa5d4c87ce678a7a05"
+    },
+    {
+      "index": 7,
+      "startMs": 8393000,
+      "endMs": 9593000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "99e076122745274fa22a00eff65cc8ebf2a30bdb5243f55d28d5f78332418426"
+    },
+    {
+      "index": 8,
+      "startMs": 9592000,
+      "endMs": 10792000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "a43b2ce07c593128a34b590d46bca2665b6c79853392718b143b85771ff2ce44"
+    },
+    {
+      "index": 9,
+      "startMs": 10791000,
+      "endMs": 11991000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "4a5475931437995c364ad6e08b452e8cc6f6d2573b529c9640840203f9401079"
+    },
+    {
+      "index": 10,
+      "startMs": 11990000,
+      "endMs": 13190000,
+      "overlapMs": 1000,
+      "bytes": 7201087,
+      "sha256": "8c62e654d75faae290bee0941fa5324e2a1d8ea410c24ed7ed7318a288e66204"
+    },
+    {
+      "index": 11,
+      "startMs": 13189000,
+      "endMs": 14106687,
+      "overlapMs": 1000,
+      "bytes": 5506999,
+      "sha256": "88def3a9836d89c97492f53465c4556c6a793b97f80f9eadba18f5cb474516ed"
+    }
+  ],
+  "elapsedMs": 46268,
+  "paidCalls": 0,
+  "scope": "Real publisher audio acquired and deterministically decoded/chunked; this is not paid full-audio ASR evidence"
+}

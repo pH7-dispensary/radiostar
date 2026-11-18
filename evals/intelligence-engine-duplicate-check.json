@@ -1,0 +1,53 @@
+{
+  "at": "2026-11-18T14:10:43.711Z",
+  "matches": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "previous": {
+        "id": "0-36",
+        "startMs": 101040,
+        "endMs": 102040,
+        "text": "Nice.",
+        "contentType": "conversation",
+        "chunkIndex": 0,
+        "chunkStartMs": 0,
+        "chunkEndMs": 1200000
+      },
+      "current": {
+        "id": "0-37",
+        "startMs": 102040,
+        "endMs": 103040,
+        "text": "Nice.",
+        "contentType": "conversation",
+        "chunkIndex": 0,
+        "chunkStartMs": 0,
+        "chunkEndMs": 1200000
+      },
+      "overlapMs": 0
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "previous": {
+        "id": "0-335",
+        "startMs": 991680,
+        "endMs": 992880,
+        "text": "It is.",
+        "contentType": "conversation",
+        "chunkIndex": 0,
+        "chunkStartMs": 0,
+        "chunkEndMs": 1200000
+      },
+      "current": {
+        "id": "0-336",
+        "startMs": 992880,
+        "endMs": 993720,
+        "text": "It is.",
+        "contentType": "conversation",
+        "chunkIndex": 0,
+        "chunkStartMs": 0,
+        "chunkEndMs": 1200000
+      },
+      "overlapMs": 0
+    }
+  ]
+}

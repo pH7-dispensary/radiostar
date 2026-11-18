@@ -1,0 +1,160 @@
+{
+  "at": "2026-11-18T14:52:48.738Z",
+  "phaseModelSpendByKind": {
+    "text": 0.031176,
+    "transcription": 0.9847,
+    "embedding": 0.00084066,
+    "grounding-review": 0.179698,
+    "rounding-adjustment": 0
+  },
+  "phaseTotalModelUsd": 1.19641466,
+  "dailyNewAudioSeconds": 9847,
+  "episodes": [
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "durationSeconds": 2300.578,
+      "state": "PARTIAL_READY",
+      "costs": {
+        "transcription": 0.2302,
+        "text": 0.0124908,
+        "grounding-review": 0.0669532,
+        "embedding": 0.00017768
+      },
+      "totalUsd": 0.30982168,
+      "processingMs": 3587159
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "durationSeconds": 1773.062,
+      "state": "PARTIAL_READY",
+      "costs": {
+        "transcription": 0.1775,
+        "text": 0.0082728,
+        "grounding-review": 0.0507188,
+        "embedding": 0.00011626
+      },
+      "totalUsd": 0.23660786,
+      "processingMs": 2581206
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "durationSeconds": 2168.216,
+      "state": "PARTIAL_READY",
+      "costs": {
+        "transcription": 0.217,
+        "text": 0.0104124,
+        "grounding-review": 0.062026,
+        "embedding": 0.00017102
+      },
+      "totalUsd": 0.28960942,
+      "processingMs": 2569948
+    }
+  ],
+  "measuredAudioUsdPerHour": 0.36,
+  "measuredAverageTextUsdPerEpisode": 0.010392,
+  "measuredAverageIndexUsdPerEpisode": 0.0001549867,
+  "measuredAverageReviewUsdPerEpisode": 0.0598993333,
+  "measuredAverageTotalUsdPerPreparedEpisode": 0.2786796533,
+  "note": "Includes bounded repair costs; inspect episode states, not a steady-state full-READY benchmark. Scenarios exclude query serving and use measured per-audio-hour analysis overhead for one-hour episodes. No configuration applied.",
+  "baselineActiveFollowedCatalogue": {
+    "episodes": 0,
+    "additionalFundingRequired": 0
+  },
+  "verificationBatch": {
+    "episodeCount": 4,
+    "estimatedAudioSecondsIncludingOverlap": 20371,
+    "audioOnlyUsd": 2.0371,
+    "estimatedAnalysisIndexReviewUsd": 0.6891724746,
+    "options": [
+      {
+        "hours": 24,
+        "requiredDailyAudioSeconds": 20371,
+        "modelUsdPerDay": 2.7262724746,
+        "applied": false
+      },
+      {
+        "hours": 72,
+        "requiredDailyAudioSeconds": 6791,
+        "modelUsdPerDay": 0.9087574915,
+        "applied": false
+      }
+    ]
+  },
+  "namedHypotheticalOnlyIfBasisEstablished": {
+    "episodeCount": 6,
+    "estimatedAudioSecondsIncludingOverlap": 64595,
+    "audioOnlyUsd": 6.4595,
+    "estimatedAnalysisIndexReviewUsd": 2.1853534965,
+    "options": [
+      {
+        "hours": 24,
+        "requiredDailyAudioSeconds": 64595,
+        "modelUsdPerDay": 8.6448534965,
+        "applied": false
+      },
+      {
+        "hours": 72,
+        "requiredDailyAudioSeconds": 21532,
+        "modelUsdPerDay": 2.8816178322,
+        "applied": false
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "activeUsers": 100,
+      "distinctRequestedEpisodeHoursPerDay": 5,
+      "cachedFraction": 0.6,
+      "publisherTranscriptFraction": 0.2,
+      "newTranscriptionFraction": 0.2,
+      "newAudioHoursPerDay": 1,
+      "modelPreparationUsdPerDay": 0.6037801372,
+      "modelPreparationUsdPer30Days": 18.1134041157,
+      "fitsAudioDailyCap": true,
+      "fitsMonthlyModelCap": true
+    },
+    {
+      "activeUsers": 1000,
+      "distinctRequestedEpisodeHoursPerDay": 20,
+      "cachedFraction": 0.6,
+      "publisherTranscriptFraction": 0.2,
+      "newTranscriptionFraction": 0.2,
+      "newAudioHoursPerDay": 4,
+      "modelPreparationUsdPerDay": 2.4151205488,
+      "modelPreparationUsdPer30Days": 72.4536164628,
+      "fitsAudioDailyCap": false,
+      "fitsMonthlyModelCap": false
+    },
+    {
+      "activeUsers": 10000,
+      "distinctRequestedEpisodeHoursPerDay": 60,
+      "cachedFraction": 0.6,
+      "publisherTranscriptFraction": 0.2,
+      "newTranscriptionFraction": 0.2,
+      "newAudioHoursPerDay": 12,
+      "modelPreparationUsdPerDay": 7.2453616463,
+      "modelPreparationUsdPer30Days": 217.3608493884,
+      "fitsAudioDailyCap": false,
+      "fitsMonthlyModelCap": false
+    }
+  ],
+  "existingAws30DayRunRateUsd": 21.094067415,
+  "awsScaleCaveat": "Linear projection of accrued complete November days, not a forecast or capacity test. Delivery, storage, support and scaling costs are unmeasured; no new AWS resources.",
+  "measuredNonAudioUsdPerSourceHour": 0.1218900686,
+  "observedThroughput": {
+    "sourceHours": 1.7338488888888888,
+    "wallHours": 0.9972897222222222,
+    "sourceHoursPerWallHour": 1.7385608717850016,
+    "note": "Three followed episodes through their latest bounded repair; includes queue waits, deployments and partial outputs, not steady-state provider speed."
+  },
+  "monthlyPreparationOnly": {
+    "days": 30,
+    "newAudioCeilingHours": 90,
+    "similarPartialEpisodes": 89,
+    "oneHourFreshEpisodes": 51,
+    "note": "Excludes query costs and other concurrent usage; not a guarantee of fully validated summaries."
+  }
+}
