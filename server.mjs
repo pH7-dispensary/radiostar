@@ -884,6 +884,8 @@ export function createStarCastServer({
     else if (recovery?.eligible) [state, reason, code] = ["NOT_PREPARED", recovery.reason, "TRANSCRIPT_REASSESSMENT_AVAILABLE"];
     else if (recovery?.stale && recovery.blockerCode) [state, reason, code] = ["UNAVAILABLE", recovery.reason, recovery.blockerCode];
     else if (pipeline.rightsRecovery(feedUrl, episode.id)) [state, reason, code] = ["NOT_PREPARED", "Current evidence now permits processing; the historical refusal no longer blocks preparation.", "REASSESSMENT_AVAILABLE"];
+    else if (job?.code === 'BUDGET_LIMIT') [state,reason,code]=['WAITING_FOR_CAPACITY','Completed work is saved. Preparation resumes automatically when the recorded allowance resets.','BUDGET_LIMIT'];
+    else if (job?.code === 'PROCESSING_YIELD') [state,reason,code]=['QUEUED','Completed chunks are saved while other queued episodes receive capacity.','PROCESSING_YIELD'];
     else if (publicJob?.state === "FAILED") [state, reason, code] = ["FAILED", publicJob.reason || "The latest preparation attempt failed.", publicJob.code || "ANALYSIS_FAILED"];
     else if (publicJob?.state === "BLOCKED") [state, reason, code] = ["UNAVAILABLE", publicJob.reason || "Preparation is currently unavailable.", publicJob.code || "PROCESSING_BLOCKED"];
     else if (publicJob?.state === "QUEUED") [state, reason, code] = ["QUEUED", "Preparation is waiting for the processing worker.", "QUEUED"];
@@ -891,7 +893,8 @@ export function createStarCastServer({
     const ready = state === "READY";
     const preparing = state === "PREPARING" || state === "QUEUED";
     const failed = state === "FAILED";
-    const statusFor = (allowed, available) => !allowed ? "RESTRICTED" : available ? "READY" : failed ? "FAILED" : preparing ? "PREPARING" : "ELIGIBLE";
+    const waiting=state==='WAITING_FOR_CAPACITY';
+    const statusFor = (allowed, available) => !allowed ? "RESTRICTED" : available ? "READY" : waiting ? state : failed ? "FAILED" : preparing ? "PREPARING" : "ELIGIBLE";
     const derivedAvailable = ready && Boolean(job?.brief || job?.chapters || job?.topics || job?.transcript?.segments?.length);
     const intelligenceReason = !processing.allowed ? processing.reason : !display.allowed ? display.reason : !operational.intelligence ? "Core intelligence is paused by the podcast intelligence policy." : null;
     const captionDecision = rights.evaluate({ feature: "captions", feedUrl, episodeId: episode.id });
@@ -900,6 +903,7 @@ export function createStarCastServer({
     const canPrepareTranscript = processing.allowed && permissions.canAcquireTranscript && operational.intelligence;
     const transcriptionState = transcriptReady && processing.allowed && permissions.canAcquireTranscript ? "READY"
       : !canPrepareTranscript ? "RESTRICTED"
+      : waiting ? state
       : preparing ? state
       : episode.hasPublisherTranscript ? "ELIGIBLE"
       : permissions.canTranscribeAudio && pipeline.audioEnabled && ledger.controls.enabled ? "EXPLICIT_AUTHORISATION_REQUIRED"
@@ -908,6 +912,7 @@ export function createStarCastServer({
       : !processing.allowed ? processing.reason
       : !permissions.canAcquireTranscript ? "The current rights record does not allow transcript acquisition."
       : !operational.intelligence ? "Transcript preparation is paused by the intelligence policy."
+      : waiting ? 'This authorised job is waiting for capacity; no additional approval is required.'
       : preparing ? "Transcript acquisition is part of the active preparation job."
       : episode.hasPublisherTranscript ? "A publisher transcript reference can be evaluated before any paid audio fallback."
       : permissions.canTranscribeAudio && pipeline.audioEnabled && ledger.controls.enabled ? "Audio fallback needs explicit administrator selection and remains subject to the hard budget."
