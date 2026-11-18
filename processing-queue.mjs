@@ -12,7 +12,7 @@ const validQueueUrl = (value) =>
   /^https:\/\/sqs\.eu-west-2\.amazonaws\.com\/208096650030\/starcast-phase1-processing$/.test(value);
 
 export class ProcessingQueue {
-  constructor({ queueUrl, region = "eu-west-2", client, pollWaitSeconds = 20, renewalMs = 60_000 } = {}) {
+  constructor({ queueUrl, region = "eu-west-2", client, pollWaitSeconds = 20, renewalMs = 60_000, retryWait = ms => new Promise(resolve => setTimeout(resolve,ms)) } = {}) {
     if (!validQueueUrl(queueUrl)) throw Error("A dedicated Star Cast processing queue is required.");
     this.queueUrl = queueUrl;
     this.deadLetterQueueUrl = queueUrl.replace(/processing$/, "processing-dlq");
@@ -20,6 +20,8 @@ export class ProcessingQueue {
     this.pollWaitSeconds = Math.max(1, Math.min(20, Number(pollWaitSeconds) || 20));
     this.running = false;
     this.renewalMs = renewalMs;
+    this.retryWait=retryWait;
+    this.transportError=null;
   }
 
   async enqueue(job) {
@@ -85,14 +87,15 @@ export class ProcessingQueue {
         attributesFor(this.deadLetterQueueUrl),
       ]);
       return {
-        status: deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY",
+        status: deadLetter.visible > 0 || this.transportError ? "DEGRADED" : "HEALTHY",
         processing,
         deadLetter,
         workerRunning: this.running,
+        transportError:this.transportError,
         observedAt: new Date().toISOString(),
         reason: deadLetter.visible > 0
           ? "Messages are waiting in the processing dead-letter queue."
-          : "SQS queue attributes were read successfully.",
+          : this.transportError ? "Queue transport is reconnecting with bounded backoff; persisted work is retained." : "SQS queue attributes were read successfully.",
       };
     } catch (error) {
       return {
@@ -109,10 +112,25 @@ export class ProcessingQueue {
   async run({ execute, recover }) {
     if (this.running) return;
     this.running = true;
+    let failures=0;
     try {
       while (this.running) {
-        await recover();
-        const messages = await this.receive();
+        let messages;
+        try {
+          await recover();
+          messages = await this.receive();
+          failures=0;this.transportError=null;
+        } catch(error) {
+          // A transient IMDS/credential/network error must not permanently
+          // terminate the sole consumer. Five failures open a five-minute
+          // circuit; this retries transport only, never a paid provider stage.
+          failures++;
+          const delay=failures>=5?300000:Math.min(60000,1000*2**(failures-1));
+          this.transportError={code:String(error?.name||'QUEUE_TRANSPORT_FAILED').slice(0,80),consecutiveFailures:failures,retryAt:new Date(Date.now()+delay).toISOString(),state:failures>=5?'CIRCUIT_PAUSED':'RETRY_SCHEDULED'};
+          console.error(JSON.stringify({event:'processing-queue-transport-retry',...this.transportError}));
+          if(this.running)await this.retryWait(delay);
+          continue;
+        }
         for (const message of messages) {
           let job;
           const controller = new AbortController();

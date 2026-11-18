@@ -56,7 +56,7 @@ server.listen(4173, "0.0.0.0", () => console.log(JSON.stringify({ event: "cloud-
 // records only process health, never listener or episode identifiers.
 const loop=monitorEventLoopDelay({resolution:20});loop.enable();
 let writingHeartbeat=false;
-async function heartbeat(){if(writingHeartbeat)return;writingHeartbeat=true;try{await atomicJson('/var/lib/starcast/runtime-health.json',{at:Date.now(),workerRunning:queue?.running===true,eventLoopP99Ms:Number(loop.percentile(99)/1e6)});loop.reset();}finally{writingHeartbeat=false;}}
+async function heartbeat(){if(writingHeartbeat)return;writingHeartbeat=true;try{await atomicJson('/var/lib/starcast/runtime-health.json',{at:Date.now(),workerRunning:queue?.running===true&&!queue.transportError,eventLoopP99Ms:Number(loop.percentile(99)/1e6)});loop.reset();}finally{writingHeartbeat=false;}}
 setInterval(()=>void heartbeat().catch(()=>{}),30000).unref();void heartbeat().catch(()=>{});
 process.on("SIGTERM", () => {
   server.close(() => { store.close(); process.exit(0); });

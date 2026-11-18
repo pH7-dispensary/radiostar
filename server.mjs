@@ -360,7 +360,7 @@ export function createStarCastServer({
       disk, retention, backup,
       queue ? { name: "Processing queue", status: observedQueue.status, reason: observedQueue.reason, observedAt: observedQueue.observedAt, detail: observedQueue.processing } : { name: "Processing queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
       queue ? { name: "Dead-letter queue", status: observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : observedQueue.deadLetter.visible > 0 ? "DEGRADED" : "HEALTHY", reason: observedQueue.status === "UNAVAILABLE" ? observedQueue.reason : observedQueue.deadLetter.visible > 0 ? "Messages require operator investigation." : "No messages are waiting in the dead-letter queue.", observedAt: observedQueue.observedAt, detail: observedQueue.deadLetter } : { name: "Dead-letter queue", status: "UNKNOWN", reason: "A processing queue is not configured for this server release." },
-      { name: "Processing worker", status: queue ? (observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : queue.running ? "HEALTHY" : "DEGRADED") : "UNKNOWN", reason: queue ? (queue.running ? "The single durable queue consumer is running." : "The queue consumer is not running.") : "No queue worker is configured for this server release." },
+      { name: "Processing worker", status: queue ? (observedQueue.status === "UNAVAILABLE" ? "UNAVAILABLE" : queue.running && !queue.transportError ? "HEALTHY" : "DEGRADED") : "UNKNOWN", reason: queue ? (queue.transportError ? "Queue transport is reconnecting; saved work is retained." : queue.running ? "The single durable queue consumer is running." : "The queue consumer is not running.") : "No queue worker is configured for this server release." },
       { name: "CloudWatch logs", status: "UNKNOWN", reason: "Log delivery is not queried by the application; no browser credentials are exposed." },
       { name: "S3 backups", status: "UNKNOWN", reason: "Backup object freshness is not queried by the application; no browser credentials are exposed." },
       { name: "Deployment", status: release.status, reason: release.reason, observedAt: release.deployedAt, detail: { releaseSha: release.releaseSha, previousReleaseSha: release.previousReleaseSha, rollbackAvailable: release.rollbackAvailable } },
@@ -1054,14 +1054,20 @@ export function createStarCastServer({
     return { ...podcast, futurePolicy: { ...futurePolicy, level: intelligenceLevel(futurePolicy.tier) }, policySummary, estimatedMedianProcessingMs: processingEstimate(), episodePage: { page: safePage, pageSize: safeSize, total: matching.length, totalPages: Math.max(1, Math.ceil(matching.length / safeSize)), items: matching.slice(start, start + safeSize) } };
   };
   const episodeDetail = async (feedUrl, episodeId) => {
-    const detail = await podcastDetail(feedUrl, { pageSize: 50 });
+    // A progress read must not refresh and evaluate an entire publisher feed.
+    // Use the canonical job's metadata snapshot; rights/state below stay live.
+    const saved = pipeline.status(feedUrl, episodeId)?.episode;
+    const detail = saved?.id === episodeId
+      ? {title:saved.showName,publisher:saved.publisher,artworkUrl:saved.artworkUrl,
+         canonicalFeedId:canonicalFeedId(feedUrl),metadataStatus:'CACHED',episodes:[episodeOperationsState(feedUrl,saved)]}
+      : await podcastDetail(feedUrl, { pageSize: 50 });
     if (detail.metadataStatus === "UNAVAILABLE") throw Object.assign(Error("The publisher feed is temporarily unavailable. Saved intelligence remains available; try the metadata lookup again later."), { code: "PUBLISHER_UNAVAILABLE" });
     // Explicit episode inspection uses the same bounded history as processing,
     // not the smaller discovery list. Never interpret pagination as removal.
     const episode = detail.episodes.find((candidate) => candidate.id === episodeId)
       || episodeOperationsState(feedUrl, await resolve(feedUrl, episodeId));
     const history = jobsForEpisode(feedUrl, episodeId).map((job) => publicIntelligence(job)).sort((a, b) => Date.parse(a.startedAt || "") - Date.parse(b.startedAt || ""));
-    const timeline = [{ at: episode.publishedAt || null, type: "PUBLISHER_METADATA", label: "Published in the current publisher feed." }];
+    const timeline = [{ at: episode.publishedAt || null, type: "PUBLISHER_METADATA", label: detail.metadataStatus==='CACHED' ? "Publication date from saved publisher metadata." : "Published in the current publisher feed." }];
     const recordedEvents = pipeline.eventsFor(feedUrl, episodeId);
     if (recordedEvents.length) {
       for (const event of recordedEvents)
@@ -1092,7 +1098,7 @@ export function createStarCastServer({
     const workerAt = Date.parse(workerStarted || "");
     const jobCost = status.jobId ? ledger.usage.filter((row) => row.jobId === status.jobId || row.id.startsWith(`${status.jobId}:`) || (!row.jobId && row.kind === "transcription" && row.id.startsWith(`${episodeKey(feedUrl, episodeId)}:`))).reduce((sum, row) => sum + row.usd, 0) : 0;
     return {
-      podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId },
+      podcast: { feedUrl, title: detail.title, publisher: detail.publisher, artworkUrl: detail.artworkUrl, canonicalFeedId: detail.canonicalFeedId, metadataStatus:detail.metadataStatus },
       episode: { ...episode, processingStatus: status },
       activityAssessment: {...activityAssessmentFor(feedUrl,episodeId),
         recordedAt:store.get('rights-activity-assessment',episodeKey(feedUrl,episodeId))?.assessedAt || null},

@@ -33,6 +33,23 @@ const received = await queue.receive();
 assert.equal(received.length, 1);
 await queue.acknowledge(received[0].ReceiptHandle);
 
+// Credential/transport outages pause consumption, not the durable service.
+// No processing callback or acknowledgement runs before a real receive.
+let transportReceives=0,executions=0,acks=0;
+const backoff=[];
+const resilient=new ProcessingQueue({queueUrl,client:{send:async command=>{
+ if(command.constructor.name==='GetQueueAttributesCommand')return{Attributes:{}};
+ if(command.constructor.name==='ReceiveMessageCommand'){
+  if(++transportReceives<=6)throw Object.assign(Error('Do not log credential detail'),{name:'CredentialsProviderError'});
+  return{Messages:[{Body:JSON.stringify({jobId:'retained-job'}),ReceiptHandle:'retained-receipt'}]};
+ }
+ if(command.constructor.name==='DeleteMessageCommand'){acks++;return{};}
+ throw Error('Unexpected transport operation');
+}},retryWait:async ms=>{backoff.push(ms);assert.equal((await resilient.metrics()).status,'DEGRADED');assert.equal(executions,0);}});
+await resilient.run({recover:async()=>{},execute:async job=>{assert.equal(job.jobId,'retained-job');executions++;resilient.stop();}});
+assert.deepEqual(backoff,[1000,2000,4000,8000,300000,300000]);
+assert.equal(executions,1);assert.equal(acks,1);assert.equal(resilient.transportError,null);assert.equal(resilient.running,false);
+
 const transcript = {
   sourceType: "publisher_rss",
   sourceUri: "https://publisher.example/transcript.vtt",

@@ -14,8 +14,10 @@ const quote = s => "'" + s.replaceAll("'", "'\\''") + "'";
 const idleCheck = "/usr/local/bin/node --input-type=module -e " + quote(`
   import { DatabaseSync } from 'node:sqlite';
   const db = new DatabaseSync('/var/lib/starcast/backend.sqlite', {readOnly:true});
-  const active = new Set(['QUEUED','DISCOVERING','TRANSCRIBING','UNDERSTANDING','ORGANISING','PROCESSING','PARTIAL_READY']);
-  const busy = db.prepare("SELECT payload FROM records WHERE kind='intelligence'").all().some(row => {const v=JSON.parse(row.payload); return active.has(v.state) && !v.completedAt});
+  const active = new Set(['DISCOVERING','TRANSCRIBING','UNDERSTANDING','ORGANISING','PROCESSING','PARTIAL_READY']);
+  const {readFileSync}=await import('node:fs');
+  let workerOffline=false;try{const h=JSON.parse(readFileSync('/var/lib/starcast/runtime-health.json','utf8'));workerOffline=h.workerRunning===false&&Date.now()-h.at>=0&&Date.now()-h.at<90000;}catch{}
+  const busy = db.prepare("SELECT payload FROM records WHERE kind='intelligence'").all().some(row => {const v=JSON.parse(row.payload); return (active.has(v.state)||(v.state==='QUEUED'&&!workerOffline)) && !v.completedAt});
   const budget=db.prepare("SELECT payload FROM records WHERE kind='budget' AND id='ledger'").get();
   const paidWork=budget && JSON.parse(budget.payload).reservations?.length>0;
   db.close();

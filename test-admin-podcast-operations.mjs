@@ -13,10 +13,11 @@ const transcript = {
   transcriptVersion: "operations-fixture-v1", sourceType: "publisher_rss", sourceUri: "https://publisher.example/transcript.vtt", originalFormat: "text/vtt",
 };
 transcript.quality = assessTranscript(transcript);
+let feedReads=0,feedUnavailable=false;
 const app = createStarCastServer({
   store: new LocalStore(":memory:"),
   env: { STARCAST_ADMIN_TOKEN: "admin-token", STARCAST_PAID_INTELLIGENCE: "enabled", OPENAI_API_KEY: "mock-key" },
-  fetchFeed: async (url) => { assert.equal(url, feedUrl); return feed; },
+  fetchFeed: async (url) => { feedReads++;if(feedUnavailable)throw Error('Publisher unavailable');assert.equal(url, feedUrl); return feed; },
   resolveEpisode: async (_feed, episodeId) => ({
     id: episodeId, title: episodeId === "authorised-episode" ? "Authorised & grounded" : "Needs assessment",
     showName: "Research & Practice", publisher: "Fixture Publisher", duration: episodeId === "authorised-episode" ? "02:00" : "03:00",
@@ -81,6 +82,11 @@ try {
   assert.equal(episode.episode.features.find((feature) => feature.name === "Episode brief").state, "READY");
   assert.ok(episode.timeline.some((item) => item.type === "PROCESSING_COMPLETED"), "timeline contains only recorded lifecycle events");
   assert.equal(episode.episode.transcript.sourceUri, transcript.sourceUri, "operations users may inspect transcript provenance without receiving transcript text");
+  feedUnavailable=true;const beforeReads=feedReads;
+  const savedProgress=await (await get(`/api/admin/episodes/detail?feedUrl=${encodeURIComponent(feedUrl)}&episodeId=authorised-episode`)).json();
+  assert.equal(savedProgress.episode.state,'READY');assert.equal(savedProgress.podcast.metadataStatus,'CACHED');
+  assert.equal(feedReads,beforeReads,'persisted progress does not fetch/evaluate the whole feed during a publisher outage');
+  feedUnavailable=false;
 
   const denied = await post("/api/admin/episodes/prepare", { feedUrl, episodeId: "restricted-episode" });
   assert.equal(denied.status, 409);
