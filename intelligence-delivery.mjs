@@ -77,10 +77,9 @@ export function groundedTopics(value, index, checks = validateClaims(value, inde
   return topics.slice(0,80);
 }
 
-export function deliveryValidation(value, index) {
+export function deliveryValidation(value, index, claimCheck=validateClaims(value,index||{segments:[]}), expectedTopics=groundedTopics(value,index||{segments:[]},claimCheck)) {
   const source = new Map((index?.segments || []).map(s=>[s.id,s]));
   const cited = ids => Array.isArray(ids) && ids.length>0 && ids.every(id=>source.has(id));
-  const claimCheck=validateClaims(value,index||{segments:[]});
   const supported=prefix=>!claimCheck.claims.some(c=>c.id.startsWith(prefix)&&!c.supported);
   const brief = value.brief;
   const briefValid = Boolean(brief && supported("brief.") && brief.episodeId === value.episodeId && brief.processingVersion === value.processingVersion &&
@@ -98,7 +97,7 @@ export function deliveryValidation(value, index) {
     transcript:{state:index?"READY":"UNAVAILABLE"},
     brief:{state:briefValid?(["extractive","verified_partial"].includes(brief.mode)?"PARTIAL_READY":"READY"):"FAILED"},
     chapters:{state:!timed?"UNAVAILABLE":chaptersValid?(value.chapters.some(c=>c.mode==="extractive")?"PARTIAL_READY":"READY"):"FAILED",...(!timed?{code:"UNTIMED_TRANSCRIPT"}:{})},
-    topics:{state:value.topics?.length&&value.topics.every(t=>groundedTopics(value,index,claimCheck).some(expected=>expected.label===t.label&&JSON.stringify(expected.sourceSegmentIds)===JSON.stringify(t.sourceSegmentIds)&&expected.startMs===t.startMs&&expected.endMs===t.endMs))?"READY":"FAILED"},
+    topics:{state:value.topics?.length&&value.topics.every(t=>expectedTopics.some(expected=>expected.label===t.label&&JSON.stringify(expected.sourceSegmentIds)===JSON.stringify(t.sourceSegmentIds)&&expected.startMs===t.startMs&&expected.endMs===t.endMs))?"READY":"FAILED"},
     search:{state:index?"READY":"INDEXING"},
     moments:{state:timed?"READY":"UNAVAILABLE",...(!timed?{code:"UNTIMED_TRANSCRIPT"}:{})},
   };

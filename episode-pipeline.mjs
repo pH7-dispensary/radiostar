@@ -11,7 +11,7 @@ import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION, AUDIO
 import { hybridSemanticRetrieve,validSemanticIndex } from "./semantic-search.mjs";
 import { composeGroundedAnswer } from "./grounded-answer.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
-import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION } from "./claim-grounding.mjs";
+import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION, validateClaims } from "./claim-grounding.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
@@ -435,9 +435,10 @@ export class EpisodePipeline {
           if(this.store.get("semantic-index",key)?.fingerprint!==index.fingerprint)this.store.delete("semantic-index",key);
         });
       }
-      const topics=groundedTopics(value,index);
+      const checked=validateClaims(value,index);
+      const topics=groundedTopics(value,index,checked);
       derived={...value,topics};
-      const validation=deliveryValidation(derived,index);
+      const validation=deliveryValidation(derived,index,checked,topics);
       const pending=!completed(value) && activeStates.has(value.state);
       const features=validation.features;
       if(pending)for(const name of ["brief","chapters","topics"])if(features[name].state==="FAILED")features[name]={state:"ANALYSING"};
