@@ -214,6 +214,13 @@ export function validateChapters(chapters, transcript) {
       description: String(c.description || "").slice(0, 320),
     }));
 }
+// Strict output-length decoding may finish a JSON string mid-sentence. Retain
+// complete sentences only; the original response remains in its checkpoint.
+export function completeBriefDetail(text) {
+  if(typeof text!=='string' || text.length<600 || !/(?:[,;:]|\b(?:and|or|a|an|the|to|with))\s*$/iu.test(text))return text;
+  const parts=[...new Intl.Segmenter('und',{granularity:'sentence'}).segment(text)].map(s=>s.segment.trim());
+  return parts.length>1?parts.slice(0,-1).join(' '):text;
+}
 export async function generateEpisodeIntelligence({
   transcript,
   ledger,
@@ -388,6 +395,7 @@ export async function generateEpisodeIntelligence({
       !payload.sourceSegmentIds.length ||
       !payload.sourceSegmentIds.every((id) => ids.has(id))
     );
+    if(wantsBrief&&!wantsChapters)payload.detail=completeBriefDetail(payload.detail);
     const generatedAt = new Date().toISOString();
     const rawResult = {
         brief: !wantsBrief || invalidBrief ? undefined : {

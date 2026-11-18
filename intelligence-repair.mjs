@@ -1,13 +1,13 @@
 import {transcribeOnDemand,planAudioSegments,TRANSCRIPTION_ASSEMBLY_VERSION} from './transcription.mjs';
 import {groundResult} from './grounded-result.mjs';
-import {generateLongFormIntelligence,generateEpisodeIntelligence,PROCESSING_VERSION} from './openai-intelligence.mjs';
+import {generateLongFormIntelligence,generateEpisodeIntelligence,PROCESSING_VERSION,completeBriefDetail} from './openai-intelligence.mjs';
 import {transcriptFingerprint} from './intelligence-delivery.mjs';
 import {validateClaims,claimsForResult,claimBinding,GROUNDING_VERSION} from './claim-grounding.mjs';
-export const REPAIR_VERSION='missing-features-eligible-review-sources-v6';
+export const REPAIR_VERSION='missing-features-complete-prose-v7';
 const GENERATION_VERSION='missing-features-no-inline-citations-v1';
 const complete=j=>Boolean(['READY','PARTIAL_READY'].includes(j?.state)&&j.completedAt&&j.transcript?.segments?.length);
 const missing=j=>[
-  ...(!j.brief || ['extractive','verified_partial'].includes(j.brief.mode)?['brief']:[]),
+  ...(!j.brief || ['extractive','verified_partial'].includes(j.brief.mode) || completeBriefDetail(j.brief.detail)!==j.brief.detail?['brief']:[]),
   ...(j.chapters||[]).flatMap((c,i)=>c.mode==='extractive'?[`chapter.${i}`]:[]),
 ];
 export function queueFeatureRepair(pipeline,key,reason='Automatic repair of incomplete grounded outputs') {

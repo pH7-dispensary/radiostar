@@ -175,3 +175,9 @@ console.log('Focused briefs enforce output bounds and verify original speech onc
  let n=0;const unknown=await reviewClaims(v,t,{request:async()=>{n++;throw Object.assign(Error('Unknown previous outcome'),{code:'PROVIDER_OUTCOME_UNKNOWN'});}});assert.equal(n,1);assert(!validateClaims(unknown,t).complete);
 }
 console.log('Old completed short-source selections get one schema-correct recheck; unknown outcomes cannot be replayed.');
+{
+ const {completeBriefDetail}=await import('./openai-intelligence.mjs');const first='The speakers discuss Linux servers and source attribution. ';
+ const fragment='The discussion continues with '+ 'accurate evidence '.repeat(35)+'and a';
+ assert.equal(completeBriefDetail(first+fragment),first.trim());assert.equal(completeBriefDetail(first.repeat(12)),first.repeat(12));assert.equal(completeBriefDetail('A complete detail without terminal punctuation'),'A complete detail without terminal punctuation');
+}
+console.log('Length-capped dangling detail is omitted without inventing a sentence or changing complete prose.');
