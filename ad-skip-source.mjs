@@ -4,6 +4,19 @@ import { prepareAdAudioWindow, AD_WINDOW_SECONDS } from './bounded-audio.mjs';
 import { episodeKey } from './episode-pipeline.mjs';
 import {S3Client,GetObjectCommand} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
+import {createHash} from 'node:crypto';
+import {adAcquirer} from './ad-acquisition.mjs';
+
+// Provider segment numbers restart in every request. Bind references to the
+// original global speech position so overlap reuse cannot alias a new advert
+// to an earlier editorial sentence. This also repairs cached windows locally.
+function bindWindowSegments(value) {
+  const hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
+  const seen=new Set(),segments=value.segments.map(row=>({...row,id:'ad-'+hash([row.startMs,row.endMs,row.text]).slice(0,32)}))
+    .filter(row=>{if(seen.has(row.id))return false;seen.add(row.id);return true;});
+  return {...value,segments,text:segments.map(s=>s.text).join(' '),
+    transcriptVersion:hash({version:'global-ad-segments-v2',audioContentHash:value.audioContentHash,segments})};
+}
 
 // A reviewed dynamic-insertion variant may no longer be served by the RSS
 // URL. Deliver the SAME preserved private bytes through the existing native
@@ -20,24 +33,26 @@ export async function signedAdSkipVariant(variant, {bucket,sign=getSignedUrl,cli
 // Publisher transcripts commonly omit inserted pre-rolls. Acquire only the
 // bounded opening when no source-aligned transcript exists. This is private
 // detector input, never a replacement for the canonical episode transcript.
-export async function prepareAdSkipOpening({ feedUrl, episodeId, audioUrl, ledger, store, client, authorised, cursor = null, previousTranscript = null, audioFactory = cursor ? prepareProgressiveAudioWindow : prepareAdAudioWindow, transcribe = transcribeOnDemand }) {
+export async function prepareAdSkipOpening({ feedUrl, episodeId, audioUrl, ledger, store, client, authorised, cursor = null, previousTranscript = null, candidateTranscript = null, audioFactory = cursor ? prepareProgressiveAudioWindow : prepareAdAudioWindow, transcribe = transcribeOnDemand }) {
   const check = () => { if (!authorised()) throw Error('Audio preparation is not authorised.'); };
   check();
   ledger.refresh();
   const windowSeconds = AD_WINDOW_SECONDS;
-  const audio = await audioFactory(audioUrl, { windowSeconds, cursor });
+  const audio = await audioFactory(audioUrl, { windowSeconds, cursor, acquire:adAcquirer({store,episodeKey:episodeKey(feedUrl,episodeId),audioUrl}) });
   try {
     check();
     if (!(audio.durationMs > 0) || !/^[a-f0-9]{64}$/.test(audio.contentHash || '')) throw Error('Acquired audio has no duration or content hash.');
     const coverageStartMs = audio.windowProof?.coverageStartMs || 0;
     const coverageEndMs = Math.min(coverageStartMs + windowSeconds * 1000, audio.windowProof?.coverageEndMs ?? audio.durationMs);
     const cached = store.get('skip-window-transcript', audio.contentHash);
-    const reused=cached?.transcript ? cached : store.all('skip-source').map(([,row])=>row).find(row=>row.state==='READY' && row.transcript?.audioContentHash===audio.contentHash && row.transcript.coverageStartMs===coverageStartMs && row.transcript.coverageEndMs>=coverageEndMs);
+    const canonical=candidateTranscript?.audioContentHash===audio.contentHash&&candidateTranscript.durationMs>=coverageEndMs
+      ? {transcript:{...candidateTranscript,segments:candidateTranscript.segments.filter(s=>s.startMs>=coverageStartMs&&s.endMs<=coverageEndMs),coverageStartMs,coverageEndMs}}:null;
+    const reused=cached?.transcript ? cached : canonical || store.all('skip-source').map(([,row])=>row).find(row=>row.state==='READY' && row.transcript?.audioContentHash===audio.contentHash && row.transcript.coverageStartMs===coverageStartMs && row.transcript.coverageEndMs>=coverageEndMs);
     const remember = transcript => {
       const key=episodeKey(feedUrl,episodeId), origins=[...new Set([...(cached?.origins || []),key])];
       store.set('skip-window-transcript',audio.contentHash,{transcript,origins,lastUsedAt:new Date().toISOString()});
     };
-    if(reused && reused.transcript.coverageStartMs===coverageStartMs && reused.transcript.coverageEndMs>=coverageEndMs){if(audio.windowProof)remember(reused.transcript);return {preparedAudio:audio,transcript:{...reused.transcript,episodeId,windowProof:audio.windowProof || null,acquisitionCursor:cursor,nextWindowCursor:audio.cursor || null},cacheReused:true};}
+    if(reused && reused.transcript.coverageStartMs===coverageStartMs && reused.transcript.coverageEndMs>=coverageEndMs){const transcript=bindWindowSegments({...reused.transcript,episodeId,windowProof:audio.windowProof || null,acquisitionCursor:cursor,nextWindowCursor:audio.cursor || null});if(audio.windowProof)remember(transcript);return {preparedAudio:audio,transcript,cacheReused:true};}
     // Reuse before budgeting. The existing transcription adapter reserves each
     // chunk atomically, including concurrent workers and uncertain outcomes.
     const reusable = cursor && previousTranscript?.nextWindowCursor?.overlapSha256===cursor.overlapSha256 ? previousTranscript : null;
@@ -52,13 +67,13 @@ export async function prepareAdSkipOpening({ feedUrl, episodeId, audioUrl, ledge
       requestId: `ad-opening:${audio.contentHash}`, checkpointStore: store, checkpointPrefix: `${episodeKey(feedUrl,episodeId)}:ad-opening:${audio.contentHash}`,
       authorised: true, beforePaid: check, canPersist: () => authorised(), model: ledger.controls.transcriptionModel });
     check();
-    const transcript = { ...acquired, audioContentHash: audio.contentHash, audioVariant: audio.contentHash,
+    const transcript = bindWindowSegments({ ...acquired, audioContentHash: audio.contentHash, audioVariant: audio.contentHash,
       segments: [
         ...(reusable?.segments || []).filter(row=>row.startMs>=coverageStartMs && row.endMs<=transcriptionStartMs),
         ...acquired.segments.map(row=>({...row,startMs:row.startMs+transcriptionStartMs,endMs:row.endMs+transcriptionStartMs})),
       ],
       durationMs: audio.durationMs, coverageStartMs, coverageEndMs, nextWindowCursor:audio.cursor || null, complete: audio.completeSource === true, windowProof: audio.windowProof || null, acquisitionCursor:cursor,
-      provenance: { sourceType: 'on_demand_audio', sourceUri: audioUrl, audioContentHash: audio.contentHash, scope: coverageStartMs ? 'progressive_window' : 'opening_only' } };
+      provenance: { sourceType: 'on_demand_audio', sourceUri: audioUrl, audioContentHash: audio.contentHash, scope: coverageStartMs ? 'progressive_window' : 'opening_only' } });
     if (audio.windowProof) remember(transcript);
     return {preparedAudio:audio,transcript};
   } catch (error) { await audio.cleanup(); throw error; }

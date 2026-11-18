@@ -26,6 +26,8 @@ const rights = { feedUrl, classification: "LICENSED", legalBasis: "Original auth
 app.rights.set(rights);
 store.set("intelligence", episodeKey(feedUrl, episodeId), { state: "READY", feedUrl, episodeId, testingContext: testing.context(listener.id), episode: { audioUrl }, transcript: { audioVariant: "owned-source", audioContentHash: manifest.audioContentHash, durationMs: manifest.durationMs, transcriptVersion: "owned-v1", segments: manifest.segments.map((row, i) => ({ ...row, id: `s${i}` })) } });
 store.set("intelligence", episodeKey(feedUrl, episodeId), { ...store.get("intelligence", episodeKey(feedUrl, episodeId)), processingVersion: PROCESSING_VERSION, groundingVersion: "fixture-only" });
+// This integration fixture supplies its exact local bytes below; acquisition is tested separately.
+app.skips.prepareSource = null;
 app.skips.verifyAudio = input => verifyAdSkipAudio({ ...input, audioFactory: async () => ({ path: "fixtures/ad-skip-owned-v1.mp3", durationMs: manifest.durationMs, delivery: { url: audioUrl, headers: { etag: `"${manifest.audioContentHash}"`, contentLength: manifest.contentLength } }, cleanup: async () => {} }) });
 app.skips.inspect(feedUrl, episodeId); await Promise.all(app.skips.inflight.values());
 const inspection = app.skips.inspect(feedUrl, episodeId);

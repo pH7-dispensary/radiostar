@@ -1,3 +1,4 @@
+import {adAcquirer} from './ad-acquisition.mjs';
 import { adWindowStore } from "./ad-window-store.mjs";
 import { AdWorkQueue } from "./ad-work-queue.mjs";
 import { createHash, randomUUID } from "node:crypto";
@@ -153,7 +154,7 @@ export class SkipService {
   }
   scheduleSource(feed, episode, value, priority = 0) {
     const key = episodeKey(feed, episode), verification = this.verification(key);
-    const needsDeliveredWindow = verification?.state === 'DYNAMIC_VARIANT' || (verification?.state === 'READY' && !verification.variant?.windowProof &&
+    const needsDeliveredWindow = verification?.state !== 'READY' || (verification?.state === 'READY' && !verification.variant?.windowProof &&
       !verification.variant?.privateCache && !verification.variant?.etag && verification.variant?.contentLength > 32*1024*1024);
     if (!this.prepareSource || (value?.transcript?.audioContentHash && (value.transcript.windowProof || !needsDeliveredWindow)) || !value?.episode?.audioUrl) return;
     const prior = this.store.get('skip-source', key);
@@ -184,7 +185,7 @@ export class SkipService {
         });
         if(!started)return; // Another process recovered or invalidated this claim.
         if (!allowed()) throw Error('Audio preparation permission changed.');
-        acquired = await this.prepareSource({feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,authorised:()=>allowed() && this.store.get('skip-source',key)?.claimOwner===this.sourceOwner});
+        acquired = await this.prepareSource({feedUrl:feed,episodeId:episode,audioUrl:value.episode.audioUrl,candidateTranscript:value.transcript,authorised:()=>allowed() && this.store.get('skip-source',key)?.claimOwner===this.sourceOwner});
         if (this.store.get('skip-source',key)?.claimOwner!==this.sourceOwner || !allowed() || this.source(feed,episode)?.episode?.audioUrl !== value.episode.audioUrl) throw Error('Audio source or permission changed.');
         this.store.set('skip-source',key,{...record,state:'READY',transcript:acquired.transcript,validUntil:this.clock()+6*3600000,updatedAt:nowIso()});
         this.inspect(feed,episode,{preparedAudio:acquired.preparedAudio});
@@ -192,7 +193,7 @@ export class SkipService {
       } catch (error) {
         if(this.store.get('skip-source',key)?.claimOwner!==this.sourceOwner)return;
         const budget = /budget/i.test(String(error.message));
-        this.store.set('skip-source',key,{...record,state:'FAILED',attempts:budget?0:record.attempts,code:error.code || (budget?'BUDGET_LIMIT':'SOURCE_PREPARATION_FAILED'),reason:String(error.message).slice(0,300),retryAfter:new Date(this.clock()+(budget?3600000:60000)).toISOString()});
+        this.store.set('skip-source',key,{...record,state:'FAILED',attempts:budget?0:record.attempts,code:error.code || (budget?'BUDGET_LIMIT':'SOURCE_PREPARATION_FAILED'),reason:String(error.message).slice(0,300),retryAfter:error.retryAfter || new Date(this.clock()+(budget?3600000:60000)).toISOString()});
       } finally { await acquired?.preparedAudio?.cleanup(); }
     }, priority).finally(() => this.sourceInflight.delete(key));
     this.sourceInflight.set(key,task); this.sourceTail = task.catch(()=>{});
@@ -285,9 +286,10 @@ export class SkipService {
         state='UNAVAILABLE'; alignmentCode=permission?.code || 'AUDIO_PREPARATION_NOT_AUTHORISED';
         reason=permission?.reason || 'Opening-audio analysis is not available for this episode.';
       } else if (sourcePreparation?.state === 'FAILED') {
-        state=sourcePreparation.code === 'BUDGET_LIMIT' ? 'UNAVAILABLE' : 'FAILED';
+        const capacity=['BUDGET_LIMIT','AD_ACQUISITION_LIMIT'].includes(sourcePreparation.code);
+        state=capacity ? 'UNAVAILABLE' : 'FAILED';
         alignmentCode=sourcePreparation.code;
-        reason=sourcePreparation.code === 'BUDGET_LIMIT' ? 'Audio analysis is waiting for the processing budget to become available.' : 'Opening-audio analysis did not complete. Playback is still available.';
+        reason=capacity ? 'Audio analysis is waiting for its processing or acquisition allowance to reset. Playback is still available.' : 'Opening-audio analysis did not complete. Playback is still available.';
       } else {
         state='ANALYSING'; alignmentCode='AUDIO_WINDOW_PENDING';
         reason=sourcePreparation?.state === 'PROCESSING' ? 'Checking the opening audio for complete advertisements.' : 'Opening-audio analysis is queued. You can keep listening.';
@@ -317,6 +319,11 @@ export class SkipService {
   scheduleVerification(feed, episode, value, intervals, preparedAudio = null) {
     const key = episodeKey(feed, episode);
     const previous = this.verification(key);
+    // A canonical full transcript does not justify downloading four hours of
+    // audio for a short boundary check. The existing independent source job
+    // supplies bounded, exact delivered-window evidence first. Legacy verified
+    // private/static variants remain available without repurchasing anything.
+    if(this.prepareSource && !preparedAudio && !value?.transcript?.windowProof && previous?.state!=='READY')return;
     const eligible = intervals.filter((item) => item.qualifiesForAudioVerification && (item.verificationState === Verification.CANDIDATE || (item.verificationState === Verification.VARIANT_MATCHED && previous?.verifierVersion !== adSkipAudioVerificationVersion)) && !item.disputed);
     if (!eligible.length || !value?.episode?.audioUrl) return;
     const permission = this.canVerifyAudio({ feedUrl: feed, episodeId: episode, value });
@@ -353,7 +360,7 @@ export class SkipService {
       if (!currentSource() || !allowed()) {
         this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:currentSource()?"AUDIO_VERIFICATION_NOT_AUTHORISED":"SOURCE_CHANGED",reason:"The source or permission changed before verification began.",updatedAt:nowIso()});return;
       }
-      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, expectedWindow:value.transcript?.windowProof || null, expectedCursor:value.transcript?.acquisitionCursor || null, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
+      const result = await this.verifyAudio({ audioUrl: value.episode.audioUrl, acquire:adAcquirer({store:this.store,episodeKey:key,audioUrl:value.episode.audioUrl,clock:this.clock}), candidates, preparedAudio, expectedContentHash: value.transcript?.audioContentHash, expectedWindow:value.transcript?.windowProof || null, expectedCursor:value.transcript?.acquisitionCursor || null, maxSeconds: typeof this.maxAudioSeconds === "function" ? this.maxAudioSeconds(value) : this.maxAudioSeconds });
       this.store.transaction(() => {
         if (!currentSource()) {
           this.store.set("skip-audio-verification",key,{episodeKey:key,state:"UNAVAILABLE",inputKey,attempts:attempt,code:"SOURCE_CHANGED",reason:"The transcript or audio source changed during verification; no intervals were published.",updatedAt:nowIso()});return;
@@ -397,8 +404,8 @@ export class SkipService {
       });
     } catch (error) {
       this.store.set("skip-audio-verification", key, {
-        episodeKey: key, state: "FAILED", inputKey, attempts: attempt, updatedAt: nowIso(), retryAfter:attempt<2?new Date(this.clock()+60_000).toISOString():null,
-        code: "AUDIO_VERIFICATION_FAILED", reason: "Audio boundary verification could not complete.", diagnostic: String(error?.message || "verification failed").slice(0, 500),
+        episodeKey: key, state: "FAILED", inputKey, attempts: error.code==='AD_ACQUISITION_LIMIT'?0:attempt, updatedAt: nowIso(), retryAfter:error.retryAfter || (attempt<2?new Date(this.clock()+60_000).toISOString():null),
+        code: error.code==='AD_ACQUISITION_LIMIT'?error.code:"AUDIO_VERIFICATION_FAILED", reason: "Audio boundary verification could not complete.", diagnostic: String(error?.message || "verification failed").slice(0, 500),
       });
     }
   }

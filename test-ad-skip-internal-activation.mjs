@@ -17,7 +17,7 @@ const url=`http://127.0.0.1:${app.server.address().port}/api/admin/ad-skip/pilot
 const session=app.adminService.startSession({id:'super-test',role:'SUPER_ADMIN',name:'Test only'});
 const headers={'content-type':'application/json',cookie:`starcast_admin=${session.id}`,'x-star-cast-csrf':session.csrf};
 const post=(body,h=headers)=>fetch(url,{method:'POST',headers:h,body:JSON.stringify(body)});
-const expiry=new Date(Date.now()+3600000).toISOString();
+const expiry=new Date(Date.now()+21*86400000-1000).toISOString();
 const input={enabled:true,listenerIds:[tester.id],expectedVersion:0,expiresAt:expiry,enableListenerPreferences:true,reason:'Explicit internal test activation',confirmation:'ENABLE AD SKIP PILOT'};
 let snapshot;
 try{
@@ -26,7 +26,7 @@ try{
  const read=app.adminService.startSession({id:'reader',role:'READ_ONLY',name:'Reader'});
  assert.equal((await post(input,{...headers,cookie:`starcast_admin=${read.id}`,'x-star-cast-csrf':read.csrf})).status,403);
  assert.equal((await post(input,{...headers,'x-star-cast-csrf':'invalid'})).status,403);
- for(const malformed of [{listenerIds:[other.id]},{listenerIds:tester.id},{enableListenerPreferences:'yes'},{expiresAt:new Date(Date.now()-1000).toISOString()},{expiresAt:new Date(Date.now()+8*86400000).toISOString()}])assert.equal((await post({...input,...malformed})).status,409);
+ for(const malformed of [{listenerIds:[other.id]},{listenerIds:tester.id},{enableListenerPreferences:'yes'},{expiresAt:new Date(Date.now()-1000).toISOString()},{expiresAt:new Date(Date.now()+22*86400000).toISOString()}])assert.equal((await post({...input,...malformed})).status,409);
  assert.equal(new IntelligenceTestMode(store).adSkipConfiguration().version,0);
  assert.equal((await post(input)).status,200);
  assert.equal(app.listeners.summary(tester).preferences.adSkipEnabled,true);assert.equal(app.listeners.summary(tester).preferences.advert,true);

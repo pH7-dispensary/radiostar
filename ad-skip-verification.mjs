@@ -153,9 +153,9 @@ async function openingBoundaryEvidence(path, candidate, hash) {
  * enclosure.  This deliberately has no URL-hash fallback: a weak/missing
  * validator or a non-silent boundary leaves the interval unverified.
  */
-export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, expectedWindow = null, expectedCursor = null, preparedAudio = null, audioFactory = prepareAudio }) {
+export async function verifyAdSkipAudio({ audioUrl, candidates, maxSeconds, expectedContentHash, expectedWindow = null, expectedCursor = null, preparedAudio = null, acquire, audioFactory = prepareAudio }) {
   if (!/^[a-f0-9]{64}$/.test(expectedContentHash || "")) return { state: "UNAVAILABLE", reason: "The transcript has not been aligned to these exact audio bytes. Automatic skipping remains off.", candidates: [] };
-  const audio = preparedAudio || (expectedWindow?.version==='delivered-chain-v1' ? await prepareProgressiveAudioWindow(audioUrl,{cursor:expectedCursor}) : expectedWindow ? await prepareAdAudioWindow(audioUrl) : await audioFactory(audioUrl, maxSeconds));
+  const audio = preparedAudio || (expectedWindow?.version==='delivered-chain-v1' ? await prepareProgressiveAudioWindow(audioUrl,{cursor:expectedCursor,acquire}) : expectedWindow ? await prepareAdAudioWindow(audioUrl,{acquire}) : await audioFactory(audioUrl, maxSeconds));
   try {
     const etag = audio.delivery?.headers?.etag || null;
     const streamSafe = strongEtag(etag) && !/(?:^|,)\s*(?:user-agent|cookie|authorization)\s*(?:,|$)/i.test(String(audio.delivery?.headers?.vary || ""));

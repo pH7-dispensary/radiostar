@@ -29,7 +29,7 @@ export class IntelligenceTestMode {
       if(input.listenerIds!==undefined && (!Array.isArray(input.listenerIds)||input.listenerIds.some(id=>typeof id!=='string')))throw Error('Choose an explicit list of existing enrolled testers.');
       const listenerIds=[...new Set(input.listenerIds || prior.listenerIds)];
       const expiresAt=input.expiresAt || prior.expiresAt;
-      if(listenerIds.length>5 || listenerIds.some(id=>typeof id!=='string') || (input.enabled && (!listenerIds.length || listenerIds.some(id=>!this.eligibleListener(id)) || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt)<=this.now() || Date.parse(expiresAt)>this.now()+7*86400000)))throw Error('Select up to five active enrolled testers and an expiry within seven days.');
+      if(listenerIds.length>5 || listenerIds.some(id=>typeof id!=='string') || (input.enabled && (!listenerIds.length || listenerIds.some(id=>!this.eligibleListener(id)) || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt)<=this.now() || Date.parse(expiresAt)>this.now()+21*86400000)))throw Error('Select up to five active enrolled testers and an expiry within twenty-one days.');
       const next={enabled:input.enabled,listenerIds,expiresAt,version:prior.version+1,updatedBy:actor,updatedAt:new Date(this.now()).toISOString(),reason:input.reason.trim().slice(0,1000)};
       this.store.set('ad-skip-pilot','configuration',next);this.store.set('ad-skip-pilot-history',String(next.version),{previous:prior,current:next});return this.adSkipConfiguration();
     });

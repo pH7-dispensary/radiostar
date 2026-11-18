@@ -3,7 +3,7 @@ import {mkdtemp,readFile,writeFile,copyFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {reviewAnnotation,currentReviews,corpusMetrics,appendReviewEvent,verifyReviewChain} from './ad-skip-corpus.mjs';
+import {reviewAnnotation,currentReviews,corpusMetrics,corpusReleaseGate,appendReviewEvent,verifyReviewChain} from './ad-skip-corpus.mjs';
 import {createCorpusReviewServer} from './scripts/review-ad-skip-corpus.mjs';
 const hash=createHash('sha256').update(await readFile('fixtures/ad-skip-owned-v1.mp3')).digest('hex');
 const episode={id:'owned',title:'Owned test',audioPath:'owned.mp3',audioContentHash:hash,durationMs:50000,candidates:[{id:'a',type:'advert',startMs:15000,endMs:35000}],reviewWindows:[]};
@@ -17,6 +17,10 @@ assert.equal(corpusMetrics([{...episode,candidates:[{...episode.candidates[0],st
 assert.equal(corpusMetrics([{...episode,audioContentHash:'changed'}],events).completeEpisodes,0);
 assert.equal(corpusMetrics([{...episode,candidates:[{...episode.candidates[0],startMs:0,endMs:50000}]}],events).nonAdvertPredictedMs,30000,'whole-episode predictions expose conversation overreach even if they overlap an advert');
 assert.throws(()=>verifyReviewChain([{...events[0],version:4}]));
+const release=corpusReleaseGate([{...episode,publisher:'Owned test publisher',evaluationSplit:'held_out'}],events);
+assert.equal(release.status,'BLOCKED');assert.equal(release.counts.heldOutCompleteEpisodes,1);assert.equal(release.counts.acceptedIntervals,0,'candidate detection cannot stand in for verified automatic intervals');
+const leaked=corpusReleaseGate([{...episode,evaluationSplit:'held_out'},{...episode,id:'training',evaluationSplit:'development'}],events);
+assert(leaked.failures.some(s=>s.includes('Duplicate audio')));
 const directory=await mkdtemp(join(tmpdir(),'starcast-corpus-test-'));let app;
 try{
  await copyFile('fixtures/ad-skip-owned-v1.mp3',join(directory,'owned.mp3'));await writeFile(join(directory,'manifest.json'),JSON.stringify({episodes:[episode]}));

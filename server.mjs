@@ -2354,6 +2354,23 @@ export function createStarCastServer({
         const issued = issuePilotInvite(await requestBody(req));
         return send(res, 201, issued);
       }
+      if (url.pathname === "/api/admin/pilot/devices/renew" && req.method === "POST") {
+        const actor=adminActor(req,"listeners:write",{write:true});
+        if(actor?.role!=='SUPER_ADMIN'||actor.source!=='session')return send(res,403,{error:'A protected Super Admin session is required.'});
+        const input=await requestBody(req);
+        try{
+          const device=store.transaction(()=>{
+            const previous=store.get('pilot-device',input.deviceId),expiry=Date.parse(input.expiresAt);
+            if(!previous||previous.revokedAt||!store.all('installation').some(([,r])=>r.id===previous.listenerId&&!r.revokedAt))throw Error('Only an existing unrevoked enrolled installation can be renewed.');
+            if(input.expectedExpiresAt!==previous.expiresAt||input.confirmation!=='RENEW PILOT ACCESS'||!String(input.reason||'').trim())throw Error('Confirm the current expiry and reason.');
+            if(!Number.isFinite(expiry)||expiry<=Date.now()||expiry>Date.now()+21*86400000)throw Error('Choose an explicit expiry within twenty-one days.');
+            const next={...previous,expiresAt:new Date(expiry).toISOString(),renewedAt:new Date().toISOString()};
+            store.set('pilot-device',previous.id,next);
+            adminService.appendAudit({actor,action:'pilot-device-renewed',resource:previous.id,previousState:{expiresAt:previous.expiresAt},newState:{expiresAt:next.expiresAt},reason:String(input.reason).trim().slice(0,1000)});
+            return {id:next.id,listenerId:next.listenerId,expiresAt:next.expiresAt};
+          });return send(res,200,{device,preferencesUnchanged:true,spendingLimitsUnchanged:true});
+        }catch(error){return send(res,409,{error:error.message});}
+      }
       if (url.pathname === "/api/admin/pilot/devices/revoke" && req.method === "POST") {
         const actor = adminActor(req, "listeners:write", { write: true });
         if (!actor) return send(res, 403, { error: "Administrator access is required." });

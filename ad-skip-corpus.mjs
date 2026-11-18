@@ -55,3 +55,39 @@ export function corpusMetrics(episodes,events,{boundaryToleranceMs=1000}={}) {
 }
 export function appendReviewEvent(events,event){const previousHash=events.at(-1)?.hash||null;const value={...event,previousHash};return {...value,hash:hash(value)};}
 export function verifyReviewChain(events){let previousHash=null;for(const event of events){const {hash:stored,...value}=event;if(value.previousHash!==previousHash||stored!==hash(value))throw Error('Review audit chain is invalid.');previousHash=stored;}return true;}
+
+// Release evidence only: never changes runtime eligibility or manufactures
+// labels from detector candidates. Previously tuned examples belong to dev.
+export function corpusReleaseGate(episodes,events) {
+ verifyReviewChain(events);
+ const reviewed=ep=>{const r=currentReviews(events,ep);return r.complete&&r.labels.length>0&&r.labels.every(l=>l.independent===true&&l.reviewer&&l.audioContentHash===ep.audioContentHash&&l.kind!=='uncertain');};
+ const held=episodes.filter(ep=>ep.evaluationSplit==='held_out'&&reviewed(ep));
+ const development=episodes.filter(ep=>ep.evaluationSplit==='development');
+ const labels=held.flatMap(ep=>currentReviews(events,ep).labels);
+ const accepted=held.map(ep=>({...ep,candidates:ep.candidates.filter(c=>c.verificationState==='VERIFIED'&&!c.disputed&&!c.partialOpeningBreak&&!c.partialCommercialBreak)}));
+ const metrics=corpusMetrics(accepted,events,{boundaryToleranceMs:1500});
+ const labelledPredictions=accepted.flatMap(ep=>ep.candidates).filter(c=>c.independentReview||c.approvalSource==='HUMAN_REVIEW_PLUS_AUDIO').length;
+ let within=0;
+ for(const ep of accepted){const gold=currentReviews(events,ep).labels.filter(l=>l.kind==='advert');for(const prediction of ep.candidates)if(gold.some(g=>Math.abs(g.startMs-prediction.startMs)<=1500&&Math.abs(g.endMs-prediction.endMs)<=1500))within++;}
+ const counts={heldOutCompleteEpisodes:held.length,developmentEpisodes:development.length,publishers:new Set(held.map(ep=>ep.publisher).filter(Boolean)).size,
+  adverts:labels.filter(l=>l.kind==='advert').length,challengingNegatives:labels.filter(l=>l.kind==='product_discussion').length,acceptedIntervals:metrics.predictions};
+ const repeatedHashes=new Set(episodes.map(ep=>ep.audioContentHash)).size!==episodes.length;
+ const boundaryFraction=metrics.predictions?within/metrics.predictions:null;
+ const failures=[];
+ if(held.length<20)failures.push('20 complete independently reviewed held-out episodes required');
+ if(!development.length)failures.push('Separate development examples required');
+ if(counts.publishers<6)failures.push('Six independent publishers required');
+ if(counts.adverts<50)failures.push('50 independently labelled adverts required');
+ if(counts.challengingNegatives<50)failures.push('50 independently labelled challenging non-advert segments required');
+ if(repeatedHashes)failures.push('Duplicate audio variants cannot count as independent episodes or appear in both splits');
+ if(labelledPredictions)failures.push('Held-out predictions cannot consume their human evaluation labels');
+ if(metrics.falsePositives!==0||metrics.productDiscussionOverlapMs!==0)failures.push('Zero observed editorial skips required');
+ if(metrics.completeBreakCoverage===null||metrics.completeBreakCoverage<.9)failures.push('90% complete-break recall required');
+ if(boundaryFraction===null||boundaryFraction<.95)failures.push('95% of accepted intervals must have both boundaries within 1.5 seconds');
+ const wilson=(successes,n)=>{if(!n)return null;const z=1.95996398454,p=successes/n,d=1+z*z/n,centre=(p+z*z/(2*n))/d,margin=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,centre-margin),Math.min(1,centre+margin)];};
+ return {status:failures.length?'BLOCKED':'PROVISIONAL_SAMPLE_GATES_PASSED',counts,failures,metrics,boundaryFraction,
+  falseNegativeIntervals:metrics.adverts?Math.round(metrics.adverts*(1-(metrics.recall||0))):null,
+  recall95Interval:metrics.adverts?wilson(Math.round(metrics.adverts*(metrics.recall||0)),metrics.adverts):null,
+  precision95Interval:metrics.predictions?wilson(metrics.predictions-metrics.falsePositives,metrics.predictions):null,
+  note:'Evaluation report only. No pilot renewal, rights grant, public rollout or population-wide safety claim.'};
+}
