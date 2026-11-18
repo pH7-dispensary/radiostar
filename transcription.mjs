@@ -12,7 +12,7 @@ import { downloadPublicAudio, publicUrl } from "./safe-network.mjs";
 import { assessTranscript } from "./transcripts.mjs";
 
 const exec = promisify(execFile);
-export const TRANSCRIPTION_ASSEMBLY_VERSION = "chunk-boundaries-v2";
+export const TRANSCRIPTION_ASSEMBLY_VERSION = "chunk-boundaries-v3";
 export const AUDIO_STAGING_VERSION = 'disk-staging-v1';
 export async function initialiseAudioStaging(root) {
   await mkdir(root,{recursive:true,mode:0o700});
@@ -268,11 +268,15 @@ export async function transcribeOnDemand({
         if (s.no_speech_prob > 0.8 || s.avg_logprob < -1) continue;
         const startMs = part.startMs + Math.round(s.start * 1000),
           observedEndMs = part.startMs + Math.round(s.end * 1000);
-        // Whisper can place its final speech segment slightly beyond the
-        // submitted chunk (observed 1.2 s). Clip only bounded terminal drift
-        // to the KNOWN audio extent; larger/invalid timings still fail closed.
+        // The final Whisper segment can extend slightly past a bounded input
+        // (observed 2.080 s on a verified 1,200 s chunk). Only a terminal
+        // segment starting in the final 15 s may use the 3 s drift allowance.
+        // Clip to the independently measured chunk extent and preserve the
+        // original timestamp. Nonterminal, larger and negative drift fail.
+        const terminalDrift = i === response.segments.length-1 &&
+          startMs >= part.endMs-15000 && observedEndMs <= part.endMs+3000;
         if (!Number.isFinite(startMs) || !Number.isFinite(observedEndMs) || startMs < part.startMs ||
-            startMs > part.endMs || observedEndMs > part.endMs + 2000 || observedEndMs <= startMs)
+            startMs > part.endMs || (observedEndMs > part.endMs && !terminalDrift) || observedEndMs <= startMs)
           throw Error("Transcription timing failed validation.");
         const endMs = Math.min(durationMs, part.endMs, observedEndMs);
         if (startMs === endMs) continue;

@@ -1,3 +1,4 @@
+import {queueFeatureRepair,repairOneFeature} from './intelligence-repair.mjs';
 import { episodeIdentity } from "./episode-identity.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { fetchPublisherTranscript, discoverPublisherTranscriptRefs, assessTranscript, PUBLISHER_TRANSCRIPT_PARSER_VERSION } from "./transcripts.mjs";
@@ -791,6 +792,9 @@ export class EpisodePipeline {
     const seconds=status.transcript?.segments?.length?0:status.capacityWait?.requiredSeconds ?? status.work?.nextChunkSeconds ?? 1200;
     return this.ledger.capacity({kind:seconds?'transcription':'text',seconds,usd:status.capacityWait?.requiredUsd || seconds*.0001 || .001}).available;
   }
+  queueFeatureRepair(feedUrl, episodeId, reason) {
+    return queueFeatureRepair(this,episodeKey(feedUrl,episodeId),reason);
+  }
   async recoverQueued() {
     if (!this.queue) return;
     const now = Date.now();
@@ -814,7 +818,7 @@ export class EpisodePipeline {
       const limits = status.platformProcessing || this.testingMode?.limits(status.testingContext).dailyUsd ? this.ledger.controls : null;
       // One bounded software-repair replay of the pre-fix assembly failures.
       // Reuses paid checkpoints; never resets retry counts or unknown outcomes.
-      const assemblyRecovery = status.platformProcessing && status.state === "FAILED" && status.code === "ANALYSIS_FAILED" &&
+      const assemblyRecovery = status.platformProcessing && status.state === "FAILED" && ["ANALYSIS_FAILED","TRANSCRIPT_VALIDATION_FAILED"].includes(status.code) &&
         status.processingStage === "TRANSCRIBING" && !status.transcript && status.transcriptionAssemblyVersion !== TRANSCRIPTION_ASSEMBLY_VERSION &&
         this.store.all("transcription-checkpoint").some(([id, chunk]) => id.startsWith(key + ":") && chunk.state === "READY");
       const stagingRecovery = status.platformProcessing && status.state==='FAILED' && status.code==='ANALYSIS_FAILED' &&
@@ -877,6 +881,13 @@ export class EpisodePipeline {
       } catch {
         // The persisted record is intentionally retained for the next poll.
       }
+    }
+    // The existing single durable consumer repairs one incomplete feature per
+    // poll only after dispatchable transcription work has drained. Checkpoint
+    // and provider-outcome guards are the same as normal generation.
+    if(!this.inflight.size && !this.store.all('intelligence').some(([,j])=>j.state==='QUEUED'&&!completed(j))) {
+      const repair=this.store.all('intelligence-repair').find(([,r])=>['QUEUED','PROCESSING','WAITING_FOR_CAPACITY'].includes(r.state));
+      if(repair)await repairOneFeature(this,repair[0]);
     }
   }
   async executeQueued(queued, signal) {
@@ -1386,6 +1397,7 @@ export class EpisodePipeline {
   purgeEpisode(feed, id) {
     const key = episodeKey(feed, id);
     const intelligence = this.store.get("intelligence", key);
+    this.store.delete("intelligence-repair", key);
     const removed = { intelligence: 0, transcripts: 0, providerResults: 0, skipIntervals: 0, skipVerification: 0, skipFeedback: 0, skipExecutions: 0 };
     for (const bucket of ["transcription-checkpoint", "analysis-checkpoint"])
       for (const [checkpoint] of this.store.all(bucket)) if (checkpoint.startsWith(key + ":")) { this.store.delete(bucket, checkpoint); removed.providerResults++; }

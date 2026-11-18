@@ -24,5 +24,23 @@ try {
  await transcribeOnDemand(options);assert.equal(calls,2,'durable paid responses are reused after parser recovery');
  const invalid={...options,checkpointPrefix:null,requestId:'invalid-boundary',client:{audio:{transcriptions:{create:async()=>({segments:[{start:0,end:1210,text:speech}]})}}}};
  await assert.rejects(transcribeOnDemand(invalid),/timing failed/,'large out-of-chunk times remain blocked');
+ // Exact observed terminal timing shape; reuse its saved response, never
+ // rebuy a completed chunk to work around a parser tolerance defect.
+ const savedKey='drift:hash:whisper-1:1200000:0';
+ const response={segments:[{start:0,end:1193.72,text:speech},{start:1193.719970703125,end:1202.0799560546875,text:'The final source sentence ends here.'}]};
+ store.set('transcription-checkpoint',savedKey,{state:'READY',response});
+ const before=calls;
+ const repaired=await transcribeOnDemand({...options,durationMs:1200000,checkpointPrefix:'drift:hash'});
+ assert.equal(calls,before);assert.equal(repaired.segments.at(-1).endMs,1200000);
+ assert.equal(repaired.segments.at(-1).providerEndMs,1202080);
+ assert.deepEqual(store.get('transcription-checkpoint',savedKey).response,response);
+ for(const segments of [
+   [{start:1190,end:1203.01,text:speech}],
+   [{start:1100,end:1202,text:speech}],
+   [{start:1193,end:1202.08,text:speech},{start:1199,end:1200,text:'Later segment.'}],
+ ]) {
+   store.set('transcription-checkpoint','negative:hash:whisper-1:1200000:0',{state:'READY',response:{segments}});
+   await assert.rejects(transcribeOnDemand({...options,durationMs:1200000,checkpointPrefix:'negative:hash'}),/timing failed/);
+ }
 }finally{store.close();}
 let plan=planAudioSegments({durationMs:3_000_000,maxSegmentMs:1_200_000,overlapMs:1_000});assert.equal(plan.length,3);assert.equal(plan[1].startMs,1_199_000);assert.deepEqual(mergeTranscriptSegments([{startMs:0,endMs:1000,text:'Hello'},{startMs:900,endMs:2000,text:'world'}]).map(x=>x.text),['Hello','world']);assert.throws(()=>planAudioSegments({durationMs:0}),/duration/);console.log('long-form transcription planning checks passed');

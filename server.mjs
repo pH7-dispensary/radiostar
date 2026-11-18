@@ -399,6 +399,8 @@ export function createStarCastServer({
       if (preparedAudio) await skips?.inflight.get(episodeKey(feedUrl, episodeId));
     },
     onCompleted: async ({ feedUrl, episodeId }) => {
+      const completedJob=store.get('intelligence',episodeKey(feedUrl,episodeId));
+      if(completedJob?.state==='PARTIAL_READY' && pipeline.executionDecision(feedUrl,episodeId).canDispatch)pipeline.queueFeatureRepair(feedUrl,episodeId);
       if(rights.evaluate({ feature:"ad-detection",feedUrl,episodeId }).allowed)skips?.inspect(feedUrl,episodeId);
       const key=episodeKey(feedUrl,episodeId),index=store.get("search-index",key);
       if(pipeline.semanticSearch&&index)await pipeline.semanticSearch.build(index,{key,maxBatches:8});
@@ -2148,6 +2150,20 @@ export function createStarCastServer({
         await encounter(input.listenerId, input.feedUrl, input.episodeId, "admin-verification");
         adminService.appendAudit({ actor, action: "internal-testing-encounter", resource: `${input.feedUrl}:${input.episodeId}`, outcome: "ALLOWED", reason: "Bounded verification under the existing enrolled tester configuration." });
         return send(res, 202, { status: listenerStatus(input.feedUrl, input.episodeId) });
+      }
+      if(url.pathname==='/api/admin/intelligence/repair' && req.method==='POST') {
+        const actor=adminActor(req,'intelligence:write',{write:true});
+        if(!actor || actor.role!=='SUPER_ADMIN' || actor.source!=='session')return send(res,403,{error:'A protected Super Admin session is required.'});
+        const input=await requestBody(req);
+        if(!valid(input) || input.confirmation!=='CONFIRM' || !String(input.reason||'').trim())return send(res,400,{error:'An episode, reason and confirmation are required.'});
+        try {
+          const repair=store.transaction(()=>{
+            const result=pipeline.queueFeatureRepair(input.feedUrl,input.episodeId,String(input.reason).slice(0,1000));
+            adminService.appendAudit({actor,action:'intelligence-feature-repair-requested',resource:result.jobId,newState:{state:result.state,version:result.version},reason:String(input.reason).slice(0,1000),outcome:'ALLOWED'});
+            return result;
+          });
+          return send(res,202,{repair});
+        }catch(error){return send(res,409,{error:String(error.message)});}
       }
       if (url.pathname === "/api/admin/intelligence/cancel" && req.method === "POST") {
         const actor = adminActor(req, "intelligence:write", { write: true });

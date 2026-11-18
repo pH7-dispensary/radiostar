@@ -53,17 +53,26 @@ try {
  const {chromium}=await import(process.env.RADIOSTAR_PLAYWRIGHT_MODULE||'playwright');
  browser=await chromium.launch({headless:true,channel:process.env.RADIOSTAR_BROWSER_CHANNEL||undefined,args:['--autoplay-policy=no-user-gesture-required']});
  const page=await browser.newPage();
+ await page.exposeFunction('attachIntervals',positionMs=>api('/api/skips/status',{...input,positionMs}));
  await page.exposeFunction('authorise',row=>api('/api/skips/authorise',{...input,...row}));
  await page.exposeFunction('receipt',row=>api('/api/skips/events',{...input,eventId:randomUUID(),...row}));
  await page.goto(`http://127.0.0.1:${media.address().port}`);
- const playback=await page.evaluate(async({interval,hash})=>{
+ const playback=await page.evaluate(async({expectedInterval,hash})=>{
   const {executeVerifiedSkip}=await import('/adapter.mjs');const t0=performance.now();
   const bytes=await(await fetch('/audio.mp3')).arrayBuffer();const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');if(actual!==hash)throw Error('Played source differs');
   const audio=document.querySelector('audio');audio.src=URL.createObjectURL(new Blob([bytes],{type:'audio/mpeg'}));await new Promise((r,j)=>{audio.onloadedmetadata=r;audio.onerror=j;});
   const sourcePreparationMs=performance.now()-t0;let seeks=0;
   const seek=ms=>new Promise((r,j)=>{seeks++;const timer=setTimeout(()=>j(Error('Seek timeout')),3000);audio.addEventListener('seeked',()=>{clearTimeout(timer);r(audio.currentTime*1000);},{once:true});audio.currentTime=ms/1000;});
-  const authStart=performance.now(),lease=await window.authorise({intervalId:interval.id,positionMs:0,prefetch:true}),authorisationMs=performance.now()-authStart;
+  // Resolve and attach current server intervals only after the real media
+  // clock advances. The source and player instance stay unchanged.
   audio.playbackRate=1.5;const playStart=performance.now();await audio.play();const playStartupMs=performance.now()-playStart;
+  const beforeAttachment=audio.currentTime,attachmentWait=performance.now();
+  while(!audio.paused && audio.currentTime<=beforeAttachment && performance.now()-attachmentWait<3000)await new Promise(r=>setTimeout(r,50));
+  const attached=await window.attachIntervals(audio.currentTime*1000);
+  const interval=attached.activeIntervals?.find(row=>row.id===expectedInterval.id);
+  if(!attached.automaticSkipping || !interval || audio.paused || audio.currentTime<=beforeAttachment)throw Error('Late interval attachment did not preserve playback: '+JSON.stringify({enabled:attached.automaticSkipping,intervalFound:!!interval,paused:audio.paused,beforeAttachment,now:audio.currentTime}));
+  const lateAttachmentPositionMs=audio.currentTime*1000;
+  const authStart=performance.now(),lease=await window.authorise({intervalId:interval.id,positionMs:lateAttachmentPositionMs}),authorisationMs=performance.now()-authStart;
   const origin=audio.currentTime*1000;await window.receipt({intervalId:interval.id,kind:'skip_requested',positionMs:origin});
   const seekStart=performance.now();let attempt;
   const result=await executeVerifiedSkip({interval,positionMs:audio.currentTime*1000,durationMs:audio.duration*1000,current:()=>true,getPosition:()=>audio.currentTime*1000,authorise:async()=>lease,seek,onStage:(kind,{positionMs})=>{attempt=window.receipt({intervalId:interval.id,kind,positionMs,authorisationId:lease.authorisationId});}});
@@ -76,8 +85,8 @@ try {
   const continuing=!audio.paused&&audio.currentTime>after,continuationMs=performance.now()-continuationStart,advancedMs=(audio.currentTime-after)*1000,automaticSeeks=seeks;
   audio.pause();const beforeUndoSeeks=seeks,undoStart=performance.now();const restored=await Promise.all([result.undo(),result.undo()]);const undoMs=performance.now()-undoStart;
   await window.receipt({intervalId:interval.id,kind:'undo',positionMs:restored[0],authorisationId:lease.authorisationId});
-  return {originMs:result.originMs,targetMs:result.positionMs,restoredMs:restored[0],continuing,continuationMs,advancedMs,pausedAfterUndo:audio.paused,rate:audio.playbackRate,automaticSeeks,undoSeeks:seeks-beforeUndoSeeks,sourcePreparationMs,authorisationMs,playStartupMs,seekConfirmationMs,undoMs,device:'Chromium using shared native adapter; not physical iPhone'};
- },{interval,hash:spec.audioContentHash});
+  return {lateAttachment:true,lateAttachmentPositionMs,originMs:result.originMs,targetMs:result.positionMs,restoredMs:restored[0],continuing,continuationMs,advancedMs,pausedAfterUndo:audio.paused,rate:audio.playbackRate,automaticSeeks,undoSeeks:seeks-beforeUndoSeeks,sourcePreparationMs,authorisationMs,playStartupMs,seekConfirmationMs,undoMs,device:'Chromium using shared native adapter; not physical iPhone'};
+ },{expectedInterval:interval,hash:spec.audioContentHash});
  try {assert(playback.continuing&&playback.pausedAfterUndo);assert.equal(playback.rate,1.5);assert.equal(playback.automaticSeeks,1);assert.equal(playback.undoSeeks,1);assert(Math.abs(playback.restoredMs-playback.originMs)<=350);assert(Math.abs(playback.targetMs-interval.endMs)<=350);}
  catch(error){writeFileSync(outputPath+'.failed.json',JSON.stringify({at:new Date().toISOString(),passed:false,playback,error:error.message},null,2)+'\n');throw error;}
  const after=await api('/api/admin/intelligence/testing',null,admin);assert.deepEqual(after.configuration,paidBefore.configuration);assert.deepEqual(after.standardLimits,paidBefore.standardLimits);
