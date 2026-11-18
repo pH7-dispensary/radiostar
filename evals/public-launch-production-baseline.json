@@ -1,0 +1,421 @@
+{
+  "at": "2026-11-18T16:33:33.043Z",
+  "account": "208096650030",
+  "region": "eu-west-2",
+  "release": {
+    "releaseSha": "d93f3d2c3c824eaffdfe9fe9a69c1306f17491aebf83886ded25409e54640c18",
+    "previousReleaseSha": "55b2150b92e0f3076d88ec1b1c57c731b1e5fb4042679b87a06bf520cbd3681e",
+    "deployedAt": "2026-11-18T16:19:54.320Z",
+    "rollbackAvailable": true
+  },
+  "integrity": "ok",
+  "freeBytes": 22934491136,
+  "monitor": {
+    "_aws": {
+      "Timestamp": 1795019613128,
+      "CloudWatchMetrics": [
+        {
+          "Namespace": "RadioStar/Operations",
+          "Dimensions": [
+            [
+              "Environment"
+            ]
+          ],
+          "Metrics": [
+            {
+              "Name": "ApiReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "WorkerReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DatabaseIntegrity",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DiskUsedPercent",
+              "Unit": "Percent",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "FreeInodes",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "BackupAgeSeconds",
+              "Unit": "Seconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "EventLoopP99Ms",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProcessingFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "TelemetryHeartbeat",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ApiLatencyMs",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            }
+          ]
+        }
+      ]
+    },
+    "Environment": "production",
+    "ApiReady": 1,
+    "WorkerReady": 1,
+    "DatabaseIntegrity": 1,
+    "DiskUsedPercent": 28.62534559257216,
+    "FreeInodes": 15628802,
+    "BackupAgeSeconds": 806.412,
+    "EventLoopP99Ms": 20.283391,
+    "ProcessingFailures5m": 0,
+    "TelemetryHeartbeat": 1,
+    "ApiLatencyMs": 49.95003099999997
+  },
+  "jobCounts": {
+    "PARTIAL_READY": 17,
+    "FAILED": 2,
+    "READY": 5,
+    "BLOCKED": 3,
+    "CANCELLED": 1
+  },
+  "checkpointCounts": {
+    "READY": 34
+  },
+  "reservations": 0,
+  "costs": {
+    "text": {
+      "usd": 0.17635620000000005,
+      "seconds": 0,
+      "requests": 47,
+      "failed": 0
+    },
+    "transcription": {
+      "usd": 3.1640999999999995,
+      "seconds": 31641,
+      "requests": 36,
+      "failed": 0
+    },
+    "embedding": {
+      "usd": 0.0014743999999999998,
+      "seconds": 0,
+      "requests": 215,
+      "failed": 3
+    },
+    "grounding-review": {
+      "usd": 0.2650104,
+      "seconds": 0,
+      "requests": 162,
+      "failed": 1
+    },
+    "rounding-adjustment": {
+      "usd": 0.00000756,
+      "seconds": 0,
+      "requests": 1,
+      "failed": 0
+    }
+  },
+  "queues": {
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0"
+    }
+  },
+  "fullSnapshotSha256": "eb7fdb5b8fbbd347de3778ccbd8fa6f9678cafdb88c473f8c79b846f40f50984",
+  "quality": [
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "state": "PARTIAL_READY",
+      "sourceHash": "99867e0ee347942f71f0217c67bcdac892f8af8cbf7a66d641eca070e203b22f",
+      "durationMs": 1951086,
+      "expectedChunks": 2,
+      "completedChunks": 2,
+      "missingChunkIndexes": [],
+      "transcriptSegments": 446,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "brokenChapterSources": 0,
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 446,
+          "totalSegments": 446,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "sourceHash": "89df90945efbbb8af402a6d42c1730de43b94adf4575a6370867828c8a9160dc",
+      "durationMs": 2300578,
+      "expectedChunks": 2,
+      "completedChunks": 2,
+      "missingChunkIndexes": [],
+      "transcriptSegments": 821,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "brokenChapterSources": 0,
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 821,
+          "totalSegments": 821,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "https://hub.hackerpublicradio.org/ccdn.php?filename=/eps/hpr2578/hpr2578.mp3",
+      "title": "HPR2578: LinuxLUGcast 102 the lost episode",
+      "state": "BLOCKED",
+      "code": "BUDGET_LIMIT",
+      "sourceHash": "4bcc0a6339851fac9893fb8405d52a2b58899abd4bdd26af3a53172878661e4d",
+      "durationMs": 14112722,
+      "resumeAfter": "2026-11-19T00:00:00.000Z",
+      "expectedChunks": 12,
+      "completedChunks": 3,
+      "missingChunkIndexes": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "transcriptSegments": 0,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "brokenChapterSources": 0,
+      "searchChecksumValid": false,
+      "semanticChecksumValid": false,
+      "featureExecution": {
+        "transcript": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "brief": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "chapters": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "topics": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "search": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "moments": {
+          "state": "WAITING_FOR_CAPACITY",
+          "completeness": "NONE",
+          "code": "BUDGET_LIMIT",
+          "resumeAfter": "2026-11-19T00:00:00.000Z"
+        },
+        "semantic": {
+          "state": "NOT_STARTED",
+          "completedSegments": 0,
+          "totalSegments": null,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "sourceHash": "3ca2ebf2ecc318671f18301462f27cf907ff5957c848d614cf7b131e529af333",
+      "durationMs": 1773062,
+      "expectedChunks": 2,
+      "completedChunks": 2,
+      "missingChunkIndexes": [],
+      "transcriptSegments": 510,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "brokenChapterSources": 0,
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 510,
+          "totalSegments": 510,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "sourceHash": "59fd8dcb0a0ff27d12420db1fd3041664c64273203174cc12180c7097deebac4",
+      "durationMs": 2168216,
+      "expectedChunks": 2,
+      "completedChunks": 2,
+      "missingChunkIndexes": [],
+      "transcriptSegments": 740,
+      "timingErrors": 0,
+      "adjacentOverlapDuplicates": 0,
+      "brokenChapterSources": 0,
+      "searchChecksumValid": true,
+      "semanticChecksumValid": true,
+      "featureExecution": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 740,
+          "totalSegments": 740,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    }
+  ]
+}

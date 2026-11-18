@@ -1,0 +1,301 @@
+{
+  "retrieval": {
+    "at": "2026-11-18T16:33:32.598Z",
+    "bucket": "starcast-phase1-208096650030-eu-west-2",
+    "key": "recovery/latest.sqlite",
+    "versionId": "NQYoG2Juyg.U5pxqSNimIJF2IkFP3mm7",
+    "snapshotAt": "2026-11-18T16:20:03.174Z",
+    "sha256Base64": "RFLYVSHT3uMilFOndsj6I8qOWjoWNPu8qlGhHhV3uPg=",
+    "bytes": 129511424,
+    "retrievalMs": 3167.9897090000004,
+    "checksumVerified": true,
+    "encryption": "AES256"
+  },
+  "counts": {
+    "ad-skip-pilot": 1,
+    "ad-skip-pilot-history": 6,
+    "admin-audit": 450,
+    "admin-audit-head": 1,
+    "admin-session": 160,
+    "allowance-ledger": 11,
+    "analysis-checkpoint": 33,
+    "audio-transcript": 14,
+    "budget": 1,
+    "derived-provider": 377,
+    "feature-flag": 1,
+    "feed-observation": 12,
+    "follow": 7,
+    "follow-operation": 2,
+    "followed-demand": 85,
+    "followed-preparation": 2,
+    "grounding-original": 11,
+    "grounding-review": 2,
+    "installation": 11,
+    "intelligence": 28,
+    "intelligence-attention": 70,
+    "intelligence-encounter": 13,
+    "intelligence-history": 6,
+    "intelligence-policy": 5,
+    "intelligence-policy-audit": 6,
+    "intelligence-refresh": 1,
+    "intelligence-test-mode": 1,
+    "intelligence-test-mode-history": 8,
+    "invite-code": 11,
+    "listening-clock": 3,
+    "listening-event": 2820,
+    "listening-session": 2436,
+    "offline-listening": 14,
+    "pilot-device": 11,
+    "pilot-invite": 11,
+    "processing-approval": 6,
+    "processing-approval-preview": 4,
+    "processing-event": 376,
+    "provider-result": 25,
+    "rights": 81,
+    "rights-activity-assessment": 59,
+    "rights-audit": 4923,
+    "rights-decision-request": 6,
+    "rights-policy": 1,
+    "rights-policy-audit": 5209,
+    "rights-policy-history": 9,
+    "rights-policy-metric": 11,
+    "rights-policy-override": 8,
+    "rights-review-history": 6,
+    "search-index": 17,
+    "search-index-previous": 11,
+    "semantic-index": 19,
+    "skip-acquisition": 10,
+    "skip-analysis": 19,
+    "skip-audio-verification": 4,
+    "skip-authorisation": 2,
+    "skip-encounter": 1,
+    "skip-episode": 59,
+    "skip-execution": 92,
+    "skip-feedback": 1,
+    "skip-human-review": 1,
+    "skip-human-review-history": 1,
+    "skip-interval": 20,
+    "skip-source": 13,
+    "skip-vote": 1,
+    "skip-window-transcript": 5,
+    "transcript": 24,
+    "transcription-checkpoint": 34,
+    "translation": 1,
+    "translation-beta": 1,
+    "translation-budget": 1
+  },
+  "restorationMs": 1140.4945,
+  "startupMs": 22.40954099999999,
+  "healthMs": 27.566084000000046,
+  "totalRestoreMs": 1190.517625,
+  "environment": {
+    "node": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "benchmarks": [
+    {
+      "concurrency": 1,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 1,
+        "p50DelayMs": 840.8701249999995,
+        "p95DelayMs": 3193.3254579999993
+      },
+      "requests": 100,
+      "durationMs": 54775.042084,
+      "requestsPerSecond": 1.8256489852923432,
+      "p50Ms": 595.2482919999966,
+      "p95Ms": 1270.5422500000004,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 50965.956,
+      "rssBytes": 390283264,
+      "eventLoopP99Ms": 1480.589311,
+      "scenarios": {
+        "cached-intelligence": {
+          "p50Ms": 786.9561249999988,
+          "p95Ms": 1214.5900419999998
+        },
+        "catalogue-mocked-rss": {
+          "p50Ms": 8.521457999995619,
+          "p95Ms": 20.372457999999824
+        },
+        "search": {
+          "p50Ms": 595.2482919999966,
+          "p95Ms": 806.4355419999993
+        },
+        "admin-list": {
+          "p50Ms": 113.37670799999978,
+          "p95Ms": 150.0297500000015
+        },
+        "processing-status": {
+          "p50Ms": 1118.8108330000032,
+          "p95Ms": 2050.3371669999997
+        }
+      }
+    },
+    {
+      "concurrency": 4,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 2,
+        "p50DelayMs": 2119.217666999997,
+        "p95DelayMs": 4009.9955839999966
+      },
+      "requests": 100,
+      "durationMs": 46970.918542,
+      "requestsPerSecond": 2.1289768883396003,
+      "p50Ms": 1132.963208000001,
+      "p95Ms": 8151.880416999993,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 44359.531,
+      "rssBytes": 422952960,
+      "eventLoopP99Ms": 1680.867327,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 43.99854100000084,
+          "p95Ms": 1628.4036659999983
+        },
+        "admin-list": {
+          "p50Ms": 931.3480829999899,
+          "p95Ms": 1979.0478330000042
+        },
+        "processing-status": {
+          "p50Ms": 1447.924708000006,
+          "p95Ms": 2945.8359580000106
+        },
+        "search": {
+          "p50Ms": 821.7324170000065,
+          "p95Ms": 2109.399666000005
+        },
+        "cached-intelligence": {
+          "p50Ms": 5299.337250000011,
+          "p95Ms": 11026.496333000003
+        }
+      }
+    },
+    {
+      "concurrency": 8,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 0,
+        "p50DelayMs": 4065.3300000000017,
+        "p95DelayMs": 5784.515458000009
+      },
+      "requests": 100,
+      "durationMs": 48608.10983300001,
+      "requestsPerSecond": 2.0572698741745783,
+      "p50Ms": 2136.6861659999995,
+      "p95Ms": 15316.196500000005,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 43665.556,
+      "rssBytes": 424312832,
+      "eventLoopP99Ms": 2717.908991,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 1110.062374999994,
+          "p95Ms": 5412.208417000016
+        },
+        "admin-list": {
+          "p50Ms": 1643.3024589999986,
+          "p95Ms": 5392.143875000009
+        },
+        "processing-status": {
+          "p50Ms": 2301.4635830000043,
+          "p95Ms": 4105.733375000011
+        },
+        "search": {
+          "p50Ms": 1797.8954590000212,
+          "p95Ms": 5878.15720799999
+        },
+        "cached-intelligence": {
+          "p50Ms": 11355.712874999997,
+          "p95Ms": 21563.767750000014
+        }
+      }
+    },
+    {
+      "concurrency": 16,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 0,
+        "p50DelayMs": 11166.014917000022,
+        "p95DelayMs": 18215.072375000018
+      },
+      "requests": 100,
+      "durationMs": 99941.21845799999,
+      "requestsPerSecond": 1.0005881611501937,
+      "p50Ms": 10598.278292000003,
+      "p95Ms": 34184.88816599999,
+      "statuses": {
+        "200": 77,
+        "TimeoutError": 18,
+        "ECONNRESET": 5
+      },
+      "errorRate": 0.23,
+      "cpuMs": 54129.058,
+      "rssBytes": 363315200,
+      "eventLoopP99Ms": 10284.433407,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 6225.718083000014,
+          "p95Ms": 21980.355584000004
+        },
+        "admin-list": {
+          "p50Ms": 8121.658958999993,
+          "p95Ms": 23416.799165999983
+        },
+        "processing-status": {
+          "p50Ms": 10520.734041000018,
+          "p95Ms": 24175.054167000024
+        },
+        "search": {
+          "p50Ms": 10421.80266700001,
+          "p95Ms": 21076.217166999995
+        },
+        "cached-intelligence": {
+          "p50Ms": 32341.886375000002,
+          "p95Ms": 39299.420249999996
+        }
+      }
+    }
+  ],
+  "database": {
+    "pointLookups100Ms": 28.787790999980643,
+    "queryPlan": [
+      "SEARCH records USING INDEX sqlite_autoindex_records_1 (kind=? AND id=?)"
+    ],
+    "wholeKindReads25Ms": 358.215125000017
+  },
+  "verified": {
+    "integrity": true,
+    "canonicalRecords": true,
+    "listenersPreserved": true,
+    "intelligenceCache": true,
+    "administratorSessionCompatibility": true,
+    "productionQueueDisabled": true,
+    "paidProcessingDisabled": true,
+    "paidLedgerUnchanged": true,
+    "readyJobsPreserved": true,
+    "blockedExternalRequests": 0
+  },
+  "scope": "Restored production records, isolated fixture listener credentials and emergency login; catalogue RSS mocked to avoid external calls. Not a live concurrency guarantee or full EC2 replacement RTO.",
+  "note": "Disposable local copy of an exact versioned production backup; no production database replacement or paid calls. Preserve all errors, including the 23% concurrency-16 failure rate."
+}

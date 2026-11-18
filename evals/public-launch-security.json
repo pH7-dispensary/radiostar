@@ -1,0 +1,60 @@
+{
+  "at": "2026-11-18T16:43:28.150Z",
+  "backendAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "nativeBefore": {
+    "info": 0,
+    "low": 0,
+    "moderate": 2,
+    "high": 21,
+    "critical": 0,
+    "total": 23
+  },
+  "nativeAfter": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 21,
+    "critical": 0,
+    "total": 21
+  },
+  "patch": {
+    "dependency": "@expo/fingerprint > minimatch",
+    "from": "10.2.6",
+    "to": "11.0.9",
+    "advisory": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+    "scope": "Build tooling. Existing Expo call site uses optimizationLevel 1; patched proactively."
+  },
+  "remainingAudit": {
+    "advisory": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+    "upstreamState": "WITHDRAWN",
+    "verifiedOn": "2026-11-18",
+    "scope": "Build tooling via Metro/Expo; npm still reports 21 propagated high flags. No force downgrade or audit suppression."
+  },
+  "typeScript": "PASS",
+  "expoDoctor": "21/21 PASS",
+  "iosExport": "PASS, no signed rebuild or upload",
+  "privacyPolicy": {
+    "httpStatus": 200,
+    "issues": [
+      "Published proposed 90-day transcript deletion conflicts with no-scheduled-expiry product policy",
+      "Published deletion status predates active-profile deletion implementation",
+      "Primary record retention, historical backup disposal and processor scope require controller approval; independent deletion replay is now implemented and automatically tested."
+    ]
+  },
+  "applePermissionReview": "Explicit permission for personal-data sharing with third-party AI remains a public release dependency; no compliance certification claimed",
+  "deletionRecovery": {
+    "implemented": true,
+    "automatedTests": "PASS: old snapshot, concurrent conditional writes, idempotency, unavailable storage, corruption, HTTP deletion",
+    "productionVerified": true,
+    "scope": "Minimal hashed revocations in existing encrypted versioned S3 bucket; startup reconciliation precedes listener and worker access.",
+    "productionEvidence": "Live S3 conditional write and old-snapshot replay passed in an isolated in-memory fixture; actual production listener records unchanged."
+  },
+  "nativeCopy": "Corrected automatic-transcription explanations; source/export only, retained build 18 unchanged"
+}

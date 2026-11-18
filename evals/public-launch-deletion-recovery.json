@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-18T17:02:09.073Z",
+  "passed": true,
+  "storage": "existing encrypted versioned S3 recovery object",
+  "database": "disposable in-memory fixture",
+  "oldSnapshotReplay": true,
+  "revokedAuthentication": true,
+  "idempotent": true,
+  "productionListenerRecordsChanged": 0,
+  "paidCalls": 0
+}

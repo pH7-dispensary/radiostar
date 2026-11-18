@@ -1,6 +1,6 @@
 # Radio Star — App Store preparation
 
-Prepared 16 October 2026. Draft metadata, not an App Store submission. No Apple application, product, price or approval has been invented.
+Updated 18 November 2026. Draft metadata, not an App Store submission. Signed internal build 18 is retained; its queued upload was cancelled at the owner's request. Apple uploads/membership remain deferred. The public launch gates in `RADIO_STAR_PUBLIC_LAUNCH_READINESS.md` must pass before requesting public-release approval.
 
 ## Metadata draft
 
@@ -27,7 +27,7 @@ For authorised, processed episodes, explore an episode brief, chapters and sourc
 
 AI Sleep uses timing preferences and feedback stored on your device. Switch between day and night appearance, manage episode intelligence, and find privacy controls in Profile.
 
-Do not add claims of reliable background sleep, universally available AI, automatic advertisement skipping, live subscription benefits, or qualified-referral rewards until their release gates are met. Automatic Ad Skip is disabled. StoreKit configuration is currently disabled. Referral qualification lacks the trusted identity/listening verifier needed for real rewards.
+Do not add claims of reliable background sleep, universally available AI, public automatic advertisement skipping, live subscription benefits, or qualified-referral rewards until their release gates are met. Automatic Ad Skip is limited to two enrolled private testers; public automatic skipping remains disabled. StoreKit configuration is currently disabled. Referral qualification lacks the trusted identity/listening verifier needed for real rewards.
 
 ## App Store Connect owner inputs
 
@@ -43,7 +43,7 @@ Based on the current first-party anonymous installation model, Apple's Login Ser
 
 Private beta requires a one-time invitation, then a revocable device credential stored in iOS SecureStore. No Mac backend is needed; the app connects to the dedicated AWS HTTPS endpoint. Supply a fresh review invitation privately through App Store Connect, with adequate expiry and approved use count. Do not place it in this repository.
 
-Discovery and playback use publisher feeds/audio. AI results and captions depend on documented rights; default is restricted. The current approved internal corpus is synthetic test material, not an App Store promotional podcast. Never represent it as a real publisher episode. Ad Skip remains off. Subscriptions remain unavailable pending product and server configuration. Profile contains privacy/terms/support links and profile deletion. Deleting a profile does not cancel an Apple subscription.
+Discovery and playback use publisher feeds/audio. AI results and captions depend on independent activity-specific rights decisions. Authorised Open Source Security episodes have real persisted intelligence and search; current outputs are partly validated, not universal complete coverage. The separate owned test fixture remains synthetic and must not be marketed as a publisher episode. Public Ad Skip and subscriptions remain unavailable. Profile contains privacy/terms/support links and profile deletion. Deleting a profile does not cancel an Apple subscription.
 
 ## Screenshots — BLOCKED awaiting native build/device
 
@@ -51,7 +51,7 @@ Do not upload browser-rendered QA captures. They are not native iOS screenshots.
 
 Capture the actual signed app: Listen; Search; player; authorised Episode Brief; Explore Episode with genuine source evidence; AI Sleep; referrals with honest pending status. Do not include secrets, invitation codes, fake purchase prices or fabricated AI evidence. If rights-approved public content is unavailable, omit the AI marketing screenshot until permission exists.
 
-Apple's current page (checked 16 October 2026) requires an iPhone Dynamic Island medium-display screenshot: accepted portrait sizes include **1179 × 2556** and **1206 × 2622**. Supply 1–10 JPEG/PNG screenshots per device size without transparency. This app declares supportsTablet=false; iPad screenshots would be required if that changes. Recheck the live specification at upload time. [Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
+Apple's current page (checked 18 November 2026) requires an iPhone Dynamic Island medium-display screenshot: accepted portrait sizes include **1179 × 2556** and **1206 × 2622**. Supply 1–10 JPEG/PNG screenshots per device size without transparency. This app declares supportsTablet=false; iPad screenshots would be required if that changes. Recheck the live specification at upload time. [Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 
 ## StoreKit activation contract — not enabled
 
@@ -91,8 +91,8 @@ Record build number, device/iOS version, tester, date and pass/fail evidence for
 
 ## Legal/operational decisions still required
 
-Review explicit third-party AI permission and onboarding disclosures against the actual default-on publisher-transcript workflow before public release. The audio-transcription consent is separate; a general Terms acceptance is not a substitute for any required AI-data-sharing permission. Do not claim this policy gate is resolved merely because a Profile toggle exists.
+Review explicit third-party AI permission and onboarding disclosures against the actual automatic processing and query-sharing workflow before public release. Apple requires disclosure and permission before sharing personal data with third-party AI. A general Terms acceptance or a Profile toggle alone is not proof this is satisfied. Native source now accurately describes automatic eligible transcription; retained signed build 18 predates this copy correction and dependency hardening. [Apple review guideline 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing).
 
-Approve primary-record/transcript/revocation-marker retention and deletion-backup restoration procedures; processor agreements and international-transfer arrangements; age/content policy; publisher permissions; consumer ADR information where required; support webpage; final subscription disclosures. Live Privacy currently says in-app deletion is unfinished and transcript expiry is not operational. Review the implemented deletion scope before updating legal text. No legal clauses were invented or silently rewritten in this mission.
+Approve primary-record/transcript/revocation-marker retention and deletion-backup restoration procedures; processor agreements and international-transfer arrangements; age/content policy; publisher permissions; consumer ADR information where required; support webpage; final subscription disclosures. Both live legal URLs returned HTTP 200 on 18 November. Privacy still describes in-app deletion as unfinished and proposes 90-day inactive transcript deletion. The current product implements active-profile deletion and explicitly has **no scheduled transcript expiry**. The owner/legal editor must correct those published statements and document the actual backup limits; no scheduled deletion was added and no legal clause was silently published here.
 
-Restore safeguard: never expose a restored database until recent deleted/revoked installation markers have been reconciled from the latest authoritative data and support deletion register. Restoring an older backup alone can resurrect deleted profiles. A catastrophic-loss-safe independent deletion ledger and restore drill remain operational launch gates; existing S3 backups are not immediate erasure.
+Restore safeguard: cloud startup now reconciles hashed deletion markers from the independent, versioned, encrypted `recovery/listener-deletions.json` object before accepting listeners or starting workers. Deletion is acknowledged only after that record is durably updated; concurrent updates use conditional writes. Old-snapshot replay and unavailable-storage tests pass. Restore with this release or newer, keep the recovery object intact, and reconcile the support deletion register for requests predating recorded markers. Backups still contain historical data until their retention lifecycle removes them; these safeguards are not immediate erasure of historical snapshots or a legal retention determination.

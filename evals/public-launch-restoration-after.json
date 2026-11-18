@@ -1,0 +1,286 @@
+{
+  "counts": {
+    "ad-skip-pilot": 1,
+    "ad-skip-pilot-history": 6,
+    "admin-audit": 450,
+    "admin-audit-head": 1,
+    "admin-session": 160,
+    "allowance-ledger": 11,
+    "analysis-checkpoint": 33,
+    "audio-transcript": 14,
+    "budget": 1,
+    "derived-provider": 377,
+    "feature-flag": 1,
+    "feed-observation": 12,
+    "follow": 7,
+    "follow-operation": 2,
+    "followed-demand": 85,
+    "followed-preparation": 2,
+    "grounding-original": 11,
+    "grounding-review": 2,
+    "installation": 11,
+    "intelligence": 28,
+    "intelligence-attention": 70,
+    "intelligence-encounter": 13,
+    "intelligence-history": 6,
+    "intelligence-policy": 5,
+    "intelligence-policy-audit": 6,
+    "intelligence-refresh": 1,
+    "intelligence-test-mode": 1,
+    "intelligence-test-mode-history": 8,
+    "invite-code": 11,
+    "listening-clock": 3,
+    "listening-event": 2820,
+    "listening-session": 2436,
+    "offline-listening": 14,
+    "pilot-device": 11,
+    "pilot-invite": 11,
+    "processing-approval": 6,
+    "processing-approval-preview": 4,
+    "processing-event": 376,
+    "provider-result": 25,
+    "rights": 81,
+    "rights-activity-assessment": 59,
+    "rights-audit": 4923,
+    "rights-decision-request": 6,
+    "rights-policy": 1,
+    "rights-policy-audit": 5209,
+    "rights-policy-history": 9,
+    "rights-policy-metric": 11,
+    "rights-policy-override": 8,
+    "rights-review-history": 6,
+    "search-index": 17,
+    "search-index-previous": 11,
+    "semantic-index": 19,
+    "skip-acquisition": 10,
+    "skip-analysis": 19,
+    "skip-audio-verification": 4,
+    "skip-authorisation": 2,
+    "skip-encounter": 1,
+    "skip-episode": 59,
+    "skip-execution": 92,
+    "skip-feedback": 1,
+    "skip-human-review": 1,
+    "skip-human-review-history": 1,
+    "skip-interval": 20,
+    "skip-source": 13,
+    "skip-vote": 1,
+    "skip-window-transcript": 5,
+    "transcript": 24,
+    "transcription-checkpoint": 34,
+    "translation": 1,
+    "translation-beta": 1,
+    "translation-budget": 1
+  },
+  "restorationMs": 2921.427584,
+  "startupMs": 25.67450000000008,
+  "healthMs": 26.851208000000042,
+  "totalRestoreMs": 2973.9970839999996,
+  "environment": {
+    "node": "v25.4.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "benchmarks": [
+    {
+      "concurrency": 1,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 0,
+        "p50DelayMs": 229.62545899999986,
+        "p95DelayMs": 545.1841670000003
+      },
+      "requests": 100,
+      "durationMs": 9553.859457999999,
+      "requestsPerSecond": 10.466974152133274,
+      "p50Ms": 90.93837499999972,
+      "p95Ms": 220.75525000000016,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 9076.59,
+      "rssBytes": 258031616,
+      "eventLoopP99Ms": 219.152383,
+      "scenarios": {
+        "cached-intelligence": {
+          "p50Ms": 77.88887500000055,
+          "p95Ms": 163.8878340000001
+        },
+        "catalogue-mocked-rss": {
+          "p50Ms": 5.332374999999956,
+          "p95Ms": 7.693874999999025
+        },
+        "search": {
+          "p50Ms": 100.48491699999977,
+          "p95Ms": 326.9198749999996
+        },
+        "admin-list": {
+          "p50Ms": 93.32179200000064,
+          "p95Ms": 121.10841700000037
+        },
+        "processing-status": {
+          "p50Ms": 163.17641700000058,
+          "p95Ms": 257.64745799999946
+        }
+      }
+    },
+    {
+      "concurrency": 4,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 1,
+        "p50DelayMs": 655.0240420000009,
+        "p95DelayMs": 980.9783750000006
+      },
+      "requests": 100,
+      "durationMs": 9006.993,
+      "requestsPerSecond": 11.10248448066963,
+      "p50Ms": 227.28487499999756,
+      "p95Ms": 1325.2697919999991,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 7972.612,
+      "rssBytes": 243154944,
+      "eventLoopP99Ms": 417.595391,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 183.86733300000014,
+          "p95Ms": 811.4546669999982
+        },
+        "admin-list": {
+          "p50Ms": 226.62487500000134,
+          "p95Ms": 808.2430000000022
+        },
+        "processing-status": {
+          "p50Ms": 228.55683299999873,
+          "p95Ms": 777.0631670000002
+        },
+        "search": {
+          "p50Ms": 223.0841249999994,
+          "p95Ms": 811.2752499999988
+        },
+        "cached-intelligence": {
+          "p50Ms": 910.429583000001,
+          "p95Ms": 1775.2853329999998
+        }
+      }
+    },
+    {
+      "concurrency": 8,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 0,
+        "p50DelayMs": 1441.4526669999977,
+        "p95DelayMs": 2433.230625
+      },
+      "requests": 100,
+      "durationMs": 17022.482165999998,
+      "requestsPerSecond": 5.874583919361411,
+      "p50Ms": 727.9976249999963,
+      "p95Ms": 5897.434417,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 12279.402,
+      "rssBytes": 279396352,
+      "eventLoopP99Ms": 1034.420223,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 491.2356660000005,
+          "p95Ms": 1669.5217919999996
+        },
+        "admin-list": {
+          "p50Ms": 753.2189169999983,
+          "p95Ms": 3859.804333
+        },
+        "search": {
+          "p50Ms": 456.375,
+          "p95Ms": 2363.3018750000047
+        },
+        "processing-status": {
+          "p50Ms": 746.1858750000029,
+          "p95Ms": 1939.4599999999991
+        },
+        "cached-intelligence": {
+          "p50Ms": 3348.2977079999982,
+          "p95Ms": 7581.945541000001
+        }
+      }
+    },
+    {
+      "concurrency": 16,
+      "queue": {
+        "mocked": true,
+        "jobs": 8,
+        "acknowledged": 8,
+        "renewals": 0,
+        "p50DelayMs": 3832.9699580000015,
+        "p95DelayMs": 4839.088833000002
+      },
+      "requests": 100,
+      "durationMs": 11553.364375000005,
+      "requestsPerSecond": 8.655487419438371,
+      "p50Ms": 899.9810419999994,
+      "p95Ms": 8608.131708,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "cpuMs": 9319.938,
+      "rssBytes": 210501632,
+      "eventLoopP99Ms": 2218.786815,
+      "scenarios": {
+        "catalogue-mocked-rss": {
+          "p50Ms": 711.4897920000003,
+          "p95Ms": 4572.457875
+        },
+        "admin-list": {
+          "p50Ms": 842.4010000000053,
+          "p95Ms": 3581.588708999996
+        },
+        "processing-status": {
+          "p50Ms": 905.8034580000021,
+          "p95Ms": 4623.270791999996
+        },
+        "search": {
+          "p50Ms": 713.3502080000035,
+          "p95Ms": 4828.019458999996
+        },
+        "cached-intelligence": {
+          "p50Ms": 3934.6747499999983,
+          "p95Ms": 9319.859291999994
+        }
+      }
+    }
+  ],
+  "database": {
+    "pointLookups100Ms": 27.01925000000483,
+    "queryPlan": [
+      "SEARCH records USING INDEX sqlite_autoindex_records_1 (kind=? AND id=?)"
+    ],
+    "wholeKindReads25Ms": 339.90979199999856
+  },
+  "verified": {
+    "integrity": true,
+    "canonicalRecords": true,
+    "listenersPreserved": true,
+    "intelligenceCache": true,
+    "administratorSessionCompatibility": true,
+    "productionQueueDisabled": true,
+    "paidProcessingDisabled": true,
+    "paidLedgerUnchanged": true,
+    "readyJobsPreserved": true,
+    "blockedExternalRequests": 0
+  },
+  "scope": "Restored production records, isolated fixture listener credentials and emergency login; catalogue RSS mocked to avoid external calls. Not a live concurrency guarantee or full EC2 replacement RTO."
+}

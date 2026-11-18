@@ -1,0 +1,120 @@
+{
+  "evidenceDate": "2026-11-18T14:52:48.738Z",
+  "assumptions": {
+    "daysPerMonth": 30,
+    "followsPerUser": 5,
+    "newEpisodesPerShowPerWeek": 1,
+    "averageEpisodeHours": 1,
+    "listeningHoursPerUserPerDay": 1,
+    "completedCacheFraction": 0.6,
+    "publisherTranscriptFraction": 0.2,
+    "freshTranscriptionFraction": 0.2,
+    "uniqueShowsAreScenarioInputsNotMeasured": true,
+    "translatePriceGbp": 14.99,
+    "illustrativeVatFraction": 0.2,
+    "illustrativeStoreFeeFraction": 0.15,
+    "illustrativeUsdPerGbp": 1.25,
+    "pricingNote": "Planning assumptions, not verified tax, fee eligibility or current FX. Translate stays private; no billing enabled."
+  },
+  "measured": {
+    "audioUsdPerHour": 0.36,
+    "meanTextUsdPerEpisode": 0.010392,
+    "meanIndexUsdPerEpisode": 0.0001549867,
+    "meanReviewUsdPerEpisode": 0.0598993333,
+    "sampleResult": "Three PARTIAL_READY episodes, not three fully validated completions",
+    "observedThroughput": {
+      "sourceHours": 1.7338488888888888,
+      "wallHours": 0.9972897222222222,
+      "sourceHoursPerWallHour": 1.7385608717850016,
+      "note": "Three followed episodes through their latest bounded repair; includes queue waits, deployments and partial outputs, not steady-state provider speed."
+    },
+    "globalCacheHitRate": null,
+    "globalDuplicateSavingsUsd": null,
+    "adAcousticCpuCostPerHourUsd": null,
+    "fullFourHourCompletedCostUsd": null
+  },
+  "estimatedFourHourPreparationUsd": 1.9287602744,
+  "estimatedFourHourAudioUsdIncludingOverlap": 1.4412,
+  "scenarios": [
+    {
+      "activeUsers": 100,
+      "distinctFollowedShows": 35,
+      "incomingUniqueAudioHoursPerDay": 5.0,
+      "freshTranscriptionHoursPerDay": 1.0,
+      "derivedPreparationSourceHoursPerDay": 2.0,
+      "requiredMeanSourceHoursPerWallHour": 0.08333333333333333,
+      "estimatedPreparationModelsPer30DaysUsd": 18.113404116,
+      "minimumFundedLimits": {
+        "audioHoursPerDay": 1.0,
+        "dailyUsd": 0.6037801372,
+        "monthlyUsd": 18.113404116
+      },
+      "initialLatestThreeUniqueHours": 105,
+      "coldStartDaysAudioFloorWithoutNewArrivals": 7,
+      "sustainableUnderCurrentCapsBeforeQueries": true,
+      "maximumSustainableDelay": "Not established by a steady-state benchmark",
+      "existingAwsRunRateUsd": 21.094067415,
+      "coreOperatingCostLowerBoundUsd": 39.207471531,
+      "minimumCoreRevenueUsdPerActiveUser": 0.39207471531000004,
+      "minimumTranslatePayersIgnoringTranslateCosts": 3,
+      "minimumPayingFractionIgnoringTranslateCosts": 0.03
+    },
+    {
+      "activeUsers": 1000,
+      "distinctFollowedShows": 140,
+      "incomingUniqueAudioHoursPerDay": 20.0,
+      "freshTranscriptionHoursPerDay": 4.0,
+      "derivedPreparationSourceHoursPerDay": 8.0,
+      "requiredMeanSourceHoursPerWallHour": 0.3333333333333333,
+      "estimatedPreparationModelsPer30DaysUsd": 72.453616464,
+      "minimumFundedLimits": {
+        "audioHoursPerDay": 4.0,
+        "dailyUsd": 2.4151205488,
+        "monthlyUsd": 72.453616464
+      },
+      "initialLatestThreeUniqueHours": 420,
+      "coldStartDaysAudioFloorWithoutNewArrivals": 28,
+      "sustainableUnderCurrentCapsBeforeQueries": false,
+      "maximumSustainableDelay": "No finite bound: sustained demand exceeds current capacity",
+      "existingAwsRunRateUsd": 21.094067415,
+      "coreOperatingCostLowerBoundUsd": 93.547683879,
+      "minimumCoreRevenueUsdPerActiveUser": 0.093547683879,
+      "minimumTranslatePayersIgnoringTranslateCosts": 8,
+      "minimumPayingFractionIgnoringTranslateCosts": 0.008
+    },
+    {
+      "activeUsers": 10000,
+      "distinctFollowedShows": 420,
+      "incomingUniqueAudioHoursPerDay": 60.0,
+      "freshTranscriptionHoursPerDay": 12.0,
+      "derivedPreparationSourceHoursPerDay": 24.0,
+      "requiredMeanSourceHoursPerWallHour": 1.0,
+      "estimatedPreparationModelsPer30DaysUsd": 217.360849392,
+      "minimumFundedLimits": {
+        "audioHoursPerDay": 12.0,
+        "dailyUsd": 7.2453616464,
+        "monthlyUsd": 217.360849392
+      },
+      "initialLatestThreeUniqueHours": 1260,
+      "coldStartDaysAudioFloorWithoutNewArrivals": 84,
+      "sustainableUnderCurrentCapsBeforeQueries": false,
+      "maximumSustainableDelay": "No finite bound: sustained demand exceeds current capacity",
+      "existingAwsRunRateUsd": 21.094067415,
+      "coreOperatingCostLowerBoundUsd": 238.45491680700002,
+      "minimumCoreRevenueUsdPerActiveUser": 0.023845491680700003,
+      "minimumTranslatePayersIgnoringTranslateCosts": 18,
+      "minimumPayingFractionIgnoringTranslateCosts": 0.0018
+    }
+  ],
+  "excluded": [
+    "query serving",
+    "source overlap beyond the explicit four-hour estimate",
+    "Translate generation/delivery",
+    "incremental monitoring",
+    "future infrastructure scaling",
+    "support",
+    "tax and FX uncertainty"
+  ],
+  "warning": "Lower bounds, not funded configurations or public capacity guarantees. New incoming demand must fit BOTH monetary and audio caps. Partial outputs do not meet the 95% complete-quality gate.",
+  "appliedConfigurationChanges": false
+}

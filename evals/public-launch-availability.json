@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-18T16:33:28.841Z",
+  "window": {
+    "start": "2026-11-11T16:33:28.841Z",
+    "end": "2026-11-18T16:33:28.841Z",
+    "periodSeconds": 60,
+    "expectedMinutes": 10080
+  },
+  "metric": "RadioStar/Operations:ApiReady",
+  "minutesWithSamples": 9371,
+  "coverageFraction": 0.9296626984126984,
+  "samples": 9376,
+  "readySamples": 9352,
+  "availabilityAmongObservedSamples": 0.9974402730375427,
+  "zeroDataMinutes": 709,
+  "statusCodes": [
+    "Complete",
+    "Complete"
+  ],
+  "qualifiesForRepresentativeSlo": false,
+  "note": "Scheduled HTTPS probes, not all user requests. Missing minutes are not healthy. Deployment downtime is not excluded; device crash-free sessions unavailable."
+}

@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-18",
+  "sourceRevision": "f4876d894660ec3c8bfcd3bb89a5cbfc5491cb7b",
+  "fullNpmTest": "PASS including all posttest suites",
+  "nativeTypeScript": "PASS",
+  "nativeIosExport": "PASS",
+  "expoDoctor": "21/21 PASS",
+  "terraformValidate": "PASS",
+  "scopedDiffCheck": "PASS",
+  "configuredLintScript": null,
+  "paidModels": "Mocked in automated tests; live cached-API verification recorded zero calls",
+  "logs": {
+    "phase4-complete-tests.log": "5236b0febda1eeec0ee2186f7da6d3f9cf764024344cdabd93b624c5676fcd54",
+    "phase4-final-ios-export.log": "05e316f685f9458c687d433e6e46b39a183eb4dedea2fb66330c3966e39b06ed"
+  }
+}

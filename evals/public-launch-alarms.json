@@ -1,0 +1,117 @@
+{
+  "at": "2026-11-18",
+  "alarms": [
+    {
+      "name": "starcast-api-unavailable",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T14:51:15.919000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [1.0 (18/11/26 14:50:00), 1.0 (18/11/26 14:48:00)] were not less than the threshold (1.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-backup-overdue",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:51:52.690000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [63.734 (26/10/26 16:50:00), 646.565 (26/10/26 16:49:00)] were not greater than the threshold (3600.0) and 1 missing datapoint was treated as [Breaching] (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-capacity-wait",
+      "state": "ALARM",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T17:03:47.442000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [6.0 (18/11/26 17:02:00), 6.0 (18/11/26 17:01:00)] were greater than the threshold (0.0) (minimum 2 datapoints for OK -> ALARM transition)."
+    },
+    {
+      "name": "starcast-database-integrity",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:51:34.323000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [1.0 (26/10/26 16:50:00), 1.0 (26/10/26 16:49:00)] were not less than the threshold (1.0) and 1 missing datapoint was treated as [Breaching] (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-dead-letter",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:43:23.459000+00:00",
+      "reason": "Threshold Crossed: 3 out of the last 3 datapoints [0.0 (26/10/26 16:41:00), 0.0 (26/10/26 16:40:00), 0.0 (26/10/26 16:39:00)] were not greater than the threshold (0.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-disk-critical",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:51:23.555000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [19.78828427636494 (26/10/26 16:50:00), 21.35965732462496 (26/10/26 16:49:00)] were not greater than or equal to the threshold (90.0) and 1 missing datapoint was treated as [Breaching] (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-disk-warning",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:50:36.861000+00:00",
+      "reason": "Threshold Crossed: 1 out of the last 3 datapoints [21.35965732462496 (26/10/26 16:49:00)] was not greater than or equal to the threshold (80.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-event-loop-delay",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T14:55:06.322000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [20.267007 (18/11/26 14:54:00), 20.299775 (18/11/26 14:53:00)] were not greater than the threshold (500.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-incorrect-skips",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T17:02:20.499000+00:00",
+      "reason": "Threshold Crossed: 1 out of the last 3 datapoints [0.0 (18/11/26 17:01:00)] was not greater than or equal to the threshold (3.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-inodes-low",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:51:48.671000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [1.5627342E7 (26/10/26 16:50:00), 1.5617011E7 (26/10/26 16:49:00)] were not less than the threshold (100000.0) and 1 missing datapoint was treated as [Breaching] (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-processing-failures",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T13:42:48.136000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [0.0 (18/11/26 13:41:00), 0.0 (18/11/26 13:40:00)] were not greater than or equal to the threshold (3.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-processing-stalled",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T17:02:04.079000+00:00",
+      "reason": "Threshold Crossed: 1 out of the last 3 datapoints [0.0 (18/11/26 17:01:00)] was not greater than the threshold (0.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-provider-failures",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T17:02:36.212000+00:00",
+      "reason": "Threshold Crossed: 1 out of the last 3 datapoints [0.0 (18/11/26 17:01:00)] was not greater than or equal to the threshold (3.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-queue-age",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T16:43:42.580000+00:00",
+      "reason": "Threshold Crossed: 3 out of the last 3 datapoints [0.0 (26/10/26 16:37:00), 0.0 (26/10/26 16:32:00), 0.0 (26/10/26 16:27:00)] were not greater than the threshold (1800.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-telemetry-missing",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-10-26T17:02:51.511000+00:00",
+      "reason": "Threshold Crossed: 3 out of the last 3 datapoints [1.0 (26/10/26 17:01:00), 1.0 (26/10/26 17:00:00), 1.0 (26/10/26 16:59:00)] were not less than the threshold (1.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    },
+    {
+      "name": "starcast-worker-unavailable",
+      "state": "OK",
+      "actionsEnabled": true,
+      "updatedAt": "2026-11-18T14:34:59.260000+00:00",
+      "reason": "Threshold Crossed: 2 out of the last 3 datapoints [1.0 (18/11/26 14:33:00), 1.0 (18/11/26 14:32:00)] were not less than the threshold (1.0) (minimum 2 datapoints for ALARM -> OK transition)."
+    }
+  ]
+}

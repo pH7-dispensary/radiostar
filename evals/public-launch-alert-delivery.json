@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-18T16:40:44.469Z",
+  "topic": "arn:aws:sns:eu-west-2:208096650030:starcast-operations",
+  "subscriptionConfirmed": true,
+  "messageId": "96550f5a-10f3-554d-beb8-6c2dc7bef9cc",
+  "reference": "PUBLIC-LAUNCH-20261118",
+  "snsAccepted": true,
+  "operatorReceiptConfirmed": true,
+  "note": "AWS subscription, SNS acceptance and human email receipt all verified; no production failure was fabricated.",
+  "operatorConfirmedAt": "2026-11-18T16:45:39.749Z",
+  "evidence": "Owner confirmed the new subscription and receipt of the named test in this chat."
+}

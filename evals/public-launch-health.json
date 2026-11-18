@@ -1,0 +1,272 @@
+{
+  "at": "2026-11-18T17:02:10.046Z",
+  "integrity": "ok",
+  "freeBytes": 22673260544,
+  "release": {
+    "releaseSha": "3e70cd21dbf95014bdab040286ea61faba791af9671b72851382ca98b1a7fb80",
+    "previousReleaseSha": "d93f3d2c3c824eaffdfe9fe9a69c1306f17491aebf83886ded25409e54640c18",
+    "deployedAt": "2026-11-18T17:01:19.595Z",
+    "rollbackAvailable": true
+  },
+  "monitor": {
+    "_aws": {
+      "Timestamp": 1795021330129,
+      "CloudWatchMetrics": [
+        {
+          "Namespace": "RadioStar/Operations",
+          "Dimensions": [
+            [
+              "Environment"
+            ]
+          ],
+          "Metrics": [
+            {
+              "Name": "ApiReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "WorkerReady",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DatabaseIntegrity",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "DiskUsedPercent",
+              "Unit": "Percent",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "FreeInodes",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "BackupAgeSeconds",
+              "Unit": "Seconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "EventLoopP99Ms",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProcessingFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "TelemetryHeartbeat",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ApiLatencyMs",
+              "Unit": "Milliseconds",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "CapacityWaitingJobs",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "StalledProcessingJobs",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "ProviderFailures5m",
+              "Unit": "Count",
+              "StorageResolution": 60
+            },
+            {
+              "Name": "IncorrectSkipReports1h",
+              "Unit": "Count",
+              "StorageResolution": 60
+            }
+          ]
+        }
+      ]
+    },
+    "Environment": "production",
+    "ApiReady": 1,
+    "WorkerReady": 1,
+    "DatabaseIntegrity": 1,
+    "DiskUsedPercent": 29.438323875547034,
+    "FreeInodes": 15628724,
+    "BackupAgeSeconds": 40.447,
+    "EventLoopP99Ms": 351.535103,
+    "ProcessingFailures5m": 0,
+    "TelemetryHeartbeat": 1,
+    "ApiLatencyMs": 88.89576999999998,
+    "CapacityWaitingJobs": 6,
+    "StalledProcessingJobs": 0,
+    "ProviderFailures5m": 0,
+    "IncorrectSkipReports1h": 0
+  },
+  "followedDemand": {
+    "REVIEW_REQUIRED": 18
+  },
+  "installations": 11,
+  "unrevokedInstallations": 11,
+  "activePilotDevices": 2,
+  "expiredUnrevokedPilotDevices": 0,
+  "decisionRequests": [
+    {
+      "id": "00c52d71f9a25438598c81cbaed95ba61bc492131eb4d997fbbc67d76babaf9a",
+      "feedUrl": "https://feeds.megaphone.fm/GLT1412515089",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 6
+    },
+    {
+      "id": "135412bca3310593a6454bdba8b2868abd29b6f42e36df4acc4ce5389ad5182b",
+      "feedUrl": "https://feeds.feedburner.com/dancarlin/history?format=xml",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 3
+    },
+    {
+      "id": "5765830237167f6323d8aedbd0c406b29af4862e35875d81f75a8085cb37ae5b",
+      "feedUrl": "https://rss.pdrl.fm/59fdc5/feeds.megaphone.fm/QCD7565826865",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 3
+    },
+    {
+      "id": "63662d22232948039b5428e63db325c6ef8ba0f9a13e54abc2fbc1a1759e4ce8",
+      "feedUrl": "https://feeds.megaphone.fm/RSV1597324942",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 4
+    },
+    {
+      "id": "660311c49c883ba38bcd6dcfce2dacba360daa823726c9229c705c50e686a22c",
+      "feedUrl": "https://lexfridman.com/feed/podcast/",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 3
+    },
+    {
+      "id": "ff2d7212747b3911cd64777b63669c472e138e0b18e9178d9d472a5bd116fbf6",
+      "feedUrl": "https://rss.pdrl.fm/0fcac1/feeds.megaphone.fm/QCD2752074976",
+      "status": "OPEN",
+      "activities": [
+        "bounded-audio-analysis",
+        "bounded-audio-transcription",
+        "internal-transcription",
+        "internal-ai-analysis",
+        "displayed-intelligence",
+        "advertisement-detection",
+        "automatic-ad-skip",
+        "public-transcript-distribution",
+        "playback-captions",
+        "translation",
+        "dubbing",
+        "voice-replication"
+      ],
+      "episodeCount": 6
+    }
+  ],
+  "ownedCacheHistory": [
+    {
+      "jobId": "16e893ca-f9d7-4861-8b62-80dc916de2b1",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-11-18T12:25:03.657Z",
+      "transcriptVersion": "d4c710f493a9c624eb6d35f1725ada1231c0fcda5ad8cce12654ba84c66e0697",
+      "audioVariant": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "parserVersion": "3",
+      "sourceSignature": "c6d91dc5dc84cc64a95c79fd6d93a7fba5418a680f41ace616c769d67dc2afc7",
+      "sourceCheckedAt": "2026-11-18T12:25:03.657Z"
+    },
+    {
+      "jobId": "badb948f-2971-4e51-92b7-9056c2a52523",
+      "state": "PARTIAL_READY",
+      "completedAt": "2026-10-15T10:22:05.758Z"
+    }
+  ],
+  "queues": {
+    "at": "2026-11-18T17:02:47.396Z",
+    "main": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0",
+      "ApproximateNumberOfMessagesDelayed": "0",
+      "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:208096650030:starcast-phase1-processing-dlq\",\"maxReceiveCount\":3}"
+    },
+    "dlq": {
+      "ApproximateNumberOfMessages": "0",
+      "ApproximateNumberOfMessagesNotVisible": "0"
+    }
+  }
+}

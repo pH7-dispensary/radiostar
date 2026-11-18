@@ -1,0 +1,208 @@
+{
+  "at": "2026-11-18T17:02:57.788Z",
+  "signals": [
+    {
+      "name": "Preparation capacity",
+      "status": "DEGRADED",
+      "reason": "6 saved jobs are waiting for the authorised budget or audio allowance. Checkpoints are retained; this does not authorise a budget increase.",
+      "detail": {
+        "waitingJobs": 6
+      }
+    },
+    {
+      "name": "Processing deadlines",
+      "status": "HEALTHY",
+      "reason": "0 unfinished jobs have exceeded their recorded deadline or legacy two-hour progress window. Inspect recovery before retrying.",
+      "detail": {
+        "stalledJobs": 0
+      }
+    },
+    {
+      "name": "Provider failures",
+      "status": "HEALTHY",
+      "reason": "0 provider failures were recorded in the last five minutes. Unknown paid outcomes still require reconciliation.",
+      "detail": {
+        "failures5m": 0
+      }
+    },
+    {
+      "name": "Incorrect-skip feedback",
+      "status": "HEALTHY",
+      "reason": "0 deduplicated conversation-skip reports in the last hour. These are listener reports, not adjudicated error-rate measurements.",
+      "detail": {
+        "reports1h": 0
+      }
+    }
+  ],
+  "episodes": [
+    {
+      "episodeId": "70592bd7-8013-4eff-a9c5-dcc570b9b216",
+      "title": "Red Hat's Project Lightwell with Mo Duffy",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "briefAvailable": true,
+      "chapters": 5,
+      "topics": 5,
+      "features": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 446,
+          "totalSegments": 446,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "8162a061-1fdc-4376-9525-9b8bb5006306",
+      "title": "Trusting your computing with Lance and Anton",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "briefAvailable": true,
+      "chapters": 14,
+      "topics": 14,
+      "features": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 821,
+          "totalSegments": 821,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "898601cb-9cb8-4a35-b9dd-ae52b91193ec",
+      "title": "Finding missing security backports with Roi Nisimi",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "briefAvailable": true,
+      "chapters": 10,
+      "topics": 13,
+      "features": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 510,
+          "totalSegments": 510,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    },
+    {
+      "episodeId": "d61ca0a3-f8d4-42b2-b79a-15ba7675deba",
+      "title": "The Apache Software Foundation with Ruth Suehle",
+      "state": "PARTIAL_READY",
+      "code": null,
+      "briefAvailable": true,
+      "chapters": 12,
+      "topics": 17,
+      "features": {
+        "transcript": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "brief": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "chapters": {
+          "state": "READY",
+          "completeness": "PARTIAL"
+        },
+        "topics": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "search": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "moments": {
+          "state": "READY",
+          "completeness": "COMPLETE"
+        },
+        "semantic": {
+          "state": "READY",
+          "completedSegments": 740,
+          "totalSegments": 740,
+          "code": null,
+          "resumeAfter": null
+        }
+      }
+    }
+  ],
+  "paidRequests": false
+}
