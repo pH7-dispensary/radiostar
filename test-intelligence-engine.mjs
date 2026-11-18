@@ -137,6 +137,8 @@ for(const selected of [['proof'],['unknown'],['proof','proof'],[]]) {
  const checked=await reviewClaims({...original,claimReview:undefined},proof,{request:async options=>options.invoke({responses:{create:async body=>{
   assert(body.text.format.schema.properties.claims.items.required.includes('supportingSourceIds'));
   assert(!body.text.format.schema.properties.claims.items.properties.quotes);
+  assert.deepEqual(body.text.format.schema.properties.claims.items.properties.supportingSourceIds.items.enum,['proof']);
+  assert.deepEqual(body.text.format.schema.properties.claims.items.properties.id.enum,[claim.id]);
   return {status:'completed',output_text:JSON.stringify({claims:[{id:claim.id,entailed:true,supportingSourceIds:selected}]})};
  }}})});
  assert.equal(validateClaims(checked,proof).complete,selected.length===1&&selected[0]==='proof');
