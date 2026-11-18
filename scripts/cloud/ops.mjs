@@ -24,6 +24,15 @@ const idleCheck = "/usr/local/bin/node --input-type=module -e " + quote(`
   db.close();
   if(busy||paidWork||repairing) { console.error('Active intelligence work or provider reservations: maintenance refused.'); process.exit(1); }
 `);
+// Wait on the server for a quiet maintenance window instead of racing the
+// worker's short polling gaps. Every wait is bounded and the final gate remains.
+const waitForIdle = `idle=0
+for attempt in $(seq 1 60); do
+  if ${idleCheck} 2>/dev/null; then idle=1; break; fi
+  sleep 2
+done
+test "$idle" = 1 || { echo 'Worker stayed busy; deployment deferred without interruption.'; exit 1; }
+${idleCheck}`;
 let commands;
 if (action === "status") commands = ["cloud-init status", "systemctl is-active starcast", "tail -n 12 /var/log/starcast/backend.log"];
 else if (action === "verify-runtime") commands = ["set -eu", "cd /opt/starcast/app", "/usr/local/bin/node -e " + quote(`const {execFileSync}=require('node:child_process'); for(const path of [require('ffmpeg-static'),require('ffprobe-static').path]) {execFileSync(path,['-version'],{stdio:'pipe',timeout:10000});} console.log('FFmpeg and FFprobe executable checks passed.');`)];
@@ -75,7 +84,7 @@ export PATH=/usr/local/bin:/usr/bin:/bin
 umask 022
 exec 9>/run/starcast-deploy.lock
 flock -n 9 || { echo 'Another deployment is active'; exit 1; }
-${idleCheck}
+${waitForIdle}
 node --input-type=module -e ${quote(maintenanceSource + "\nmaintainReleases({apply:true}); assertDeploymentCapacity();")}
 aws s3 cp ${uri} /opt/starcast/update.tar.gz --region eu-west-2 --only-show-errors
 echo '${sha}  /opt/starcast/update.tar.gz' | sha256sum -c -
@@ -108,7 +117,7 @@ chmod -R a+rX ${staged}
 previous=/opt/starcast/previous-$(date +%s)
 metadata_backup=/var/lib/starcast/release-before-update.json
 if test -f /var/lib/starcast/release.json; then cp /var/lib/starcast/release.json "$metadata_backup"; else rm -f "$metadata_backup"; fi
-${idleCheck}
+${waitForIdle}
 systemctl stop starcast
 mv /opt/starcast/app "$previous"
 mv ${staged} /opt/starcast/app
