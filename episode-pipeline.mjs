@@ -121,7 +121,7 @@ export function durationMs(value) {
 }
 export function publicIntelligence(value) {
   if (!value) return { state: "NOT_REQUESTED" };
-  const { transcript, episode, refs, lifecycle, estimateHistory, timing, testingContext, claimReview, ...safe } = value;
+  const { transcript, episode, refs, lifecycle, estimateHistory, timing, testingContext, claimReview, audioSource, ...safe } = value;
   return {
     ...safe,
     // Job identity is safe and necessary for operations.  Do not leak the
@@ -167,6 +167,7 @@ export function availabilityCode(code) {
 }
 
 function failure(error) {
+  if (error?.code === 'AUDIO_VARIANT_CHANGED') return {code:error.code,reason:'The publisher audio changed while preparation was paused. Saved work is preserved; source reconciliation is required before further transcription.',retryable:false};
   if (error?.code === 'AUDIO_STAGING_CAPACITY') return {code:error.code,reason:'Audio preparation is waiting for temporary disk capacity. Listening remains available.',retryable:true};
   if (error?.code === 'PROCESSING_YIELD') return {code:error.code,reason:'Completed chunks are saved while another queued episode is prepared.',retryable:true};
   if (error?.code === 'PROVIDER_RATE_LIMIT') return {code:error.code,reason:'The provider rejected this request temporarily. A bounded retry is scheduled.',retryable:true};
@@ -711,6 +712,7 @@ export class EpisodePipeline {
       allowAudio,
       testingContext,
       platformProcessing,
+      ...(!completed(previous) && previous ? {audioSource:previous.audioSource || (previous.work?.sourceContentHash?{audioUrl:previous.episode?.audioUrl,hash:previous.work.sourceContentHash}:undefined)} : {}),
       priority: testingContext || platformProcessing ? Math.max(0, Math.min(100, Number(priority) || 0)) : 0,
       feedUrl,
       episodeId,
@@ -1146,13 +1148,17 @@ export class EpisodePipeline {
         let audioTask = this.audioInflight.get(variant);
         if (!audioTask) {
           audioTask = (async () => {
+            const savedSource=value.audioSource || (value.work?.sourceContentHash?{audioUrl:episode.audioUrl,hash:value.work.sourceContentHash}:null);
             const audio = await this.audioFactory(
-              episode.audioUrl,
+              savedSource?.audioUrl===episode.audioUrl && savedSource.deliveryUrl ? savedSource.deliveryUrl : episode.audioUrl,
               ledger.controls.maxEpisodeSeconds,
               {signal:controller.signal},
             );
             try {
               controller.signal.throwIfAborted();
+              if(savedSource?.audioUrl===episode.audioUrl && savedSource?.hash && audio.contentHash!==savedSource.hash)
+                throw Object.assign(Error('The source audio changed after completed transcription checkpoints.'),{code:'AUDIO_VARIANT_CHANGED'});
+              update({audioSource:{audioUrl:episode.audioUrl,deliveryUrl:audio.delivery?.url || episode.audioUrl,hash:audio.contentHash,durationMs:audio.durationMs}});
               if (!duration) episode.duration=String(audio.durationMs/1000);
               recordWork({verifiedSourceDurationMs:audio.durationMs,sourceContentHash:audio.contentHash});
               update({ state: "TRANSCRIBING", processingStage: "TRANSCRIBING" });

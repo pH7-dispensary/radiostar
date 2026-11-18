@@ -155,3 +155,15 @@ try {
  const queued=reviewStore.get('intelligence',key);reviewStore.set('intelligence',key,{...queued,state:'PARTIAL_READY',completedAt:new Date().toISOString()});
  await pipeline.recoverQueued();assert.equal(reviewStore.get('intelligence',key).state,'PARTIAL_READY','cached-review repair is bounded to one replay');
 }finally{reviewStore.close();}
+
+const variantStore=new LocalStore(':memory:'),variantLedger=new BudgetLedger({enabled:true},variantStore);let variantPaid=0,cleaned=0;
+try {
+ const audioUrl='https://owned.example/variant.mp3',deliveryUrl='https://cdn.example/exact-variant.mp3';
+ variantStore.set('intelligence',key,{feedUrl,episodeId,jobId:'paused-variant',processingVersion:PROCESSING_VERSION,state:'BLOCKED',code:'BUDGET_LIMIT',resumeAfter:'2020-01-01T00:00:00Z',attempts:0,platformProcessing:true,episode:{id:episodeId,feedUrl,audioUrl,duration:'60'},audioSource:{audioUrl,deliveryUrl,hash:'a'.repeat(64)},work:{nextChunkSeconds:60}});
+ const pipeline=new EpisodePipeline({store:variantStore,ledger:variantLedger,enabled:true,configured:true,audioEnabled:true,resolveEpisode:async()=>({id:episodeId,feedUrl,audioUrl,duration:'60',refs:[]}),
+  audioFactory:async url=>{assert.equal(url,deliveryUrl);return{durationMs:60000,contentHash:'b'.repeat(64),chunkFactory:async()=>Buffer.from('unused'),cleanup:async()=>{cleaned++;}};},
+  client:{audio:{transcriptions:{create:async()=>{variantPaid++;throw Error('Mismatched audio must never be purchased');}}}}});
+ await pipeline.request({feedUrl,episodeId,allowAudio:true,platformProcessing:true,trigger:'automatic'});await Promise.all(pipeline.inflight.values());
+ assert.equal(pipeline.status(feedUrl,episodeId).code,'AUDIO_VARIANT_CHANGED');assert.equal(variantPaid,0);assert.equal(cleaned,1);
+}finally{variantStore.close();}
+console.log('Pinned audio source reuse and changed-variant refusal preserve existing paid work without repurchasing it.');
