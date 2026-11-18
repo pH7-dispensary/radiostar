@@ -124,7 +124,7 @@ let reviewedWindows=0;
 const denied=await reviewClaims(disputed,longEvidence,{request:async options=>{
  return options.invoke({responses:{create:async body=>{
   const evidence=JSON.parse(body.input[1].content);assert(Buffer.byteLength(body.input[1].content)<20000);assert(evidence[0].sources.some(s=>s.id==='s749'));assert(evidence[0].sources.some(s=>s.id==='s748'));assert(evidence[0].sources.some(s=>s.id==='s750'));assert.equal(evidence[0].coverage.kind,'SELECTED_SOURCE_WINDOWS');reviewedWindows++;
-  return {output_text:JSON.stringify({claims:evidence.map(c=>({id:c.id,entailed:false,quotes:[]}))})};
+  return {output_text:JSON.stringify({claims:evidence.map(c=>({id:c.id,entailed:false,supportingSourceIds:[]}))})};
  }}});
 }});
 assert.equal(reviewedWindows,1);assert.equal(validateClaims(denied,longEvidence).complete,false,'selected evidence never converts a contradiction into permission to publish');
@@ -133,6 +133,15 @@ const proof={segments:[{id:'proof',text:'Completed processing is retained throug
 const claim=claimsForResult(original)[0];original.claimReview={version:GROUNDING_VERSION,claims:[{id:claim.id,binding:claimBinding(claim,proof),entailed:true,quotes:[{segmentId:'proof',text:proof.segments[0].text}]}]};
 const reused=await reviewClaims(original,proof,{request:async()=>{throw Error('Verified unchanged claim must not be purchased again');}});
 assert.equal(validateClaims(reused,proof).complete,true);
+for(const selected of [['proof'],['unknown'],['proof','proof'],[]]) {
+ const checked=await reviewClaims({...original,claimReview:undefined},proof,{request:async options=>options.invoke({responses:{create:async body=>{
+  assert(body.text.format.schema.properties.claims.items.required.includes('supportingSourceIds'));
+  assert(!body.text.format.schema.properties.claims.items.properties.quotes);
+  return {status:'completed',output_text:JSON.stringify({claims:[{id:claim.id,entailed:true,supportingSourceIds:selected}]})};
+ }}})});
+ assert.equal(validateClaims(checked,proof).complete,selected.length===1&&selected[0]==='proof');
+ if(selected.length===1&&selected[0]==='proof')assert.deepEqual(checked.claimReview.claims[0].quotes,[{segmentId:'proof',text:proof.segments[0].text}]);
+}
 const reduceStore=new LocalStore(':memory:'),reduceLedger=new BudgetLedger({enabled:true},reduceStore);let generations=0,reviewStages=0;
 try {
  const transcript={episodeId:'reduce-proof',transcriptVersion:'v1',quality:{readiness:'FULL'},segments:Array.from({length:501},(_,i)=>({id:'s'+i,startMs:i*1000,endMs:i*1000+900,text:'Original speech describes reliable checkpoint recovery and cautious evidence handling.'}))};
