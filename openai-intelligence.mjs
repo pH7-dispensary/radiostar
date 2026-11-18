@@ -472,7 +472,7 @@ export async function generateLongFormIntelligence(options) {
   const drafts=new Map();
   const generate = (source, stage) => {
     const cacheStage=stage==='reduce'?'reduce-original-evidence-v2':stage;
-    return generateEpisodeIntelligence({ ...options, transcript: source, onRawResult:raw=>drafts.set(stage,raw), ...(stage==='reduce'?{deferGrounding:true,claimReviewer:null}:{}), requestId: `${options.requestId}:${cacheStage}`, checkpointKey: checkpointPrefix ? `${checkpointPrefix}:${signature}:${cacheStage}` : null });
+    return generateEpisodeIntelligence({ ...options, transcript: source, onRawResult:raw=>drafts.set(stage,raw), ...(stage==='reduce'?{deferGrounding:true,claimReviewer:null}:{}), requestId: `${options.requestId}:${signature}:${cacheStage}`, checkpointKey: checkpointPrefix ? `${checkpointPrefix}:${signature}:${cacheStage}` : null });
   };
   const results = [];
   for (const [index, segments] of batches.entries()) {

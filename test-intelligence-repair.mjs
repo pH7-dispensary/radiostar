@@ -122,3 +122,19 @@ console.log('Reduction preserves original source references after an intermediat
  }finally{s.close();}
 }
 console.log('Saved-response assembly restores confident speech locally, retains unaffected chapters/history and spends nothing.');
+
+// A corrected source is distinct paid work; unchanged responses survive restart.
+{
+ const {generateLongFormIntelligence}=await import('./openai-intelligence.mjs');
+ const s=new LocalStore(':memory:'),ledger=new BudgetLedger({enabled:true},s);let calls=0;
+ const client={responses:{create:async()=>{calls++;return{usage:{input_tokens:10,output_tokens:10},output_text:JSON.stringify({overview:text,detail:text,themes:['Evidence'],sourceSegmentIndexes:[1],chapters:[]})};}}};
+ const opts={transcript,ledger,client,requestId:'source-bound:text',requestedFeatures:['brief'],checkpointStore:s,checkpointPrefix:'source-bound'};
+ try {
+ await generateLongFormIntelligence(opts);
+ const corrected={...opts,transcript:{...transcript,segments:[...segments,{id:'s3',text:'An additional recovered passage about evidence.',startMs:120000,endMs:150000}]}};
+ await generateLongFormIntelligence(corrected);assert.equal(calls,2);
+ await generateLongFormIntelligence(corrected);assert.equal(calls,2);
+ assert.equal(ledger.usage.length,2);assert.notEqual(ledger.usage[0].id,ledger.usage[1].id);
+ }finally{s.close();}
+}
+console.log('Changed source uses a distinct reservation; unchanged sources reuse saved paid responses.');

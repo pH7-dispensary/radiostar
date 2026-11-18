@@ -37,7 +37,7 @@ result.quality=jobs.filter(j=>targets.has(j.episodeId)).map(j=>{
  const duplicates=segments.filter((s,i)=>i&&s.startMs<segments[i-1].endMs&&normalized(s)===normalized(segments[i-1])).length;
  const repeatedUtterances=segments.filter((s,i)=>i&&s.startMs===segments[i-1].endMs&&normalized(s)===normalized(segments[i-1])).length;
  const compactSource=({sourceSegmentIds=[],...row})=>({...row,sourceSegmentCount:sourceSegmentIds.length,sourceSegmentIdsSample:[...new Set([...sourceSegmentIds.slice(0,3),...sourceSegmentIds.slice(-3)])],sourceIdsSha256:createHash('sha256').update(JSON.stringify(sourceSegmentIds)).digest('hex')});
- return{episodeId:j.episodeId,title:j.episode?.title,jobId:j.jobId,state:j.state,code:j.code,attempts:j.attempts,recoveries:j.recoveries,softwareRecovery:j.softwareRecovery,sourceHash:hash,durationMs,work:j.work,resumeAfter:j.resumeAfter,capacityWait:j.capacityWait,processingMs:j.processingMs,
+ return{episodeId:j.episodeId,title:j.episode?.title,jobId:j.jobId,state:j.state,code:j.code,attempts:j.attempts,recoveries:j.recoveries,softwareRecovery:j.softwareRecovery,sourceHash:hash,durationMs,work:j.work,resumeAfter:j.resumeAfter,capacityWait:j.capacityWait,processingMs:j.processingMs,featureStatus:j.featureStatus,featureRepair:j.featureRepair,transcriptAssemblyRepair:j.transcriptAssemblyRepair,assemblyVersion:j.transcript?.assemblyVersion,
  expectedChunks:plan.length,checkpointCount:chunks.length,completedChunks:chunks.filter(c=>c.state==='READY').length,
  chunks:chunks.map(c=>({index:Number(c.key.split(':').at(-1)),state:c.state,responseSha256:createHash('sha256').update(JSON.stringify(c.response||null)).digest('hex'),segments:c.response?.segments?.length||0})),
  missingChunkIndexes:plan.filter(p=>!chunks.some(c=>Number(c.key.split(':').at(-1))===p.index&&c.state==='READY')).map(p=>p.index),
@@ -47,8 +47,8 @@ result.quality=jobs.filter(j=>targets.has(j.episodeId)).map(j=>{
  searchChecksumValid:j.transcript?validSearchIndex(search,j.transcript,j):false,semanticChecksumValid:search?validSemanticIndex(semantic,search):false,
  brokenChapterSources:(j.chapters||[]).flatMap(c=>c.sourceSegmentIds||[]).filter(id=>!ids.has(id)).length,
  independentHumanAudioAnnotation:false,wordErrorRate:null,
- usage:(budget?.usage||[]).filter(u=>u.jobId===j.jobId).reduce((out,u)=>{const kind=u.kind||'text',row=out[kind]||={requests:0,usd:0,seconds:0,failed:0,uncertain:0};row.requests++;row.usd+=u.usd;row.seconds+=u.seconds||0;row.failed+=u.failed?1:0;row.uncertain+=u.uncertain?1:0;return out;},{}),
- latestLedgerEntries:(budget?.usage||[]).filter(u=>u.jobId===j.jobId).slice(-3).map(({id,kind,usd,seconds,failed,uncertain,at})=>({id,kind,usd,seconds,failed,uncertain,at}))};
+ usage:(budget?.usage||[]).filter(u=>u.jobId===j.jobId||u.episodeKey===j.key).reduce((out,u)=>{const kind=u.kind||'text',row=out[kind]||={requests:0,usd:0,seconds:0,failed:0,uncertain:0};row.requests++;row.usd+=u.usd;row.seconds+=u.seconds||0;row.failed+=u.failed?1:0;row.uncertain+=u.uncertain?1:0;return out;},{}),
+ latestLedgerEntries:(budget?.usage||[]).filter(u=>u.jobId===j.jobId||u.episodeKey===j.key).slice(-3).map(({id,kind,usd,seconds,failed,uncertain,at})=>({id,kind,usd,seconds,failed,uncertain,at}))};
 });
 db.close();const encoded=gzipSync(JSON.stringify(result)).toString('base64');
 if(encoded.length<20000)console.log(encoded);
