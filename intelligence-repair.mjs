@@ -21,7 +21,15 @@ export function queueFeatureRepair(pipeline,key,reason='Automatic repair of inco
   pipeline.store.transaction(()=>{pipeline.store.set('intelligence-repair',key,value);pipeline.store.set('intelligence',key,{...j,featureRepair:{state:value.state,activeFeature:null,features:{},updatedAt:value.requestedAt}});});return value;
 }
 export async function repairOneFeature(pipeline,key) {
-  await repairTranscriptAssembly(pipeline,key);
+  try { await repairTranscriptAssembly(pipeline,key); }
+  catch(error) {
+    const prior=pipeline.store.get('intelligence-repair',key),job=pipeline.store.get('intelligence',key);
+    if(!prior)return null;
+    const failed={...prior,version:REPAIR_VERSION,state:'BLOCKED',code:'ASSEMBLY_VALIDATION_FAILED',reason:String(error.message).slice(0,500),updatedAt:new Date().toISOString()};
+    pipeline.store.set('intelligence-repair',key,failed);
+    if(job?.jobId===prior.jobId)pipeline.store.set('intelligence',key,{...job,featureRepair:{state:failed.state,code:failed.code,reason:failed.reason,features:prior.features,updatedAt:failed.updatedAt}});
+    return failed;
+  }
   let state=pipeline.store.get('intelligence-repair',key),job=pipeline.store.get('intelligence',key);
   if(state?.version!==REPAIR_VERSION && complete(job))state=queueFeatureRepair(pipeline,key);
   if(!state || !['QUEUED','PROCESSING','WAITING_FOR_CAPACITY'].includes(state.state))return state;

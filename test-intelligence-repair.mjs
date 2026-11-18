@@ -115,6 +115,9 @@ console.log('Reduction preserves original source references after an intermediat
   assert.deepEqual(s.get('transcript',k+':assembly:previous'),t);assert.deepEqual(s.get('intelligence-repair-history',k+':assembly:previous').job,beforeAssembly);
   assert.deepEqual(s.get('transcription-checkpoint',`${k}:${hash}:whisper-1:120000:0`).response,response);
   assert.equal(await repairTranscriptAssembly(pipeline,k),false);
+  s.set('intelligence',k,beforeAssembly);s.set('intelligence-repair',k,{...s.get('intelligence-repair',k),version:'older',state:'QUEUED',signature:'old'});
+  s.set('transcription-checkpoint',`${k}:${hash}:whisper-1:120000:0`,{state:'READY',response:{segments:[{start:0,end:200,text}]}});
+  const blocked=await repairOneFeature(pipeline,k);assert.equal(blocked.code,'ASSEMBLY_VALIDATION_FAILED');assert.equal(s.get('intelligence',k).transcript.transcriptVersion,'previous');assert.equal(ledger.usage.length,0);
   pipeline.purgeEpisode(feedUrl,id);assert.equal(s.get('intelligence-repair-history',k+':assembly:previous'),null);assert.equal(s.get('transcript',k+':assembly:previous'),null);
  }finally{s.close();}
 }
