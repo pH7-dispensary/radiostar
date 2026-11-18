@@ -3,7 +3,7 @@ import {groundResult} from './grounded-result.mjs';
 import {generateLongFormIntelligence,generateEpisodeIntelligence,PROCESSING_VERSION,completeBriefDetail} from './openai-intelligence.mjs';
 import {transcriptFingerprint} from './intelligence-delivery.mjs';
 import {validateClaims,claimsForResult,claimBinding,GROUNDING_VERSION} from './claim-grounding.mjs';
-export const REPAIR_VERSION='missing-features-complete-prose-v7';
+export const REPAIR_VERSION='missing-features-complete-sentences-v8';
 const GENERATION_VERSION='missing-features-no-inline-citations-v1';
 const complete=j=>Boolean(['READY','PARTIAL_READY'].includes(j?.state)&&j.completedAt&&j.transcript?.segments?.length);
 const missing=j=>[

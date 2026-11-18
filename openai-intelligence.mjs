@@ -217,7 +217,7 @@ export function validateChapters(chapters, transcript) {
 // Strict output-length decoding may finish a JSON string mid-sentence. Retain
 // complete sentences only; the original response remains in its checkpoint.
 export function completeBriefDetail(text) {
-  if(typeof text!=='string' || text.length<600 || !/(?:[,;:]|\b(?:and|or|a|an|the|to|with))\s*$/iu.test(text))return text;
+  if(typeof text!=='string' || text.length<600 || /[.!?]["'”’]?\s*$/u.test(text))return text;
   const parts=[...new Intl.Segmenter('und',{granularity:'sentence'}).segment(text)].map(s=>s.segment.trim());
   return parts.length>1?parts.slice(0,-1).join(' '):text;
 }

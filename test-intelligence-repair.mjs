@@ -178,6 +178,6 @@ console.log('Old completed short-source selections get one schema-correct rechec
 {
  const {completeBriefDetail}=await import('./openai-intelligence.mjs');const first='The speakers discuss Linux servers and source attribution. ';
  const fragment='The discussion continues with '+ 'accurate evidence '.repeat(35)+'and a';
- assert.equal(completeBriefDetail(first+fragment),first.trim());assert.equal(completeBriefDetail(first.repeat(12)),first.repeat(12));assert.equal(completeBriefDetail('A complete detail without terminal punctuation'),'A complete detail without terminal punctuation');
+ assert.equal(completeBriefDetail(first+fragment),first.trim());assert.equal(completeBriefDetail(first+fragment.replace(/and a$/,'res')),first.trim());assert.equal(completeBriefDetail(first.repeat(12)),first.repeat(12));assert.equal(completeBriefDetail('A complete detail without terminal punctuation'),'A complete detail without terminal punctuation');
 }
 console.log('Length-capped dangling detail is omitted without inventing a sentence or changing complete prose.');
