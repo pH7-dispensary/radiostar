@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {LocalStore} from './persistence.mjs';
-import {BudgetLedger,PROCESSING_VERSION} from './openai-intelligence.mjs';
+import {BudgetLedger,PROCESSING_VERSION,generateLongFormIntelligence} from './openai-intelligence.mjs';
+import {reviewClaims,validateClaims,claimBinding,claimsForResult,GROUNDING_VERSION} from './claim-grounding.mjs';
 import {transcribeOnDemand,planAudioSegments,prepareAudio,initialiseAudioStaging,AUDIO_STAGING_VERSION} from './transcription.mjs';
 import {mkdtemp,mkdir,writeFile,readdir,utimes,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -116,3 +117,41 @@ try {
  await pipeline.recoverQueued();assert.equal(stagingStore.get('intelligence',key).state,'FAILED','software migration is one-time, not infinite retry');
 }finally{stagingStore.close();}
 console.log('Disk-backed bounded audio, low capacity refusal, corrupt audio cleanup, dead-owner cleanup and one-time unpaid staging recovery passed.');
+
+const longEvidence={segments:Array.from({length:1500},(_,i)=>({id:'s'+i,text:i===749?'The study did not establish that the proposed treatment prevented illness.':'Ordinary source discussion provides surrounding context and qualifications. '.repeat(4)}))};
+const disputed={brief:{overview:'The treatment prevented illness.',sourceSegmentIds:longEvidence.segments.map(s=>s.id)}};
+let reviewedWindows=0;
+const denied=await reviewClaims(disputed,longEvidence,{request:async options=>{
+ return options.invoke({responses:{create:async body=>{
+  const evidence=JSON.parse(body.input[1].content);assert(Buffer.byteLength(body.input[1].content)<20000);assert(evidence[0].sources.some(s=>s.id==='s749'));assert(evidence[0].sources.some(s=>s.id==='s748'));assert(evidence[0].sources.some(s=>s.id==='s750'));assert.equal(evidence[0].coverage.kind,'SELECTED_SOURCE_WINDOWS');reviewedWindows++;
+  return {output_text:JSON.stringify({claims:evidence.map(c=>({id:c.id,entailed:false,quotes:[]}))})};
+ }}});
+}});
+assert.equal(reviewedWindows,1);assert.equal(validateClaims(denied,longEvidence).complete,false,'selected evidence never converts a contradiction into permission to publish');
+const original={brief:{overview:'Checkpoint recovery protects completed work.',sourceSegmentIds:['proof']}};
+const proof={segments:[{id:'proof',text:'Completed processing is retained through checkpoint recovery.'}]};
+const claim=claimsForResult(original)[0];original.claimReview={version:GROUNDING_VERSION,claims:[{id:claim.id,binding:claimBinding(claim,proof),entailed:true,quotes:[{segmentId:'proof',text:proof.segments[0].text}]}]};
+const reused=await reviewClaims(original,proof,{request:async()=>{throw Error('Verified unchanged claim must not be purchased again');}});
+assert.equal(validateClaims(reused,proof).complete,true);
+const reduceStore=new LocalStore(':memory:'),reduceLedger=new BudgetLedger({enabled:true},reduceStore);let generations=0,reviewStages=0;
+try {
+ const transcript={episodeId:'reduce-proof',transcriptVersion:'v1',quality:{readiness:'FULL'},segments:Array.from({length:501},(_,i)=>({id:'s'+i,startMs:i*1000,endMs:i*1000+900,text:'Original speech describes reliable checkpoint recovery and cautious evidence handling.'}))};
+ const result=await generateLongFormIntelligence({transcript,ledger:reduceLedger,requestId:'reduce-proof',checkpointStore:reduceStore,checkpointPrefix:'reduce-proof',
+  client:{responses:{create:async body=>{generations++;if(generations===3)assert(body.input[1].content.includes('Unverified section notes'));
+   return{output_text:JSON.stringify({overview:'The fabricated result guarantees success for every listener.',detail:'The fabricated result guarantees success for every listener.',themes:['recovery'],sourceSegmentIndexes:[1],chapters:[{title:'Checkpoint recovery',description:'Original speech describes reliable checkpoint recovery and cautious evidence handling.',sourceSegmentIndexes:[1]}]}),usage:{input_tokens:100,output_tokens:100}};}}},
+  claimReviewer:async(value,source)=>{assert(source.segments.every(s=>!s.id.startsWith('map-')),'synthetic reduction notes are never accepted as independent evidence');reviewStages++;return value;}});
+ assert.equal(generations,3);assert.equal(reviewStages,3);assert(result.partialResult);assert(!result.brief.overview.includes('guarantees'));
+}finally{reduceStore.close();}
+console.log('Bounded original-source review, contradiction abstention, unchanged-verdict reuse and safe final synthesis rebinding passed.');
+
+const reviewStore=new LocalStore(':memory:'),reviewLedger=new BudgetLedger({enabled:true},reviewStore);
+try {
+ const pipeline=new EpisodePipeline({store:reviewStore,ledger:reviewLedger,queue:{enqueue:async()=>{}},enabled:true,configured:true,resolveEpisode:async()=>({})});pipeline.claimReviewer=async v=>v;
+ const job={feedUrl,episodeId,jobId:'cached-review',state:'PARTIAL_READY',platformProcessing:true,completedAt:new Date().toISOString(),brief:{mode:'extractive'},work:{totalBatches:2}};
+ reviewStore.set('intelligence',key,job);reviewStore.set('followed-demand',key,{inWindow:true});
+ await pipeline.recoverQueued();assert.equal(reviewStore.get('intelligence',key).state,'PARTIAL_READY','no automatic regeneration without saved provider responses');
+ for(const stage of ['map-0','map-1','reduce'])reviewStore.set('analysis-checkpoint',key+':signature:'+stage,{state:'READY',response:{}});
+ await pipeline.recoverQueued();assert.equal(reviewStore.get('intelligence',key).state,'QUEUED');
+ const queued=reviewStore.get('intelligence',key);reviewStore.set('intelligence',key,{...queued,state:'PARTIAL_READY',completedAt:new Date().toISOString()});
+ await pipeline.recoverQueued();assert.equal(reviewStore.get('intelligence',key).state,'PARTIAL_READY','cached-review repair is bounded to one replay');
+}finally{reviewStore.close();}

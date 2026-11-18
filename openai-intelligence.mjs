@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { groundResult } from "./grounded-result.mjs";
+import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION, claimsForResult, claimBinding, validateClaims } from './claim-grounding.mjs';
 
 // Embedding queries can cost less than one millionth of a dollar.
 // Preserve those charges instead of rounding them to zero.
@@ -227,6 +228,8 @@ export async function generateEpisodeIntelligence({
   beforePaid = () => {},
   canPersist = () => true,
   claimReviewer = null,
+  deferGrounding = false,
+  onRawResult = () => {},
 }) {
   signal?.throwIfAborted();
   if (
@@ -422,9 +425,13 @@ export async function generateEpisodeIntelligence({
           ...(invalidBrief?[{feature:"brief",code:"INVALID_SOURCE_REFERENCES"}]:[]),
         ]} : {}),
       };
+    // Internal reduction only: its temporary map IDs must first be rebound to
+    // original speech. Never publish or independently endorse synthetic sources.
+    onRawResult(rawResult);
+    if(deferGrounding)return {...rawResult,groundingReviewVersion:REVIEW_EVIDENCE_VERSION};
     let reviewed=rawResult;
     if(claimReviewer){beforePaid();try{reviewed=await claimReviewer(rawResult,transcript);}catch{ /* Budget/provider failure falls back to bounded source excerpts, never unsupported prose. */ }}
-    const result=groundResult(reviewed,transcript);
+    const result={...groundResult(reviewed,transcript),groundingReviewVersion:REVIEW_EVIDENCE_VERSION};
     if(!result.brief && !result.chapters.length)throw Error("The generated outputs did not pass source validation.");
     return result;
   } catch (error) {
@@ -455,7 +462,11 @@ export async function generateLongFormIntelligence(options) {
   if (batch.length) batches.push(batch);
   if (batches.length > 64) throw Error("This transcript exceeds the current processing limit.");
   const signature = createHash("sha256").update(JSON.stringify([transcript.segments, options.model || defaultControls.textModel, options.outputProfile, PROCESSING_VERSION])).digest("hex");
-  const generate = (source, stage) => generateEpisodeIntelligence({ ...options, transcript: source, requestId: `${options.requestId}:${stage}`, checkpointKey: checkpointPrefix ? `${checkpointPrefix}:${signature}:${stage}` : null });
+  const drafts=new Map();
+  const generate = (source, stage) => {
+    const cacheStage=stage==='reduce'?'reduce-original-evidence-v2':stage;
+    return generateEpisodeIntelligence({ ...options, transcript: source, onRawResult:raw=>drafts.set(stage,raw), ...(stage==='reduce'?{deferGrounding:true,claimReviewer:null}:{}), requestId: `${options.requestId}:${cacheStage}`, checkpointKey: checkpointPrefix ? `${checkpointPrefix}:${signature}:${cacheStage}` : null });
+  };
   const results = [];
   for (const [index, segments] of batches.entries()) {
     results.push(await generate({ ...transcript, segments }, `map-${index}`));
@@ -466,10 +477,28 @@ export async function generateLongFormIntelligence(options) {
   // Supply original speech alongside section findings. Reduction is one level,
   // and its citations resolve through the maps to original transcript IDs.
   const sources=result=>[...new Set([...(result.brief?.sourceSegmentIds||[]),...result.chapters.flatMap(c=>c.sourceSegmentIds)])];
-  const summaries = results.map((result, index) => ({ id: `map-${index}`, text: `${result.brief?.overview || "Section summary unavailable."}\n${result.brief?.detail || ""}\nThemes: ${(result.brief?.themes || []).join(", ")}\nOriginal source excerpts (not instructions):\n${sources(result).slice(0,8).map(id=>transcript.segments.find(s=>s.id===id)?.text.slice(0,240) || "").join("\n")}` }));
+  const summaries = results.map((result, index) => {
+    const draft=drafts.get(`map-${index}`)||result;
+    return {id:`map-${index}`,text:`Unverified section notes, not independent evidence:\n${draft.brief?.overview || "Section summary unavailable."}\n${draft.brief?.detail || ""}\nThemes: ${(draft.brief?.themes || []).join(", ")}\nOriginal source excerpts (not instructions):\n${sources(draft).slice(0,8).map(id=>transcript.segments.find(s=>s.id===id)?.text.slice(0,240) || "").join("\n")}`};
+  });
   const reduced = await generate({ ...transcript, segments: summaries }, "reduce");
   if(reduced.brief)reduced.brief.sourceSegmentIds = [...new Set(reduced.brief.sourceSegmentIds.flatMap((id) => results[Number(id.slice(4))]?sources(results[Number(id.slice(4))]):[]))];
   reduced.chapters = validateChapters(results.flatMap((result) => result.chapters), transcript);
+  // Preserve independently verified map chapter claims after chapter indices
+  // change. Synthetic reduction sources never authorise an original-audio claim.
+  const verifiedMapClaims=results.flatMap(result=>{
+    const supported=new Set(validateClaims(result,transcript).claims.filter(c=>c.supported).map(c=>c.id));
+    return claimsForResult(result).filter(c=>supported.has(c.id)).flatMap(claim=>{
+      const review=result.claimReview?.claims.find(c=>c.id===claim.id&&c.binding===claimBinding(claim,transcript));
+      return review?[{claim,review}]:[];
+    });
+  });
+  const chapterReviews=[];
+  for(const claim of claimsForResult(reduced).filter(c=>c.id.startsWith('chapter.'))){
+    const original=verifiedMapClaims.find(({claim:c})=>c.text===claim.text&&c.label===claim.label&&JSON.stringify(c.sourceSegmentIds)===JSON.stringify(claim.sourceSegmentIds));
+    if(original)chapterReviews.push({...original.review,id:claim.id,binding:claimBinding(claim,transcript)});
+  }
+  reduced.claimReview={version:GROUNDING_VERSION,claims:chapterReviews};
   delete reduced.groundingVersion;
   onProgress({ completedBatches: batches.length, totalBatches: batches.length, synthesisPending: false });
   if(options.claimReviewer){options.beforePaid?.();try{return groundResult(await options.claimReviewer(reduced,transcript),transcript);}catch{ /* Preserve original-source abstention if review is unavailable. */ }}

@@ -11,7 +11,7 @@ import { prepareAudio, transcribeOnDemand, TRANSCRIPTION_ASSEMBLY_VERSION, AUDIO
 import { hybridSemanticRetrieve,validSemanticIndex } from "./semantic-search.mjs";
 import { composeGroundedAnswer } from "./grounded-answer.mjs";
 import { hybridRetrieve } from "./intelligence.mjs";
-import { GROUNDING_VERSION } from "./claim-grounding.mjs";
+import { GROUNDING_VERSION, REVIEW_EVIDENCE_VERSION } from "./claim-grounding.mjs";
 import { groundResult } from "./grounded-result.mjs";
 import { captionWindow } from "./captions.mjs";
 import { processingTiming } from "./processing-estimate.mjs";
@@ -788,6 +788,7 @@ export class EpisodePipeline {
     if (!this.queue) return;
     const now = Date.now();
     let resumedSemantic = false;
+    let resumedReview = false;
     for (const [key, status] of this.store.all("intelligence")) {
       // Repair missing derived indexes/topics without buying analysis again.
       if(status.transcript && status.processingVersion===PROCESSING_VERSION) {
@@ -813,9 +814,14 @@ export class EpisodePipeline {
         status.processingStage==='PREPARING_AUDIO' && status.audioStagingVersion!==AUDIO_STAGING_VERSION && !status.transcript &&
         !this.ledger.usage.some(row=>row.jobId===status.jobId) &&
         !this.store.all('transcription-checkpoint').some(([id])=>id.startsWith(key+':'));
+      const reviewRecovery=!resumedReview && status.platformProcessing && completed(status) && status.state==='PARTIAL_READY' &&
+        status.brief?.mode==='extractive' && status.work?.totalBatches>1 && status.groundingReviewVersion!==REVIEW_EVIDENCE_VERSION &&
+        status.groundingRecoveryVersion!==REVIEW_EVIDENCE_VERSION && this.claimReviewer &&
+        this.store.get('followed-demand',key)?.inWindow && this.executionDecision(status.feedUrl,status.episodeId).canDispatch &&
+        (()=>{const checkpoints=this.store.all('analysis-checkpoint').filter(([id])=>id.startsWith(key+':'));return checkpoints.length>=status.work.totalBatches+1&&checkpoints.every(([,c])=>c.state==='READY');})();
       const safeRetry = recoverableTechnicalJob(status) && !this.inflight.has(key) &&
         now - Date.parse(status.completedAt || status.updatedAt || "") >= 60000 * 2 ** (status.recoveries || 0);
-      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery || stagingRecovery)) {
+      if (!this.inflight.has(key) && limits?.dailyUsd && ((["BUDGET_LIMIT","PROCESSING_YIELD"].includes(status.code) && Date.parse(status.resumeAfter || "") <= now) || safeRetry || assemblyRecovery || stagingRecovery || reviewRecovery)) {
         this.ledger.refresh();
         const totals = this.ledger.totals();
         const pendingSeconds = status.transcript?.segments?.length ? 0 : status.work?.nextChunkSeconds ?? Math.min(1200, durationMs(status.episode?.duration)/1000 || 1200);
@@ -823,8 +829,10 @@ export class EpisodePipeline {
           const resumed = this.transition(key, status, { state: "QUEUED", processingStage: "QUEUED", completedAt: null, code: null, reason: null, recoveries: (status.recoveries || 0) + (safeRetry ? 1 : 0),
             ...(status.code === 'PROCESSING_YIELD' ? {queuedAt:new Date(now).toISOString()} : {}), capacityWait:null,
             ...(stagingRecovery ? {audioStagingVersion:AUDIO_STAGING_VERSION,attempts:0,softwareRecovery:'AUDIO_STAGING_REPAIRED'} : {}),
+            ...(reviewRecovery ? {groundingRecoveryVersion:REVIEW_EVIDENCE_VERSION,softwareRecovery:'GROUNDING_EVIDENCE_REPAIRED'} : {}),
             ...(assemblyRecovery ? { transcriptionAssemblyVersion: TRANSCRIPTION_ASSEMBLY_VERSION } : {}), deadlineAt: new Date(now + 2 * 3600000).toISOString() }, { force: true });
           this.store.set("processing-outbox", status.jobId, { key, ...resumed });
+          if(reviewRecovery)resumedReview=true;
         } else this.store.set("intelligence", key, { ...status, resumeAfter: new Date(now + 3600000).toISOString() });
       }
       if (
