@@ -2097,7 +2097,7 @@ function Profile({
           </Text>
         </Pressable>
         <Text style={[styles.emptyCopy, { color: p.muted }]}>
-          Uses authorised publisher transcripts for episodes you open and shows you follow. Turning this off stops future automatic requests for your profile; shared or already-running jobs may finish. Audio analysis asks first. Provider details are in the Privacy Policy.
+          Eligible episodes you open and shows you follow prepare automatically, using authorised transcripts first and permitted audio transcription when needed. Turning this off stops future automatic requests for your profile; shared or already-running jobs may finish. Provider details are in the Privacy Policy.
         </Text>
       </Section>
       <Section title="AI Sleep" p={p}>

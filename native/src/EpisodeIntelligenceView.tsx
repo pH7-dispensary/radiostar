@@ -297,9 +297,10 @@ export function EpisodeIntelligenceView({
                 More from every listen.
               </Text>
               <Text style={[s.copy, { color: p.muted }]}>
-                Briefs, chapters and moments, together. Episodes you open can
-                use publisher transcripts within your server’s allowance. Audio
-                transcription always asks first. Ad Skip stays independent.
+                Briefs, chapters and moments, together. Eligible episodes you
+                follow or open prepare automatically, using available transcripts
+                first. Permitted audio transcription runs within the service’s
+                limits. Ad Skip stays independent.
               </Text>
               {action("Enable Radio Star Intelligence", onEnable)}
               <Text style={[s.caption, { color: p.muted }]}>
